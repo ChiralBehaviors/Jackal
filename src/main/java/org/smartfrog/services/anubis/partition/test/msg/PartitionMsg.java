@@ -19,15 +19,20 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.msg;
 
-
 import java.io.Serializable;
+
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class PartitionMsg implements Serializable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    public int leader;
     public View partition;
-    public int  leader;
+
     public PartitionMsg(View partition, int leader) {
         this.partition = partition;
-        this.leader    = leader;
+        this.leader = leader;
     }
 }

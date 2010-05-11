@@ -19,15 +19,14 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator;
 
-
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
 public class AnubisValue {
 
-    private String    name;
-    private String    instance;
-    private long      time;
-    private Object    value;
+    private String instance;
+    private String name;
+    private long time;
+    private Object value;
 
     public AnubisValue(ProviderInstance i) {
         setName(i.name);
@@ -36,26 +35,47 @@ public class AnubisValue {
         setValue(i.value);
     }
 
-    public final String getName()     { return name; }
-    public final String getInstance() { return instance; }
-    public final long   getTime()     { return time; }
-    public final Object getValue()    { return value; }
+    public final String getInstance() {
+        return instance;
+    }
 
-    public final void   set(long t, ValueData v) {
+    public final String getName() {
+        return name;
+    }
+
+    public final long getTime() {
+        return time;
+    }
+
+    public final Object getValue() {
+        return value;
+    }
+
+    public final void set(long t, ValueData v) {
         setTime(t);
         setValue(v);
     }
 
-    private void setName(String name)         { this.name = name; }
-    private void setInstance(String instance) { this.instance = instance; }
-    private void setTime(long time)           { this.time = time; }
-    private void setValue(ValueData value) {
-        this.value = value.getValue();
-    }
-
+    @Override
     public String toString() {
         return "Value [name=" + getName() + ", instance=" + getInstance()
-                + ", time=" + getTime() + ", value=" + getValue() + "]";
+               + ", time=" + getTime() + ", value=" + getValue() + "]";
+    }
+
+    private void setInstance(String instance) {
+        this.instance = instance;
+    }
+
+    private void setName(String name) {
+        this.name = name;
+    }
+
+    private void setTime(long time) {
+        this.time = time;
+    }
+
+    private void setValue(ValueData value) {
+        this.value = value.getValue();
     }
 
 }

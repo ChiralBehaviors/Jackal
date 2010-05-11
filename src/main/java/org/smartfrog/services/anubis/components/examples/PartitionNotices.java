@@ -27,8 +27,8 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class PartitionNotices implements PartitionNotification {
 
-    private Partition partition = null;
     private boolean isStable = false;
+    private Partition partition = null;
 
     public PartitionNotices() throws Exception {
         super();
@@ -38,16 +38,8 @@ public class PartitionNotices implements PartitionNotification {
         return partition;
     }
 
-    public void setPartition(Partition partition) {
-        this.partition = partition;
-    }
-
-    public void start() {
-        partition.register(this);
-    }
-
-    public void terminate() {
-        partition.deregister(this);
+    public void objectNotification(Object obj, int sender, long time) {
+        return;
     }
 
     public void partitionNotification(View view, int leader) {
@@ -65,7 +57,15 @@ public class PartitionNotices implements PartitionNotification {
         }
     }
 
-    public void objectNotification(Object obj, int sender, long time) {
-        return;
+    public void setPartition(Partition partition) {
+        this.partition = partition;
+    }
+
+    public void start() {
+        partition.register(this);
+    }
+
+    public void terminate() {
+        partition.deregister(this);
     }
 }

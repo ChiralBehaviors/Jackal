@@ -29,12 +29,12 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
 
 public class PingProtocolFactory implements HeartbeatProtocolFactory {
+    public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address) {
+        return new PingHeartbeatMsg(identity, address);
+    }
+
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
                                             HeartbeatMsg sharedHeartbeat) {
         return new PingProtocolImpl(hb, vl, sharedHeartbeat);
-    }
-
-    public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address) {
-        return new PingHeartbeatMsg(identity, address);
     }
 }

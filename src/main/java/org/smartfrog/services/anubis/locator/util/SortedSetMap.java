@@ -19,10 +19,9 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.util;
 
-
+import java.util.Comparator;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.Comparator;
 
 public class SortedSetMap extends SetMap {
 
@@ -42,7 +41,9 @@ public class SortedSetMap extends SetMap {
      *
      * @return the first key or null if the map is empty
      */
-    public Object firstKey() { return ((SortedMap)map).firstKey(); }
+    public Object firstKey() {
+        return ((SortedMap) map).firstKey();
+    }
 
     /**
      * get the last key according to the sorted order - leaves the map
@@ -50,6 +51,8 @@ public class SortedSetMap extends SetMap {
      *
      * @return the last key or null if the map is empty
      */
-    public Object lastKey()  { return ((SortedMap)map).lastKey(); }
+    public Object lastKey() {
+        return ((SortedMap) map).lastKey();
+    }
 
 }

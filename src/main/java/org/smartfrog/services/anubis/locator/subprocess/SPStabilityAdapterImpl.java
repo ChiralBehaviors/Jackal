@@ -31,8 +31,11 @@ public class SPStabilityAdapterImpl extends AnubisStability {
         this.spStability = spStability;
     }
 
+    @Override
     public void stability(boolean isStable, long timeRef) {
-        try { spStability.stability(isStable, timeRef); }
-        catch (RemoteException ex) { }
+        try {
+            spStability.stability(isStable, timeRef);
+        } catch (RemoteException ex) {
+        }
     }
 }

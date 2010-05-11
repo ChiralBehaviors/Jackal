@@ -19,16 +19,20 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
-import org.smartfrog.services.anubis.partition.protocols.Timed;
 import org.smartfrog.services.anubis.partition.protocols.Sender;
-import org.smartfrog.services.anubis.partition.util.NodeIdSet;
+import org.smartfrog.services.anubis.partition.protocols.Timed;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.NumberedView;
 
 public interface Heartbeat extends Sender, Timed, NumberedView {
-	public boolean  getIsPreferred();
     public Identity getCandidate();
-    public void     setCandidate(Identity id);
-    public NodeIdSet   getMsgLinks();
-    public void     setMsgLinks(NodeIdSet ml);
+
+    public boolean getIsPreferred();
+
+    public NodeIdSet getMsgLinks();
+
+    public void setCandidate(Identity id);
+
+    public void setMsgLinks(NodeIdSet ml);
 }

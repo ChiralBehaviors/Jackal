@@ -25,10 +25,15 @@ package org.smartfrog.services.anubis.partition.wire;
  * @version 1.0
  */
 public class WireFormException extends Exception {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
     public WireFormException(String str) {
         super(str);
     }
-    
+
     public WireFormException(String str, Throwable thr) {
         super(str, thr);
     }

@@ -33,33 +33,35 @@ public class NonBlockingConnectionInitiator {
 
     private MessageConnection connection = null;
     private HeartbeatMsg heartbeat = null;
+    private Logger log = Logger.getLogger(this.getClass().toString());
     private WireSecurity wireSecurity = null;
-    private Logger  log       = Logger.getLogger(this.getClass().toString());
 
-    public NonBlockingConnectionInitiator(MessageConnection con, HeartbeatMsg hb, WireSecurity sec) throws IOException,
-        WireFormException {
+    public NonBlockingConnectionInitiator(MessageConnection con,
+                                          HeartbeatMsg hb, WireSecurity sec) throws IOException,
+            WireFormException {
         connection = con;
         heartbeat = hb;
         wireSecurity = sec;
     }
 
-
     public void finishNioConnect(MessageNioHandler impl) {
 
-        if ( (impl.isReadyForWriting()) && (impl.connected())) {
+        if (impl.isReadyForWriting() && impl.connected()) {
             try {
                 heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
-                impl.send( wireSecurity.toWireForm(heartbeat) );
+                impl.send(wireSecurity.toWireForm(heartbeat));
             } catch (WireFormException e) {
-                if( log.isLoggable(Level.SEVERE) ) {
-                    log.log(Level.SEVERE, "MCI: failed to marshall timed message: " + heartbeat, e);
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.log(Level.SEVERE,
+                            "MCI: failed to marshall timed message: "
+                                    + heartbeat, e);
                 }
                 return;
             }
-        }
-        else {
-            if( log.isLoggable(Level.SEVERE) )
+        } else {
+            if (log.isLoggable(Level.SEVERE)) {
                 log.severe("MCI: can't send first heartbeat!!!");
+            }
         }
 
         /**
@@ -70,8 +72,7 @@ public class NonBlockingConnectionInitiator {
          */
         if (connection.assignImpl(impl)) {
             impl.start();
-        }
-        else {
+        } else {
             impl.terminate();
         }
     }

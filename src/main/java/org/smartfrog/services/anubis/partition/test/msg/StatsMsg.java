@@ -19,20 +19,22 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.msg;
 
-
-
 import java.io.Serializable;
 
 public class StatsMsg implements Serializable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    public long schedulingLongest;
+    public long schedulingOneHour;
     public long schedulingOneMinute;
     public long schedulingTenMinute;
-    public long schedulingOneHour;
-    public long schedulingLongest;
 
     public StatsMsg(long sOneM, long sTenM, long sOneH, long longest) {
         schedulingOneMinute = sOneM;
         schedulingTenMinute = sTenM;
-        schedulingOneHour   = sOneH;
-        schedulingLongest   = longest;
+        schedulingOneHour = sOneH;
+        schedulingLongest = longest;
     }
 }

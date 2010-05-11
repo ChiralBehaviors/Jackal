@@ -19,36 +19,33 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.names;
 
-
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.ValueData;
 
 public class ProviderInstance extends NameData {
 
-    public long      time;
-    public String    instance;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    public String instance;
+    public long time;
     public ValueData value;
 
-    public ProviderInstance(AnubisProvider provider, String instance, Integer node) {
+    public ProviderInstance(AnubisProvider provider, String instance,
+                            Integer node) {
         super(provider.getName(), node);
-        this.time     = provider.getTime();
+        time = provider.getTime();
         this.instance = instance;
-        this.value    = provider.getValueData();
+        value = provider.getValueData();
     }
 
-    public ProviderInstance(String name, String instance, Integer node, long time, ValueData value) {
+    public ProviderInstance(String name, String instance, Integer node,
+                            long time, ValueData value) {
         super(name, node);
-        this.time     = time;
+        this.time = time;
         this.instance = instance;
-        this.value    = value;
-    }
-
-    /**
-     * Create a provider proxy that matches this instance
-     * @return  proxy provider
-     */
-    public ProviderProxy proxy() {
-        return new ProviderProxy(name, node);
+        this.value = value;
     }
 
     public ProviderInstance copy() {
@@ -65,12 +62,14 @@ public class ProviderInstance extends NameData {
      * @param obj
      * @return  boolean
      */
+    @Override
     public boolean equals(Object obj) {
-    if( obj instanceof ProviderInstance )
-        return ( super.equals(obj) &&
-                 instance.equals( ((ProviderInstance)obj).instance) );
-    else
-        return super.equals(obj);
+        if (obj instanceof ProviderInstance) {
+            return super.equals(obj)
+                   && instance.equals(((ProviderInstance) obj).instance);
+        } else {
+            return super.equals(obj);
+        }
     }
 
     /**
@@ -80,16 +79,23 @@ public class ProviderInstance extends NameData {
      *
      * @return  hascode
      */
+    @Override
     public int hashCode() {
         return super.hashCode();
     }
 
+    /**
+     * Create a provider proxy that matches this instance
+     * @return  proxy provider
+     */
+    public ProviderProxy proxy() {
+        return new ProviderProxy(name, node);
+    }
+
+    @Override
     public String toString() {
-        return "ProviderInstance [" + name +
-                ": instance=" + instance +
-                ", node=" + node +
-                ", time=" + time +
-                ", value=" + value + "]";
+        return "ProviderInstance [" + name + ": instance=" + instance
+               + ", node=" + node + ", time=" + time + ", value=" + value + "]";
     }
 
 }

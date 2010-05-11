@@ -19,23 +19,27 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
-
 import java.awt.Color;
 import java.awt.event.ActionEvent;
+
 import javax.swing.JButton;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class NodeButton extends JButton {
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
     private NodeData nodeData;
 
     public NodeButton(Identity id, NodeData nodeData) {
         this.nodeData = nodeData;
-        this.setText(Integer.toString(id.id));
-        this.setForeground(Color.black);
-        this.setBackground(Color.gray);
-        this.addActionListener(new java.awt.event.ActionListener() {
+        setText(Integer.toString(id.id));
+        setForeground(Color.black);
+        setBackground(Color.gray);
+        addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 nodeButtonActionPerformed(e);
             }

@@ -19,10 +19,7 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.multicasttransport;
 
-
-
 import java.net.InetAddress;
-
 
 /**
  * MulticastAddress is a representation of a multicast address used for
@@ -34,27 +31,25 @@ public class MulticastAddress {
     /**
      * the multicast ip address
      */
-    public   InetAddress   ipaddress;
+    public InetAddress ipaddress;
 
     /**
      * the multicast address port
      */
-    public   int           port;
+    public int port;
 
     /**
      * time to live to use when talking to this address
      */
-    public   int           timeToLive;
-
+    public int timeToLive;
 
     /**
      * constructing the multicast address from a given set of parameters.
      */
     public MulticastAddress(InetAddress address, int port, int timeToLive) {
-        this.ipaddress    = address;
-        this.port       = port;
+        ipaddress = address;
+        this.port = port;
         this.timeToLive = timeToLive;
     }
 
 }
-

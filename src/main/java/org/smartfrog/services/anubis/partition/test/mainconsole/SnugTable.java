@@ -19,13 +19,13 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
-import java.util.Vector;
-
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Insets;
+import java.util.Vector;
+
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -34,11 +34,13 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
+public class SnugTable extends JTable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
 
-public class SnugTable extends JTable
-{
-    public SnugTable()
-    {
+    public SnugTable() {
         super();
     }
 
@@ -47,29 +49,26 @@ public class SnugTable extends JTable
         resizeColumns();
     }
 
-    public void setModel(TableModel dataModel)
-    {
-        super.setModel( dataModel );
+    @Override
+    public void setModel(TableModel dataModel) {
+        super.setModel(dataModel);
         resizeColumns();
     }
 
-    public void setSize (Dimension d)
-    {
-        super.setSize( d );
+    @Override
+    public void setSize(Dimension d) {
+        super.setSize(d);
         resizeColumns();
     }
 
-    private void resizeColumns()
-    {
-        try
-        {
-            byte num_cols = (byte)getColumnCount();
+    private void resizeColumns() {
+        try {
+            byte num_cols = (byte) getColumnCount();
             Object[] longValues = new Object[num_cols];
 
             //Trace.log( this, "resizeColumns", "#cols = " + num_cols );
 
-            for (int c = 0; c < num_cols; c++)
-            {
+            for (int c = 0; c < num_cols; c++) {
                 longValues[c] = "";
             }
 
@@ -78,49 +77,38 @@ public class SnugTable extends JTable
             FontMetrics fm = null;
             Font font = getFont();
 
-            if ( font == null )
-            {
-                fm = getFontMetrics( new Font( "Dialog", 0, 12 ) );
-            }
-            else
-            {
-                fm = getFontMetrics( font );
+            if (font == null) {
+                fm = getFontMetrics(new Font("Dialog", 0, 12));
+            } else {
+                fm = getFontMetrics(font);
             }
 
             Object obj = null;
             String s = null;
 
-            for (int r = 0; r < num_rows; r++)
-            {
-                for (byte c = 0; c < num_cols; c++)
-                {
+            for (int r = 0; r < num_rows; r++) {
+                for (byte c = 0; c < num_cols; c++) {
                     obj = getValueAt(r, c);
 
                     //Trace.log( this, "resizeColumns", "" + r + ", " + c );
 
-                    if ( obj == null )
-                    {
+                    if (obj == null) {
                         continue;
                     }
 
-                    if ( obj instanceof JLabel )
-                    {
-                        s = ((JLabel)obj).getText();
-                    }
-                    else
-                    {
+                    if (obj instanceof JLabel) {
+                        s = ((JLabel) obj).getText();
+                    } else {
                         s = obj.toString();
                     }
 
-                    if ( s == null )
-                    {
+                    if (s == null) {
                         continue;
                     }
 
                     //Trace.log( this, "resizeColumns", "" + r + ", " + c + " = " + s );
 
-                    if (fm.stringWidth(s) > fm.stringWidth(longValues[c].toString()))
-                    {
+                    if (fm.stringWidth(s) > fm.stringWidth(longValues[c].toString())) {
                         //
                         // We should really store obj here but since we are not using
                         // the table cell renderer (see comment below), this is OK.
@@ -140,24 +128,26 @@ public class SnugTable extends JTable
             Insets ins;
             int headerWidth = 0, cellWidth = 0, maxWidth = 0;
 
-            for (int i = 0; i < num_cols; i++)
-            {
+            for (int i = 0; i < num_cols; i++) {
                 column = columnModel.getColumn(i);
                 headerRenderer = column.getHeaderRenderer();
 
-                if (headerRenderer == null)
-                {
+                if (headerRenderer == null) {
                     headerRenderer = getTableHeader().getDefaultRenderer();
                 }
 
-                comp = headerRenderer.getTableCellRendererComponent(this, column.getHeaderValue(), false, false, -1, i);
+                comp = headerRenderer.getTableCellRendererComponent(
+                                                                    this,
+                                                                    column.getHeaderValue(),
+                                                                    false,
+                                                                    false, -1,
+                                                                    i);
                 headerWidth = comp.getPreferredSize().width;
                 cellRenderer = column.getCellRenderer();
 
                 //Trace.log( this, "resizeColumns", "col: " + i + " -- header width = " + headerWidth );
 
-                if (cellRenderer == null)
-                {
+                if (cellRenderer == null) {
                     cellRenderer = getDefaultRenderer(getColumnClass(i));
                 }
 
@@ -171,26 +161,20 @@ public class SnugTable extends JTable
                 // cellWidth = comp.getPreferredSize().width;
                 //
 
-                if ( longValues[i] == null )
-                {
+                if (longValues[i] == null) {
                     cellWidth = 0;
-                }
-                else
-                {
+                } else {
                     cellWidth = fm.stringWidth(longValues[i].toString());
                 }
 
                 //Trace.log( this, "resizeColumns", "col: " + i + " -- cell width = " + cellWidth );
 
-                if (cellWidth > headerWidth)
-                {
+                if (cellWidth > headerWidth) {
                     maxWidth = cellWidth;
-                    ins = ((JComponent)cellRenderer).getInsets();
-                }
-                else
-                {
+                    ins = ((JComponent) cellRenderer).getInsets();
+                } else {
                     maxWidth = headerWidth;
-                    ins = ((JComponent)headerRenderer).getInsets();
+                    ins = ((JComponent) headerRenderer).getInsets();
                 }
 
                 //Trace.log( this, "resizeColumns", "col: " + i + " -- ins = " + ins.left + ", " + ins.right );
@@ -198,12 +182,9 @@ public class SnugTable extends JTable
 
                 column.setPreferredWidth(ins.left + maxWidth + ins.right);
             }
-        }
-        catch ( Throwable t )
-        {
+        } catch (Throwable t) {
             //Trace.log( this, "resizeColumns", t.getMessage() );
             //Trace.exception( this, "resizeColumns", t );
         }
     }
 }
-

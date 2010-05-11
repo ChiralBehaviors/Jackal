@@ -19,12 +19,10 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.util;
 
-
-
-
 import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -34,62 +32,30 @@ import javax.swing.WindowConstants;
 import javax.swing.border.TitledBorder;
 
 public class DebugFrame extends JFrame {
-    private JPanel jPanel2 = new JPanel();
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
     private BorderLayout borderLayout1 = new BorderLayout();
     private BorderLayout borderLayout2 = new BorderLayout();
-    private TitledBorder titledBorder1;
+    private Object displayObject = null;
+    private JPanel jPanel2 = new JPanel();
 
     // private Test test;
     private JScrollPane jScrollPane1 = new JScrollPane();
     private JTextArea jTextArea1 = new JTextArea();
 
-    private boolean      onDisplay = false;
-    private Object       displayObject = null;
+    private boolean onDisplay = false;
+    private TitledBorder titledBorder1;
 
     public DebugFrame(String title) {
         // test = t;
         try {
             jbInit();
-            this.setTitle(title);
-        }
-        catch(Exception e) {
+            setTitle(title);
+        } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-    private void jbInit() throws Exception {
-        titledBorder1 = new TitledBorder("");
-        this.getContentPane().setLayout(borderLayout1);
-        jPanel2.setLayout(borderLayout2);
-        jPanel2.setBorder(BorderFactory.createRaisedBevelBorder());
-        jTextArea1.setBorder(BorderFactory.createLoweredBevelBorder());
-        this.getContentPane().add(jPanel2, BorderLayout.CENTER);
-        jPanel2.add(jScrollPane1, BorderLayout.CENTER);
-        jScrollPane1.getViewport().add(jTextArea1, null);
-
-        this.setSize(450, 200);
-        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) { remove(); }
-        });
-    }
-
-
-    void println(String str) {
-        jTextArea1.append(str);
-        jTextArea1.append("\n");
-    }
-
-    void print(String str) {
-        jTextArea1.append(str);
-    }
-
-    public void setText(String text) {
-        jTextArea1.setText(text);
-    }
-
-    public void update() {
-        if( onDisplay )
-            setText(displayObject.toString());
     }
 
     public void makeVisible(Object obj) {
@@ -98,9 +64,49 @@ public class DebugFrame extends JFrame {
         setVisible(true);
         update();
     }
+
     public void remove() {
         onDisplay = false;
         displayObject = null;
         setVisible(false);
+    }
+
+    public void setText(String text) {
+        jTextArea1.setText(text);
+    }
+
+    public void update() {
+        if (onDisplay) {
+            setText(displayObject.toString());
+        }
+    }
+
+    private void jbInit() throws Exception {
+        titledBorder1 = new TitledBorder("");
+        getContentPane().setLayout(borderLayout1);
+        jPanel2.setLayout(borderLayout2);
+        jPanel2.setBorder(BorderFactory.createRaisedBevelBorder());
+        jTextArea1.setBorder(BorderFactory.createLoweredBevelBorder());
+        getContentPane().add(jPanel2, BorderLayout.CENTER);
+        jPanel2.add(jScrollPane1, BorderLayout.CENTER);
+        jScrollPane1.getViewport().add(jTextArea1, null);
+
+        this.setSize(450, 200);
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                remove();
+            }
+        });
+    }
+
+    void print(String str) {
+        jTextArea1.append(str);
+    }
+
+    void println(String str) {
+        jTextArea1.append(str);
+        jTextArea1.append("\n");
     }
 }

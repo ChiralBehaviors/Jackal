@@ -19,31 +19,29 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.subprocess;
 
-
-
 public class Liveness {
 
-    private long    lastPing;
-    private long    timeout;
+    private long lastPing;
+    private long timeout;
 
     Liveness(long timeout) {
         this.timeout = timeout;
     }
 
-    final synchronized public void setLastPing(long time) {
-        lastPing = time;
+    final synchronized public void fail() {
+        lastPing = 0;
     }
 
     final synchronized public boolean isNotTimely(long now) {
-        return lastPing+timeout < now;
+        return lastPing + timeout < now;
     }
 
     final synchronized public void ping() {
         lastPing = System.currentTimeMillis();
     }
 
-    final synchronized public void fail() {
-        lastPing = 0;
+    final synchronized public void setLastPing(long time) {
+        lastPing = time;
     }
 
 }

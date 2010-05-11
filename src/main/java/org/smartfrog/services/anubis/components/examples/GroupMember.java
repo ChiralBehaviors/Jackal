@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.components.examples;
 
-
 import org.smartfrog.services.anubis.locator.AnubisValue;
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
@@ -31,14 +30,16 @@ public class GroupMember extends AnubisValue {
         super(instance);
         group = groupListener;
     }
+
     public void newValue() {
-        System.out.println("New value in group " + getName() +
-                           " = " + getValue());
+        System.out.println("New value in group " + getName() + " = "
+                           + getValue());
 
     }
+
     public void removeValue() {
-        System.out.println("Removed value in group " + getName() +
-                           " = " + getValue());
+        System.out.println("Removed value in group " + getName() + " = "
+                           + getValue());
     }
 
 }

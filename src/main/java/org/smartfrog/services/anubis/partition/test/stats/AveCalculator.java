@@ -19,11 +19,14 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.stats;
 
-
 public interface AveCalculator {
     public void add(long time, long delay);
+
     public long average();
-    public boolean isComplete();
-    public long biggestEver();
+
     public long biggest();
+
+    public long biggestEver();
+
+    public boolean isComplete();
 }

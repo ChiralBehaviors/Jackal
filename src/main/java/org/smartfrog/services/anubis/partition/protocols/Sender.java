@@ -19,11 +19,11 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols;
 
-
-import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import org.smartfrog.services.anubis.partition.util.Identity;
 
 public interface Sender {
-    public Identity          getSender();
+    public Identity getSender();
+
     public ConnectionAddress getSenderAddress();
 }

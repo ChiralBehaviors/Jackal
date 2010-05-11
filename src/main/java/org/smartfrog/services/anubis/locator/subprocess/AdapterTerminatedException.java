@@ -19,10 +19,15 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.subprocess;
 
-
 import java.io.Serializable;
 
-public class AdapterTerminatedException extends Exception implements Serializable {
+public class AdapterTerminatedException extends Exception implements
+                                                         Serializable {
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
 
     public AdapterTerminatedException() {
     }

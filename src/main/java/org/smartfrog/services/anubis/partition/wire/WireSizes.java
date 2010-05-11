@@ -27,17 +27,17 @@ package org.smartfrog.services.anubis.partition.wire;
  */
 public interface WireSizes {
 
-    final int intSz = 4;
-    final int longSz = 8;
-    final int booleanSz = intSz;
-    final int booleanTrueValue = 1;
     final int booleanFalseValue = 0;
+    final int intSz = 4;
+    final int booleanSz = intSz;
+    final int magicSz = intSz;
+    final int booleanTrueValue = 1;
+    final int HEADER_SIZE = magicSz + intSz;
     final int inetV4AddressSz = 4;
     final int inetV6AddressSz = 16;
+    final int longSz = 8;
+    final int MAGIC_NUMBER = 24051967;
+
     final int maxInetAddressSz = inetV6AddressSz;
     final int UNDEFINED_SIZE = -1;
-
-    final int MAGIC_NUMBER = 24051967;
-    final int magicSz = intSz;
-    final int HEADER_SIZE = magicSz + intSz;
 }

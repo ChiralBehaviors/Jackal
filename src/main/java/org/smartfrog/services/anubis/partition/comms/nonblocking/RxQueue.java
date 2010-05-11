@@ -19,33 +19,46 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
-
 import java.util.Vector;
 
 public class RxQueue {
 
-    private Vector thisQueue = null;
     private boolean open;
+    private Vector thisQueue = null;
 
     /**
      * Queue where received serialized objects are put on.
      * Worker threads empty that queue and deliver the object
      * to anubis
      */
-    public RxQueue(){
-	    thisQueue = new Vector(10);
+    public RxQueue() {
+        thisQueue = new Vector(10);
         open = true;
     }
-    
+
     /**
-     * shutdown the queue
+     * method to add a new rx serialized object to the queue
+     * this method notifies sleeping worker threads there is a job
+     * to deliver
+     *
+     * @param objectToAdd rx object
      */
-    public synchronized void shutdown() {
-        open = false;
-        thisQueue.clear();
-        notifyAll();
+    public synchronized void add(Object objectToAdd) {
+        if (open) {
+            thisQueue.add(objectToAdd);
+            notifyAll();
+        }
     }
-    
+
+    /**
+     * method used to check if queue is empty
+     *
+     * @return boolean value, true if queue is empty, false otherwise
+     */
+    public synchronized boolean isEmpty() {
+        return thisQueue.isEmpty();
+    }
+
     /**
      * indicates if the queue is open
      * 
@@ -56,29 +69,15 @@ public class RxQueue {
     }
 
     /**
-     * method to add a new rx serialized object to the queue
-     * this method notifies sleeping worker threads there is a job
-     * to deliver
-     *
-     * @param objectToAdd rx object
-     */
-    public synchronized void add(Object objectToAdd){
-        if( open ) {
-            thisQueue.add(objectToAdd);
-            notifyAll();
-        }
-    }
-
-    /**
      * get teh next item in the queue; blocking if the queue is empty.
      * @return the next item or null if the queue is closed.
      */
-    public synchronized Object next(){
-        while( open) {
-            if( thisQueue.isEmpty() ) {
-                try { 
-                    wait(); 
-                } catch (InterruptedException e) { 
+    public synchronized Object next() {
+        while (open) {
+            if (thisQueue.isEmpty()) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
                     // do nothing
                 }
             } else {
@@ -89,12 +88,12 @@ public class RxQueue {
     }
 
     /**
-     * method used to check if queue is empty
-     *
-     * @return boolean value, true if queue is empty, false otherwise
+     * shutdown the queue
      */
-    public synchronized boolean isEmpty(){
-        return thisQueue.isEmpty();
+    public synchronized void shutdown() {
+        open = false;
+        thisQueue.clear();
+        notifyAll();
     }
 
 }

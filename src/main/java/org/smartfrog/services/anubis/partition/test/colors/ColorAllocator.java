@@ -19,23 +19,15 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.colors;
 
-
+import java.awt.Color;
 import java.util.HashMap;
 import java.util.Map;
-
-import java.awt.Color;
 
 import org.smartfrog.services.anubis.locator.util.SetMap;
 import org.smartfrog.services.anubis.partition.test.mainconsole.NodeData;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class ColorAllocator {
-
-    /**
-     * keep a list of nodes that have a color allocated indexed by
-     * bitmap (from the view)
-     */
-    private SetMap nodes = new SetMap();
 
     /**
      * keep a list of colors that have been allocated indexed
@@ -45,21 +37,28 @@ public class ColorAllocator {
 
     private ColorMap colorMap = new ColorMap();
 
+    /**
+     * keep a list of nodes that have a color allocated indexed by
+     * bitmap (from the view)
+     */
+    private SetMap nodes = new SetMap();
+
     public ColorAllocator() {
     }
 
     public synchronized Color allocate(View view, NodeData node) {
 
-        if( nodes.containsKey(view.toBitSet()) ) {
+        if (nodes.containsKey(view.toBitSet())) {
             nodes.put(view.toBitSet(), node);
-            return (Color)allocations.get(view.toBitSet());
+            return (Color) allocations.get(view.toBitSet());
         }
 
         nodes.put(view.toBitSet(), node);
         Color c = colorMap.allocate(view.toBitSet());
 
-        if( !c.equals(colorMap.defaultColor) )
+        if (!c.equals(ColorMap.defaultColor)) {
             allocations.put(view.toBitSet(), c);
+        }
 
         return c;
     }
@@ -67,7 +66,7 @@ public class ColorAllocator {
     public synchronized void deallocate(View view, NodeData node) {
 
         nodes.remove(view.toBitSet(), node);
-        if( nodes.getSet(view.toBitSet()) == null ) {
+        if (nodes.getSet(view.toBitSet()) == null) {
             Color c = colorMap.deallocate(view.toBitSet());
             allocations.remove(c);
         }

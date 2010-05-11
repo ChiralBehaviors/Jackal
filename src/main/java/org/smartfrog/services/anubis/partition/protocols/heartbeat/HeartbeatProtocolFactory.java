@@ -35,7 +35,9 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
  *                 unknown.</p>
  */
 
-public interface HeartbeatProtocolFactory  {
-    public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl, HeartbeatMsg sharedHeartbeat);
+public interface HeartbeatProtocolFactory {
     public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address);
+
+    public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
+                                            HeartbeatMsg sharedHeartbeat);
 }

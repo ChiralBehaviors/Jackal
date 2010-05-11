@@ -19,12 +19,17 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.msg;
 
-
 import java.io.Serializable;
+
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class IgnoringMsg implements Serializable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
     public View ignoring;
+
     public IgnoringMsg(View ignoring) {
         this.ignoring = ignoring;
     }

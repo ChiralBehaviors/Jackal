@@ -19,19 +19,21 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.multicasttransport;
 
-
-
 /**
  * This exception is thrown when constructing a multicast address incorrectly
  */
 public class MulticastAddressException extends Exception {
 
-  public MulticastAddressException() {
-  }
+    /**
+       * 
+       */
+    private static final long serialVersionUID = 1L;
 
-  public MulticastAddressException(String str) {
-      super(str);
-  }
+    public MulticastAddressException() {
+    }
+
+    public MulticastAddressException(String str) {
+        super(str);
+    }
 
 }
-

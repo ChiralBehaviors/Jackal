@@ -19,11 +19,10 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.views;
 
-
 import org.smartfrog.services.anubis.partition.util.Identity;
-
 
 public interface ViewListener {
     public void newView(Identity id, View v);
+
     public void newViewTime(Identity id, View v);
 }

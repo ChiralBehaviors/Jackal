@@ -19,22 +19,20 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat;
 
-
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
-import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-public class HeartbeatProtocolAdapter
-        implements HeartbeatProtocol, Candidate {
+public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
 
+    private Candidate candidate = null;
     /**
      * Implementation of the HeartbeatProtocol
      */
-    private HeartbeatProtocol         heartbeatProtocol = null;
-    private Candidate                 candidate         = null;
+    private HeartbeatProtocol heartbeatProtocol = null;
 
     /**
      * Constructor - creates a HeartbeatProtocolAdapter pointing to
@@ -46,19 +44,89 @@ public class HeartbeatProtocolAdapter
         setCandidate(can);
     }
 
+    public int cardinality() {
+        return heartbeatProtocol.cardinality();
+    }
+
+    public void clearReceivedVotes() {
+        candidate.clearReceivedVotes();
+    }
+
+    public boolean containedIn(View v) {
+        return heartbeatProtocol.containedIn(v);
+    }
+
+    public boolean contains(Identity id) {
+        return heartbeatProtocol.contains(id);
+    }
+
+    public boolean contains(int id) {
+        return heartbeatProtocol.contains(id);
+    }
+
+    public boolean contains(View v) {
+        return heartbeatProtocol.contains(v);
+    }
+
+    public int countReceivedVotes() {
+        return candidate.countReceivedVotes();
+    }
+
+    public boolean equalsView(View v) {
+        return heartbeatProtocol.equalsView(v);
+    }
+
+    public Candidate getCandidate() {
+        return candidate;
+    }
+
     /**
-     * Set the adapter to point to the given protocol
-     * @param hbp - a protocol instance
+     * Candidate interface
+     * @return  Identity
      */
-    public void setProtocol(HeartbeatProtocol hbp) { heartbeatProtocol = hbp; }
-    public void setCandidate(Candidate can)        { candidate = can; }
+    public Identity getId() {
+        return candidate.getId();
+    }
 
     /**
      * Get the protocol instance
      * @return - the protocol instance
      */
-    public HeartbeatProtocol getProtocol()  { return heartbeatProtocol; }
-    public Candidate         getCandidate() { return candidate; }
+    public HeartbeatProtocol getProtocol() {
+        return heartbeatProtocol;
+    }
+
+    /**
+     * HeartbeatProtocol interface
+     * 3) Timed interface part
+     */
+    public Identity getSender() {
+        return heartbeatProtocol.getSender();
+    }
+
+    public ConnectionAddress getSenderAddress() {
+        return heartbeatProtocol.getSenderAddress();
+    }
+
+    /**
+     * HeartbeatProtocol interface
+     * 2) Timed interface part
+     */
+    public long getTime() {
+        return heartbeatProtocol.getTime();
+    }
+
+    public long getTimeStamp() {
+        return heartbeatProtocol.getTimeStamp();
+    }
+
+    public Identity getVote() {
+        return candidate.getVote();
+    }
+
+    public boolean isEmpty() {
+        return heartbeatProtocol.isEmpty();
+    }
 
     /**
      * HeartbeatProtocol interface
@@ -66,16 +134,26 @@ public class HeartbeatProtocolAdapter
     public boolean isNotTimely(long timenow, long timebound) {
         return heartbeatProtocol.isNotTimely(timenow, timebound);
     }
+
+    public boolean isPreferred() {
+        return candidate.isPreferred();
+    }
+
     public boolean isQuiesced(long timenow, long quiesce) {
         return heartbeatProtocol.isQuiesced(timenow, quiesce);
     }
+
+    public boolean isStable() {
+        return heartbeatProtocol.isStable();
+    }
+
     public boolean measuresClockSkew() {
         return heartbeatProtocol.measuresClockSkew();
     }
-    public void terminate() {
-        heartbeatProtocol.terminate();
-    }
 
+    public boolean overlap(View v) {
+        return heartbeatProtocol.overlap(v);
+    }
 
     /**
      * HeartbeatProtocol interface
@@ -94,52 +172,58 @@ public class HeartbeatProtocolAdapter
          * If the heartbeat is accepted ok by the heartbeat protocol
          * then get the piggy-backed vote and pass it to the candidate impl
          */
-        if( accepted )
+        if (accepted) {
             setVote(hb.getCandidate());
+        }
 
         return accepted;
     }
 
+    public void receiveVote(Candidate c) {
+        candidate.receiveVote(c);
+    }
+
+    public void setCandidate(Candidate can) {
+        candidate = can;
+    }
+
     /**
-     * HeartbeatProtocol interface
-     * 2) Timed interface part
+     * Set the adapter to point to the given protocol
+     * @param hbp - a protocol instance
      */
-    public long getTime()           { return heartbeatProtocol.getTime(); }
-    public void setTime(long t)     { heartbeatProtocol.setTime(t); }
-    /**
-     * HeartbeatProtocol interface
-     * 3) Timed interface part
-     */
-    public Identity          getSender()        { return heartbeatProtocol.getSender(); }
-    public ConnectionAddress getSenderAddress() { return heartbeatProtocol.getSenderAddress(); }
+    public void setProtocol(HeartbeatProtocol hbp) {
+        heartbeatProtocol = hbp;
+    }
+
+    public void setTime(long t) {
+        heartbeatProtocol.setTime(t);
+    }
+
+    public void setVote(Candidate c) {
+        candidate.setVote(c);
+    }
+
+    public void setVote(Identity v) {
+        candidate.setVote(v);
+    }
+
     /**
      * HeartbeatProtocol interface
      * 4) View interface part
      */
-    public int               size()                { return heartbeatProtocol.size(); }
-    public int               cardinality()         { return heartbeatProtocol.cardinality(); }
-    public boolean           isEmpty()             { return heartbeatProtocol.isEmpty(); }
-    public boolean           isStable()            { return heartbeatProtocol.isStable(); }
-    public long              getTimeStamp()        { return heartbeatProtocol.getTimeStamp(); }
-    public boolean           contains(int id)      { return heartbeatProtocol.contains(id); }
-    public boolean           contains(Identity id) { return heartbeatProtocol.contains(id); }
-    public boolean           contains(View v)      { return heartbeatProtocol.contains(v); }
-    public boolean           containedIn(View v)   { return heartbeatProtocol.containedIn(v); }
-    public boolean           overlap(View v)       { return heartbeatProtocol.overlap(v); }
-    public boolean           equalsView(View v)    { return heartbeatProtocol.equalsView(v); }
-    public NodeIdSet            toBitSet()            { return heartbeatProtocol.toBitSet(); }
+    public int size() {
+        return heartbeatProtocol.size();
+    }
 
-    /**
-     * Candidate interface
-     * @return  Identity
-     */
-    public Identity          getId()               { return candidate.getId(); }
-    public boolean           isPreferred()           { return candidate.isPreferred(); }
-    public Identity          getVote()                { return candidate.getVote(); }
-    public void              setVote(Identity v)      { candidate.setVote(v); }
-    public void              setVote(Candidate c)     { candidate.setVote(c); }
-    public void              clearReceivedVotes()     { candidate.clearReceivedVotes(); }
-    public void              receiveVote(Candidate c) { candidate.receiveVote(c); }
-    public int               countReceivedVotes()     { return candidate.countReceivedVotes(); }
-    public boolean           winsAgainst(Candidate c) { return candidate.winsAgainst(c); }
+    public void terminate() {
+        heartbeatProtocol.terminate();
+    }
+
+    public NodeIdSet toBitSet() {
+        return heartbeatProtocol.toBitSet();
+    }
+
+    public boolean winsAgainst(Candidate c) {
+        return candidate.winsAgainst(c);
+    }
 }

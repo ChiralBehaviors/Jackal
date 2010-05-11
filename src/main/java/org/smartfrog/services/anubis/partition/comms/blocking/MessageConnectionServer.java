@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
-
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
@@ -50,15 +49,16 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
  * @author Paul Murray
  * @version 1.0
  */
-public class MessageConnectionServer
-    extends ConnectionServer
-    implements IOConnectionServer, ConnectionFactory {
+public class MessageConnectionServer extends ConnectionServer
+                                                             implements
+                                                             IOConnectionServer,
+                                                             ConnectionFactory {
 
-    private Identity me = null;
     private ConnectionSet connectionSet = null;
+    private Logger log = Logger.getLogger(this.getClass().toString());
+    private Identity me = null;
     private Set pending = new HashSet();
     private WireSecurity wireSecurity = null;
-    private Logger log = Logger.getLogger(this.getClass().toString());
 
     /**
      * Constructor - sets this class as the ConnectionFactory.
@@ -68,15 +68,16 @@ public class MessageConnectionServer
      * @param cs - the connection set
      * @throws Exception - if problems with creating the server socket
      */
-     public MessageConnectionServer(ConnectionAddress address, Identity id, ConnectionSet cs, WireSecurity sec) throws Exception {
-        super("Anubis: Connection Server (node " + id.id + ")", address.ipaddress.getHostName(), address.port);
-        me            = id;
+    public MessageConnectionServer(ConnectionAddress address, Identity id,
+                                   ConnectionSet cs, WireSecurity sec) throws Exception {
+        super("Anubis: Connection Server (node " + id.id + ")",
+              address.ipaddress.getHostName(), address.port);
+        me = id;
         connectionSet = cs;
         wireSecurity = sec;
         setConnectionFactory(this);
         setPriority(MAX_PRIORITY);
     }
-
 
     /**
      * ConnectionFactory interface
@@ -93,11 +94,37 @@ public class MessageConnectionServer
     }
      */
     public void createConnection(SocketChannel channel) {
-        MessageConnectionImpl impl = new MessageConnectionImpl(me, channel, this, connectionSet, wireSecurity);
+        MessageConnectionImpl impl = new MessageConnectionImpl(me, channel,
+                                                               this,
+                                                               connectionSet,
+                                                               wireSecurity);
         impl.start();
         pending.add(impl);
     }
 
+    /**
+     * Asynchronously initiate a new connection.
+     *
+     * @param id Identity
+     * @param con MessageConnection
+     * @param hb HeartbeatMsg
+     */
+    public void initiateConnection(Identity id, MessageConnection con,
+                                   HeartbeatMsg hb) {
+        BlockingConnectionInitiator initiator = null;
+        try {
+            initiator = new BlockingConnectionInitiator(id, con, connectionSet,
+                                                        hb, wireSecurity);
+        } catch (Exception ex) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE, "Error initiating a blocking connection",
+                        ex);
+            }
+            return;
+        }
+        initiator.setDaemon(true);
+        initiator.start();
+    }
 
     /**
      * Remove a MessageConnectionImpl from the pending set - called when an initial
@@ -109,7 +136,6 @@ public class MessageConnectionServer
         pending.remove(con);
     }
 
-
     /**
      * kill this MessageConnectionServer - stops the server thread.
      * Should also remove any pending implementations
@@ -118,28 +144,5 @@ public class MessageConnectionServer
         // FIX ME: remove all pending impls
         shutdown();
     }
-
-
-    /**
-     * Asynchronously initiate a new connection.
-     *
-     * @param id Identity
-     * @param con MessageConnection
-     * @param hb HeartbeatMsg
-     */
-    public void initiateConnection(Identity id, MessageConnection con, HeartbeatMsg hb) {
-        BlockingConnectionInitiator initiator = null;
-        try {
-            initiator = new BlockingConnectionInitiator(id, con, connectionSet, hb, wireSecurity);
-        } catch (Exception ex) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.log(Level.SEVERE, "Error initiating a blocking connection", ex);
-            return;
-        }
-        initiator.setDaemon(true);
-        initiator.start();
-    }
-
-
 
 }

@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
-
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,26 +37,29 @@ import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
+public class MessageConnectionImpl extends ConnectionComms implements
+                                                          IOConnection {
 
-public class MessageConnectionImpl extends ConnectionComms implements IOConnection {
-
-    private Identity                me                = null;
-    private MessageConnection       messageConnection = null;
-    private MessageConnectionServer server            = null;
-    private ConnectionSet           connectionSet     = null;
-    private boolean                 announceTerm      = true;
-    private WireSecurity            wireSecurity      = null;
-    private long                    sendCount         = INITIAL_MSG_ORDER;
-    private long                    receiveCount      = INITIAL_MSG_ORDER;
-    private Logger                   log               = Logger.getLogger(this.getClass().toString());
-
+    private boolean announceTerm = true;
+    private ConnectionSet connectionSet = null;
     /**
      * for testing purposes - can set to ignoring incoming messages
      */
-    private boolean                 ignoring          = false;
+    private boolean ignoring = false;
+    private Logger log = Logger.getLogger(this.getClass().toString());
+    private Identity me = null;
+    private MessageConnection messageConnection = null;
+    private long receiveCount = INITIAL_MSG_ORDER;
+    private long sendCount = INITIAL_MSG_ORDER;
+    private MessageConnectionServer server = null;
 
-    public MessageConnectionImpl(Identity id, ConnectionSet cs, ConnectionAddress address, MessageConnection mc, WireSecurity sec) {
-        super("Anubis: Connection Comms (node " + id.id + ", remote node " + mc.getSender().id + ")", address);
+    private WireSecurity wireSecurity = null;
+
+    public MessageConnectionImpl(Identity id, ConnectionSet cs,
+                                 ConnectionAddress address,
+                                 MessageConnection mc, WireSecurity sec) {
+        super("Anubis: Connection Comms (node " + id.id + ", remote node "
+              + mc.getSender().id + ")", address);
         me = id;
         connectionSet = cs;
         messageConnection = mc;
@@ -65,8 +67,11 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
         setPriority(MAX_PRIORITY);
     }
 
-    public MessageConnectionImpl(Identity id, SocketChannel channel, MessageConnectionServer mcs, ConnectionSet cs, WireSecurity sec) {
-        super("Anubis: " + id + " Connection Comms (node " + id.id + ")", channel);
+    public MessageConnectionImpl(Identity id, SocketChannel channel,
+                                 MessageConnectionServer mcs, ConnectionSet cs,
+                                 WireSecurity sec) {
+        super("Anubis: " + id + " Connection Comms (node " + id.id + ")",
+              channel);
         me = id;
         server = mcs;
         connectionSet = cs;
@@ -74,24 +79,36 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
         setPriority(MAX_PRIORITY);
     }
 
-    
-    public void send(TimedMsg tm) {
-        try {
-            tm.setOrder(sendCount);
-            sendCount++;
-            super.send( wireSecurity.toWireForm(tm) );
-        } catch (Exception ex) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.log(Level.SEVERE, me + " failed to marshall timed message: " + tm + " - shutting down connection", ex);
-            shutdown();   
+    /**
+     * Close down the connection.
+     * 
+     * Closing is called by {@link #shutdown()}.  shutdown is used to terminate the
+     * connection both here (from the "outside") and in the implementation
+     * of ConnectionComms (from the "inside"). The connection closes itself
+     * from the inside if there is some kind of error on the connection.
+     *
+     * Here closing is used to clean up by telling the server socket to
+     * remove any record it has of this connection and telling the
+     * messageConnection that the connection has closed. The later can
+     * be disabled (as is done in terminate()).
+     */
+    @Override
+    public void closing() {
+        if (server != null) {
+            server.removeConnection(this);
+        }
+        if (announceTerm && messageConnection != null) {
+            messageConnection.closing();
         }
     }
 
+    @Override
     public void deliver(byte[] bytes) {
 
-        if( ignoring )
+        if (ignoring) {
             return;
-        
+        }
+
         WireMsg msg = null;
         try {
 
@@ -99,41 +116,48 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
 
         } catch (WireSecurityException ex) {
 
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + "connection transport encountered security violation unmarshalling message - ignoring " ); // + this.getSender() );
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + "connection transport encountered security violation unmarshalling message - ignoring "); // + this.getSender() );
+            }
             return;
-            
+
         } catch (Exception ex) {
 
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + "connection transport unable to unmarshall message " ); // + this.getSender() );
-            shutdown();
-            return;
-        }
-        
-        if( !(msg instanceof TimedMsg) ) {
-
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + "connection transport received non timed message " ); // + this.getSender() );
-            shutdown();
-            return;
-        }
-        
-        TimedMsg tm = (TimedMsg)msg;
-        
-        if( tm.getOrder() != receiveCount ) {
-            if( log.isLoggable(Level.SEVERE) ) {
-                log.severe(me + "connection transport has delivered a message out of order - shutting down");
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + "connection transport unable to unmarshall message "); // + this.getSender() );
             }
             shutdown();
             return;
-        } 
-        
+        }
+
+        if (!(msg instanceof TimedMsg)) {
+
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + "connection transport received non timed message "); // + this.getSender() );
+            }
+            shutdown();
+            return;
+        }
+
+        TimedMsg tm = (TimedMsg) msg;
+
+        if (tm.getOrder() != receiveCount) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + "connection transport has delivered a message out of order - shutting down");
+            }
+            shutdown();
+            return;
+        }
+
         /**
          * handle the message. We do not increment the order for the 
          * initial heartbeat message opening a new connection.
          */
-        if( messageConnection == null ) {
+        if (messageConnection == null) {
             initialMsg(tm);
         } else {
             receiveCount++;
@@ -141,32 +165,97 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
         }
     }
 
-    
-    
+    @Override
+    public void logClose(String reason, Throwable throwable) {
+
+        if (ignoring) {
+            return;
+        }
+
+        if (messageConnection == null) {
+
+            if (log.isLoggable(Level.FINE)) {
+                log.log(
+                        Level.FINE,
+                        me
+                                + " shutdown unassigned message connection transport:"
+                                + reason, throwable);
+            }
+
+        } else {
+            messageConnection.logClose(reason, throwable);
+        }
+    }
+
+    public void send(TimedMsg tm) {
+        try {
+            tm.setOrder(sendCount);
+            sendCount++;
+            super.send(wireSecurity.toWireForm(tm));
+        } catch (Exception ex) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE, me
+                                      + " failed to marshall timed message: "
+                                      + tm + " - shutting down connection", ex);
+            }
+            shutdown();
+        }
+    }
+
+    /**
+     * set ignoring value to determine if connections should be ignored
+     * @param ignoring
+     */
+    public void setIgnoring(boolean ignoring) {
+        this.ignoring = ignoring;
+    }
+
+    public void silent() {
+        announceTerm = false;
+    }
+
+    /**
+     * Shut down the connection.
+     * Terminate is used to instruct the implementation to shutdown the
+     * connection. announceTerm is set to false so that the closing()
+     * method does not call back to the messageConnection.
+     */
+    public void terminate() {
+        announceTerm = false;
+        shutdown();
+    }
+
     private void initialMsg(TimedMsg tm) {
-        
+
         Object obj = tm;
         TimedMsg bytes = tm;
-
 
         /**
          * must be a heartbeat message
          */
-        if( !(obj instanceof HeartbeatMsg ) ) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.log(Level.SEVERE, me + " did not receive a heartbeat message first - shutdown", new Exception());
+        if (!(obj instanceof HeartbeatMsg)) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(
+                        Level.SEVERE,
+                        me
+                                + " did not receive a heartbeat message first - shutdown",
+                        new Exception());
+            }
             shutdown();
             return;
         }
 
-        HeartbeatMsg hbmsg = (HeartbeatMsg)obj;
+        HeartbeatMsg hbmsg = (HeartbeatMsg) obj;
 
         /**
          * There must be a valid connection (heartbeat connection)
          */
-        if( !connectionSet.getView().contains(hbmsg.getSender()) ) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + " did not have incoming connection from " + hbmsg.getSender().toString() + " in the connection set");
+        if (!connectionSet.getView().contains(hbmsg.getSender())) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me + " did not have incoming connection from "
+                           + hbmsg.getSender().toString()
+                           + " in the connection set");
+            }
             shutdown();
             return;
         }
@@ -180,14 +269,18 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
          * successful then shutdown the this implementation object and
          * abort.
          */
-        if( con instanceof MessageConnection ) {
-            if( ((MessageConnection)con).assignImpl(this) ) {
-                messageConnection = (MessageConnection)con;
-                setName("Anubis: Connection Comms (node " + me.id + ", remote node " + con.getSender().id + ")");
-                messageConnection.deliver(bytes); 
+        if (con instanceof MessageConnection) {
+            if (((MessageConnection) con).assignImpl(this)) {
+                messageConnection = (MessageConnection) con;
+                setName("Anubis: Connection Comms (node " + me.id
+                        + ", remote node " + con.getSender().id + ")");
+                messageConnection.deliver(bytes);
             } else {
-                if( log.isLoggable(Level.SEVERE) )
-                    log.severe(me + " failed to assign incoming connection from " + con.getSender().toString());
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe(me
+                               + " failed to assign incoming connection from "
+                               + con.getSender().toString());
+                }
                 shutdown();
             }
             return;
@@ -196,13 +289,17 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
         /**
          * By now we should be left with a heartbeat connection - sanity check
          */
-        if( !(con instanceof HeartbeatConnection) ) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + " ?!? incoming connection from " + con.getSender().toString() + " is in connection set, but not heartbeat or message type");
+        if (!(con instanceof HeartbeatConnection)) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + " ?!? incoming connection from "
+                           + con.getSender().toString()
+                           + " is in connection set, but not heartbeat or message type");
+            }
             shutdown();
             return;
         }
-        HeartbeatConnection hbcon = (HeartbeatConnection)con;
+        HeartbeatConnection hbcon = (HeartbeatConnection) con;
 
         /**
          * If the connection is a heartbeat connection then the other end must
@@ -218,12 +315,16 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
          * initiate a connection neither end needs in response to the initial
          * connect. Do not count this as an error, but do log its occurance.
          */
-        if( !hbmsg.getMsgLinks().contains(me.id) ) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + " VALID CASE - FOR INFORMATION ONLY:=> incoming connection from " + con.getSender().toString() + " when neither end wants the connection");
-            // next two lines removed to allow this case
-            // shutdown();
-            // return;
+        if (!hbmsg.getMsgLinks().contains(me.id)) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + " VALID CASE - FOR INFORMATION ONLY:=> incoming connection from "
+                           + con.getSender().toString()
+                           + " when neither end wants the connection");
+                // next two lines removed to allow this case
+                // shutdown();
+                // return;
+            }
         }
 
         /**
@@ -237,7 +338,9 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
          * created the message connection, so we know it does not yet have an impl.
          * Hence we can assume it will succeed in assigning the impl.
          */
-        messageConnection = new MessageConnection(me, connectionSet, hbcon.getProtocol(), hbcon.getCandidate());
+        messageConnection = new MessageConnection(me, connectionSet,
+                                                  hbcon.getProtocol(),
+                                                  hbcon.getCandidate());
         messageConnection.assignImpl(this);
         messageConnection.deliver(bytes);
 
@@ -257,64 +360,17 @@ public class MessageConnectionImpl extends ConnectionComms implements IOConnecti
          * the premise "if it can happen it will happen") then this thread should rightly
          * comit suicide in disgust!!!!
          */
-        if( !connectionSet.useNewMessageConnection(messageConnection) ) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + "Concurrent creation of message connections from " + messageConnection.getSender());
+        if (!connectionSet.useNewMessageConnection(messageConnection)) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + "Concurrent creation of message connections from "
+                           + messageConnection.getSender());
+            }
             shutdown();
             return;
         }
-        setName("Anubis: Connection Comms (node " + me.id + ", remote node " + messageConnection.getSender().id + ")");
-    }
-
-
-    /**
-     * Close down the connection.
-     * 
-     * Closing is called by {@link #shutdown()}.  shutdown is used to terminate the
-     * connection both here (from the "outside") and in the implementation
-     * of ConnectionComms (from the "inside"). The connection closes itself
-     * from the inside if there is some kind of error on the connection.
-     *
-     * Here closing is used to clean up by telling the server socket to
-     * remove any record it has of this connection and telling the
-     * messageConnection that the connection has closed. The later can
-     * be disabled (as is done in terminate()).
-     */
-    public void closing() {
-        if(server != null)
-            server.removeConnection(this);
-        if( announceTerm && (messageConnection != null) )
-            messageConnection.closing();
-    }
-
-    /**
-     * Shut down the connection.
-     * Terminate is used to instruct the implementation to shutdown the
-     * connection. announceTerm is set to false so that the closing()
-     * method does not call back to the messageConnection.
-     */
-    public void terminate() { announceTerm = false; shutdown(); }
-    public void silent() { announceTerm = false; }
-
-    /**
-     * set ignoring value to determine if connections should be ignored
-     * @param ignoring
-     */
-    public void setIgnoring(boolean ignoring) { this.ignoring = ignoring; }
-
-    public void logClose(String reason, Throwable throwable) {
-
-        if( ignoring )
-            return;
-
-        if( messageConnection == null ) {
-
-             if( log.isLoggable(Level.FINE) )
-                 log.log(Level.FINE, me + " shutdown unassigned message connection transport:" + reason, throwable);
-
-        } else {
-            messageConnection.logClose(reason, throwable);
-        }
+        setName("Anubis: Connection Comms (node " + me.id + ", remote node "
+                + messageConnection.getSender().id + ")");
     }
 
 }

@@ -19,16 +19,12 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
-
-
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
-
-
 
 /**
  * The ConnectionComms class is an abstract base class for connection
@@ -43,13 +39,10 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
 public abstract class ConnectionComms extends Thread implements WireSizes {
 
-
-            private SocketChannel      connection;
-volatile    private boolean            open;
-            private byte[]             headerBytesIn = new byte[HEADER_SIZE];
-            private byte[]             headerBytesOut = new byte[HEADER_SIZE];
-
-
+    private SocketChannel connection;
+    private byte[] headerBytesIn = new byte[HEADER_SIZE];
+    private byte[] headerBytesOut = new byte[HEADER_SIZE];
+    volatile private boolean open;
 
     /**
      * constructor - creates a tcp connection with the remote address
@@ -57,7 +50,7 @@ volatile    private boolean            open;
      * the tcp connection it will result in a connection comms object
      * in the closed state: connected() returns false.
      */
-    public ConnectionComms(String threadName, ConnectionAddress address)  {
+    public ConnectionComms(String threadName, ConnectionAddress address) {
 
         super(threadName);
 
@@ -65,24 +58,25 @@ volatile    private boolean            open;
 
             connection = SocketChannel.open();
             connection.configureBlocking(true);
-            connection.connect(new InetSocketAddress(address.ipaddress, address.port));
+            connection.connect(new InetSocketAddress(address.ipaddress,
+                                                     address.port));
             connection.socket().setTcpNoDelay(true);
             connection.socket().setKeepAlive(true);
             open = true;
 
-        } catch(Exception ex) {
+        } catch (Exception ex) {
 
             // ex.printStackTrace();
 
-            try { connection.close(); }
-            catch(Exception ex2) { }
+            try {
+                connection.close();
+            } catch (Exception ex2) {
+            }
             open = false;
 
         }
 
     }
-
-
 
     /**
      * constructor - used to create a ConnectionComms object for an
@@ -102,19 +96,19 @@ volatile    private boolean            open;
             connection.socket().setKeepAlive(true);
             open = true;
 
-        } catch(Exception ex) {
+        } catch (Exception ex) {
 
             // ex.printStackTrace();
 
-            try { connection.close(); }
-            catch(Exception ex2) { }
+            try {
+                connection.close();
+            } catch (Exception ex2) {
+            }
             open = false;
 
         }
 
     }
-
-
 
     /**
      * called to indicate that the tcp connection is closing.
@@ -124,11 +118,80 @@ volatile    private boolean            open;
     public abstract void closing();
 
     /**
+     * returns the state of this connection. Synchronized to avoid
+     * reading the status while it is changing.
+     */
+    public synchronized boolean connected() {
+        return open;
+    }
+
+    /**
      * deliverObject is called to deliver an object received on this
      * connection.
      */
     public abstract void deliver(byte[] bytes);
 
+    /**
+     * returns an string representing the status of this thread
+     */
+    public String getThreadStatusString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(super.getName()).append(" ............................ ").setLength(
+                                                                                          30);
+        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
+        buffer.append(open ? ".. running ....." : ".. terminated ..");
+        buffer.append(" address = ").append(
+                                            connection.socket().getInetAddress()
+                                                    + ":"
+                                                    + connection.socket().getPort());
+        return buffer.toString();
+    }
+
+    public void logClose(String reason, Throwable throwable) {
+        return;
+    }
+
+    /**
+     * The receive object loop forms the main thread loop. When an object is
+     * received it is delivered. If the connection is closed at the other end
+     * or the read fails the connection is terminated.
+     */
+    @Override
+    public void run() {
+
+        while (open) {
+
+            try {
+
+                ByteBuffer headerBuffer = ByteBuffer.wrap(headerBytesIn);
+
+                if (connection.read(headerBuffer) < HEADER_SIZE) {
+                    throw new IOException("not enough bytes reading header");
+                }
+
+                if (headerBuffer.getInt(0) != MAGIC_NUMBER) {
+                    throw new IOException("incorrect magic number in header");
+                }
+
+                int length = headerBuffer.getInt(4);
+
+                byte[] msg = new byte[length];
+                ByteBuffer msgBuffer = ByteBuffer.wrap(msg);
+
+                if (connection.read(msgBuffer) < length) {
+                    throw new IOException("not enough bytes reading body");
+                }
+
+                deliver(msg);
+
+            } catch (IOException ex) {
+                logClose("blocking transport encountered io exception", ex);
+                shutdown();
+            }
+
+        }
+
+    }
 
     /**
      * used to send an object on this connection
@@ -137,7 +200,7 @@ volatile    private boolean            open;
 
         try {
 
-            synchronized( connection ) {
+            synchronized (connection) {
 
                 ByteBuffer headerBuffer = ByteBuffer.wrap(headerBytesOut);
                 headerBuffer.putInt(0, MAGIC_NUMBER);
@@ -149,14 +212,13 @@ volatile    private boolean            open;
                 connection.write(msgBuffer);
             }
 
-        } catch(IOException  ioex) {
-            logClose("blocking transport encoutented exception when sending", ioex);
+        } catch (IOException ioex) {
+            logClose("blocking transport encoutented exception when sending",
+                     ioex);
             shutdown();
         }
 
     }
-
-
 
     /**
 
@@ -171,76 +233,8 @@ volatile    private boolean            open;
 
         try {
             connection.close();
-        } catch(Exception ex) {}
-
-    }
-
-
-
-    /**
-     * returns the state of this connection. Synchronized to avoid
-     * reading the status while it is changing.
-     */
-    public synchronized boolean connected() {
-        return open;
-    }
-
-
-
-    /**
-     * The receive object loop forms the main thread loop. When an object is
-     * received it is delivered. If the connection is closed at the other end
-     * or the read fails the connection is terminated.
-     */
-    public void run() {
-
-        while(open) {
-
-            try {
-
-                ByteBuffer headerBuffer = ByteBuffer.wrap(headerBytesIn);
-
-                if( connection.read(headerBuffer) < HEADER_SIZE )
-                    throw new IOException("not enough bytes reading header");
-
-
-                if( headerBuffer.getInt(0) != MAGIC_NUMBER )
-                    throw new IOException("incorrect magic number in header");
-
-                int length = headerBuffer.getInt(4);
-
-                byte[] msg = new byte[length];
-                ByteBuffer msgBuffer = ByteBuffer.wrap(msg);
-
-                if( connection.read(msgBuffer) < length )
-                    throw new IOException("not enough bytes reading body");
-
-                deliver(msg);
-
-            } catch(IOException ex) {
-                logClose("blocking transport encountered io exception", ex);
-                shutdown();
-            }
-
+        } catch (Exception ex) {
         }
 
     }
-
-
-    public void logClose(String reason, Throwable throwable) {
-        return;
-    }
-
-    /**
-     * returns an string representing the status of this thread
-     */
-    public String getThreadStatusString() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(super.getName()).append(" ............................ ").setLength(30);
-        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
-        buffer.append(open ? ".. running ....." : ".. terminated ..");
-        buffer.append( " address = " ).append(connection.socket().getInetAddress()+":"+connection.socket().getPort());
-        return buffer.toString();
-    }
 }
-

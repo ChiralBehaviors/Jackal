@@ -19,51 +19,28 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.util;
 
-
-
 import java.util.LinkedList;
 
 public class BlockingQueue {
 
+    private boolean active = true;
     private LinkedList queue = new LinkedList();
-    private boolean    active = true;
 
     /**
      * Constructor
      */
-    public BlockingQueue() { }
-
-    /**
-     * Add an object to the queue - objects are added to the end.
-     * When the object ahs been added any threads waiting on the queue
-     * will be notified. Hence the get() method that blocks when the queue
-     * is empty will be notified and able to get the added element.
-     *
-     * @param obj
-     */
-    public synchronized void put(Object obj) {
-        queue.addLast(obj);
-        notifyAll();
+    public BlockingQueue() {
     }
 
     /**
-     * get an object from the queue. Objects are retrieved from the front
-     * of the queue. If the queue is empty this method will block until
-     * an object is added or the queue it terminated.
-     *
-     * @return an object from the queue or null if the queue is terminated
+     * If the queue is not active then clear the queue and set it to active.
+     * If the queue is already active do nothing.
      */
-    public synchronized Object get() {
-        Object result = null;
-        while( active && (result == null) ) {
-            if( queue.isEmpty() ) {
-                try { wait(); }
-                catch (InterruptedException ex) { }
-            } else {
-                result = queue.removeFirst();
-            }
+    public synchronized void activate() {
+        if (!active) {
+            clear();
+            active = true;
         }
-        return result;
     }
 
     /**
@@ -79,7 +56,7 @@ public class BlockingQueue {
      * If the queue is not active do nothing.
      */
     public synchronized void deactivate() {
-        if( active ) {
+        if (active) {
             clear();
             active = false;
             notifyAll();
@@ -87,13 +64,37 @@ public class BlockingQueue {
     }
 
     /**
-     * If the queue is not active then clear the queue and set it to active.
-     * If the queue is already active do nothing.
+     * get an object from the queue. Objects are retrieved from the front
+     * of the queue. If the queue is empty this method will block until
+     * an object is added or the queue it terminated.
+     *
+     * @return an object from the queue or null if the queue is terminated
      */
-    public synchronized void activate() {
-        if( !active ) {
-            clear();
-            active = true;
+    public synchronized Object get() {
+        Object result = null;
+        while (active && result == null) {
+            if (queue.isEmpty()) {
+                try {
+                    wait();
+                } catch (InterruptedException ex) {
+                }
+            } else {
+                result = queue.removeFirst();
+            }
         }
+        return result;
+    }
+
+    /**
+     * Add an object to the queue - objects are added to the end.
+     * When the object ahs been added any threads waiting on the queue
+     * will be notified. Hence the get() method that blocks when the queue
+     * is empty will be notified and able to get the added element.
+     *
+     * @param obj
+     */
+    public synchronized void put(Object obj) {
+        queue.addLast(obj);
+        notifyAll();
     }
 }

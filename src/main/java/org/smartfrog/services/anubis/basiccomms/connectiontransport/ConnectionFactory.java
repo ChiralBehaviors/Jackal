@@ -19,9 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
-
-
-
 import java.nio.channels.SocketChannel;
 
 /**

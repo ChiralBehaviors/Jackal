@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
-
-
 public interface MessageHandler {
     public void deliverObject(Object obj);
 }

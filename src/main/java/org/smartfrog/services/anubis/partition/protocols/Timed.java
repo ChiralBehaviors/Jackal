@@ -19,9 +19,8 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols;
 
-
-
 public interface Timed {
     public long getTime();
+
     public void setTime(long t);
 }

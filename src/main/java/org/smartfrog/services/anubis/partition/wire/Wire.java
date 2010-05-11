@@ -25,9 +25,9 @@ import java.nio.ByteBuffer;
 import org.smartfrog.services.anubis.partition.wire.msg.CloseMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.MessageMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
-import org.smartfrog.services.anubis.partition.wire.msg.*;
 
 /**
  * Static class with wire form message utilities
@@ -38,6 +38,26 @@ import org.smartfrog.services.anubis.partition.wire.msg.*;
 public class Wire {
 
     /**
+     * fromWire(byte[]) constructs a message from its wire form
+     *
+     * @param wire byte[]
+     * @return Object
+     * @throws IOException
+     * @throws WireFormException
+     * @throws ClassNotFoundException
+     */
+    static public WireMsg fromWire(byte[] wire) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+
+        if (wire == null) {
+            throw new WireFormException("wire is a null pointer");
+        }
+
+        return fromWire(ByteBuffer.wrap(wire));
+    }
+
+    /**
      * fromWire(ByteBuffer) constructs a message from its wire form
      *
      * @param wireForm ByteBuffer
@@ -46,11 +66,13 @@ public class Wire {
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
-    static public WireMsg fromWire(ByteBuffer wireForm) throws IOException, WireFormException, ClassNotFoundException {
+    static public WireMsg fromWire(ByteBuffer wireForm) throws IOException,
+                                                       WireFormException,
+                                                       ClassNotFoundException {
 
         int type = getWireType(wireForm);
 
-        switch( type ) {
+        switch (type) {
             case HeartbeatMsg.HEARTBEAT_MSG_WIRE_TYPE:
                 return new HeartbeatMsg(wireForm);
 
@@ -63,8 +85,6 @@ public class Wire {
             case CloseMsg.CLOSE_MSG_WIRE_TYPE:
                 return new CloseMsg(wireForm);
 
-
-
             case SerializedMsg.SERIALIZED_MSG_WIRE_TYPE:
                 return new SerializedMsg(wireForm);
 
@@ -75,25 +95,9 @@ public class Wire {
                 return new WireMsg(wireForm);
 
             default:
-                throw new WireFormException("Unknown message type (" + type + ")");
+                throw new WireFormException("Unknown message type (" + type
+                                            + ")");
         }
-    }
-
-    /**
-     * fromWire(byte[]) constructs a message from its wire form
-     *
-     * @param wire byte[]
-     * @return Object
-     * @throws IOException
-     * @throws WireFormException
-     * @throws ClassNotFoundException
-     */
-    static public WireMsg fromWire(byte[] wire) throws IOException, WireFormException, ClassNotFoundException {
-
-        if( wire == null )
-            throw new WireFormException("wire is a null pointer");
-
-        return fromWire( ByteBuffer.wrap(wire) );
     }
 
     /**

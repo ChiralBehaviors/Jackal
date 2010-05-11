@@ -44,62 +44,19 @@ import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
 import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
 
-
 abstract public class AnubisListener {
+    private long mostRecentChange = -1;
     /**
      * The name of the provider that this listener listens for.
      */
-    private   String          name;
-    private   Map             values           = new HashMap();
-    private   long            mostRecentChange = -1;
-    protected Logger           log              = Logger.getLogger(this.getClass().toString());;
+    private String name;
+    private Map values = new HashMap();
+    protected Logger log = Logger.getLogger(this.getClass().toString());;
     protected ActiveTimeQueue timers;
 
     public AnubisListener(String n) {
         name = n;
     }
-
-    public synchronized void newValue(ProviderInstance i) {
-        AnubisValue v;
-        if( values.containsKey(i.instance) ) {
-            v = (AnubisValue)values.get(i.instance);
-            v.set(i.time, i.value);
-        } else {
-            v = createValue(i);
-            values.put(i.instance, v);
-        }
-        setTime(i.time);
-        safeNewValue(v);
-    }
-    public synchronized void removeValue(ProviderInstance i) {
-        AnubisValue v = (AnubisValue)values.remove(i.instance);
-        if( v != null ) {
-            setTime(i.time);
-            v.set(i.time, ValueData.nullValue());
-            safeRemoveValue(v);
-        }
-    }
-    public synchronized void removeValue(ProviderInstance i, long time) {
-        AnubisValue v = (AnubisValue)values.remove(i.instance);
-        if( v != null ) {
-            setTime(time);
-            v.set(time, ValueData.nullValue());
-            safeRemoveValue(v);
-        }
-    }
-    private void setTime(long t) {
-        if( mostRecentChange < t )
-            mostRecentChange = t;
-    }
-
-    public void setTimerQueue(ActiveTimeQueue queue) {
-        timers = queue;
-    }
-
-    public synchronized String     getName()       { return name; }
-    public synchronized long       getUpdateTime() { return mostRecentChange; }
-    public synchronized Collection values()        { return values.values(); }
-    public synchronized int        size()          { return values.size(); }
 
     /**
      * This is a factory method for creating AnubisValue objects. An
@@ -116,8 +73,72 @@ abstract public class AnubisListener {
         return new AnubisValue(i);
     }
 
+    public synchronized String getName() {
+        return name;
+    }
+
+    public synchronized long getUpdateTime() {
+        return mostRecentChange;
+    }
+
     abstract public void newValue(AnubisValue value);
+
+    public synchronized void newValue(ProviderInstance i) {
+        AnubisValue v;
+        if (values.containsKey(i.instance)) {
+            v = (AnubisValue) values.get(i.instance);
+            v.set(i.time, i.value);
+        } else {
+            v = createValue(i);
+            values.put(i.instance, v);
+        }
+        setTime(i.time);
+        safeNewValue(v);
+    }
+
     abstract public void removeValue(AnubisValue value);
+
+    public synchronized void removeValue(ProviderInstance i) {
+        AnubisValue v = (AnubisValue) values.remove(i.instance);
+        if (v != null) {
+            setTime(i.time);
+            v.set(i.time, ValueData.nullValue());
+            safeRemoveValue(v);
+        }
+    }
+
+    public synchronized void removeValue(ProviderInstance i, long time) {
+        AnubisValue v = (AnubisValue) values.remove(i.instance);
+        if (v != null) {
+            setTime(time);
+            v.set(time, ValueData.nullValue());
+            safeRemoveValue(v);
+        }
+    }
+
+    public void setTimerQueue(ActiveTimeQueue queue) {
+        timers = queue;
+    }
+
+    public synchronized int size() {
+        return values.size();
+    }
+
+    @Override
+    public String toString() {
+        String ret = "Listener " + getName() + "=[size=" + size()
+                     + ", mostRecentUpdate=" + getUpdateTime() + ", values=[";
+        Iterator iter = values().iterator();
+        while (iter.hasNext()) {
+            ret += iter.next().toString();
+        }
+        ret += "]";
+        return ret;
+    }
+
+    public synchronized Collection values() {
+        return values.values();
+    }
 
     /**
      * This method will invoke user code in the listener. It is timed, logs
@@ -126,24 +147,30 @@ abstract public class AnubisListener {
      * @param listener
      */
     private void safeNewValue(AnubisValue v) {
-        long   timein  = System.currentTimeMillis();
-        long   timeout = 0;
+        long timein = System.currentTimeMillis();
+        long timeout = 0;
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(log,
-                "User API Upcall took >200ms in newValue(p) where p=" + v );
-        timers.add(timeoutErrorLogger, (timein+200) );
+        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
+                                                                       log,
+                                                                       "User API Upcall took >200ms in newValue(p) where p="
+                                                                               + v);
+        timers.add(timeoutErrorLogger, (timein + 200));
         try {
             newValue(v);
         } catch (Throwable ex) {
-            if( log.isLoggable(Level.SEVERE))
-                log.log(Level.SEVERE, "User API Upcall threw Throwable in newValue(p) where p=" + v, ex);
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "User API Upcall threw Throwable in newValue(p) where p="
+                                + v, ex);
+            }
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if( log.isLoggable(Level.FINER) )
-            log.finer("User API Upcall took " + (timeout - timein) + "ms in newValue(p) where p=" + v);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("User API Upcall took " + (timeout - timein)
+                      + "ms in newValue(p) where p=" + v);
+        }
     }
-
 
     /**
      * This method will invoke user code in the listener. It is timed, logs
@@ -152,35 +179,35 @@ abstract public class AnubisListener {
      * @param listener
      */
     private void safeRemoveValue(AnubisValue v) {
-        long   timein  = System.currentTimeMillis();
-        long   timeout = 0;
+        long timein = System.currentTimeMillis();
+        long timeout = 0;
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(log,
-                "User API Upcall took >200ms in removeValue(p) where p=" + v );
-        timers.add(timeoutErrorLogger, (timein+200) );
+        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
+                                                                       log,
+                                                                       "User API Upcall took >200ms in removeValue(p) where p="
+                                                                               + v);
+        timers.add(timeoutErrorLogger, (timein + 200));
         try {
             removeValue(v);
         } catch (Throwable ex) {
-            if( log.isLoggable(Level.SEVERE) )
-                log.log(Level.SEVERE, "User API Upcall threw Throwable in removeValue(p) where p=" + v, ex);
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "User API Upcall threw Throwable in removeValue(p) where p="
+                                + v, ex);
+            }
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if( log.isLoggable(Level.FINER))
-            log.finer("User API Upcall took " + (timeout - timein) + "ms in removeValue(p) where p=" + v);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("User API Upcall took " + (timeout - timein)
+                      + "ms in removeValue(p) where p=" + v);
+        }
     }
 
-
-    public String toString() {
-        String ret = "Listener " + getName() +
-            "=[size=" + size() +
-            ", mostRecentUpdate=" + getUpdateTime() +
-            ", values=[";
-        Iterator iter = values().iterator();
-        while( iter.hasNext() )
-            ret += iter.next().toString();
-        ret += "]";
-        return ret;
+    private void setTime(long t) {
+        if (mostRecentChange < t) {
+            mostRecentChange = t;
+        }
     }
 
 }

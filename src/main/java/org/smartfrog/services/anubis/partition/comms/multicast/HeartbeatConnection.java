@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
-
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolAdapter;
@@ -28,22 +27,22 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Connec
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-public class HeartbeatConnection
-        extends HeartbeatProtocolAdapter
-        implements Connection, HeartbeatProtocol, Candidate {
-
-    /**
-     * Connection - includes Sender
-     */
-    private boolean           terminated        = false;
+public class HeartbeatConnection extends HeartbeatProtocolAdapter
+                                                                 implements
+                                                                 Connection,
+                                                                 HeartbeatProtocol,
+                                                                 Candidate {
 
     /**
      * Others for this implementation
      */
-    private ConnectionSet     connectionSet     = null;
-    private Identity          me                = null;
+    private ConnectionSet connectionSet = null;
 
-
+    private Identity me = null;
+    /**
+     * Connection - includes Sender
+     */
+    private boolean terminated = false;
 
     /**
      * Constructor - creates and instance of a HeartbeatConnection using an
@@ -54,18 +53,11 @@ public class HeartbeatConnection
      * @param hbp - existing heartbeat protocol
      * @param can - existing candidate
      */
-    public HeartbeatConnection(Identity id, ConnectionSet cs, HeartbeatProtocol hbp, Candidate can) {
+    public HeartbeatConnection(Identity id, ConnectionSet cs,
+                               HeartbeatProtocol hbp, Candidate can) {
         super(hbp, can);
         me = id;
         connectionSet = cs;
-    }
-
-    /**
-     * Connection interface
-     */
-    public void terminate() {
-        super.terminate();
-        terminated = true;
     }
 
     /**
@@ -75,32 +67,43 @@ public class HeartbeatConnection
      *    HeartbeatConnection - i.e. checking to convert to a
      *    MessagingConnection.
      */
+    @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
 
         /**
          * ignore if the epoch is wrong or if this connection has terminated
          */
-        if( !getSender().equalEpoch(hb.getSender()) || terminated )
+        if (!getSender().equalEpoch(hb.getSender()) || terminated) {
             return false;
+        }
 
         /**
          * pass to heartbeat protocol implementation
          */
         boolean accepted = super.receiveHeartbeat(hb);
 
-        if( accepted ) {
+        if (accepted) {
 
             /**
              * Extract piggy-backed messaging information to see if this
              * connection should be converted to a messaging connection
              */
-            if( hb.getMsgLinks().contains(me.id) ) {
-                connectionSet.convertToMessageConnection( this );
+            if (hb.getMsgLinks().contains(me.id)) {
+                connectionSet.convertToMessageConnection(this);
                 return true;
             }
         }
 
         return accepted;
+    }
+
+    /**
+     * Connection interface
+     */
+    @Override
+    public void terminate() {
+        super.terminate();
+        terminated = true;
     }
 
 }

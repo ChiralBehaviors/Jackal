@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms;
 
-
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 
 public interface Connection extends HeartbeatProtocol {

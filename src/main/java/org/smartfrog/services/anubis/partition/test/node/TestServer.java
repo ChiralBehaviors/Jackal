@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.node;
 
-
-
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
@@ -31,7 +29,8 @@ public class TestServer extends ConnectionServer implements ConnectionFactory {
 
     private TestMgr testManager;
 
-    public TestServer(TestMgr testManager, String host, int port, String threadName) throws IOException {
+    public TestServer(TestMgr testManager, String host, int port,
+                      String threadName) throws IOException {
         super(threadName, host, port);
         this.testManager = testManager;
         setConnectionFactory(this);

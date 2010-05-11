@@ -25,10 +25,12 @@ public class TestComp extends AnubisPrim {
         super();
     }
 
+    @Override
     public void start() {
         System.out.println(name + ": started");
     }
 
+    @Override
     public void terminate() {
         System.out.println(name + ": stopping");
     }

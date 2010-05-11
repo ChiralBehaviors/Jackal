@@ -33,30 +33,24 @@ package org.smartfrog.services.anubis.locator.names;
  */
 import java.io.Serializable;
 
-
-
 public class ListenerProxy extends NameData implements Serializable {
 
-    private             long uniqueRegId;
     public static final long undefinedRegId = -1;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    private long uniqueRegId;
 
     public ListenerProxy(String name, Integer node, long uniqueRegId) {
         super(name, node);
         this.uniqueRegId = uniqueRegId;
     }
 
-
-    /**
-     * returns true if this class has a uniqueRegId that preceeds that of the
-     * paramter. Returns false otherwise. Note that the equals() method for
-     * this class does not refer to the uniqueRegId attribute - two listener
-     * proxies with different ids are considered the same.
-     *
-     * @param lp ListenerProxy
-     * @return boolean
-     */
-    public boolean uridPreceeds(ListenerProxy lp) {
-        return (lp != null) && (this.uniqueRegId < lp.uniqueRegId);
+    @Override
+    public String toString() {
+        return "ListenerProxy [" + name + ", node=" + node + ", urid="
+               + uniqueRegId + "]";
     }
 
     /**
@@ -69,11 +63,19 @@ public class ListenerProxy extends NameData implements Serializable {
      * @return boolean
      */
     public boolean uridEquals(ListenerProxy lp) {
-        return (lp != null) && (this.uniqueRegId == lp.uniqueRegId);
+        return lp != null && uniqueRegId == lp.uniqueRegId;
     }
 
-    public String toString() {
-        return "ListenerProxy [" + name +
-                ", node=" + node + ", urid=" + uniqueRegId + "]";
+    /**
+     * returns true if this class has a uniqueRegId that preceeds that of the
+     * paramter. Returns false otherwise. Note that the equals() method for
+     * this class does not refer to the uniqueRegId attribute - two listener
+     * proxies with different ids are considered the same.
+     *
+     * @param lp ListenerProxy
+     * @return boolean
+     */
+    public boolean uridPreceeds(ListenerProxy lp) {
+        return lp != null && uniqueRegId < lp.uniqueRegId;
     }
 }

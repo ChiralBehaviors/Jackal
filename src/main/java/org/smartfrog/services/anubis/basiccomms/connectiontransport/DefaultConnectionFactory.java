@@ -19,11 +19,7 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
-
-
-
 import java.nio.channels.SocketChannel;
-
 
 /**
  * The default connection factory is used by ConnectionServer when no
@@ -34,9 +30,10 @@ import java.nio.channels.SocketChannel;
 public class DefaultConnectionFactory implements ConnectionFactory {
 
     public void createConnection(SocketChannel channel) {
-        try { channel.close(); }
-        catch(Exception ex) {}
+        try {
+            channel.close();
+        } catch (Exception ex) {
+        }
     }
 
 }
-

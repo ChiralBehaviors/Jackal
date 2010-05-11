@@ -19,23 +19,22 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.util;
 
-
-
 import java.util.logging.Logger;
 
 public class TimeoutErrorLogger extends TimeQueueElement {
 
-    private Logger  log;
+    private Logger log;
     private String message;
     private Object value;
 
     public TimeoutErrorLogger(Logger log, String message) {
         super();
-        this.log     = log;
+        this.log = log;
         this.message = message;
     }
 
+    @Override
     public void expired() {
-        log.severe( message + value );
+        log.severe(message + value);
     }
 }

@@ -19,17 +19,24 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols.leader;
 
-
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public interface Candidate {
-    public Identity  getId();
-    public Identity  getVote();
-    public boolean   isPreferred();
-    public void      setVote(Identity v);
-    public void      setVote(Candidate c);
-    public void      clearReceivedVotes();
-    public void      receiveVote(Candidate c);
-    public int       countReceivedVotes();
-    public boolean   winsAgainst(Candidate c);
+    public void clearReceivedVotes();
+
+    public int countReceivedVotes();
+
+    public Identity getId();
+
+    public Identity getVote();
+
+    public boolean isPreferred();
+
+    public void receiveVote(Candidate c);
+
+    public void setVote(Candidate c);
+
+    public void setVote(Identity v);
+
+    public boolean winsAgainst(Candidate c);
 }

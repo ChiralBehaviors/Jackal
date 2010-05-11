@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
-
 import java.net.InetAddress;
 
 import org.smartfrog.services.anubis.partition.PartitionManager;
@@ -28,54 +27,15 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 
-public class PartitionProtocol  {
+public class PartitionProtocol {
 
-    private PartitionManager partitionMgr  = null;
-    private ConnectionSet    connectionSet = null;
-    private Identity         identity            = null;
-    private BitView          view          = new BitView();
-    private Identity         leader        = null;
-    private boolean          changed       = false;
-    private boolean          terminated    = false;
-
- 
-
-    public PartitionManager getPartitionMgr() {
-        return partitionMgr;
-    }
-
-    public void setPartitionMgr(PartitionManager partitionMgr) {
-        this.partitionMgr = partitionMgr;
-    }
-
-    public ConnectionSet getConnectionSet() {
-        return connectionSet;
-    }
-
-    public void setConnectionSet(ConnectionSet connectionSet) {
-        this.connectionSet = connectionSet;
-    }
-
-    public Identity getIdentity() {
-        return identity;
-    }
-
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
-    }
-
-    public void start() { 
-            leader = identity;  
-        view.add(identity);
-        view.stablize();
-        view.setTimeStamp( identity.epoch );
-        partitionMgr.notify(view, leader.id);
-    }
-
-    public void terminate() {
-        terminated = true; 
-   }
-
+    private boolean changed = false;
+    private ConnectionSet connectionSet = null;
+    private Identity identity = null;
+    private Identity leader = null;
+    private PartitionManager partitionMgr = null;
+    private boolean terminated = false;
+    private BitView view = new BitView();
 
     /**
      * Changed view is called during regular connection set checks if the
@@ -88,14 +48,55 @@ public class PartitionProtocol  {
      * there is a view change).
      */
     public void changedView() {
-        if( view.removeComplement(connectionSet.getView()) || view.isStable() ) {
+        if (view.removeComplement(connectionSet.getView()) || view.isStable()) {
             changed = true;
         }
-        view.setTimeStamp( View.undefinedTimeStamp );
+        view.setTimeStamp(View.undefinedTimeStamp);
         view.destablize();
         leader = connectionSet.electLeader(view);
     }
 
+    /**
+     * Establish a connection to the remote node
+     * @param id - id of remote node
+     * @return - the message connection
+     */
+    public MessageConnection connect(int id) {
+        return connectionSet.connect(id);
+    }
+
+    public ConnectionSet getConnectionSet() {
+        return connectionSet;
+    }
+
+    public Identity getIdentity() {
+        return identity;
+    }
+
+    public InetAddress getNodeAddress(int id) {
+        return connectionSet.getNodeAddress(id);
+    }
+
+    public PartitionManager getPartitionMgr() {
+        return partitionMgr;
+    }
+
+    /**
+     * Issue notifications from the partition manager.
+     */
+    public void notifyChanges() {
+        if (changed) {
+            partitionMgr.notify(view, leader.id);
+            changed = false;
+        }
+    }
+
+    public void receiveObject(Object obj, Identity id, long time) {
+        if (terminated) {
+            return;
+        }
+        partitionMgr.receiveObject(obj, id.id, time);
+    }
 
     /**
      * remove a node from the partition - if it is there. If it was there
@@ -103,14 +104,25 @@ public class PartitionProtocol  {
      * @param id
      */
     public void remove(Identity id) {
-        if( view.remove(id.id) ) {
+        if (view.remove(id.id)) {
             changed = true;
-            view.setTimeStamp( View.undefinedTimeStamp );
+            view.setTimeStamp(View.undefinedTimeStamp);
             view.destablize();
             leader = connectionSet.electLeader(view);
         }
     }
 
+    public void setConnectionSet(ConnectionSet connectionSet) {
+        this.connectionSet = connectionSet;
+    }
+
+    public void setIdentity(Identity identity) {
+        this.identity = identity;
+    }
+
+    public void setPartitionMgr(PartitionManager partitionMgr) {
+        this.partitionMgr = partitionMgr;
+    }
 
     /**
      * copy the stable view from the connection set - includes the
@@ -127,40 +139,16 @@ public class PartitionProtocol  {
         leader = connectionSet.electLeader(view);
     }
 
-
-    /**
-     * Issue notifications from the partition manager.
-     */
-    public void notifyChanges() {
-        if( changed ) {
-            partitionMgr.notify(view, leader.id);
-            changed = false;
-        }
+    public void start() {
+        leader = identity;
+        view.add(identity);
+        view.stablize();
+        view.setTimeStamp(identity.epoch);
+        partitionMgr.notify(view, leader.id);
     }
 
-
-    /**
-     * Establish a connection to the remote node
-     * @param id - id of remote node
-     * @return - the message connection
-     */
-    public MessageConnection connect(int id) {
-        return connectionSet.connect(id);
+    public void terminate() {
+        terminated = true;
     }
-
-
-    public InetAddress getNodeAddress(int id) {
-        return connectionSet.getNodeAddress(id);
-    }
-
-
-    public void receiveObject(Object obj, Identity id, long time) {
-        if( terminated )
-            return;
-        partitionMgr.receiveObject(obj, id.id, time);
-    }
-
-
-
 
 }

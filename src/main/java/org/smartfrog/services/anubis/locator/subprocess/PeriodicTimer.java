@@ -19,35 +19,28 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.subprocess;
 
-
-
 public class PeriodicTimer extends Thread {
 
-    boolean running;
-    long period;
-    long wakeup;
     long now;
+    long period;
+    boolean running;
+    long wakeup;
 
     public PeriodicTimer(String name, long period) {
         super(name);
         this.period = period;
     }
 
-    private void doSleep() {
-        while( wakeup <= now )
-            wakeup += period;
-        try { sleep( wakeup - now ); }
-        catch (InterruptedException ex) { }
-        now = System.currentTimeMillis();
-    }
-
+    @Override
     public void run() {
         running = true;
         now = System.currentTimeMillis();
         wakeup = now + period;
         init();
-        while( running ) {
-            if( now >= wakeup ) act(now);
+        while (running) {
+            if (now >= wakeup) {
+                act(now);
+            }
             doSleep();
         }
     }
@@ -56,11 +49,22 @@ public class PeriodicTimer extends Thread {
         running = false;
     }
 
-    protected void init() {
-        // override this method for initial actions if any
+    private void doSleep() {
+        while (wakeup <= now) {
+            wakeup += period;
+        }
+        try {
+            sleep(wakeup - now);
+        } catch (InterruptedException ex) {
+        }
+        now = System.currentTimeMillis();
     }
 
     protected void act(long now) {
         // override this method for action calls
+    }
+
+    protected void init() {
+        // override this method for initial actions if any
     }
 }

@@ -27,14 +27,6 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class HeartbeatCommsFactory {
 
-    public WireSecurity getWireSecurity() {
-        return wireSecurity;
-    }
-
-    public void setWireSecurity(WireSecurity wireSecurity) {
-        this.wireSecurity = wireSecurity;
-    }
-
     private WireSecurity wireSecurity = null;
 
     public HeartbeatCommsFactory() throws Exception {
@@ -42,18 +34,24 @@ public class HeartbeatCommsFactory {
     }
 
     public HeartbeatCommsIntf create(MulticastAddress address,
-                                     HeartbeatReceiver cs, String threadName,
-                                     Identity id) throws Exception {
-        return (HeartbeatCommsIntf) new HeartbeatComms(address, cs, threadName,
-                                                       id, wireSecurity);
-    }
-
-    public HeartbeatCommsIntf create(MulticastAddress address,
                                      ConnectionAddress inf,
                                      HeartbeatReceiver cs, String threadName,
                                      Identity id) throws Exception {
-        return (HeartbeatCommsIntf) new HeartbeatComms(address, inf, cs,
-                                                       threadName, id,
-                                                       wireSecurity);
+        return new HeartbeatComms(address, inf, cs, threadName, id,
+                                  wireSecurity);
+    }
+
+    public HeartbeatCommsIntf create(MulticastAddress address,
+                                     HeartbeatReceiver cs, String threadName,
+                                     Identity id) throws Exception {
+        return new HeartbeatComms(address, cs, threadName, id, wireSecurity);
+    }
+
+    public WireSecurity getWireSecurity() {
+        return wireSecurity;
+    }
+
+    public void setWireSecurity(WireSecurity wireSecurity) {
+        this.wireSecurity = wireSecurity;
     }
 }

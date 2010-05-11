@@ -19,25 +19,35 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.views;
 
-
-
-import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 
 public interface View {
-    public static  long undefinedTimeStamp = -1;
+    public static long undefinedTimeStamp = -1;
 
-    public int     size();
-    public int     cardinality();
-    public boolean isEmpty();
-    public boolean isStable();
-    public long    getTimeStamp();
-    public boolean contains(int id);
-    public boolean contains(Identity id);
-    public boolean contains(View v);
+    public int cardinality();
+
     public boolean containedIn(View v);
-    public boolean overlap(View v);
+
+    public boolean contains(Identity id);
+
+    public boolean contains(int id);
+
+    public boolean contains(View v);
+
     public boolean equalsView(View v);
-    public NodeIdSet  toBitSet();
-    public String  toString();
+
+    public long getTimeStamp();
+
+    public boolean isEmpty();
+
+    public boolean isStable();
+
+    public boolean overlap(View v);
+
+    public int size();
+
+    public NodeIdSet toBitSet();
+
+    public String toString();
 }

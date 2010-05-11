@@ -25,6 +25,7 @@ import org.smartfrog.services.anubis.locator.AnubisStability;
 public class StabilityNotices {
 
     public class Stability extends AnubisStability {
+        @Override
         public void stability(boolean isStable, long timeRef) {
             if (isStable) {
                 log.info("****** Partition has stablized with time reference "

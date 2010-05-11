@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms;
 
-
-
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
@@ -30,61 +28,115 @@ import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
+public class SelfConnection extends BitView implements Connection,
+                                           HeartbeatProtocol, Candidate {
 
-public class SelfConnection extends BitView implements Connection, HeartbeatProtocol, Candidate {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    private ConnectionAddress address = null;
+    private Candidate candidate = null;
+    private Identity me = null;
 
-    private Identity          me        = null;
-    private Candidate         candidate = null;
-    private ConnectionAddress address   = null;
-
-    public SelfConnection(Identity id, View v, ConnectionAddress addr, boolean preferred) {
-            me        = id;
-            address   = addr;
-            view      = v.toBitSet();
-            stable    = v.isStable();
-            candidate = new CandidateImpl(me, me, preferred);
+    public SelfConnection(Identity id, View v, ConnectionAddress addr,
+                          boolean preferred) {
+        me = id;
+        address = addr;
+        view = v.toBitSet();
+        stable = v.isStable();
+        candidate = new CandidateImpl(me, me, preferred);
     }
 
-    /**
-     * HeartbeatProtocol interface
-     */
-    public boolean isNotTimely(long timenow, long timeout)  { return false; }
-    public boolean isQuiesced(long timenow, long quiesce) { return false; }
-    /**
-     * Self connection is clearly not skewed
-     */
-    public boolean measuresClockSkew() { return true; }
+    public void clearReceivedVotes() {
+        candidate.clearReceivedVotes();
+    }
 
-    /**
-     * Timed interface
-     */
-    public long              getTime()                 { return System.currentTimeMillis();}
-    public void              setTime(long t)           { return; }
-
-    /**
-     * Connection interface - includes Sender interface
-     */
-    public Identity          getSender()               { return me; }
-    public ConnectionAddress getSenderAddress()        { return address; }
-    public void              terminate()               { return; }
-
-    /**
-     * HeartbeatProtocol interface
-     * @param h
-     */
-    public boolean           receiveHeartbeat(Heartbeat h) { return true; }
+    public int countReceivedVotes() {
+        return candidate.countReceivedVotes();
+    }
 
     /**
      * Candidate interface - redirect to CandidateImpl
      * @return Indentity
      */
-    public Identity  getId()               { return getSender(); }
-    public boolean   isPreferred()           { return candidate.isPreferred(); }
-    public Identity  getVote()                { return candidate.getVote(); }
-    public void      setVote(Identity v)      { candidate.setVote(v); }
-    public void      setVote(Candidate c)     { candidate.setVote(c); }
-    public void      clearReceivedVotes()     { candidate.clearReceivedVotes(); }
-    public void      receiveVote(Candidate c) { candidate.receiveVote(c); }
-    public int       countReceivedVotes()     { return candidate.countReceivedVotes(); }
-    public boolean   winsAgainst(Candidate c) { return candidate.winsAgainst(c); }
+    public Identity getId() {
+        return getSender();
+    }
+
+    /**
+     * Connection interface - includes Sender interface
+     */
+    public Identity getSender() {
+        return me;
+    }
+
+    public ConnectionAddress getSenderAddress() {
+        return address;
+    }
+
+    /**
+     * Timed interface
+     */
+    public long getTime() {
+        return System.currentTimeMillis();
+    }
+
+    public Identity getVote() {
+        return candidate.getVote();
+    }
+
+    /**
+     * HeartbeatProtocol interface
+     */
+    public boolean isNotTimely(long timenow, long timeout) {
+        return false;
+    }
+
+    public boolean isPreferred() {
+        return candidate.isPreferred();
+    }
+
+    public boolean isQuiesced(long timenow, long quiesce) {
+        return false;
+    }
+
+    /**
+     * Self connection is clearly not skewed
+     */
+    public boolean measuresClockSkew() {
+        return true;
+    }
+
+    /**
+     * HeartbeatProtocol interface
+     * @param h
+     */
+    public boolean receiveHeartbeat(Heartbeat h) {
+        return true;
+    }
+
+    public void receiveVote(Candidate c) {
+        candidate.receiveVote(c);
+    }
+
+    public void setTime(long t) {
+        return;
+    }
+
+    public void setVote(Candidate c) {
+        candidate.setVote(c);
+    }
+
+    public void setVote(Identity v) {
+        candidate.setVote(v);
+    }
+
+    public void terminate() {
+        return;
+    }
+
+    public boolean winsAgainst(Candidate c) {
+        return candidate.winsAgainst(c);
+    }
 }

@@ -31,29 +31,19 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public final class MessageMsg extends TimedMsg {
 
-    private Object message = null;
-    private byte[] payload = null;
-    private int payloadSz = UNDEFINED_SIZE;
-
+    public static final int MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
+    public static final int MESSAGE_MSG_WIRE_TYPE = 400;
     private static final int payloadLengthIdx = TIMED_MSG_WIRE_SIZE;
     private static final int payloadIdx = payloadLengthIdx + intSz;
 
-    public static final int MESSAGE_MSG_WIRE_TYPE = 400;
-    public static final int MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
+    private Object message = null;
 
-    protected int getType() { return MESSAGE_MSG_WIRE_TYPE; }
-    public int getSize() throws WireFormException {
-        if( payloadSz == UNDEFINED_SIZE )
-            throw new WireFormException("Attampt to get size of message when it has not been defined");
-        return payloadIdx + payloadSz;
-    }
+    private byte[] payload = null;
+    private int payloadSz = UNDEFINED_SIZE;
 
-    protected MessageMsg() {
-        super();
-    }
-
-
-    public MessageMsg(ByteBuffer wireForm) throws ClassNotFoundException, WireFormException, IOException {
+    public MessageMsg(ByteBuffer wireForm) throws ClassNotFoundException,
+            WireFormException,
+            IOException {
         super();
         readWireForm(wireForm);
     }
@@ -63,11 +53,30 @@ public final class MessageMsg extends TimedMsg {
         message = msg;
     }
 
+    protected MessageMsg() {
+        super();
+    }
+
     public Object getMessageObject() {
         return message;
     }
 
+    @Override
+    public int getSize() throws WireFormException {
+        if (payloadSz == UNDEFINED_SIZE) {
+            throw new WireFormException(
+                                        "Attampt to get size of message when it has not been defined");
+        }
+        return payloadIdx + payloadSz;
+    }
 
+    @Override
+    public String toString() {
+        return "[message " + super.toString()
+               + (message == null ? "null" : message.toString()) + "]";
+    }
+
+    @Override
     protected void fixDynamicSizedAttributes() {
         try {
             ByteArrayOutputStream byteArrayOS = new ByteArrayOutputStream();
@@ -83,17 +92,9 @@ public final class MessageMsg extends TimedMsg {
         }
     }
 
-    /**
-     * Writes the timed message attributes to wire form in the given byte
-     * array
-     */
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
-
-        wireForm.putInt(payloadLengthIdx, payloadSz);
-        for(int i=0, j=payloadIdx; i<payloadSz; i++, j++)
-            wireForm.put(j, payload[i]);
-
+    @Override
+    protected int getType() {
+        return MESSAGE_MSG_WIRE_TYPE;
     }
 
     /**
@@ -105,25 +106,39 @@ public final class MessageMsg extends TimedMsg {
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
-    protected void readWireForm(ByteBuffer buf) throws IOException, WireFormException, ClassNotFoundException {
+    @Override
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
         super.readWireForm(buf);
 
         payloadSz = wireForm.getInt(payloadLengthIdx);
         payload = new byte[payloadSz];
 
-        for(int i=0, j=payloadIdx; i<payloadSz; i++, j++)
+        for (int i = 0, j = payloadIdx; i < payloadSz; i++, j++) {
             payload[i] = wireForm.get(j);
+        }
 
         ByteArrayInputStream byteArrayIS = new ByteArrayInputStream(payload);
         ObjectInputStream objectIS = new ObjectInputStream(byteArrayIS);
         message = objectIS.readObject();
 
-//        payload = null;
-//        payloadSz = UNDEFINED_SIZE;
+        //        payload = null;
+        //        payloadSz = UNDEFINED_SIZE;
     }
 
+    /**
+     * Writes the timed message attributes to wire form in the given byte
+     * array
+     */
+    @Override
+    protected void writeWireForm() throws WireFormException {
+        super.writeWireForm();
 
-    public String toString() {
-        return "[message " + super.toString() + (message==null ? "null" : message.toString()) + "]";
+        wireForm.putInt(payloadLengthIdx, payloadSz);
+        for (int i = 0, j = payloadIdx; i < payloadSz; i++, j++) {
+            wireForm.put(j, payload[i]);
+        }
+
     }
 }

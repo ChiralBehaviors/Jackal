@@ -37,17 +37,42 @@ import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
 
 public interface AnubisLocator {
     /**
-     * register a provider. This is a non-blocking operation. A provider
-     * should have a unique name in the system. Uniqueness is not currently
-     * tested by the locator. This could be changed to a blocking operation
-     * that does test uniqueness and passes or fails. It has not been decided
-     * how to deal with clashes when partitions merge.
+     * deregister a listener - non-blocking.
      */
-    public void    registerProvider(AnubisProvider provider);
+    public void deregisterListener(AnubisListener listener);
+
     /**
      * deregister a provider - non-blocking.
      */
-    public void    deregisterProvider(AnubisProvider provider);
+    public void deregisterProvider(AnubisProvider provider);
+
+    /**
+     * deregisterStability deregisters a stability notification iterface.
+     */
+    public void deregisterStability(AnubisStability stability);
+
+    /**
+     * Returns the upper bound on communication delay.
+     * @return long
+     */
+    public long getmaxDelay();
+
+    /**
+     * Providers access to a timer queue - this is a utility for users that
+     * are building on the AnubisLocator interface that will order their
+     * timers with those used by Anubis as well as provide a general timer
+     * facility.
+     *
+     * @return ActiveTimeQueue
+     */
+    public ActiveTimeQueue getTimeQueue();
+
+    /**
+     * Indicates that the provider has a new value
+     * @param provider
+     */
+    public void newProviderValue(AnubisProvider provider);
+
     /**
      * register a listener - this is a non-blocking method. It does not
      * return a value, instead a notification will be provided to indicate
@@ -58,37 +83,20 @@ public interface AnubisLocator {
      * are no guarantees.
      */
     public void registerListener(AnubisListener listener);
+
     /**
-     * deregister a listener - non-blocking.
+     * register a provider. This is a non-blocking operation. A provider
+     * should have a unique name in the system. Uniqueness is not currently
+     * tested by the locator. This could be changed to a blocking operation
+     * that does test uniqueness and passes or fails. It has not been decided
+     * how to deal with clashes when partitions merge.
      */
-    public void deregisterListener(AnubisListener listener);
+    public void registerProvider(AnubisProvider provider);
+
     /**
      * registerStability registers an interface for stability notifications.
      * This interface is called to inform the user when the local partition
      * becomes stable or unstable.
      */
     public void registerStability(AnubisStability stability);
-    /**
-     * deregisterStability deregisters a stability notification iterface.
-     */
-    public void deregisterStability(AnubisStability stability);
-    /**
-     * Indicates that the provider has a new value
-     * @param provider
-     */
-    public void newProviderValue(AnubisProvider provider);
-    /**
-     * Providers access to a timer queue - this is a utility for users that
-     * are building on the AnubisLocator interface that will order their
-     * timers with those used by Anubis as well as provide a general timer
-     * facility.
-     *
-     * @return ActiveTimeQueue
-     */
-    public ActiveTimeQueue getTimeQueue();
-    /**
-     * Returns the upper bound on communication delay.
-     * @return long
-     */
-    public long getmaxDelay();
 }

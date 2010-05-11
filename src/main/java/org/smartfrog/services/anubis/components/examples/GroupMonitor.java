@@ -19,41 +19,40 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.components.examples;
 
-
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 
-public class GroupMonitor  {
+public class GroupMonitor {
 
-    private   AnubisLocator  locator;
-    protected String         groupName;
-    protected GroupListener  listener;
+    private AnubisLocator locator;
+    protected String groupName;
+    protected GroupListener listener;
 
     public GroupMonitor() throws Exception {
         super();
-    }
-
-    public AnubisLocator getLocator() {
-        return locator;
-    }
-
-    public void setLocator(AnubisLocator locator) {
-        this.locator = locator;
     }
 
     public String getGroupName() {
         return groupName;
     }
 
+    public AnubisLocator getLocator() {
+        return locator;
+    }
+
     public void setGroupName(String groupName) {
         this.groupName = groupName;
     }
 
-    public void start()   {  
-            listener  = new GroupListener(groupName);
-            locator.registerListener(listener); 
-    } 
+    public void setLocator(AnubisLocator locator) {
+        this.locator = locator;
+    }
+
+    public void start() {
+        listener = new GroupListener(groupName);
+        locator.registerListener(listener);
+    }
 
     public void terminate() {
-        locator.deregisterListener(listener); 
+        locator.deregisterListener(listener);
     }
 }

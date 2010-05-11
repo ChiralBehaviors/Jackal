@@ -24,10 +24,12 @@ import java.rmi.server.UnicastRemoteObject;
 
 import org.smartfrog.services.anubis.locator.AnubisStability;
 
-public class SPStabilityImpl
-        extends UnicastRemoteObject
-        implements SPStability {
+public class SPStabilityImpl extends UnicastRemoteObject implements SPStability {
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
     private AnubisStability stability;
 
     public SPStabilityImpl(AnubisStability stability) throws RemoteException {

@@ -34,16 +34,16 @@ public class MessageNioServerFactory implements IOConnectionServerFactory {
         super();
     }
 
+    public IOConnectionServer create(ConnectionAddress address, Identity id,
+                                     ConnectionSet cs) throws Exception {
+        return new MessageNioServer(address, id, cs, wireSecurity);
+    }
+
     public WireSecurity getWireSecurity() {
         return wireSecurity;
     }
 
     public void setWireSecurity(WireSecurity wireSecurity) {
         this.wireSecurity = wireSecurity;
-    }
-
-    public IOConnectionServer create(ConnectionAddress address, Identity id,
-                                     ConnectionSet cs) throws Exception {
-        return new MessageNioServer(address, id, cs, wireSecurity);
     }
 }

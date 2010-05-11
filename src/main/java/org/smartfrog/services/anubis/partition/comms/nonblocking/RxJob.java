@@ -26,21 +26,20 @@ public class RxJob {
     private MessageNioHandler mnh = null;
     private ByteBuffer readObj = null;
 
-
     /**
      * container object that is put on the Rx decoupling queue
      * and is taken of the queue by the worker threads.
      */
-    public RxJob(MessageNioHandler mnh, ByteBuffer readObj){
-	this.mnh = mnh;
-	this.readObj = readObj;
+    public RxJob(MessageNioHandler mnh, ByteBuffer readObj) {
+        this.mnh = mnh;
+        this.readObj = readObj;
     }
 
-    public ByteBuffer getDeliverable(){
-	return readObj;
+    public ByteBuffer getDeliverable() {
+        return readObj;
     }
 
-    public MessageNioHandler getHandler(){
-	return mnh;
+    public MessageNioHandler getHandler() {
+        return mnh;
     }
 }

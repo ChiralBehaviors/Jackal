@@ -24,50 +24,12 @@ import java.nio.ByteBuffer;
 
 public class WireMsg implements WireSizes {
 
-    protected ByteBuffer wireForm    = null;
-    protected byte[]     bytes       = null;
-    protected int        trailerSize = 0;
-
     public static final int WIRE_TYPE = 100;
     protected static final int WIRE_SIZE = intSz;
+    protected byte[] bytes = null;
 
-    /**
-     * Each subtype should over-ride getType() to return its own type.
-     * @return int
-     */
-    protected int getType() { return WIRE_TYPE; }
-    /**
-     * Each subtype should over-ride getSize() to return its own
-     * calculation of size.
-     *
-     * @return int
-     * @throws WireFormException
-     */
-    public int getSize() throws WireFormException { return WIRE_SIZE; }
-    
-    /**
-     * Set the size of the trailer. When the message is converted to its
-     * wire form, the byte array will include a sequence of unused 
-     * bytes equal to the trailer size at the end. The byte array length will
-     * be getSize() + trailerSize.
-     * 
-     * @param n
-     * @throws WireFormException
-     */
-    public void setTrailerSize(int n) throws WireFormException { 
-        if( n < 0 ) {
-            throw new WireFormException("Negative trailer size specified: " + n);
-        } else {
-            trailerSize = n;
-        }
-    }
-
-    /**
-     * Default constructor - used when constructing from wire form
-     */
-    protected WireMsg() {
-        super();
-    }
+    protected int trailerSize = 0;
+    protected ByteBuffer wireForm = null;
 
     /**
      * Construct from the wire form. Each substype should implement a similar
@@ -78,9 +40,46 @@ public class WireMsg implements WireSizes {
      * @throws WireFormException
      * @throws IOException
      */
-    public WireMsg(ByteBuffer wireForm) throws ClassNotFoundException, WireFormException, IOException {
+    public WireMsg(ByteBuffer wireForm) throws ClassNotFoundException,
+            WireFormException,
+            IOException {
         super();
         readWireForm(wireForm);
+    }
+
+    /**
+     * Default constructor - used when constructing from wire form
+     */
+    protected WireMsg() {
+        super();
+    }
+
+    /**
+     * Each subtype should over-ride getSize() to return its own
+     * calculation of size.
+     *
+     * @return int
+     * @throws WireFormException
+     */
+    public int getSize() throws WireFormException {
+        return WIRE_SIZE;
+    }
+
+    /**
+     * Set the size of the trailer. When the message is converted to its
+     * wire form, the byte array will include a sequence of unused 
+     * bytes equal to the trailer size at the end. The byte array length will
+     * be getSize() + trailerSize.
+     * 
+     * @param n
+     * @throws WireFormException
+     */
+    public void setTrailerSize(int n) throws WireFormException {
+        if (n < 0) {
+            throw new WireFormException("Negative trailer size specified: " + n);
+        } else {
+            trailerSize = n;
+        }
     }
 
     /**
@@ -111,7 +110,16 @@ public class WireMsg implements WireSizes {
      * This method should be over-ridden if the subtype has dynamic sized
      * attributes to determine their size and prepare them for writing.
      */
-    protected void fixDynamicSizedAttributes() {}
+    protected void fixDynamicSizedAttributes() {
+    }
+
+    /**
+     * Each subtype should over-ride getType() to return its own type.
+     * @return int
+     */
+    protected int getType() {
+        return WIRE_TYPE;
+    }
 
     /**
      * top level readWireForm method. All subtypes should implement this method
@@ -123,13 +131,18 @@ public class WireMsg implements WireSizes {
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
-    protected void readWireForm(ByteBuffer buf) throws IOException, WireFormException, ClassNotFoundException {
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
 
-        this.wireForm = buf;
-        this.bytes = buf.array();
+        wireForm = buf;
+        bytes = buf.array();
 
-        if( wireForm.getInt(0) != getType() )
-            throw new WireFormException("Incorrect type in wire form - can not read as " + this.getClass());
+        if (wireForm.getInt(0) != getType()) {
+            throw new WireFormException(
+                                        "Incorrect type in wire form - can not read as "
+                                                + this.getClass());
+        }
     }
 
     /**

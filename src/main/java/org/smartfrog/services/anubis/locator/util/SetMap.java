@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.util;
 
-
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -43,12 +41,14 @@ import java.util.Set;
 
 public class SetMap {
 
-    protected Map   map = null;
+    protected Map map = null;
 
     /**
      * Default constructor creates a HashMap implementation
      */
-    public SetMap() { map = new HashMap(); }
+    public SetMap() {
+        map = new HashMap();
+    }
 
     /**
      * Constructor - allows the user to define the implementation
@@ -56,19 +56,16 @@ public class SetMap {
      *               create a sorted set map (sorted on the keys).
      * @param map
      */
-    public SetMap(Map map) { this.map = map; }
+    public SetMap(Map map) {
+        this.map = map;
+    }
 
     /**
      * removes all entries from the SetMap.
      */
-    public void    clear() { map.clear(); }
-
-    /**
-     * indicates if the map is empty
-     *
-     * @return  boolean
-     */
-    public boolean isEmpty() { return map.isEmpty(); }
+    public void clear() {
+        map.clear();
+    }
 
     /**
      * test to see if a key is contained in the map.
@@ -76,14 +73,9 @@ public class SetMap {
      * @param key - the key
      * @return - true if the key is in the map, false if not.
      */
-    public boolean containsKey(Object key) { return map.containsKey(key); }
-
-    /**
-     * returns a set view of the keys in the map.
-     *
-     * @return a set view of the keys
-     */
-    public Set     keySet() { return map.keySet(); }
+    public boolean containsKey(Object key) {
+        return map.containsKey(key);
+    }
 
     /**
      * returns a set view of the entries in the map. That is a set of
@@ -91,7 +83,9 @@ public class SetMap {
      *
      * @return Set
      */
-    public Set     entrySet() { return map.entrySet(); }
+    public Set entrySet() {
+        return map.entrySet();
+    }
 
     /**
      * returns the set of entries associated with a given key.
@@ -100,7 +94,9 @@ public class SetMap {
      * @return - the set of entries associated with the key, or null if
      *           the key is not contained in the map.
      */
-    public Set     getSet(Object key) { return (Set)map.get(key); }
+    public Set getSet(Object key) {
+        return (Set) map.get(key);
+    }
 
     /**
      * returns the number of entries associated with a given key.
@@ -108,7 +104,27 @@ public class SetMap {
      * @return - the number of entries in the set associated with key, or 0 if
      *           the map does not contain the key.
      */
-    public int     getSetSize(Object key) { return (containsKey(key) ? getSet(key).size() : 0); }
+    public int getSetSize(Object key) {
+        return containsKey(key) ? getSet(key).size() : 0;
+    }
+
+    /**
+     * indicates if the map is empty
+     *
+     * @return  boolean
+     */
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    /**
+     * returns a set view of the keys in the map.
+     *
+     * @return a set view of the keys
+     */
+    public Set keySet() {
+        return map.keySet();
+    }
 
     /**
      * add an association between a key and an entry to the map. Note that
@@ -122,8 +138,8 @@ public class SetMap {
      * @return - true if the key was already in the map, false if it was not.
      */
     public boolean put(Object key, Object entry) {
-        if( map.containsKey(key) ) {
-            Set s = (Set)map.get(key);
+        if (map.containsKey(key)) {
+            Set s = (Set) map.get(key);
             s.add(entry);
             return true;
         } else {
@@ -132,6 +148,18 @@ public class SetMap {
             map.put(key, s);
             return false;
         }
+    }
+
+    /**
+     * removes the key and the entire set of entries associated with it from
+     * the map. The set of entries is returned.
+     *
+     * @param key - the key
+     * @return - the set of entries that was previously associated with the
+     *           key. null is returned if the key was not in the map
+     */
+    public Set remove(Object key) {
+        return (Set) map.remove(key);
     }
 
     /**
@@ -144,26 +172,15 @@ public class SetMap {
      *           not in the map.
      */
     public boolean remove(Object key, Object entry) {
-        if( map.containsKey(key) ) {
-            Set s = (Set)map.get(key);
-            if( s.remove(entry) ) {
-                if( s.isEmpty() )
+        if (map.containsKey(key)) {
+            Set s = (Set) map.get(key);
+            if (s.remove(entry)) {
+                if (s.isEmpty()) {
                     map.remove(key);
+                }
                 return true;
             }
         }
         return false;
-    }
-
-    /**
-     * removes the key and the entire set of entries associated with it from
-     * the map. The set of entries is returned.
-     *
-     * @param key - the key
-     * @return - the set of entries that was previously associated with the
-     *           key. null is returned if the key was not in the map
-     */
-    public Set remove(Object key) {
-        return (Set)map.remove(key);
     }
 }

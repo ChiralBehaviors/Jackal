@@ -26,11 +26,15 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public class CloseMsg extends HeartbeatMsg implements Close {
 
-    public static final int CLOSE_MSG_WIRE_TYPE = 301;
     public static final int CLOSE_MSG_WIRE_SIZE = HEARTBEAT_MSG_WIRE_SIZE;
+    public static final int CLOSE_MSG_WIRE_TYPE = 301;
 
-    protected int getType() { return CLOSE_MSG_WIRE_TYPE; }
-    public int getSize() { return CLOSE_MSG_WIRE_SIZE; }
+    public CloseMsg(ByteBuffer wireForm) throws ClassNotFoundException,
+            WireFormException,
+            IOException {
+        super();
+        readWireForm(wireForm);
+    }
 
     /**
      * Construct a close message that matches the heartbeat messsage
@@ -38,21 +42,25 @@ public class CloseMsg extends HeartbeatMsg implements Close {
      * @param hb HeartbeatMsg
      *
      */
-   public CloseMsg(HeartbeatMsg hb) {
-       super(hb);
-   }
+    public CloseMsg(HeartbeatMsg hb) {
+        super(hb);
+    }
 
-   /**
-    * Constructor - used internally when reading from wire
-    */
-   protected CloseMsg() {
-       super();
-   }
+    /**
+        * Constructor - used internally when reading from wire
+        */
+    protected CloseMsg() {
+        super();
+    }
 
+    @Override
+    public int getSize() {
+        return CLOSE_MSG_WIRE_SIZE;
+    }
 
-   public CloseMsg(ByteBuffer wireForm) throws ClassNotFoundException, WireFormException, IOException {
-       super();
-       readWireForm(wireForm);
-   }
+    @Override
+    protected int getType() {
+        return CLOSE_MSG_WIRE_TYPE;
+    }
 
 }

@@ -23,27 +23,26 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
-import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public class PingHeartbeatMsg extends HeartbeatMsg {
 
-    private NodeIdSet pings;
-
-    static final private int pingBitIdx = HEARTBEAT_MSG_WIRE_SIZE;
     static final private int pingBitSz = MAX_BIT_SIZE + intSz;
+    public static final int PING_HEARTBEAT_MSG_WIRE_SIZE = HEARTBEAT_MSG_WIRE_SIZE
+                                                           + pingBitSz;
 
     public static final int PING_HEARTBEAT_MSG_WIRE_TYPE = 310;
-    public static final int PING_HEARTBEAT_MSG_WIRE_SIZE =
-        HEARTBEAT_MSG_WIRE_SIZE + pingBitSz;
+    static final private int pingBitIdx = HEARTBEAT_MSG_WIRE_SIZE;
 
-    protected int getType() {
-        return PING_HEARTBEAT_MSG_WIRE_TYPE;
-    }
+    private NodeIdSet pings;
 
-    public int getSize() {
-        return PING_HEARTBEAT_MSG_WIRE_SIZE;
+    public PingHeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
+            WireFormException,
+            IOException {
+        super();
+        readWireForm(wireForm);
     }
 
     /**
@@ -57,37 +56,16 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
         pings = new NodeIdSet();
     }
 
-    /**
-     * Constructor - used internally when reading from wire
-     */
-    protected PingHeartbeatMsg() {
-        super();
-    }
-
     public PingHeartbeatMsg(PingHeartbeatMsg pinghb) {
         super(pinghb);
         pings = pinghb.pings;
     }
 
-    public PingHeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-        WireFormException, IOException {
+    /**
+     * Constructor - used internally when reading from wire
+     */
+    protected PingHeartbeatMsg() {
         super();
-        readWireForm(wireForm);
-    }
-
-    /**
-     * generate close message from this heartbeat
-     */
-    public HeartbeatMsg toClose() {
-        return new PingCloseMsg(this);
-    }
-
-    /**
-     * pings accessors
-     * @param id Identity
-     */
-    public synchronized void setPingBit(Identity id) {
-        pings.add(id.id);
     }
 
     public synchronized void clearPingBit(Identity id) {
@@ -102,12 +80,35 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
         return pings.contains(id.id);
     }
 
+    @Override
+    public int getSize() {
+        return PING_HEARTBEAT_MSG_WIRE_SIZE;
+    }
+
     /**
-     * Write the message attributes to the
+     * pings accessors
+     * @param id Identity
      */
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
-        pings.writeWireForm(wireForm, pingBitIdx, pingBitSz);
+    public synchronized void setPingBit(Identity id) {
+        pings.add(id.id);
+    }
+
+    /**
+     * generate close message from this heartbeat
+     */
+    @Override
+    public HeartbeatMsg toClose() {
+        return new PingCloseMsg(this);
+    }
+
+    @Override
+    public String toString() {
+        return "[" + super.toString() + ", pings=" + pings.toString() + "]";
+    }
+
+    @Override
+    protected int getType() {
+        return PING_HEARTBEAT_MSG_WIRE_TYPE;
     }
 
     /**
@@ -115,14 +116,21 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
      *
      * @param buf byte[]
      */
+    @Override
     protected void readWireForm(ByteBuffer buf) throws IOException,
-        WireFormException, ClassNotFoundException {
+                                               WireFormException,
+                                               ClassNotFoundException {
         super.readWireForm(buf);
         pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
     }
 
-    public String toString() {
-        return "[" + super.toString() + ", pings=" + pings.toString() + "]";
+    /**
+     * Write the message attributes to the
+     */
+    @Override
+    protected void writeWireForm() throws WireFormException {
+        super.writeWireForm();
+        pings.writeWireForm(wireForm, pingBitIdx, pingBitSz);
     }
 
 }

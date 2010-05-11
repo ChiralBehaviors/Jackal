@@ -28,12 +28,12 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class TimedProtocolFactory implements HeartbeatProtocolFactory {
+    public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address) {
+        return new HeartbeatMsg(identity, address);
+    }
+
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
                                             HeartbeatMsg sharedHeartbeat) {
         return new TimedProtocolImpl(hb, vl, sharedHeartbeat);
-    }
-
-    public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address) {
-        return new HeartbeatMsg(identity, address);
     }
 }

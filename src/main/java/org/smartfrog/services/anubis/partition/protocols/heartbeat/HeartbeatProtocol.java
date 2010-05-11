@@ -19,14 +19,17 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat;
 
-
 import org.smartfrog.services.anubis.partition.protocols.Sender;
 import org.smartfrog.services.anubis.partition.protocols.Timed;
 import org.smartfrog.services.anubis.partition.views.View;
 
-public interface HeartbeatProtocol extends HeartbeatReceiver, Timed, Sender, View {
+public interface HeartbeatProtocol extends HeartbeatReceiver, Timed, Sender,
+                                  View {
     public boolean isNotTimely(long timenow, long timebound);
+
     public boolean isQuiesced(long timenow, long quiesce);
+
     public boolean measuresClockSkew();
+
     public void terminate();
 }

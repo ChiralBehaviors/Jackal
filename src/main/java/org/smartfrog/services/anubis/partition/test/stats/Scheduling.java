@@ -19,28 +19,41 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.stats;
 
-
-
-
 public class Scheduling {
 
-    private AveCalculator oneMinuteCalculator = new TimedAveCalculator(60*1000);
-    private AveCalculator tenMinuteCalculator = new TimedAveCalculator(10*60*1000);
-    private AveCalculator oneHourCalculator   = new TimedAveCalculator(60*60*1000);
     private long big = 0;
+    private AveCalculator oneHourCalculator = new TimedAveCalculator(
+                                                                     60 * 60 * 1000);
+    private AveCalculator oneMinuteCalculator = new TimedAveCalculator(
+                                                                       60 * 1000);
+    private AveCalculator tenMinuteCalculator = new TimedAveCalculator(
+                                                                       10 * 60 * 1000);
 
     public Scheduling() {
     }
 
     public synchronized void add(long time, long delay) {
-        if( delay > big ) big = delay;
+        if (delay > big) {
+            big = delay;
+        }
         oneMinuteCalculator.add(time, delay);
         tenMinuteCalculator.add(time, delay);
         oneHourCalculator.add(time, delay);
     }
 
-    public long oneMinAve()  { return oneMinuteCalculator.average(); }
-    public long tenMinAve()  { return tenMinuteCalculator.average(); }
-    public long oneHourAve() { return oneHourCalculator.average();   }
-    public long biggest()    { return big; }
+    public long biggest() {
+        return big;
+    }
+
+    public long oneHourAve() {
+        return oneHourCalculator.average();
+    }
+
+    public long oneMinAve() {
+        return oneMinuteCalculator.average();
+    }
+
+    public long tenMinAve() {
+        return tenMinuteCalculator.average();
+    }
 }

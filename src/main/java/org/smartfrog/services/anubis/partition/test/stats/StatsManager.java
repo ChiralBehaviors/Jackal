@@ -19,28 +19,24 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.stats;
 
-
-
-import java.util.Map;
 import java.util.HashMap;
-import org.smartfrog.services.anubis.partition.util.Identity;
+import java.util.Map;
+
 import org.smartfrog.services.anubis.partition.test.msg.StatsMsg;
+import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class StatsManager {
 
-    private Scheduling scheduling  = new Scheduling();
-    private Map        heartbeat   = new HashMap();
+    private Map heartbeat = new HashMap();
+    private Scheduling scheduling = new Scheduling();
 
-    public StatsManager() {}
-
-    public void schedulingInfo(long time, long delay) {
-        scheduling.add(time, delay);
+    public StatsManager() {
     }
 
     public void heartbeatInfo(Identity connection, long time, long delay) {
 
-        Heartbeats heartbeatStats = (Heartbeats)heartbeat.get(connection);
-        if( heartbeatStats == null ) {
+        Heartbeats heartbeatStats = (Heartbeats) heartbeat.get(connection);
+        if (heartbeatStats == null) {
             heartbeatStats = new Heartbeats();
             heartbeat.put(connection, heartbeatStats);
         }
@@ -48,10 +44,12 @@ public class StatsManager {
         heartbeatStats.add(time, delay);
     }
 
+    public void schedulingInfo(long time, long delay) {
+        scheduling.add(time, delay);
+    }
+
     public StatsMsg statsMsg() {
-        return new StatsMsg(scheduling.oneMinAve(),
-                            scheduling.tenMinAve(),
-                            scheduling.oneHourAve(),
-                            scheduling.biggest());
+        return new StatsMsg(scheduling.oneMinAve(), scheduling.tenMinAve(),
+                            scheduling.oneHourAve(), scheduling.biggest());
     }
 }

@@ -35,111 +35,49 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class Controller {
 
-    private long expirePeriod;
+    private MulticastAddress address;
+    private AsymetryReportFrame asymetryReport = null;
     private long checkPeriod;
+    private ColorAllocator colorAllocator = new ColorAllocator();
     private MainConsoleFrame consoleFrame;
-    private Snoop snoop;
+    private long expirePeriod;
+    private BitView globalView = new BitView();
+    private long heartbeatInterval = 0;
+
+    private long heartbeatTimeout = 0;
     private Identity identity;
     private Map nodes = new HashMap();
-    private BitView globalView = new BitView();
-    private ColorAllocator colorAllocator = new ColorAllocator();
-
-    private AsymetryReportFrame asymetryReport = null;
-    private long heartbeatInterval = 0;
-    private long heartbeatTimeout = 0;
-    private MulticastAddress address;
-    private Timer timer;
+    private Snoop snoop;
     private TimerTask task;
+    private Timer timer;
 
-    public Timer getTimer() {
-        return timer;
-    }
+    public synchronized void asymPartition(String nodeStr) {
 
-    public void setTimer(Timer timer) {
-        this.timer = timer;
-    }
+        StringTokenizer tokens = new StringTokenizer(nodeStr);
+        BitView partition = new BitView();
+        String token = "";
 
-    public long getExpirePeriod() {
-        return expirePeriod;
-    }
-
-    public void setExpirePeriod(long expirePeriod) {
-        this.expirePeriod = expirePeriod;
-    }
-
-    public long getCheckPeriod() {
-        return checkPeriod;
-    }
-
-    public void setCheckPeriod(long checkPeriod) {
-        this.checkPeriod = checkPeriod;
-    }
-
-    public Identity getIdentity() {
-        return identity;
-    }
-
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
-    }
-
-    public MulticastAddress getAddress() {
-        return address;
-    }
-
-    public void setAddress(MulticastAddress address) {
-        this.address = address;
-    }
-
-    public void start() throws Exception {
-        timer.schedule(getTask(), checkPeriod, checkPeriod);
-        snoop = new Snoop(
-                          "Anubis: Partition Manager Test Console heartbeat snoop",
-                          address, identity, this);
-        consoleFrame = new MainConsoleFrame(this);
-        consoleFrame.setTitle("Partition Manager Test Controller - "
-                              + Anubis.version);
-        consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
-        snoop.start();
-        consoleFrame.setVisible(true);
-    }
-
-    private TimerTask getTask() {
-        task = new TimerTask() {
-
-            @Override
-            public void run() {
-                checkNodes();
-            }
-        };
-        return task;
-    }
-
-    public synchronized void terminate() {
-        snoop.shutdown();
-        if (task != null) {
-            task.cancel();
-        }
-        clearNodes();
-        consoleFrame.setVisible(false);
-        consoleFrame.dispose();
-        consoleFrame = null;
-    }
-
-    public synchronized void deliverHeartbeat(HeartbeatMsg hb) {
-        NodeData nodeData = (NodeData) nodes.get(hb.getSender());
-        if (nodeData != null) {
-            nodeData.heartbeat(hb);
+        if (tokens.countTokens() == 0) {
             return;
-        } else {
-            nodeData = new NodeData(hb, consoleFrame, colorAllocator, this);
-            nodes.put(hb.getSender(), nodeData);
-            globalView.add(hb.getSender());
         }
-    }
 
-    public synchronized void deliverObject(Object obj, NodeData node) {
-        node.deliverObject(obj);
+        try {
+            while (tokens.hasMoreTokens()) {
+                token = tokens.nextToken();
+                partition.add(new Integer(token).intValue());
+            }
+        } catch (NumberFormatException ex) {
+            consoleFrame.inputError("Unknown: " + token);
+            return;
+        }
+
+        Iterator iter = nodes.values().iterator();
+        while (iter.hasNext()) {
+            NodeData node = (NodeData) iter.next();
+            if (partition.contains(node.getIdentity())) {
+                node.setIgnoringAsymPartition(globalView, partition);
+            }
+        }
     }
 
     public synchronized void checkNodes() {
@@ -166,8 +104,85 @@ public class Controller {
         globalView = new BitView();
     }
 
+    public synchronized void clearPartitions() {
+        Iterator iter = nodes.values().iterator();
+        while (iter.hasNext()) {
+            ((NodeData) iter.next()).setIgnoring(new BitView());
+        }
+    }
+
+    public synchronized void deliverHeartbeat(HeartbeatMsg hb) {
+        NodeData nodeData = (NodeData) nodes.get(hb.getSender());
+        if (nodeData != null) {
+            nodeData.heartbeat(hb);
+            return;
+        } else {
+            nodeData = new NodeData(hb, consoleFrame, colorAllocator, this);
+            nodes.put(hb.getSender(), nodeData);
+            globalView.add(hb.getSender());
+        }
+    }
+
+    public synchronized void deliverObject(Object obj, NodeData node) {
+        node.deliverObject(obj);
+    }
+
     public synchronized void disconnectNode(NodeData node) {
         node.disconnected();
+    }
+
+    public MulticastAddress getAddress() {
+        return address;
+    }
+
+    public long getCheckPeriod() {
+        return checkPeriod;
+    }
+
+    public long getExpirePeriod() {
+        return expirePeriod;
+    }
+
+    public Identity getIdentity() {
+        return identity;
+    }
+
+    public Timer getTimer() {
+        return timer;
+    }
+
+    public String nodesToString() {
+        String str = "Nodes Table\n===========\n";
+        Iterator iter = nodes.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry entry = (Map.Entry) iter.next();
+            str += entry.getKey() + "--->" + entry.getValue();
+        }
+        return str;
+    }
+
+    public synchronized void removeAsymetryReport() {
+        asymetryReport = null;
+    }
+
+    public void setAddress(MulticastAddress address) {
+        this.address = address;
+    }
+
+    public void setCheckPeriod(long checkPeriod) {
+        this.checkPeriod = checkPeriod;
+    }
+
+    public void setExpirePeriod(long expirePeriod) {
+        this.expirePeriod = expirePeriod;
+    }
+
+    public void setIdentity(Identity identity) {
+        this.identity = identity;
+    }
+
+    public void setTimer(Timer timer) {
+        this.timer = timer;
     }
 
     public synchronized void setTiming(long interval, long timeout) {
@@ -182,35 +197,30 @@ public class Controller {
 
         /** set node's timers **/
         Iterator iter = nodes.values().iterator();
-        while (iter.hasNext())
+        while (iter.hasNext()) {
             ((NodeData) iter.next()).setTiming(interval, timeout);
+        }
     }
 
-    public synchronized void asymPartition(String nodeStr) {
-
-        StringTokenizer tokens = new StringTokenizer(nodeStr);
-        BitView partition = new BitView();
-        String token = "";
-
-        if (tokens.countTokens() == 0)
-            return;
-
-        try {
-            while (tokens.hasMoreTokens()) {
-                token = tokens.nextToken();
-                partition.add(new Integer(token).intValue());
-            }
-        } catch (NumberFormatException ex) {
-            consoleFrame.inputError("Unknown: " + token);
-            return;
+    public synchronized void showAsymetryReport() {
+        if (asymetryReport == null) {
+            asymetryReport = new AsymetryReportFrame(this, nodes, identity);
+        } else {
+            asymetryReport.recalculate(nodes);
         }
+    }
 
-        Iterator iter = nodes.values().iterator();
-        while (iter.hasNext()) {
-            NodeData node = (NodeData) iter.next();
-            if (partition.contains(node.getIdentity()))
-                node.setIgnoringAsymPartition(globalView, partition);
-        }
+    public void start() throws Exception {
+        timer.schedule(getTask(), checkPeriod, checkPeriod);
+        snoop = new Snoop(
+                          "Anubis: Partition Manager Test Console heartbeat snoop",
+                          address, identity, this);
+        consoleFrame = new MainConsoleFrame(this);
+        consoleFrame.setTitle("Partition Manager Test Controller - "
+                              + Anubis.version);
+        consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
+        snoop.start();
+        consoleFrame.setVisible(true);
     }
 
     public synchronized void symPartition(String nodeStr) {
@@ -219,8 +229,9 @@ public class Controller {
         BitView partition = new BitView();
         String token = "";
 
-        if (tokens.countTokens() == 0)
+        if (tokens.countTokens() == 0) {
             return;
+        }
 
         try {
             while (tokens.hasMoreTokens()) {
@@ -239,31 +250,26 @@ public class Controller {
         }
     }
 
-    public synchronized void clearPartitions() {
-        Iterator iter = nodes.values().iterator();
-        while (iter.hasNext())
-            ((NodeData) iter.next()).setIgnoring(new BitView());
-    }
-
-    public synchronized void showAsymetryReport() {
-        if (asymetryReport == null)
-            asymetryReport = new AsymetryReportFrame(this, nodes, identity);
-        else
-            asymetryReport.recalculate(nodes);
-    }
-
-    public synchronized void removeAsymetryReport() {
-        asymetryReport = null;
-    }
-
-    public String nodesToString() {
-        String str = "Nodes Table\n===========\n";
-        Iterator iter = nodes.entrySet().iterator();
-        while (iter.hasNext()) {
-            Map.Entry entry = (Map.Entry) iter.next();
-            str += entry.getKey() + "--->" + entry.getValue();
+    public synchronized void terminate() {
+        snoop.shutdown();
+        if (task != null) {
+            task.cancel();
         }
-        return str;
+        clearNodes();
+        consoleFrame.setVisible(false);
+        consoleFrame.dispose();
+        consoleFrame = null;
+    }
+
+    private TimerTask getTask() {
+        task = new TimerTask() {
+
+            @Override
+            public void run() {
+                checkNodes();
+            }
+        };
+        return task;
     }
 
 }

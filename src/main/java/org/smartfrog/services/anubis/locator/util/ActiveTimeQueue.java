@@ -19,19 +19,105 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.util;
 
-
 import java.util.Iterator;
 import java.util.Set;
 
 public class ActiveTimeQueue extends Thread {
 
-    TimeQueue queue = new TimeQueue();
-
     private boolean running = false;
-    private long    wakeup  = 0;
+
+    private long wakeup = 0;
+    TimeQueue queue = new TimeQueue();
 
     public ActiveTimeQueue(String threadName) {
         super(threadName);
+    }
+
+    /**
+     * Add an element to the queue. Notify the worker thread in case this
+     * element has been added to the top of the queue and the worker has to
+     * wake up earlier.
+     *
+     * @param element
+     * @param time
+     * @return boolean
+     */
+    public boolean add(TimeQueueElement element, long time) {
+        synchronized (queue) {
+            if (queue.add(element, time)) {
+                queue.notify();
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    public Set getExpiredOrBlock() {
+
+        /**
+         * synchronized on the queue.
+         */
+        synchronized (queue) {
+
+            /**
+             * Could have been terminated immediately before entering this
+             * synchronized method. If so return null (drop out!)
+             */
+            if (!running) {
+                return null;
+            }
+
+            /**
+             * If there are no items block forever (until woken up).
+             */
+            if (queue.isEmpty()) {
+                try {
+                    queue.wait(0);
+                } catch (InterruptedException ex) {
+                }
+                return null;
+            }
+
+            /**
+             * get timing information.
+             */
+            long timeNow = System.currentTimeMillis();
+            Long key = (Long) queue.firstKey();
+            long nextTime = key.longValue();
+
+            /**
+             * If no items to expire then sleep until the top one expires or
+             * we get woken up.
+             */
+            if (nextTime > timeNow) {
+                try {
+                    queue.wait(nextTime - timeNow);
+                } catch (InterruptedException ex) {
+                }
+                return null;
+            }
+
+            /**
+             * If there are items to expire then remove them from the queue
+             * and return them.
+             */
+            return queue.remove(key);
+        }
+    }
+
+    /**
+     * Remove an element from the queue - don't notify, the worst that can
+     * happen is the worker thread can wake with nothing to do, so why wake it
+     * now?
+     *
+     * @param element
+     * @return boolean
+     */
+    public boolean remove(TimeQueueElement element) {
+        synchronized (queue) {
+            return queue.remove(element);
+        }
     }
 
     /**
@@ -49,13 +135,15 @@ public class ActiveTimeQueue extends Thread {
      *    expired() method without causing a ConcurrentModificationException
      *    to be thrown on the queue data structure.
      */
+    @Override
     public void run() {
         running = true;
-        while(running) {
+        while (running) {
 
             Set expiredElements = getExpiredOrBlock();
-            if( expiredElements != null )
+            if (expiredElements != null) {
                 doExpirations(expiredElements);
+            }
 
         }
     }
@@ -64,61 +152,12 @@ public class ActiveTimeQueue extends Thread {
      * Stop the worker thread and empty the queue.
      */
     public void terminate() {
-        synchronized( queue ) {
+        synchronized (queue) {
             running = false;
             queue.clear();
             queue.notifyAll();
         }
     }
-
-    public Set getExpiredOrBlock() {
-
-        /**
-         * synchronized on the queue.
-         */
-        synchronized( queue ) {
-
-            /**
-             * Could have been terminated immediately before entering this
-             * synchronized method. If so return null (drop out!)
-             */
-            if( !running )
-                return null;
-
-            /**
-             * If there are no items block forever (until woken up).
-             */
-            if( queue.isEmpty() ) {
-                try { queue.wait(0); }
-                catch (InterruptedException ex) { }
-                return null;
-            }
-
-            /**
-             * get timing information.
-             */
-            long timeNow  = System.currentTimeMillis();
-            Long key      = (Long)queue.firstKey();
-            long nextTime = key.longValue();
-
-            /**
-             * If no items to expire then sleep until the top one expires or
-             * we get woken up.
-             */
-            if( nextTime > timeNow ) {
-                try { queue.wait(nextTime - timeNow); }
-                catch (InterruptedException ex) { }
-                return null;
-            }
-
-            /**
-             * If there are items to expire then remove them from the queue
-             * and return them.
-             */
-            return queue.remove(key);
-        }
-    }
-
 
     /**
      * Iterate through the set of expired elements and call their
@@ -128,42 +167,8 @@ public class ActiveTimeQueue extends Thread {
      */
     private void doExpirations(Set expiredElements) {
         Iterator iter = expiredElements.iterator();
-        while( iter.hasNext() )
-            ((TimeQueueElement)iter.next()).expired();
-    }
-
-
-    /**
-     * Add an element to the queue. Notify the worker thread in case this
-     * element has been added to the top of the queue and the worker has to
-     * wake up earlier.
-     *
-     * @param element
-     * @param time
-     * @return boolean
-     */
-    public boolean add(TimeQueueElement element, long time) {
-        synchronized( queue ) {
-            if( queue.add(element, time) ) {
-                queue.notify();
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-
-    /**
-     * Remove an element from the queue - don't notify, the worst that can
-     * happen is the worker thread can wake with nothing to do, so why wake it
-     * now?
-     *
-     * @param element
-     * @return boolean
-     */
-    public boolean remove(TimeQueueElement element) {
-        synchronized( queue ) {
-            return queue.remove(element);
+        while (iter.hasNext()) {
+            ((TimeQueueElement) iter.next()).expired();
         }
     }
 }

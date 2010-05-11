@@ -20,7 +20,6 @@ For more information: www.smartfrog.org
 
 package org.smartfrog.services.anubis;
 
-
 public class Anubis {
     static public String version = "Anubis 1.10";
 }

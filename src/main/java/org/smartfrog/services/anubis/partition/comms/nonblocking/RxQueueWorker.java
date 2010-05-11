@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
-
 public class RxQueueWorker extends Thread {
 
     private RxQueue rxQueue = null;
@@ -28,19 +27,20 @@ public class RxQueueWorker extends Thread {
      * worker thread taking rx objects off the queue and
      * delivering that object to anubis code
      */
-    public RxQueueWorker(RxQueue rxQueue){
+    public RxQueueWorker(RxQueue rxQueue) {
         this.rxQueue = rxQueue;
     }
 
+    @Override
     public void run() {
-        
-        RxJob rxJob = null;
-        
-        while( rxQueue.isOpen() ){
-            
-            rxJob = (RxJob)rxQueue.next();
 
-            if (rxJob != null){
+        RxJob rxJob = null;
+
+        while (rxQueue.isOpen()) {
+
+            rxJob = (RxJob) rxQueue.next();
+
+            if (rxJob != null) {
                 // got an object from the queue - deliver the object within to the appropriate mnh
                 MessageNioHandler mnh = rxJob.getHandler();
                 mnh.deliverObject(rxJob.getDeliverable());

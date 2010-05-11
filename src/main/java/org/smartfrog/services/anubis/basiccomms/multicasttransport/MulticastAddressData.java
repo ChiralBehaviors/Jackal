@@ -24,32 +24,12 @@ import java.net.InetAddress;
 public class MulticastAddressData {
 
     static final String LOCALHOST = "localhost";
+    private String hostName;
     private int port;
     private int ttl;
-    private String hostName;
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public int getTtl() {
-        return ttl;
-    }
-
-    public void setTtl(int ttl) {
-        this.ttl = ttl;
-    }
 
     public String getHostName() {
         return hostName;
-    }
-
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
     }
 
     public MulticastAddress getMulticastAddress() throws Exception {
@@ -62,6 +42,26 @@ public class MulticastAddressData {
         }
 
         return new MulticastAddress(host, port, ttl);
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public int getTtl() {
+        return ttl;
+    }
+
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setTtl(int ttl) {
+        this.ttl = ttl;
     }
 
 }

@@ -19,9 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.multicasttransport;
 
-
-
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
@@ -30,8 +27,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
-
-
 
 /**
  * MulticastComms is an abstract class representing an end point
@@ -49,148 +44,144 @@ import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAd
  */
 public class MulticastComms extends Thread {
 
-  /**
-   * MAX_SEG_SIZE is a default maximum packet size. This may be small,
-   * but any network will be capable of handling this size so its transfer
-   * semantics are atomic (no fragmentation in the network).
-   */
-  static public  final   int                 MAX_SEG_SIZE = 1500;   // Eathernet standard MTU
+    /**
+     * MAX_SEG_SIZE is a default maximum packet size. This may be small,
+     * but any network will be capable of handling this size so its transfer
+     * semantics are atomic (no fragmentation in the network).
+     */
+    static public final int MAX_SEG_SIZE = 1500; // Eathernet standard MTU
 
-         private         MulticastAddress    groupAddress;
-         private         MulticastSocket     sock;
-         private         byte[]              inBytes;
-         private         DatagramPacket      inPacket;
-                         Object              outObject;
-volatile private         boolean             terminating;
-         private         Logger               syncLog       = Logger.getLogger(this.getClass().toString());
-         private         Logger               asyncLog      = syncLog; //TODO fix with asynch wrapper over synclog
+    private MulticastAddress groupAddress;
+    private byte[] inBytes;
+    private DatagramPacket inPacket;
+    private MulticastSocket sock;
+    private Logger syncLog = Logger.getLogger(this.getClass().toString());
+    private Logger asyncLog = syncLog; //TODO fix with asynch wrapper over synclog
+    volatile private boolean terminating;
+    Object outObject;
 
-  /**
-   * deliverObject is the method for delivering received
-   * objects. Typically this method will cast the object and pass
-   * it to an appropriate handler. This may include handing off the
-   * delivery to another thread.
-   */
-  protected void deliverBytes(byte[] bytes) {
-      // does nothing by default
-  }
+    /**
+     * Constructor - uses MulticastAddress to define the multicast
+     * group etc.
+     */
+    public MulticastComms(String threadName, MulticastAddress address) throws Exception {
 
+        super(threadName);
+        groupAddress = address;
+        sock = new MulticastSocket(address.port);
+        sock.joinGroup(address.ipaddress);
+        sock.setTimeToLive(address.timeToLive);
+        terminating = false;
+    }
 
-  /**
-   * Constructor - uses MulticastAddress to define the multicast
-   * group etc.
-   */
-  public MulticastComms(String threadName, MulticastAddress address) throws Exception {
+    /**
+     * Constructor - uses MulticastAddress to define the multicast. Use inf to define
+     * the network interface to use.
+     * group etc.
+     */
+    public MulticastComms(String threadName, MulticastAddress address,
+                          ConnectionAddress inf) throws Exception {
 
-      super(threadName);
-      this.groupAddress = address;
-      sock = new MulticastSocket(address.port);
-      sock.joinGroup(address.ipaddress);
-      sock.setTimeToLive(address.timeToLive);
-      terminating = false;
-  }
-  
-  /**
-   * Constructor - uses MulticastAddress to define the multicast. Use inf to define
-   * the network interface to use.
-   * group etc.
-   */
-  public MulticastComms(String threadName, MulticastAddress address, ConnectionAddress inf) throws Exception {
+        super(threadName);
+        groupAddress = address;
+        sock = new MulticastSocket(address.port);
+        sock.setInterface(inf.ipaddress);
+        sock.joinGroup(address.ipaddress);
+        sock.setTimeToLive(address.timeToLive);
+        terminating = false;
+    }
 
-      super(threadName);
-      this.groupAddress = address;
-      sock = new MulticastSocket(address.port);
-      sock.setInterface(inf.ipaddress);
-      sock.joinGroup(address.ipaddress);
-      sock.setTimeToLive(address.timeToLive);
-      terminating = false;
-  }
-  
-  
+    /**
+     * Get the status of this thread.
+     * @return a string representing the status of this thread
+     */
+    public String getThreadStatusString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(super.getName()).append(" ............................ ").setLength(
+                                                                                          30);
+        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
+        buffer.append(!terminating ? ".. running ....." : ".. terminated ..");
+        buffer.append(" address = ").append(groupAddress.ipaddress.toString()).append(
+                                                                                      ":").append(
+                                                                                                  groupAddress.port);
+        return buffer.toString();
+    }
 
+    /**
+     * the thread performs a blocking receive loop.
+     */
+    @Override
+    public void run() {
 
-  public void start() {
-      super.start();
-  }
+        while (!terminating) {
 
+            try {
 
-  public void shutdown() {
-      terminating = true;
-      sock.close();
-  }
+                inBytes = new byte[MAX_SEG_SIZE];
+                inPacket = new DatagramPacket(inBytes, inBytes.length);
+                sock.receive(inPacket);
+                deliverBytes(inPacket.getData());
 
+            } catch (Exception e) {
 
-  /**
-   * the thread performs a blocking receive loop.
-   */
-  public void run() {
+                if (!terminating && asyncLog.isLoggable(Level.WARNING)) {
+                    asyncLog.log(Level.WARNING, "", e);
+                }
 
-      while ( !terminating ) {
+            }
+        }
+    }
 
-          try {
+    /**
+     * Send an array of bytes.
+     * The send function is synchronized to prevent multiple sends concurrent
+     * sends (is this necessary??) Can not deadlock - multiple threads will take
+     * turns to send, the receive loop (run) will block sends unless it is nested
+     * in the deliverObject method, which is ok.
+     * @param bytes bytes to send
+     */
+    public synchronized void sendObject(byte[] bytes) {
+        try {
+            sock.send(bytesToPacket(bytes, groupAddress.ipaddress,
+                                    groupAddress.port));
+        } catch (IOException ioe) {
+            if (!terminating && asyncLog.isLoggable(Level.WARNING)) {
+                asyncLog.log(Level.WARNING, "", ioe);
+            }
+        }
+    }
 
-              inBytes  = new byte[MAX_SEG_SIZE];
-              inPacket = new DatagramPacket(inBytes, inBytes.length);
-              sock.receive(inPacket);
-              deliverBytes(inPacket.getData());
+    public void shutdown() {
+        terminating = true;
+        sock.close();
+    }
 
-          } catch ( Exception e ) {
+    @Override
+    public void start() {
+        super.start();
+    }
 
-              if( !terminating && asyncLog.isLoggable(Level.WARNING))
-                  asyncLog.log(Level.WARNING, "", e);
+    private DatagramPacket bytesToPacket(byte[] bytes, InetAddress address,
+                                         int port) {
+        return new DatagramPacket(bytes, bytes.length, address, port);
+    }
 
-          }
-      }
-  }
+    /**
+     * convert the input buffer to a string - for debug purposes.
+     * @return a stringified inBytes
+     */
+    private String inputToString() {
+        return new String(inBytes);
+    }
 
-
-
-  /**
-   * Send an array of bytes.
-   * The send function is synchronized to prevent multiple sends concurrent
-   * sends (is this necessary??) Can not deadlock - multiple threads will take
-   * turns to send, the receive loop (run) will block sends unless it is nested
-   * in the deliverObject method, which is ok.
-   * @param bytes bytes to send
-   */
-  public synchronized void sendObject(byte[] bytes) {
-      try {
-          sock.send(bytesToPacket(bytes, groupAddress.ipaddress, groupAddress.port));
-      } catch ( IOException ioe ) {
-          if( !terminating && asyncLog.isLoggable(Level.WARNING))
-                  asyncLog.log(Level.WARNING, "", ioe);
-      }
-  }
-
-
-
-  private DatagramPacket bytesToPacket(byte[] bytes, InetAddress address, int port) {
-      return new DatagramPacket(bytes, bytes.length, address, port);
-  }
-
-
-
-  /**
-   * convert the input buffer to a string - for debug purposes.
-   * @return a stringified inBytes
-   */
-  private String inputToString() {
-      return new String(inBytes);
-  }
-
-
-  /**
-   * Get the status of this thread.
-   * @return a string representing the status of this thread
-   */
-  public String getThreadStatusString() {
-      StringBuffer buffer = new StringBuffer();
-      buffer.append(super.getName()).append(" ............................ ").setLength(30);
-      buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
-      buffer.append( !terminating ? ".. running ....." : ".. terminated ..");
-      buffer.append( " address = " ).append(groupAddress.ipaddress.toString()).append(":").append(groupAddress.port);
-      return buffer.toString();
-  }
+    /**
+     * deliverObject is the method for delivering received
+     * objects. Typically this method will cast the object and pass
+     * it to an appropriate handler. This may include handing off the
+     * delivery to another thread.
+     */
+    protected void deliverBytes(byte[] bytes) {
+        // does nothing by default
+    }
 
 }
-

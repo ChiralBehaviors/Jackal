@@ -20,8 +20,6 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.components.examples;
 
 import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
@@ -37,10 +35,10 @@ public class AnubisCompound {
             return true;
         }
     }
- 
+
     private AnubisLocator locator = null;
-    private AnubisProvider provider = null;
     private String name = null;
+    private AnubisProvider provider = null;
 
     public AnubisCompound() throws RemoteException {
         super();
@@ -50,12 +48,12 @@ public class AnubisCompound {
         return locator;
     }
 
-    public void setLocator(AnubisLocator locator) {
-        this.locator = locator;
-    }
-
     public String getName() {
         return name;
+    }
+
+    public void setLocator(AnubisLocator locator) {
+        this.locator = locator;
     }
 
     public void setName(String name) {

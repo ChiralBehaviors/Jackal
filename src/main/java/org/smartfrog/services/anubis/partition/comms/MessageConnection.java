@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms;
 
-
-
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,27 +34,27 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.MessageMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 
+public class MessageConnection extends HeartbeatProtocolAdapter
+                                                               implements
+                                                               Connection,
+                                                               HeartbeatProtocol,
+                                                               Candidate {
 
-public class MessageConnection
-        extends HeartbeatProtocolAdapter
-        implements Connection, HeartbeatProtocol, Candidate {
-
+    private IOConnection closingImpl = null;
     /**
      * Implementations
      */
     private IOConnection connectionImpl = null;
-    private IOConnection closingImpl = null;
 
-    private Identity                me                = null;
-    private ConnectionSet           connectionSet     = null;
-    private LinkedList              msgQ              = new LinkedList();
-    private boolean                 disconnectPending = false;
-    private boolean                 terminated        = false;
+    private ConnectionSet connectionSet = null;
+    private boolean disconnectPending = false;
+    private boolean ignoring = false;
+    private Logger log = Logger.getLogger(this.getClass().toString());
+    private Identity me = null;
 
-    private boolean                 ignoring          = false;
+    private LinkedList msgQ = new LinkedList();
 
-    private Logger                   log               = Logger.getLogger(this.getClass().toString());
-
+    private boolean terminated = false;
 
     /**
      * Constructor used to create a MessageConnection when the implementation
@@ -71,32 +69,55 @@ public class MessageConnection
      * @param cs - the connection set
      * @param can - the heartbeat connection (used to get details of the connection)
      */
-    public MessageConnection(Identity id, ConnectionSet cs, HeartbeatProtocol hbp, Candidate can) {
+    public MessageConnection(Identity id, ConnectionSet cs,
+                             HeartbeatProtocol hbp, Candidate can) {
         super(hbp, can);
-        me                = id;
-        connectionSet     = cs;
+        me = id;
+        connectionSet = cs;
     }
 
     /**
-     * Over-ride the receiveHeartbeat() method. Message connections ignore
-     * heartbeats received out of band (i.e. delivered from the multicast
-     * heartbeat). Only heartbeats received in-band on their own connection counts.
+     * Inform the messageConnection that an implementation of the connection
+     * has been created. When a new connection is completed any outstanding
+     * messages should be sent. If there is a disconnect pending then
+     * immediately inform the connectionSet to disconnect.
      *
-     * @param hb - the heartbeat
-     * @return - always false (not valid)
+     * @param impl
+     * @return  boolean
      */
-    public boolean receiveHeartbeat(Heartbeat hb) { return false; }
+    public boolean assignImpl(IOConnection impl) {
 
-    /**
-     * Connection interface - to terminate (kill as opposed to close) the connection.
-     * There will be no callback to closing() as a result of terminating the transport.
-     */
-    public void terminate() {
-        super.terminate();
-        if( connectionImpl != null )
-            connectionImpl.terminate();
-        msgQ.clear();
-        terminated = true;
+        synchronized (msgQ) {
+            if (terminated) {
+                return false;
+            }
+
+            if (connectionImpl != null) {
+                if (log.isLoggable(Level.SEVERE)) {
+                    Exception e = new Exception();
+                    e.fillInStackTrace();
+                    log.log(
+                            Level.SEVERE,
+                            me
+                                    + " attempt to assign a new implementation when one exists",
+                            e);
+                }
+                return false;
+            }
+
+            connectionImpl = impl;
+            connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
+
+            while (!msgQ.isEmpty()) {
+                connectionImpl.send((TimedMsg) msgQ.removeFirst());
+            }
+
+            if (disconnectPending) {
+                connectionSet.disconnect(getSender());
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -111,6 +132,14 @@ public class MessageConnection
     }
 
     /**
+     * Indicate to the MessageConnection that a connect has been called.
+     * The purpose is to cancel a pending disconnect.
+     */
+    public void connect() {
+        disconnectPending = false;
+    }
+
+    /**
      * General deliver method - any messaage received by the transport will
      * be delivered using this method. The message will be a valid TimedMsg!
      *
@@ -118,9 +147,9 @@ public class MessageConnection
      */
     public void deliver(TimedMsg msg) {
 
-        if( msg instanceof HeartbeatMsg ) {
+        if (msg instanceof HeartbeatMsg) {
 
-            HeartbeatMsg hbmsg = (HeartbeatMsg)msg;
+            HeartbeatMsg hbmsg = (HeartbeatMsg) msg;
 
             /**
              * pass off to heartbeat protocol
@@ -130,41 +159,168 @@ public class MessageConnection
             /**
              * do the checks specific to a heartbeat connection.
              */
-            if( connectionSet.thisEndInitiatesConnectionsTo( getSender() ) ) {
+            if (connectionSet.thisEndInitiatesConnectionsTo(getSender())) {
                 checkInitiatingClose(hbmsg);
             } else {
                 checkRespondingClose(hbmsg);
             }
 
-        } else if( msg instanceof MessageMsg ) {
+        } else if (msg instanceof MessageMsg) {
 
-            MessageMsg mmsg = (MessageMsg)msg;
+            MessageMsg mmsg = (MessageMsg) msg;
 
             /**
              * The heartbeat protocol is extended to advance the time if any
              * message arrives. This is because receiving any message counts
              * as indication that the other end is still alive
              */
-           if( mmsg.getTime() > super.getTime() ) {
+            if (mmsg.getTime() > super.getTime()) {
                 super.setTime(mmsg.getTime());
             }
             connectionSet.receiveObject(mmsg.getMessageObject(),
-                                        mmsg.getSender(),
-                                        mmsg.getTime());
+                                        mmsg.getSender(), mmsg.getTime());
 
-        } else if( msg == null ) {
+        } else if (msg == null) {
 
-            if( log.isLoggable(Level.SEVERE) )
-                log.severe(me + "connection transport delivered null message from " + this.getSender() );
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + "connection transport delivered null message from "
+                           + getSender());
+            }
 
         } else {
 
-          if( log.isLoggable(Level.SEVERE) )
-              log.severe(me + "connection transport delivered unknown message type from " + this.getSender()
-                 + " message=" + msg );
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(me
+                           + "connection transport delivered unknown message type from "
+                           + getSender() + " message=" + msg);
+            }
         }
     }
 
+    /**
+     * Instruct the messageConnection to disconnect. If there are no messages
+     * waiting to be sent then this can be done immediately (by informing
+     * the connectionSet of the disconnect - it is actually done via a check
+     * on heartbeat delivery, not now). If there are messages pending it
+     * implies that the connection has not been created yet and there are
+     * messages to send, so we still want to connect even if the application
+     * layer no longer wants to send. In this case that there is a disconnect
+     * pending but don't tell the connectionSet to disconnect yet.
+     */
+    public void disconnect() {
+        synchronized (msgQ) {
+            disconnectPending = true;
+
+            if (msgQ.isEmpty()) {
+                connectionSet.disconnect(getSender());
+            }
+        }
+    }
+
+    public void logClose(String reason, Throwable throwable) {
+
+        if (log.isLoggable(Level.FINE)) {
+            log.log(Level.FINE, me + " message connection transport for "
+                                + getSender() + " shutdown:" + reason,
+                    throwable);
+        }
+
+    }
+
+    /**
+     * Over-ride the receiveHeartbeat() method. Message connections ignore
+     * heartbeats received out of band (i.e. delivered from the multicast
+     * heartbeat). Only heartbeats received in-band on their own connection counts.
+     *
+     * @param hb - the heartbeat
+     * @return - always false (not valid)
+     */
+    @Override
+    public boolean receiveHeartbeat(Heartbeat hb) {
+        return false;
+    }
+
+    public void sendMsg(TimedMsg msg) {
+
+        if (msg == null) {
+            if (log.isLoggable(Level.SEVERE)) {
+                Exception e = new Exception();
+                e.fillInStackTrace();
+                log.log(Level.SEVERE,
+                        me + " sendBytes(WireMsg) called with null parameter ",
+                        e);
+            }
+            return;
+        }
+
+        synchronized (msgQ) {
+            /**
+             * If the connection has not been constructed, buffer the message.
+             * FIX ME: This is a hack for the moment there is no flow control to
+             *         deal with too many messages!
+             */
+            if (connectionImpl == null) {
+                msgQ.addLast(msg);
+                return;
+            }
+
+            /**
+             * If the connection has been terminated then just return. In time the
+             * User will be notified that the connection, and therefore the
+             * remote node, has terminated.
+             */
+            if (!connectionImpl.connected()) {
+                return;
+            }
+
+            /**
+             * If the connectionImpl exists and it is connected then just send on it.
+             */
+            connectionImpl.send(msg);
+        }
+    }
+
+    /**
+     * sendObject() creates a message to transport an object and calls
+     * sendMsg() to send it. It also time-stamps the message. The object must
+     * be serializable.
+     *
+     * @param obj - the object to transport
+     */
+    public void sendObject(Object obj) {
+        MessageMsg msg = new MessageMsg(me, obj);
+        msg.setTime(System.currentTimeMillis());
+        sendMsg(msg);
+    }
+
+    /**
+     * for testing - can set the connection to ignore messages -
+     * they will be received, but just dropped
+     * @param ignoring
+     */
+    public void setIgnoring(boolean ignoring) {
+        synchronized (msgQ) {
+            this.ignoring = ignoring;
+            if (connectionImpl != null) {
+                connectionImpl.setIgnoring(ignoring);
+            }
+        }
+    }
+
+    /**
+     * Connection interface - to terminate (kill as opposed to close) the connection.
+     * There will be no callback to closing() as a result of terminating the transport.
+     */
+    @Override
+    public void terminate() {
+        super.terminate();
+        if (connectionImpl != null) {
+            connectionImpl.terminate();
+        }
+        msgQ.clear();
+        terminated = true;
+    }
 
     private void checkInitiatingClose(HeartbeatMsg msg) {
         // System.out.println(me + " initiator close check on link to " + getSender() );
@@ -173,8 +329,8 @@ public class MessageConnection
          * close heartbeat - note that normal messages and heartbeats
          * are accepted up to the actual return close message.
          */
-        if( closingImpl != null ) {
-            if(msg instanceof Close) {
+        if (closingImpl != null) {
+            if (msg instanceof Close) {
                 closingImpl.terminate();
                 closingImpl = null;
 
@@ -183,16 +339,18 @@ public class MessageConnection
                  * back - reinitiate the connection by re-creating the
                  * implementation.
                  */
-                if( !msgQ.isEmpty() ||
-                    msg.getMsgLinks().contains(me.id) ||
-                    connectionSet.wantsMsgLinkTo( getSender() ) ) {
+                if (!msgQ.isEmpty() || msg.getMsgLinks().contains(me.id)
+                    || connectionSet.wantsMsgLinkTo(getSender())) {
 
                     // System.out.println(me + " connection closed but re-opening ");
                     // if( !msgQ.isEmpty() ) System.out.println(me + "  -- the message queue is not empty");
                     // if( msg.getMsgLinks().get(me.id) ) System.out.println(me + "  -- the other end appears to want the connection");
                     // if( connectionSet.wantsMsgLinkTo( getSender() ) ) System.out.println(me + "  -- this end appears to want the connection");
 
-                    connectionSet.getConnectionServer().initiateConnection(me, this, connectionSet.getHeartbeatMsg());
+                    connectionSet.getConnectionServer().initiateConnection(
+                                                                           me,
+                                                                           this,
+                                                                           connectionSet.getHeartbeatMsg());
                 }
 
                 /**
@@ -214,25 +372,29 @@ public class MessageConnection
          * have some messages to send!!!! (if there are messages hang around
          * until they are sent - clears up case of rapid connect, send, disconnect)
          */
-        else if( !msg.getMsgLinks().contains(me.id) &&
-                 !connectionSet.wantsMsgLinkTo( getSender() ) &&
-                 msgQ.isEmpty() ) {
+        else if (!msg.getMsgLinks().contains(me.id)
+                 && !connectionSet.wantsMsgLinkTo(getSender())
+                 && msgQ.isEmpty()) {
             // System.out.println(me + " entering close on connection to " +  getSender() );
             closingImpl = connectionImpl;
             connectionImpl = null;
             try {
 
-                closingImpl.send( connectionSet.getHeartbeatMsg().toClose());
+                closingImpl.send(connectionSet.getHeartbeatMsg().toClose());
 
             } catch (Exception ex) {
 
-                if( log.isLoggable(Level.SEVERE) )
-                    log.log(Level.SEVERE,  me + "failed to marshall close message - not sent to " + getSender(), ex );
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.log(
+                            Level.SEVERE,
+                            me
+                                    + "failed to marshall close message - not sent to "
+                                    + getSender(), ex);
+                }
 
             }
         }
     }
-
 
     private void checkRespondingClose(HeartbeatMsg msg) {
         // System.out.println(me + " responder close check on link to " +  getSender() );
@@ -243,160 +405,16 @@ public class MessageConnection
          * eventually shutdown the link and the impl will close - when that happens
          * we don't want it cause this messageConnection to terminate too!
          */
-        if(msg instanceof Close) {
+        if (msg instanceof Close) {
             // System.out.println(me + " received CloseMsg - closing connection to " +  getSender() );
-            sendMsg( connectionSet.getHeartbeatMsg().toClose() );
+            sendMsg(connectionSet.getHeartbeatMsg().toClose());
             connectionImpl.silent();
             connectionImpl = null;
-            if( !connectionSet.wantsMsgLinkTo( getSender() ) ) {
+            if (!connectionSet.wantsMsgLinkTo(getSender())) {
                 // System.out.println(me + " converting back to heartbeat connection");
                 connectionSet.convertToHeartbeatConnection(this);
             }
         }
     }
-
-    /**
-     * sendObject() creates a message to transport an object and calls
-     * sendMsg() to send it. It also time-stamps the message. The object must
-     * be serializable.
-     *
-     * @param obj - the object to transport
-     */
-    public void sendObject(Object obj) {
-        MessageMsg msg = new MessageMsg(me, obj);
-        msg.setTime(System.currentTimeMillis());
-        sendMsg(msg);
-    }
-
-
-
-
-    public void sendMsg(TimedMsg msg) {
-        
-        if (msg == null) {
-            if (log.isLoggable(Level.SEVERE)) {
-                Exception e = new Exception();
-                e.fillInStackTrace();
-                log.log(Level.SEVERE, me + " sendBytes(WireMsg) called with null parameter ",
-                          e);
-            }
-            return;
-        }
-        
-        
-        synchronized (msgQ) {
-            /**
-             * If the connection has not been constructed, buffer the message.
-             * FIX ME: This is a hack for the moment there is no flow control to
-             *         deal with too many messages!
-             */
-            if (connectionImpl == null) {
-                msgQ.addLast(msg);
-                return;
-            }
-
-            /**
-             * If the connection has been terminated then just return. In time the
-             * User will be notified that the connection, and therefore the
-             * remote node, has terminated.
-             */
-            if( !connectionImpl.connected() )
-                return;
-
-
-            /**
-             * If the connectionImpl exists and it is connected then just send on it.
-             */
-            connectionImpl.send(msg);
-        }
-    }
-
-
-    /**
-     * Inform the messageConnection that an implementation of the connection
-     * has been created. When a new connection is completed any outstanding
-     * messages should be sent. If there is a disconnect pending then
-     * immediately inform the connectionSet to disconnect.
-     *
-     * @param impl
-     * @return  boolean
-     */
-    public boolean assignImpl(IOConnection impl) {
-
-        synchronized(msgQ) {
-            if( terminated )
-                return false;
-
-            if( connectionImpl != null ) {
-                if( log.isLoggable(Level.SEVERE) ) {
-                    Exception e = new Exception();
-                    e.fillInStackTrace();
-                    log.log(Level.SEVERE, me + " attempt to assign a new implementation when one exists", e);
-                }
-                return false;
-            }
-
-            connectionImpl = impl;
-            connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
-
-            while( !msgQ.isEmpty() )
-                connectionImpl.send((TimedMsg)msgQ.removeFirst());
-
-            if(disconnectPending)
-                connectionSet.disconnect( getSender() );
-        }
-
-        return true;
-    }
-
-    /**
-     * Instruct the messageConnection to disconnect. If there are no messages
-     * waiting to be sent then this can be done immediately (by informing
-     * the connectionSet of the disconnect - it is actually done via a check
-     * on heartbeat delivery, not now). If there are messages pending it
-     * implies that the connection has not been created yet and there are
-     * messages to send, so we still want to connect even if the application
-     * layer no longer wants to send. In this case that there is a disconnect
-     * pending but don't tell the connectionSet to disconnect yet.
-     */
-    public void disconnect() {
-        synchronized(msgQ) {
-            disconnectPending = true;
-
-            if( msgQ.isEmpty() )
-                connectionSet.disconnect( getSender() );
-        }
-    }
-
-
-    /**
-     * Indicate to the MessageConnection that a connect has been called.
-     * The purpose is to cancel a pending disconnect.
-     */
-    public void connect() {
-        disconnectPending = false;
-    }
-
-    /**
-     * for testing - can set the connection to ignore messages -
-     * they will be received, but just dropped
-     * @param ignoring
-     */
-    public void setIgnoring(boolean ignoring) {
-        synchronized(msgQ) {
-            this.ignoring = ignoring;
-            if(connectionImpl != null )
-                connectionImpl.setIgnoring(ignoring);
-        }
-    }
-
-    public void logClose(String reason, Throwable throwable) {
-
-         if( log.isLoggable(Level.FINE) )
-             log.log(Level.FINE, me + " message connection transport for " + this.getSender() + " shutdown:" + reason, throwable);
-
-    }
-
-
 
 }

@@ -19,17 +19,11 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
-
-
-
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
-
-
 
 /**
  * ConnectionAddress is a class used to represent an endpoint for a
@@ -37,34 +31,24 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
  */
 public class ConnectionAddress implements Cloneable, WireSizes {
 
-    public InetAddress   ipaddress;
-    public int           port;
+    static final private int addressIdx = intSz;
 
+    static final private int lengthIdx = 0;
     static final private int nullAddress = 0;
-    static final private int lengthIdx   = 0;
-    static final private int addressIdx  = intSz;
-    static final private int portIdx     = addressIdx + maxInetAddressSz;
+    static final private int portIdx = addressIdx + maxInetAddressSz;
     static final public int connectionAddressWireSz = portIdx + intSz;
-
-    /**
-     * constructing from given parameters
-     */
-    public ConnectionAddress(InetAddress address, int port) {
-
-        this.ipaddress  = address;
-        this.port       = port;
-    }
-
 
     public static ConnectionAddress readWireForm(ByteBuffer bytes, int idx) {
 
         int length = bytes.getInt(idx + lengthIdx);
-        if( length == nullAddress )
+        if (length == nullAddress) {
             return null;
+        }
 
         byte[] address = new byte[length];
-        for(int i = 0; i < address.length; i++)
+        for (int i = 0; i < address.length; i++) {
             address[i] = bytes.get(idx + addressIdx + i);
+        }
         InetAddress inetAddress = null;
         try {
             inetAddress = InetAddress.getByAddress(address);
@@ -80,24 +64,28 @@ public class ConnectionAddress implements Cloneable, WireSizes {
         bytes.putInt(idx, nullAddress);
     }
 
-    public void writeWireForm(ByteBuffer bytes, int idx) {
-        byte[] address = ipaddress.getAddress();
-        bytes.putInt(idx + lengthIdx, address.length);
-        for(int i = 0; i < address.length; i++)
-            bytes.put(idx + addressIdx + i, address[i]);
-        bytes.putInt(idx + portIdx, port);
-    }
+    public InetAddress ipaddress;
 
-
+    public int port;
 
     /**
-     * toString for debug purposes
+     * constructing from given parameters
      */
-    public String toString() {
-        return ipaddress.toString() + ":" + port;
+    public ConnectionAddress(InetAddress address, int port) {
+
+        ipaddress = address;
+        this.port = port;
     }
 
-
+    @Override
+    public Object clone() {
+        try {
+            ConnectionAddress addr = (ConnectionAddress) super.clone();
+            return addr;
+        } catch (CloneNotSupportedException ex) {
+            return null;
+        }
+    }
 
     /**
      * test to see if this is a null address
@@ -106,14 +94,20 @@ public class ConnectionAddress implements Cloneable, WireSizes {
         return ipaddress == null;
     }
 
+    /**
+     * toString for debug purposes
+     */
+    @Override
+    public String toString() {
+        return ipaddress.toString() + ":" + port;
+    }
 
-    public Object clone() {
-        try {
-            ConnectionAddress addr = (ConnectionAddress)super.clone();
-            return addr;
+    public void writeWireForm(ByteBuffer bytes, int idx) {
+        byte[] address = ipaddress.getAddress();
+        bytes.putInt(idx + lengthIdx, address.length);
+        for (int i = 0; i < address.length; i++) {
+            bytes.put(idx + addressIdx + i, address[i]);
         }
-        catch (CloneNotSupportedException ex) {
-            return null;
-        }
+        bytes.putInt(idx + portIdx, port);
     }
 }

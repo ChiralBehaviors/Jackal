@@ -19,40 +19,62 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.registers;
 
-
-import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.locator.util.BlockingQueue;
+import org.smartfrog.services.anubis.partition.views.View;
 
 abstract public class StabilityQueue {
 
     private class Notification {
-        View view; int leader;
+        int leader;
+        View view;
+
         public Notification(View view, int leader) {
-            this.view = view; this.leader = leader;
+            this.view = view;
+            this.leader = leader;
         }
     }
 
     private class RequestServer extends Thread {
-        private boolean           running = false;
-        public RequestServer() { super("Anubis: Locator Stability Queue Server"); }
+        private boolean running = false;
+
+        public RequestServer() {
+            super("Anubis: Locator Stability Queue Server");
+        }
+
+        @Override
         public void run() {
             running = true;
-            while( running ) {
-                Notification notification = (Notification)requests.get();
-                if( notification != null )
+            while (running) {
+                Notification notification = (Notification) requests.get();
+                if (notification != null) {
                     doit(notification.view, notification.leader);
+                }
             }
         }
-        public void terminate() { running = false; }
+
+        public void terminate() {
+            running = false;
+        }
     }
 
     private BlockingQueue requests = new BlockingQueue();
-    private RequestServer server   = new RequestServer();
+    private RequestServer server = new RequestServer();
 
-    public      StabilityQueue()           { }
-    public void start()                    { server.start(); }
-    public void terminate()                { server.terminate(); requests.deactivate(); }
-    public void put(View view, int leader) { requests.put(new Notification(view, leader)); }
+    public StabilityQueue() {
+    }
 
     abstract public void doit(View view, int leader);
+
+    public void put(View view, int leader) {
+        requests.put(new Notification(view, leader));
+    }
+
+    public void start() {
+        server.start();
+    }
+
+    public void terminate() {
+        server.terminate();
+        requests.deactivate();
+    }
 }

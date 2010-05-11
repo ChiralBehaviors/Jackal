@@ -19,17 +19,20 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.names;
 
-
 import java.io.Serializable;
 
 public class NameData implements Serializable {
 
-    public String        name;
-    public Integer       node;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    public String name;
+    public Integer node;
 
     public NameData(String name, Integer node) {
-        this.name     = name;
-        this.node     = node;
+        this.name = name;
+        this.node = node;
     }
 
     /**
@@ -40,14 +43,17 @@ public class NameData implements Serializable {
      * @param obj
      * @return boolean
      */
+    @Override
     public boolean equals(Object obj) {
-        if( obj instanceof NameData )
-            return ( name.equals( ((NameData)obj).name) &&
-                     node.equals( ((NameData)obj).node) );
-        else
+        if (obj instanceof NameData) {
+            return name.equals(((NameData) obj).name)
+                   && node.equals(((NameData) obj).node);
+        } else {
             return false;
+        }
     }
 
+    @Override
     public int hashCode() {
         return name.hashCode() + node.hashCode();
     }

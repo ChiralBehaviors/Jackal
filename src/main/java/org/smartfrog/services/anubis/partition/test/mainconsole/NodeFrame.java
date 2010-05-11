@@ -19,12 +19,12 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
-
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -39,36 +39,111 @@ import org.smartfrog.services.anubis.partition.test.msg.StatsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.ThreadsMsg;
 import org.smartfrog.services.anubis.partition.views.View;
 
-
 public class NodeFrame extends JFrame {
-    private NodeData nodeData;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
 
+    private BorderLayout borderLayout1 = new BorderLayout();
 
-    private JPanel jPanel1 = new JPanel();
+    private BorderLayout borderLayout2 = new BorderLayout();
+    private JButton jButton1 = new JButton();
     private JButton jButton2 = new JButton();
     private JButton jButton3 = new JButton();
     private JButton jButton4 = new JButton();
-    private JButton jButton1 = new JButton();
-    private JPanel jPanel2 = new JPanel();
-    private JTextField jTextField1 = new JTextField();
-    private BorderLayout borderLayout1 = new BorderLayout();
-    private BorderLayout borderLayout2 = new BorderLayout();
-    private TitledBorder titledBorder1;
-
-    private JScrollPane jScrollPane1 = new JScrollPane();
-    private JTextArea jTextArea1 = new JTextArea();
     private JButton jButton7 = new JButton();
     private JButton jButton8 = new JButton();
+    private JPanel jPanel1 = new JPanel();
+    private JPanel jPanel2 = new JPanel();
+    private JScrollPane jScrollPane1 = new JScrollPane();
+
+    private JTextArea jTextArea1 = new JTextArea();
+    private JTextField jTextField1 = new JTextField();
+    private NodeData nodeData;
+    private TitledBorder titledBorder1;
 
     public NodeFrame(NodeData nodeData) {
         this.nodeData = nodeData;
         try {
             jbInit();
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    /**
+     * create a close window action listener
+     */
+    public void closeEvent() {
+        nodeData.closeWindow();
+    }
+
+    public void inputError(String errorStr) {
+        jTextField1.setText("[" + errorStr + "]" + jTextField1.getText());
+    }
+
+    public String stripErrorPart(String inputStr) {
+        String input = inputStr.trim();
+        if (input.indexOf('[') == 0 && input.indexOf(']') != -1) {
+            input = input.substring(input.indexOf(']') + 1);
+        }
+        return input;
+    }
+
+    public void update(View partition, View view, int leader, View ignoring,
+                       long interval, long timeout, StatsMsg stats,
+                       ThreadsMsg threads) {
+        clear();
+        if (partition.isStable()) {
+            println("PARTITION -- stable -- timestamp: "
+                    + partition.getTimeStamp() + ", leader: " + leader);
+        } else {
+            println("PARTITION -- UNstable -- timestamp: "
+                    + partition.getTimeStamp() + ", leader: " + leader);
+        }
+        println("    " + viewMembersToString(partition));
+        println("");
+
+        if (view.isStable()) {
+            println("VIEW -- stable -- timestamp: " + view.getTimeStamp());
+        } else {
+            println("VIEW -- UNstable -- timestamp: " + view.getTimeStamp());
+        }
+        println("    " + viewMembersToString(view));
+        println("");
+
+        if (ignoring.isEmpty()) {
+            println("accepting all nodes");
+        } else {
+            println("IGNORING: \n" + viewMembersToString(ignoring));
+        }
+        println("");
+        println("heartbeat interval = " + interval + ", timeout = " + timeout);
+        if (stats != null) {
+            println("Scheduling delay min: " + stats.schedulingOneMinute
+                    + ", 10min: " + stats.schedulingTenMinute + ", hour: "
+                    + stats.schedulingOneHour + ", longest delay: "
+                    + stats.schedulingLongest);
+        }
+        println("");
+        if (threads != null) {
+            println(threads.threadsStatusString);
+        }
+        println("");
+
+    }
+
+    public String viewMembersToString(View view) {
+        String str = "";
+        for (int i = 0; i < view.size(); i++) {
+            if (view.contains(i)) {
+                str += i + " ";
+            }
+        }
+        return str;
+    }
+
     private void jbInit() throws Exception {
         titledBorder1 = new TitledBorder("");
         jButton2.setText("Noop");
@@ -95,7 +170,7 @@ public class NodeFrame extends JFrame {
                 jButton1_actionPerformed(e);
             }
         });
-        this.getContentPane().setLayout(borderLayout1);
+        getContentPane().setLayout(borderLayout1);
         jPanel2.setLayout(borderLayout2);
         jPanel1.setBorder(BorderFactory.createRaisedBevelBorder());
         jPanel2.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -122,18 +197,25 @@ public class NodeFrame extends JFrame {
         jPanel1.add(jButton7, null);
         jPanel1.add(jButton3, null);
         jPanel1.add(jButton4, null);
-        this.getContentPane().add(jPanel2, BorderLayout.CENTER);
-        jPanel2.add(jTextField1,  BorderLayout.SOUTH);
+        getContentPane().add(jPanel2, BorderLayout.CENTER);
+        jPanel2.add(jTextField1, BorderLayout.SOUTH);
         jPanel2.add(jScrollPane1, BorderLayout.CENTER);
-        this.getContentPane().add(jPanel1, BorderLayout.SOUTH);
+        getContentPane().add(jPanel1, BorderLayout.SOUTH);
         jScrollPane1.getViewport().add(jTextArea1, null);
 
         this.setSize(new Dimension(499, 300));
 
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) { closeEvent(); }
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closeEvent();
+            }
         });
+    }
+
+    void clear() {
+        jTextArea1.setText("");
     }
 
     void jButton1_actionPerformed(ActionEvent e) {
@@ -155,92 +237,17 @@ public class NodeFrame extends JFrame {
     void jButton7_actionPerformed(ActionEvent e) {
     }
 
-
-
-    void println(String str) {
-        jTextArea1.append(str);
-        jTextArea1.append("\n");
+    void jButton8_actionPerformed(ActionEvent e) {
+        nodeData.getStats();
     }
 
     void print(String str) {
         jTextArea1.append(str);
     }
 
-    void clear() {
-        jTextArea1.setText("");
+    void println(String str) {
+        jTextArea1.append(str);
+        jTextArea1.append("\n");
     }
-
-    void jButton8_actionPerformed(ActionEvent e) {
-        nodeData.getStats();
-    }
-
-
-
-
-
-
-
-    /**
-     * create a close window action listener
-     */
-    public void closeEvent() {
-        nodeData.closeWindow();
-    }
-
-    public String viewMembersToString(View view) {
-        String str = "";
-        for(int i = 0; i < view.size(); i++)
-            if( view.contains(i) )
-                str += i + " ";
-        return str;
-    }
-
-    public void update(View partition, View view, int leader, View ignoring,
-                       long interval, long timeout, StatsMsg stats, ThreadsMsg threads) {
-        clear();
-        if( partition.isStable() )
-            println("PARTITION -- stable -- timestamp: " + partition.getTimeStamp() + ", leader: " + leader);
-        else
-            println("PARTITION -- UNstable -- timestamp: " + partition.getTimeStamp() + ", leader: " + leader);
-        println("    " + viewMembersToString(partition));
-        println("");
-
-        if( view.isStable() )
-            println("VIEW -- stable -- timestamp: " + view.getTimeStamp());
-        else
-            println("VIEW -- UNstable -- timestamp: " + view.getTimeStamp());
-        println("    " + viewMembersToString(view));
-        println("");
-
-        if( ignoring.isEmpty() )
-            println("accepting all nodes");
-        else
-            println("IGNORING: \n" + viewMembersToString(ignoring));
-        println("");
-        println("heartbeat interval = " + interval + ", timeout = " + timeout);
-        if( stats != null)
-            println("Scheduling delay min: " + stats.schedulingOneMinute +
-                    ", 10min: " + stats.schedulingTenMinute +
-                    ", hour: " + stats.schedulingOneHour +
-                    ", longest delay: " + stats.schedulingLongest);
-        println("");
-        if( threads != null ) {
-            println(threads.threadsStatusString);
-        }
-        println("");
-
-    }
-
-    public String stripErrorPart(String inputStr) {
-        String input = inputStr.trim();
-        if( input.indexOf('[') == 0 && input.indexOf(']') != -1 )
-            input = input.substring(input.indexOf(']') + 1);
-        return input;
-    }
-
-    public void inputError(String errorStr) {
-        jTextField1.setText("[" + errorStr + "]" + jTextField1.getText());
-    }
-
 
 }

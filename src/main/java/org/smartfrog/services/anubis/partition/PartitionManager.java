@@ -40,122 +40,106 @@ public class PartitionManager implements Partition {
 
     static final int UNDEFINED_LEADER = -1;
 
-    PartitionProtocol partitionProtocol = null;
     Identity identity = null;
+    Logger log = Logger.getLogger(PartitionManager.class.getCanonicalName()); //TODO Need to wrap Async
     Set notificationSet = new HashSet();
-    View notifiedView = null;
     int notifiedLeader = UNDEFINED_LEADER;
+    View notifiedView = null;
+    PartitionProtocol partitionProtocol = null;
+    boolean terminated = false;
     boolean testable = false;
     TestMgr testManager = null;
-    Logger log = Logger.getLogger(PartitionManager.class.getCanonicalName());  //TODO Need to wrap Async
     ActiveTimeQueue timer = null;
-    boolean terminated = false; 
 
-    public PartitionProtocol getPartitionProtocol() {
-        return partitionProtocol;
+    public MessageConnection connect(int node) {
+        return partitionProtocol.connect(node);
     }
 
-    public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
-        this.partitionProtocol = partitionProtocol;
+    public synchronized void deregister(PartitionNotification pn) {
+        notificationSet.remove(pn);
+    }
+
+    public int getId() {
+        return identity.id;
     }
 
     public Identity getIdentity() {
         return identity;
     }
 
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
+    public InetAddress getNodeAddress(int node) {
+        return partitionProtocol.getNodeAddress(node);
     }
 
-    public void start() { 
-            timer = new ActiveTimeQueue(
-                                        "Anubis: Partition Manager timers (node "
-                                                + identity.id + ")"); 
-            notifiedView = BitView.create(identity, identity.epoch);
-            notifiedLeader = identity.id; 
-            timer.start();
+    public PartitionProtocol getPartitionProtocol() {
+        return partitionProtocol;
+    }
 
-            if (log.isLoggable(Level.INFO))
-                log.info("Started partition manager at " + identity + " "
-                         + Anubis.version);
-    } 
-
-    public void terminate() {
-        if (log.isLoggable(Level.INFO))
-            log.info("Terminating partition manager at " + identity);
-        timer.terminate();
-        terminated = true; 
+    public synchronized Status getStatus() {
+        return new Status(notifiedView, notifiedLeader);
     }
 
     public synchronized void notify(View view, int leader) {
 
-        if (view.isStable() && leader == identity.id && notifiedLeader != leader
-            && notifiedLeader != UNDEFINED_LEADER && log.isLoggable(Level.SEVERE))
+        if (view.isStable() && leader == identity.id
+            && notifiedLeader != leader && notifiedLeader != UNDEFINED_LEADER
+            && log.isLoggable(Level.SEVERE)) {
             log.severe("Leader changed to me on stabalization, old leader = "
-                      + notifiedLeader + ", new leader = " + leader
-                      + ", view = " + view);
+                       + notifiedLeader + ", new leader = " + leader
+                       + ", view = " + view);
+        }
 
         notifiedView = new BitView(view);
         notifiedLeader = leader;
         Iterator iter = ((Set) ((HashSet) notificationSet).clone()).iterator();
-        while (iter.hasNext())
+        while (iter.hasNext()) {
             safePartitionNotification((PartitionNotification) iter.next(),
                                       notifiedView, notifiedLeader);
-    }
-
-    /**
-     * This method will invoke user code in the listener. It is timed, logs
-     * timeliness severes and catches Throwables.
-     *
-     * @param listener
-     */
-    private void safePartitionNotification(PartitionNotification pn, View view,
-                                           int leader) {
-        long timein = System.currentTimeMillis();
-        long timeout = 0;
-        class TimeoutErrorLogger extends TimeQueueElement {
-            View view;
-            int leader;
-
-            TimeoutErrorLogger(View v, int l) {
-                view = v;
-                leader = l;
-            }
-
-            public void expired() {
-                if (log.isLoggable(Level.SEVERE))
-                    log.severe("User API Upcall took >200ms in "
-                              + "partitionNotification(view, leader) where view="
-                              + view + ", leader=" + leader);
-            }
         }
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(view,
-                                                                       leader);
-
-        timer.add(timeoutErrorLogger, (timein + 200));
-        try {
-            pn.partitionNotification(view, leader);
-        } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE))
-                log.log(Level.SEVERE, "User API Upcall threw Throwable in "
-                          + "partitionNotification(view, leader) where view="
-                          + view + ", leader=" + leader, ex);
-        }
-        timeout = System.currentTimeMillis();
-        timer.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINER))
-            log.finer("User API Upcall took " + (timeout - timein)
-                      + "ms in partitionNotification(view, leader) where view="
-                      + view + ", leader=" + leader);
     }
 
     public synchronized void receiveObject(Object obj, int sender, long time) {
-        if (terminated)
+        if (terminated) {
             return;
+        }
         Iterator iter = ((Set) ((HashSet) notificationSet).clone()).iterator();
-        while (iter.hasNext())
+        while (iter.hasNext()) {
             safeObjectNotification((PartitionNotification) iter.next(), obj,
                                    sender, time);
+        }
+    }
+
+    public synchronized void register(PartitionNotification pn) {
+        notificationSet.add(pn);
+    }
+
+    public void setIdentity(Identity identity) {
+        this.identity = identity;
+    }
+
+    public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
+        this.partitionProtocol = partitionProtocol;
+    }
+
+    public void start() {
+        timer = new ActiveTimeQueue("Anubis: Partition Manager timers (node "
+                                    + identity.id + ")");
+        notifiedView = BitView.create(identity, identity.epoch);
+        notifiedLeader = identity.id;
+        timer.start();
+
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Started partition manager at " + identity + " "
+                     + Anubis.version);
+        }
+    }
+
+    public void terminate() {
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Terminating partition manager at " + identity);
+        }
+        timer.terminate();
+        terminated = true;
     }
 
     /**
@@ -179,11 +163,13 @@ public class PartitionManager implements Partition {
                 time = t;
             }
 
+            @Override
             public void expired() {
-                if (log.isLoggable(Level.SEVERE))
+                if (log.isLoggable(Level.SEVERE)) {
                     log.severe("User API Upcall took >200ms in "
-                              + "objectNotification(obj, sender, time) where obj="
-                              + obj + ", sender=" + sender + ", time=" + time);
+                               + "objectNotification(obj, sender, time) where obj="
+                               + obj + ", sender=" + sender + ", time=" + time);
+                }
             }
         }
         TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(obj,
@@ -194,42 +180,75 @@ public class PartitionManager implements Partition {
         try {
             pn.objectNotification(obj, sender, time);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE))
-                log.log(Level.SEVERE, "User API Upcall threw Throwable in "
-                          + "objectNotification(obj, sender, time) where obj="
-                          + obj + ", sender=" + sender + ", time=" + time, ex);
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(
+                        Level.SEVERE,
+                        "User API Upcall threw Throwable in "
+                                + "objectNotification(obj, sender, time) where obj="
+                                + obj + ", sender=" + sender + ", time=" + time,
+                        ex);
+            }
         }
         timeout = System.currentTimeMillis();
         timer.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINER))
+        if (log.isLoggable(Level.FINER)) {
             log.finer("User API Upcall took "
                       + (timeout - timein)
                       + "ms in objectNotification(obj, sender, time) where obj="
                       + obj + ", sender=" + sender + ", time=" + time);
+        }
     }
 
-    public synchronized Status getStatus() {
-        return new Status(notifiedView, notifiedLeader);
-    }
+    /**
+     * This method will invoke user code in the listener. It is timed, logs
+     * timeliness severes and catches Throwables.
+     *
+     * @param listener
+     */
+    private void safePartitionNotification(PartitionNotification pn, View view,
+                                           int leader) {
+        long timein = System.currentTimeMillis();
+        long timeout = 0;
+        class TimeoutErrorLogger extends TimeQueueElement {
+            int leader;
+            View view;
 
-    public synchronized void register(PartitionNotification pn) {
-        notificationSet.add(pn);
-    }
+            TimeoutErrorLogger(View v, int l) {
+                view = v;
+                leader = l;
+            }
 
-    public synchronized void deregister(PartitionNotification pn) {
-        notificationSet.remove(pn);
-    }
+            @Override
+            public void expired() {
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe("User API Upcall took >200ms in "
+                               + "partitionNotification(view, leader) where view="
+                               + view + ", leader=" + leader);
+                }
+            }
+        }
+        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(view,
+                                                                       leader);
 
-    public MessageConnection connect(int node) {
-        return partitionProtocol.connect(node);
-    }
-
-    public InetAddress getNodeAddress(int node) {
-        return partitionProtocol.getNodeAddress(node);
-    }
-
-    public int getId() {
-        return identity.id;
+        timer.add(timeoutErrorLogger, (timein + 200));
+        try {
+            pn.partitionNotification(view, leader);
+        } catch (Throwable ex) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(
+                        Level.SEVERE,
+                        "User API Upcall threw Throwable in "
+                                + "partitionNotification(view, leader) where view="
+                                + view + ", leader=" + leader, ex);
+            }
+        }
+        timeout = System.currentTimeMillis();
+        timer.remove(timeoutErrorLogger);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("User API Upcall took " + (timeout - timein)
+                      + "ms in partitionNotification(view, leader) where view="
+                      + view + ", leader=" + leader);
+        }
     }
 
 }

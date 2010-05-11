@@ -19,13 +19,14 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.stats;
 
-
-
 public class Heartbeats {
 
-    private AveCalculator oneMinuteCalculator = new TimedAveCalculator(60*1000);
-    private AveCalculator tenMinuteCalculator = new TimedAveCalculator(10*60*1000);
-    private AveCalculator oneHourCalculator   = new TimedAveCalculator(60*60*1000);
+    private AveCalculator oneHourCalculator = new TimedAveCalculator(
+                                                                     60 * 60 * 1000);
+    private AveCalculator oneMinuteCalculator = new TimedAveCalculator(
+                                                                       60 * 1000);
+    private AveCalculator tenMinuteCalculator = new TimedAveCalculator(
+                                                                       10 * 60 * 1000);
 
     public Heartbeats() {
     }
@@ -36,8 +37,16 @@ public class Heartbeats {
         oneHourCalculator.add(time, delay);
     }
 
-    public long oneMinAve()  { return oneMinuteCalculator.average(); }
-    public long tenMinAve()  { return tenMinuteCalculator.average(); }
-    public long oneHourAve() { return oneHourCalculator.average();   }
+    public long oneHourAve() {
+        return oneHourCalculator.average();
+    }
+
+    public long oneMinAve() {
+        return oneMinuteCalculator.average();
+    }
+
+    public long tenMinAve() {
+        return tenMinuteCalculator.average();
+    }
 
 }

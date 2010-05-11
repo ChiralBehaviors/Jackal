@@ -25,9 +25,9 @@ import org.smartfrog.services.anubis.locator.AnubisProvider;
 public class AnubisPrim {
 
     private AnubisLocator locator = null;
+    private boolean marshallValues = false;
     private AnubisProvider provider = null;
     protected String name = null;
-    private boolean marshallValues = false;
 
     public AnubisPrim() throws Exception {
         super();
@@ -37,24 +37,24 @@ public class AnubisPrim {
         return locator;
     }
 
-    public void setLocator(AnubisLocator locator) {
-        this.locator = locator;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public boolean isMarshallValues() {
         return marshallValues;
     }
 
+    public void setLocator(AnubisLocator locator) {
+        this.locator = locator;
+    }
+
     public void setMarshallValues(boolean marshallValues) {
         this.marshallValues = marshallValues;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void start() {

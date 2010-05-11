@@ -27,13 +27,13 @@ import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
 
 abstract public class AnubisStability {
 
+    private long lastTimeRef = -1;
+    private boolean lastWasStable = true;
     private ActiveTimeQueue timers = null;
     protected Logger log = Logger.getLogger(this.getClass().toString());
-    private boolean lastWasStable = true;
-    private long    lastTimeRef   = -1;
 
-    public void setTimerQueue(ActiveTimeQueue t) {
-        timers = t;
+    public synchronized boolean isStable() {
+        return lastWasStable;
     }
 
     public void notifyStability(boolean isStable, long timeRef) {
@@ -41,7 +41,7 @@ abstract public class AnubisStability {
         /**
          * if the stability has changed notify the user
          */
-        if( isStable != lastWasStable ) {
+        if (isStable != lastWasStable) {
             lastWasStable = isStable;
             lastTimeRef = timeRef;
             safeStability(isStable, timeRef);
@@ -52,7 +52,7 @@ abstract public class AnubisStability {
          * if the stability has not changed and is unstable there
          * is nothing new to tell the user
          */
-        if( !isStable ) {
+        if (!isStable) {
             return;
         }
 
@@ -70,35 +70,46 @@ abstract public class AnubisStability {
 
     public void safeStability(boolean isStable, long timeRef) {
 
-            long   timein  = System.currentTimeMillis();
-            long   timeout = 0;
+        long timein = System.currentTimeMillis();
+        long timeout = 0;
 
-            TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(log,
-                    "User API Upcall took >200ms in stability(s,t) where s=" + isStable + ", t=" + timeRef);
-            timers.add(timeoutErrorLogger, (timein+200) );
-            try {
-                stability(isStable, timeRef);
-            } catch (Throwable ex) {
-                if( log.isLoggable(Level.SEVERE) )
-                    log.log(Level.SEVERE, "User API Upcall threw Throwable in stability(s,t) where s=" + isStable + ", t=" + timeRef, ex);
+        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
+                                                                       log,
+                                                                       "User API Upcall took >200ms in stability(s,t) where s="
+                                                                               + isStable
+                                                                               + ", t="
+                                                                               + timeRef);
+        timers.add(timeoutErrorLogger, (timein + 200));
+        try {
+            stability(isStable, timeRef);
+        } catch (Throwable ex) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "User API Upcall threw Throwable in stability(s,t) where s="
+                                + isStable + ", t=" + timeRef, ex);
             }
-            timeout = System.currentTimeMillis();
-            timers.remove(timeoutErrorLogger);
-            if( log.isLoggable(Level.FINER) )
-                log.finer("User API Upcall took " + (timeout - timein) + "ms in stability(s,t) where s=" + isStable + ", t=" + timeRef);
+        }
+        timeout = System.currentTimeMillis();
+        timers.remove(timeoutErrorLogger);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("User API Upcall took " + (timeout - timein)
+                      + "ms in stability(s,t) where s=" + isStable + ", t="
+                      + timeRef);
+        }
 
+    }
+
+    public void setTimerQueue(ActiveTimeQueue t) {
+        timers = t;
     }
 
     abstract public void stability(boolean isStabile, long timeRef);
-    
-    public synchronized boolean isStable() {
-    	return lastWasStable;
-    }
-    
+
     public synchronized long timeReference() {
-    	return lastTimeRef;
+        return lastTimeRef;
     }
 
+    @Override
     public String toString() {
         return "[Stability notification interface]";
     }

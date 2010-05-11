@@ -19,31 +19,30 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
-
 public class ConnectWorker extends Thread {
 
     private RxQueue rxQueue = null;
 
-
     /**
      * worker thread
      */
-    public ConnectWorker(RxQueue rxQueue){
+    public ConnectWorker(RxQueue rxQueue) {
         this.rxQueue = rxQueue;
     }
 
     /**
      * 
      */
+    @Override
     public void run() {
 
         MessageNioHandler mnh = null;
 
-        while(rxQueue.isOpen()) {
+        while (rxQueue.isOpen()) {
 
-            mnh = (MessageNioHandler)rxQueue.next();
+            mnh = (MessageNioHandler) rxQueue.next();
 
-            if (mnh != null){
+            if (mnh != null) {
                 // got an object from the queue - do what needs to be done
                 mnh.getMCI().finishNioConnect(mnh);
             }

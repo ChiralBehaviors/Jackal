@@ -26,15 +26,10 @@ import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAd
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
-import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
-
-
-
-
 
 /**
  * This version of the heartbeat protocol measures round trip times for pings
@@ -61,18 +56,21 @@ import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
  */
 public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
 
-    private long              time       = 0;
-    private long              viewNumber = 0;
-    private ViewListener      listener   = null;
-    private Identity          sender     = null;
-    private ConnectionAddress address    = null;
-    private Identity          me         = null;
-    private PingHeartbeatMsg  sharedData = null;
-    private boolean           expected   = true;
-    private long              pingTime   = 0;
-    private boolean           terminated = false;
-    private Logger             log = Logger.getLogger(this.getClass().toString());
-
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    private ConnectionAddress address = null;
+    private boolean expected = true;
+    private ViewListener listener = null;
+    private Logger log = Logger.getLogger(this.getClass().toString());
+    private Identity me = null;
+    private long pingTime = 0;
+    private Identity sender = null;
+    private PingHeartbeatMsg sharedData = null;
+    private boolean terminated = false;
+    private long time = 0;
+    private long viewNumber = 0;
 
     /**
      * Constructor - create a heartbeat protocol implementation using the
@@ -80,17 +78,18 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
      * @param hb
      * @param vl
      */
-    public PingProtocolImpl(Heartbeat hb, ViewListener vl, HeartbeatMsg sharedHeartbeat) {
+    public PingProtocolImpl(Heartbeat hb, ViewListener vl,
+                            HeartbeatMsg sharedHeartbeat) {
         super(hb.getView());
-        time       = hb.getTime();
+        time = hb.getTime();
         viewNumber = hb.getViewNumber();
-        listener   = vl;
-        sender     = hb.getSender();
-        address    = hb.getSenderAddress();
-        sharedData = (PingHeartbeatMsg)sharedHeartbeat;
-        me         = sharedData.getSender();
-        pingTime   = System.currentTimeMillis();
-        if( me.id < sender.id ) {
+        listener = vl;
+        sender = hb.getSender();
+        address = hb.getSenderAddress();
+        sharedData = (PingHeartbeatMsg) sharedHeartbeat;
+        me = sharedData.getSender();
+        pingTime = System.currentTimeMillis();
+        if (me.id < sender.id) {
             sharedData.setPingBit(sender);
             expected = true;
         } else {
@@ -99,11 +98,25 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
         }
     }
 
-    public void terminate() {
-        terminated = true;
-        sharedData.clearPingBit(me);
+    /**
+     * Sender interface
+     * @return identity
+     */
+    public Identity getSender() {
+        return sender;
     }
 
+    public ConnectionAddress getSenderAddress() {
+        return address;
+    }
+
+    /**
+     * Timed interface
+     * @return long
+     */
+    public long getTime() {
+        return time;
+    }
 
     /**
      * indicates if the heartbeat protocol is timely. This method is called
@@ -116,7 +129,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
      * @return true if expried, false if not
      */
     public boolean isNotTimely(long timenow, long timebound) {
-        return (timenow - pingTime) > timebound;
+        return timenow - pingTime > timebound;
     }
 
     /**
@@ -132,7 +145,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
      * @return true if expired, false if not
      */
     public boolean isQuiesced(long timenow, long quiesce) {
-        return (timenow - pingTime) > quiesce;
+        return timenow - pingTime > quiesce;
     }
 
     /**
@@ -146,7 +159,6 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
         return false;
     }
 
-
     /**
      * receives a heartbeat message and deals with it according to the
      * heartbeat protocol. This is protocol uses straight-forward
@@ -158,22 +170,24 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
      */
     public boolean receiveHeartbeat(Heartbeat hb) {
 
-        if( !(hb instanceof PingHeartbeatMsg) ) {
-            if( log.isLoggable(Level.SEVERE) )
+        if (!(hb instanceof PingHeartbeatMsg)) {
+            if (log.isLoggable(Level.SEVERE)) {
                 log.severe(me + " ping protocol received a non-ping heartbeat");
+            }
             return false;
         }
 
-        if( terminated )
+        if (terminated) {
             return false;
+        }
 
-        PingHeartbeatMsg pinghb = (PingHeartbeatMsg)hb;
+        PingHeartbeatMsg pinghb = (PingHeartbeatMsg) hb;
 
         /**
          * Only bother with a heartbeat if it superceeds
          * the last one (ordered delivery is not guaranteed!)
          */
-        if( pinghb.getTime() > time ) {
+        if (pinghb.getTime() > time) {
 
             time = pinghb.getTime();
 
@@ -181,7 +195,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
              * if the expected ping has been received
              * record the time and change;
              */
-            if( expected == pinghb.getPingBit(me) ) {
+            if (expected == pinghb.getPingBit(me)) {
                 pingTime = System.currentTimeMillis();
                 expected = !expected;
                 sharedData.flipPingBit(sender);
@@ -192,11 +206,11 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
              * but the views are the same then the view has changed and chaged back
              * without us noticing! We need to pick this up as a real change.
              */
-            if( hb.getViewNumber() != viewNumber ) {
+            if (hb.getViewNumber() != viewNumber) {
                 viewNumber = hb.getViewNumber();
-                view   = hb.getView().toBitSet();
+                view = hb.getView().toBitSet();
                 stable = hb.getView().isStable();
-                listener.newView( sender, (View)this );
+                listener.newView(sender, this);
             }
 
             return true;
@@ -206,30 +220,13 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
         }
     }
 
-
-
-    /**
-     * Timed interface
-     * @return long
-     */
-    public long getTime() {
-        return time;
-    }
-
     public void setTime(long t) {
         time = t;
     }
 
-    /**
-     * Sender interface
-     * @return identity
-     */
-    public Identity getSender() {
-        return sender;
-    }
-
-    public ConnectionAddress getSenderAddress() {
-        return address;
+    public void terminate() {
+        terminated = true;
+        sharedData.clearPingBit(me);
     }
 
 }

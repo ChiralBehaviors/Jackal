@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.registers;
 
-
 import java.rmi.RemoteException;
 import java.util.Iterator;
 import java.util.Map;
@@ -51,30 +50,39 @@ public class GlobalRegisterImpl {
      */
     private class RequestServer extends Thread {
         private boolean running = false;
-        public RequestServer() { super(); }
+
+        public RequestServer() {
+            super();
+        }
+
+        @Override
         public void run() {
             running = true;
-            while( running ) {
+            while (running) {
                 Object obj = requests.get();
-                if( obj!= null ) deliver( (RegisterMsg)obj );
+                if (obj != null) {
+                    deliver((RegisterMsg) obj);
+                }
             }
         }
-        public void terminate() { running = false; }
+
+        public void terminate() {
+            running = false;
+        }
     }
 
-    private Locator          locator         = null;
-    private int              me              = -1;
-    private boolean          active          = true;
-    private BlockingQueue    requests        = new BlockingQueue();
-    private RequestServer    server          = new RequestServer();
-    private SetMap           providersByName = new SetMap();
-    private SetMap           providersByNode = new SetMap();
-    private SetMap           listenersByName = new SetMap();
-    private SetMap           listenersByNode = new SetMap();
+    private boolean active = true;
+    private DebugFrame debug = null;
+    private SetMap listenersByName = new SetMap();
+    private SetMap listenersByNode = new SetMap();
+    private Locator locator = null;
+    private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+    private int me = -1;
+    private SetMap providersByName = new SetMap();
+    private SetMap providersByNode = new SetMap();
 
-    private DebugFrame       debug           = null;
-    private Logger            log             = Logger.getLogger(this.getClass().getCanonicalName());
-
+    private BlockingQueue requests = new BlockingQueue();
+    private RequestServer server = new RequestServer();
 
     /**
      * Constructor - sets the local
@@ -82,26 +90,8 @@ public class GlobalRegisterImpl {
      * @param locator
      */
     public GlobalRegisterImpl(Identity id, Locator locator) {
-        this.me             = id.id;
-        this.locator        = locator;
-    }
-
-    /**
-     * Starts the global register server
-     */
-    public void start() {
-        server.setName("Anubis: Global Register Request Server (node " + me + ")");
-        server.start();
-        updateDebugFrame();
-     }
-
-    /**
-     * Stop the threads associated with the global register (the request
-     * server thread) and deactivate the global.
-     */
-    public void terminate() {
-        server.terminate();
-        requests.deactivate();
+        me = id.id;
+        this.locator = locator;
     }
 
     /**
@@ -109,32 +99,15 @@ public class GlobalRegisterImpl {
      * process incoming requests.
      */
     public void activate() {
-        if( active ) {
-            if( log.isLoggable(Level.SEVERE) )
+        if (active) {
+            if (log.isLoggable(Level.SEVERE)) {
                 log.severe(me + " *** Global.activate called when active!!!");
+            }
         } else {
             active = true;
             updateDebugFrame();
         }
     }
-
-    /**
-     * deactivate: simply drop all info. The new global will rebuild from
-     *             the local registers. Any new requests will be dropped
-     *             when not active.
-     */
-    public void deactivate() {
-        if( !active )
-            return;
-        active = false;
-        providersByName.clear();
-        providersByNode.clear();
-        listenersByName.clear();
-        listenersByNode.clear();
-        updateDebugFrame();
-    }
-
-
 
     /**
      * Removes registrations for listeners and providers that are located
@@ -148,12 +121,12 @@ public class GlobalRegisterImpl {
          * Check providers for nodes that are not in the view
          */
         Iterator piter = providersByNode.keySet().iterator();
-        while( piter.hasNext() ) {
-            Integer node = (Integer)piter.next();
-            if( !view.contains(node.intValue()) ) {
+        while (piter.hasNext()) {
+            Integer node = (Integer) piter.next();
+            if (!view.contains(node.intValue())) {
                 Iterator iter = providersByNode.getSet(node).iterator();
-                while( iter.hasNext() ) {
-                    ProviderProxy provider = (ProviderProxy)iter.next();
+                while (iter.hasNext()) {
+                    ProviderProxy provider = (ProviderProxy) iter.next();
                     providersByName.remove(provider);
                 }
                 piter.remove();
@@ -164,12 +137,12 @@ public class GlobalRegisterImpl {
          * Check listeners for nodes that are not in the view
          */
         Iterator liter = listenersByNode.keySet().iterator();
-        while( liter.hasNext() ) {
-            Integer node = (Integer)liter.next();
-            if( !view.contains(node.intValue()) ) {
+        while (liter.hasNext()) {
+            Integer node = (Integer) liter.next();
+            if (!view.contains(node.intValue())) {
                 Iterator iter = listenersByNode.getSet(node).iterator();
-                while( iter.hasNext() ) {
-                    ListenerProxy listener = (ListenerProxy)iter.next();
+                while (iter.hasNext()) {
+                    ListenerProxy listener = (ListenerProxy) iter.next();
                     listenersByName.remove(listener);
                 }
                 liter.remove();
@@ -177,46 +150,70 @@ public class GlobalRegisterImpl {
         }
     }
 
-
     /**
-     * When becoming stable there are four cases:
-     * - was leader (active) and still leader:           do nothing
-     * - was not leader (inactive) and still not leader: do nothing
-     * - was leader (active) and now not leader:         deativate
-     * - was not leader (inactive) and now leader:       activate
-     * @param leader
+     * deactivate: simply drop all info. The new global will rebuild from
+     *             the local registers. Any new requests will be dropped
+     *             when not active.
      */
-    public void stable( int leader ) {
-        if( active && (leader != me) ) {
-            deactivate();
-        } else if( !active && (leader == me) ) {
-            activate();
+    public void deactivate() {
+        if (!active) {
+            return;
         }
+        active = false;
+        providersByName.clear();
+        providersByNode.clear();
+        listenersByName.clear();
+        listenersByNode.clear();
+        updateDebugFrame();
     }
 
-
     /**
-     * When becoming unstable there are four cases:
-     * - was leader (active) and still leader:           reset (deactivate+activate)
-     * - was leader (active) and not now leader:         deactivate
-     * - was not leader (inactive) and now leader:       activate
-     * - was not leader (inactive) and still not leader: do nothing
-     * @param leader
+     * call the appropirate method to execute the request. This method is called
+     * by the request server after pulling a request off of the requests queue.
+     *
+     * @param request
      */
-    public void unstable( int leader ) {
+    public void deliver(RegisterMsg request) {
 
-        /**
-         * deal with changes in leader (implies changes in global register location)
-         */
-        if( active && (leader == me) ) {
-            deactivate();
-            activate();
-        } else if( active && (leader != me) ) {
-            deactivate();
-        } else if( !active && (leader == me) ) {
-            activate();
-        } else if( !active && (leader != me) ) {
-            // do nothing
+        switch (request.type) {
+            case RegisterMsg.Undefined:
+
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe(me
+                               + " Global received request explicitly declared as type Undefined "
+                               + request + " ?!?!?");
+                }
+                break;
+
+            case RegisterMsg.RegisterProvider:
+
+                registerProvider((ProviderProxy) request.data);
+                updateDebugFrame();
+                break;
+
+            case RegisterMsg.DeregisterProvider:
+
+                deregisterProvider((ProviderProxy) request.data);
+                updateDebugFrame();
+                break;
+
+            case RegisterMsg.RegisterListener:
+
+                registerListener((ListenerProxy) request.data);
+                updateDebugFrame();
+                break;
+
+            case RegisterMsg.DeregisterListener:
+
+                deregisterListener((ListenerProxy) request.data);
+                updateDebugFrame();
+                break;
+
+            default:
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe(me + " Global received unexpected message "
+                               + request + " ?!?!?");
+                }
         }
     }
 
@@ -230,84 +227,135 @@ public class GlobalRegisterImpl {
         requests.put(request);
     }
 
-    /**
-     * call the appropirate method to execute the request. This method is called
-     * by the request server after pulling a request off of the requests queue.
-     *
-     * @param request
-     */
-    public void deliver(RegisterMsg request) {
-
-        switch( request.type ) {
-            case RegisterMsg.Undefined:
-
-                if( log.isLoggable(Level.SEVERE) )
-                    log.severe(me + " Global received request explicitly declared as type Undefined " + request + " ?!?!?");
-                break;
-
-            case RegisterMsg.RegisterProvider:
-
-                registerProvider( (ProviderProxy)request.data );
-                updateDebugFrame();
-                break;
-
-            case RegisterMsg.DeregisterProvider:
-
-                deregisterProvider( (ProviderProxy)request.data );
-                updateDebugFrame();
-                break;
-
-            case RegisterMsg.RegisterListener:
-
-                registerListener( (ListenerProxy)request.data );
-                updateDebugFrame();
-                break;
-
-            case RegisterMsg.DeregisterListener:
-
-                deregisterListener( (ListenerProxy)request.data );
-                updateDebugFrame();
-                break;
-
-            default:
-                if( log.isLoggable(Level.SEVERE) )
-                    log.severe(me + " Global received unexpected message " + request + " ?!?!?");
+    public synchronized void removeDebugFrame() {
+        if (debug != null) {
+            debug.remove();
+            debug = null;
         }
     }
 
+    public synchronized void showDebugFrame() {
+        if (debug == null) {
+            debug = new DebugFrame("Node " + me + " Global Register Contents:");
+        }
+        debug.makeVisible(this);
+    }
 
     /**
-     * registerProvider: Add the new provider to the provider list.
-     *                   Inform pending listeners of the location.
+     * When becoming stable there are four cases:
+     * - was leader (active) and still leader:           do nothing
+     * - was not leader (inactive) and still not leader: do nothing
+     * - was leader (active) and now not leader:         deativate
+     * - was not leader (inactive) and now leader:       activate
+     * @param leader
+     */
+    public void stable(int leader) {
+        if (active && leader != me) {
+            deactivate();
+        } else if (!active && leader == me) {
+            activate();
+        }
+    }
+
+    /**
+     * Starts the global register server
+     */
+    public void start() {
+        server.setName("Anubis: Global Register Request Server (node " + me
+                       + ")");
+        server.start();
+        updateDebugFrame();
+    }
+
+    /**
+     * Stop the threads associated with the global register (the request
+     * server thread) and deactivate the global.
+     */
+    public void terminate() {
+        server.terminate();
+        requests.deactivate();
+    }
+
+    /**
+     * List out the contents of the register by node.
+     * @return  String
+     */
+    @Override
+    public synchronized String toString() {
+        if (!active) {
+            return "** NOT ACTIVE **\n" + "** NOT ACTIVE **\n"
+                   + "** NOT ACTIVE **\n";
+        }
+
+        String str = "Providers By Node:\n";
+        Iterator iter = providersByNode.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry entry = (Map.Entry) iter.next();
+            Iterator piter = ((Set) entry.getValue()).iterator();
+            while (piter.hasNext()) {
+                str += "    " + ((ProviderProxy) piter.next()).toString()
+                       + "\n";
+            }
+        }
+
+        str += "\nPending Listeners:\n";
+        iter = listenersByNode.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry entry = (Map.Entry) iter.next();
+            Iterator piter = ((Set) entry.getValue()).iterator();
+            while (piter.hasNext()) {
+                ListenerProxy listener = (ListenerProxy) piter.next();
+                str += "    " + listener.toString() + "\n";
+            }
+        }
+        return str;
+    }
+
+    /**
+     * When becoming unstable there are four cases:
+     * - was leader (active) and still leader:           reset (deactivate+activate)
+     * - was leader (active) and not now leader:         deactivate
+     * - was not leader (inactive) and now leader:       activate
+     * - was not leader (inactive) and still not leader: do nothing
+     * @param leader
+     */
+    public void unstable(int leader) {
+
+        /**
+         * deal with changes in leader (implies changes in global register location)
+         */
+        if (active && leader == me) {
+            deactivate();
+            activate();
+        } else if (active && leader != me) {
+            deactivate();
+        } else if (!active && leader == me) {
+            activate();
+        } else if (!active && leader != me) {
+            // do nothing
+        }
+    }
+
+    /**
+     * deregisterListener: just remove the entry. No action with
+     *                     providers, the listener is responsible
+     *                     for informing them.
+
      * @param local
      * @param name
      * @return
      * @throws RemoteException
      */
-    private void registerProvider(ProviderProxy provider) {
+    private void deregisterListener(ListenerProxy listener) {
 
         /**
-         * Add to provider info
+         * Remove from listener info
          */
-        providersByNode.put(provider.node, provider);
-        providersByName.put(provider.name, provider);
+        listenersByNode.remove(listener.node, listener);
+        listenersByName.remove(listener.name, listener);
 
-        /**
-         * Check for existing listeners and inform the provider of their
-         * existance
-         */
-        Set listeners = listenersByName.getSet(provider.name);
-        if( listeners == null )
-            return;
-
-        Iterator iter = listeners.iterator();
-        while( iter.hasNext() ) {
-            ListenerProxy listener = (ListenerProxy)iter.next();
-            RegisterMsg msg = RegisterMsg.addListener(listener);
-            locator.sendToLocal(msg, provider.node);
-        }
     }
-
 
     /**
      * deregisterProvider: just remove the entry. No action with
@@ -326,7 +374,6 @@ public class GlobalRegisterImpl {
         providersByNode.remove(provider.node, provider);
         providersByName.remove(provider.name, provider);
     }
-
 
     /**
      * registerListener: if there is no provider then add to the pending
@@ -351,84 +398,54 @@ public class GlobalRegisterImpl {
          * listener
          */
         Set providers = providersByName.getSet(listener.name);
-        if( providers == null )
+        if (providers == null) {
             return;
+        }
 
         Iterator iter = providers.iterator();
-        while( iter.hasNext() ) {
-            ProviderProxy provider = (ProviderProxy)iter.next();
+        while (iter.hasNext()) {
+            ProviderProxy provider = (ProviderProxy) iter.next();
             RegisterMsg msg = RegisterMsg.addListener(listener);
             locator.sendToLocal(msg, provider.node);
         }
     }
 
-
     /**
-     * deregisterListener: just remove the entry. No action with
-     *                     providers, the listener is responsible
-     *                     for informing them.
-
+     * registerProvider: Add the new provider to the provider list.
+     *                   Inform pending listeners of the location.
      * @param local
      * @param name
      * @return
      * @throws RemoteException
      */
-    private void deregisterListener(ListenerProxy listener) {
+    private void registerProvider(ProviderProxy provider) {
 
         /**
-         * Remove from listener info
+         * Add to provider info
          */
-        listenersByNode.remove(listener.node, listener);
-        listenersByName.remove(listener.name, listener);
+        providersByNode.put(provider.node, provider);
+        providersByName.put(provider.name, provider);
 
-    }
-
-    /**
-     * List out the contents of the register by node.
-     * @return  String
-     */
-    public synchronized String toString() {
-        if( !active )
-            return "** NOT ACTIVE **\n" +
-                   "** NOT ACTIVE **\n" +
-                   "** NOT ACTIVE **\n";
-
-        String str = "Providers By Node:\n";
-        Iterator iter = providersByNode.entrySet().iterator();
-
-        while( iter.hasNext() ) {
-            Map.Entry entry = (Map.Entry)iter.next();
-            Iterator piter = ((Set)entry.getValue()).iterator();
-            while( piter.hasNext() )
-                str += "    " + ((ProviderProxy)piter.next()).toString() + "\n";
+        /**
+         * Check for existing listeners and inform the provider of their
+         * existance
+         */
+        Set listeners = listenersByName.getSet(provider.name);
+        if (listeners == null) {
+            return;
         }
 
-        str += "\nPending Listeners:\n";
-        iter = listenersByNode.entrySet().iterator();
-        while( iter.hasNext() ) {
-            Map.Entry entry = (Map.Entry)iter.next();
-            Iterator piter = ((Set)entry.getValue()).iterator();
-            while( piter.hasNext() ) {
-                ListenerProxy listener = (ListenerProxy)piter.next();
-                str += "    " + listener.toString() + "\n";
-            }
+        Iterator iter = listeners.iterator();
+        while (iter.hasNext()) {
+            ListenerProxy listener = (ListenerProxy) iter.next();
+            RegisterMsg msg = RegisterMsg.addListener(listener);
+            locator.sendToLocal(msg, provider.node);
         }
-        return str;
     }
 
-    public synchronized void showDebugFrame() {
-        if(debug == null )
-            debug = new DebugFrame("Node " + me + " Global Register Contents:");
-        debug.makeVisible(this);
-    }
-    public synchronized void removeDebugFrame() {
-        if( debug != null ) {
-            debug.remove();
-            debug = null;
-        }
-    }
     private void updateDebugFrame() {
-        if( debug != null )
+        if (debug != null) {
             debug.update();
+        }
     }
 }

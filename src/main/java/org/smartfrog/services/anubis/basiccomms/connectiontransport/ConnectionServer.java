@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -27,7 +26,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 /**
  * Server of connections.
@@ -38,11 +36,11 @@ import java.util.logging.Logger;
  * ConnectionFactory interface.
  */
 public class ConnectionServer extends Thread {
-    
-            private     ServerSocketChannel     listenSocket;
-            private     ConnectionFactory       connectionFactory;
-volatile    private     boolean                 open;
-            private     Logger                   log = Logger.getLogger(this.getClass().toString());
+
+    private ConnectionFactory connectionFactory;
+    private ServerSocketChannel listenSocket;
+    private Logger log = Logger.getLogger(this.getClass().toString());
+    volatile private boolean open;
 
     /**
      * Default constructor is initually unusable.
@@ -53,35 +51,10 @@ volatile    private     boolean                 open;
 
         super();
 
-        listenSocket      = null;
+        listenSocket = null;
         connectionFactory = null;
-        open              = false;
+        open = false;
     }
-
-
-
-    /**
-     * Constructor - creates a listening socket on the default ip address
-     * returned for the given host name (should be this host). Initially the
-     * default connection factory is assumed.
-     */
-    public ConnectionServer(String threadName, String hostName) throws IOException {
-        super(threadName);
-        constructServer(hostName, 0);
-    }
-
-
-    /**
-     *
-     * Constructor - creates a listening socket on the default ip address
-     * returned for the given host name (should be this host), using the
-     * given port. Initially the default connection factory is assumed.
-     */
-    public ConnectionServer(String threadName, String hostName, int port) throws IOException {
-        super(threadName);
-        constructServer(hostName, port);
-    }
-
 
     /**
      * Constructor - creates a listening socket on the default ip address
@@ -94,12 +67,90 @@ volatile    private     boolean                 open;
     }
 
     /**
-     * Constructor helper - creates a listening socket on the default ip address
+     * Constructor - creates a listening socket on the default ip address
+     * returned for the given host name (should be this host). Initially the
+     * default connection factory is assumed.
+     */
+    public ConnectionServer(String threadName, String hostName) throws IOException {
+        super(threadName);
+        constructServer(hostName, 0);
+    }
+
+    /**
+     *
+     * Constructor - creates a listening socket on the default ip address
      * returned for the given host name (should be this host), using the
      * given port. Initially the default connection factory is assumed.
      */
-    private void constructServer(String hostName, int port) throws IOException {
-        constructServer(InetAddress.getByName(hostName), port);
+    public ConnectionServer(String threadName, String hostName, int port) throws IOException {
+        super(threadName);
+        constructServer(hostName, port);
+    }
+
+    /**
+     * return the address being used by this ConnectionServer.
+     */
+    public ConnectionAddress getAddress() {
+
+        if (listenSocket == null) {
+            return null;
+        } else {
+            return new ConnectionAddress(
+                                         listenSocket.socket().getInetAddress(),
+                                         listenSocket.socket().getLocalPort());
+        }
+    }
+
+    /**
+     * returns an string representing the status of this thread
+     */
+    public String getThreadStatusString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(super.getName()).append(" ............................ ").setLength(
+                                                                                          30);
+        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
+        buffer.append(open ? ".. running ....." : ".. terminated ..");
+        buffer.append(" address = ").append(getAddress().toString());
+        return buffer.toString();
+    }
+
+    /**
+     * blocking connection accept loop - creates a connection endpoint
+     * in response to connection requests.
+     */
+    @Override
+    public void run() {
+
+        while (open) {
+
+            try {
+                SocketChannel channel = listenSocket.accept();
+                connectionFactory.createConnection(channel);
+            } catch (Exception ex) {
+                if (open) {
+                    if (log.isLoggable(Level.INFO)) {
+                        log.log(Level.INFO, "", ex);
+                    }
+                }
+            }
+
+        }
+
+    }
+
+    /**
+     * set the connection factory to the one specified as a parameter
+     */
+    public void setConnectionFactory(ConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
+    }
+
+    public void shutdown() {
+        open = false;
+        try {
+            listenSocket.close();
+        } catch (IOException ioex) {
+        }
     }
 
     /**
@@ -114,23 +165,23 @@ volatile    private     boolean                 open;
 
         try {
 
-            if( log.isLoggable(Level.FINE)) {
+            if (log.isLoggable(Level.FINE)) {
                 log.fine("Binding blocking connection server to port: " + port);
             }
-            
+
             listenSocket = ServerSocketChannel.open();
             listenSocket.configureBlocking(true);
             listenSocket.socket().bind(new InetSocketAddress(inetAddress, port));
 
-        } catch(IOException ioex) {
-            
-            if( log.isLoggable(Level.FINE)) {
+        } catch (IOException ioex) {
+
+            if (log.isLoggable(Level.FINE)) {
                 log.log(Level.FINE, "Failed to create server socket: ", ioex);
             }
 
-           listenSocket = null;
-           open  = false;
-           throw ioex;
+            listenSocket = null;
+            open = false;
+            throw ioex;
 
         }
 
@@ -138,71 +189,12 @@ volatile    private     boolean                 open;
 
     }
 
-
-
     /**
-     * set the connection factory to the one specified as a parameter
+     * Constructor helper - creates a listening socket on the default ip address
+     * returned for the given host name (should be this host), using the
+     * given port. Initially the default connection factory is assumed.
      */
-    public void setConnectionFactory(ConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    private void constructServer(String hostName, int port) throws IOException {
+        constructServer(InetAddress.getByName(hostName), port);
     }
-
-
-
-    /**
-     * return the address being used by this ConnectionServer.
-     */
-    public ConnectionAddress getAddress() {
-
-        if( listenSocket == null )
-            return null;
-        else
-            return new ConnectionAddress( listenSocket.socket().getInetAddress(),
-                                          listenSocket.socket().getLocalPort() );
-    }
-
-
-    public void shutdown() {
-        open = false;
-        try {
-            listenSocket.close();
-        } catch( IOException ioex ) {}
-    }
-
-
-    /**
-     * blocking connection accept loop - creates a connection endpoint
-     * in response to connection requests.
-     */
-    public void run() {
-
-        while( open ) {
-
-            try {
-                SocketChannel channel = listenSocket.accept();
-                connectionFactory.createConnection(channel);
-            } catch(Exception ex) {
-                if( open ) {
-                    if( log.isLoggable(Level.INFO) )
-                        log.log(Level.INFO, "", ex);
-                }
-            }
-
-        }
-
-    }
-
-
-    /**
-     * returns an string representing the status of this thread
-     */
-    public String getThreadStatusString() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(super.getName()).append(" ............................ ").setLength(30);
-        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
-        buffer.append(open ? ".. running ....." : ".. terminated ..");
-        buffer.append( " address = " ).append(getAddress().toString());
-        return buffer.toString();
-  }
 }
-

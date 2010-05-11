@@ -19,11 +19,13 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.node;
 
-import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.views.View;
 
 public interface CommsTestIntf {
-        public void    setIgnoring(View ignoringUpdate);
-        public boolean isIgnoring(Identity id);
-        public String  getThreadStatusString();
+    public String getThreadStatusString();
+
+    public boolean isIgnoring(Identity id);
+
+    public void setIgnoring(View ignoringUpdate);
 }

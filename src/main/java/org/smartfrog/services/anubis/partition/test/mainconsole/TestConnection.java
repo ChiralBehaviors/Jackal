@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
-
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,25 +28,31 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 
+public class TestConnection extends ConnectionComms {
 
-
-public class TestConnection
-        extends ConnectionComms {
-
-    private NodeData   nodeData;
     private Controller controller;
-    private Logger       log = Logger.getLogger(this.getClass().toString());
+    private Logger log = Logger.getLogger(this.getClass().toString());
+    private NodeData nodeData;
 
-    public TestConnection(ConnectionAddress address, NodeData nodeData, Identity id, Controller controller) {
-        super("Anubis: Partition Manager Test Console - connection (remote node " + id.id + ")", address);
+    public TestConnection(ConnectionAddress address, NodeData nodeData,
+                          Identity id, Controller controller) {
+        super(
+              "Anubis: Partition Manager Test Console - connection (remote node "
+                      + id.id + ")", address);
         this.nodeData = nodeData;
         this.controller = controller;
+    }
+
+    @Override
+    public void closing() {
+        controller.disconnectNode(nodeData);
     }
 
     /**
      * Connection comms interface
      * @param bytes
      */
+    @Override
     public void deliver(byte[] bytes) {
 
         SerializedMsg msg = null;
@@ -58,20 +62,19 @@ public class TestConnection
 
             controller.deliverObject(obj, nodeData);
         } catch (Exception ex) {
-            if( log.isLoggable(Level.WARNING) )
+            if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "", ex);
+            }
         }
     }
 
-    public void closing() {
-        controller.disconnectNode(nodeData);
-    }
-
+    @Override
     public void send(byte[] bytes) {
-        if( log.isLoggable(Level.SEVERE) ) {
+        if (log.isLoggable(Level.SEVERE)) {
             Exception e = new Exception();
             e.fillInStackTrace();
-            log.log(Level.SEVERE, "Should not call send(byte[] bytes) in TestConnection", e);
+            log.log(Level.SEVERE,
+                    "Should not call send(byte[] bytes) in TestConnection", e);
         }
     }
 
@@ -80,8 +83,9 @@ public class TestConnection
         try {
             super.send(msg.toWire());
         } catch (Exception ex) {
-            if( log.isLoggable(Level.WARNING) )
+            if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "", ex);
+            }
         }
     }
 

@@ -19,11 +19,12 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.views;
 
-
 public interface NumberedView {
     public View getView();
-    public void setView(View v);
+
     public long getViewNumber();
+
+    public void setView(View v);
+
     public void setViewNumber(long n);
 }
-

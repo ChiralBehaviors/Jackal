@@ -19,9 +19,14 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.msg;
 
-
 import java.io.Serializable;
 
 public class GetThreadsMsg implements Serializable {
-    public GetThreadsMsg() {}
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+    public GetThreadsMsg() {
+    }
 }

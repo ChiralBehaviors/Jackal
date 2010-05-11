@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator;
 
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -42,124 +41,100 @@ public class Locator implements PartitionNotification, AnubisLocator {
 
     private class InstanceGenerator {
         private long counter = 0;
-        public String instance() { return myId.id + "/" + myId.epoch + "/" + Long.toString(counter++); }
+
+        public String instance() {
+            return myId.id + "/" + myId.epoch + "/" + Long.toString(counter++);
+        }
     }
 
-    private Partition          partition         = null;
-    public  GlobalRegisterImpl global            = null;    // public for debug
-    public  LocalRegisterImpl  local             = null;    // public for debug
-    private Map                links             = new HashMap();
-    private Identity           myId              = null;
-    public  Integer            me                = null;    // public for debug
-    private Integer            leader            = null;
-    private boolean            stable            = false;
-    private ActiveTimeQueue    timers            = null;    // public for debug
-    public  ThreadLocal        callingThread     = new ThreadLocal();
-    private long               maxTransDelay;
-    private InstanceGenerator  instanceGenerator = new InstanceGenerator();
-    private Random             random;
-    private Logger              log               = Logger.getLogger(Locator.class.getCanonicalName());
-
-    private StabilityQueue     stabilityQueue    = new StabilityQueue() {
-        public void doit(View v, int l) { partitionNotificationImpl(v, l); }
-    };
-    private long heartbeatTimeout = 0;
+    public ThreadLocal callingThread = new ThreadLocal();
+    public GlobalRegisterImpl global = null; // public for debug
+    public LocalRegisterImpl local = null; // public for debug
+    public Integer me = null; // public for debug
     private long heartbeatInterval = 0;
+    private long heartbeatTimeout = 0;
+    private InstanceGenerator instanceGenerator = new InstanceGenerator();
+    private Integer leader = null;
+    private Map links = new HashMap();
+    private Logger log = Logger.getLogger(Locator.class.getCanonicalName());
+    private long maxTransDelay;
+    private Identity myId = null;
+    private Partition partition = null;
+    private Random random;
 
+    private StabilityQueue stabilityQueue = new StabilityQueue() {
+        @Override
+        public void doit(View v, int l) {
+            partitionNotificationImpl(v, l);
+        }
+    };
+    private boolean stable = false;
+    private ActiveTimeQueue timers = null; // public for debug
 
-    public Partition getPartition() {
-        return partition;
-    }
-    public void setPartition(Partition partition) {
-        this.partition = partition;
-    }
-    public Identity getMyId() {
-        return myId;
-    }
-    public void setMyId(Identity myId) {
-        this.myId = myId;
-    }
-    public long getHeartbeatTimeout() {
-        return heartbeatTimeout;
-    }
-    public void setHeartbeatTimeout(long heartbeatTimeout) {
-        this.heartbeatTimeout = heartbeatTimeout;
-    }
-    public long getHeartbeatInterval() {
-        return heartbeatInterval;
-    }
-    public void setHeartbeatInterval(long heartbeatInterval) {
-        this.heartbeatInterval = heartbeatInterval;
-    }
-    /**
-     * Prim interface
-     */
-    public void start() { 
-            me                = new Integer(myId.id); 
-            maxTransDelay     = heartbeatTimeout * heartbeatInterval;
-            timers            = new ActiveTimeQueue("Anubis: Locator timers (node " + me + ")");
-            global            = new GlobalRegisterImpl(myId, this);
-            local             = new LocalRegisterImpl(myId, this);
-            random            = new Random(System.currentTimeMillis() + 1966*me.longValue());
-
-            global.start();
-            local.start();
-            timers.start();
-            stabilityQueue.start();
-            partition.register(this); 
-    } 
-    
-    public void terminate() {
-        if( log.isLoggable(Level.INFO) )
-            log.info("Terminating Locator");
-        stabilityQueue.terminate();
-        global.terminate();
-        local.terminate();
-        timers.terminate();
-        log = null; 
-    }
-
-    /**
-     * AnubisLocator interface
-     *
-     */
-    public void registerProvider(AnubisProvider provider) {
-        /**
-         * set the time of registration and create an instance (UID) for this
-         * provider
-         */
-        provider.setAnubisData(this, System.currentTimeMillis(), instanceGenerator.instance());
-        local.registerProvider(provider);
-    }
-    public void deregisterProvider(AnubisProvider provider) {
-        local.deregisterProvider(provider);
-    }
-    public void registerListener(AnubisListener listener) {
-        listener.setTimerQueue(timers);
-        local.registerListener(listener);
-    }
     public void deregisterListener(AnubisListener listener) {
         local.deregisterListener(listener);
         // don't set timers to null in listener
     }
 
-    public void newProviderValue(AnubisProvider provider) {
-        local.newProviderValue(provider);
+    public void deregisterProvider(AnubisProvider provider) {
+        local.deregisterProvider(provider);
     }
-    /**
-     * registerStability registers an interface for stability notifications.
-     * This interface is called to inform the user when the local partition
-     * becomes stable or unstable.
-     */
-    public void registerStability(AnubisStability stability) {
-        stability.setTimerQueue(timers);
-        local.registerStability(stability);
-    }
+
     /**
      * deregisterStability deregisters a stability notification iterface.
      */
     public void deregisterStability(AnubisStability stability) {
         local.deregisterStability(stability);
+    }
+
+    public long getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    public long getHeartbeatTimeout() {
+        return heartbeatTimeout;
+    }
+
+    public long getmaxDelay() {
+        return maxTransDelay;
+    }
+
+    public Identity getMyId() {
+        return myId;
+    }
+
+    public Partition getPartition() {
+        return partition;
+    }
+
+    public ActiveTimeQueue getTimeQueue() {
+        return timers;
+    }
+
+    public void newProviderValue(AnubisProvider provider) {
+        local.newProviderValue(provider);
+    }
+
+    /**
+     * PartitionNotification interface.
+     * delivery of a message from the partition transport
+     *
+     * @param obj - the message
+     * @param sender - the sending node
+     * @param time - the time sent
+     */
+    public void objectNotification(Object obj, int sender, long time) {
+
+        /**
+         * As a sanity check see that it is a valid message type.
+         * Then pass to the approriate register.
+         */
+        if (obj instanceof RegisterMsg) {
+            deliverRequest((RegisterMsg) obj);
+        } else if (log.isLoggable(Level.SEVERE)) {
+            log.severe("Locator received un-recognised message " + obj
+                       + " in objectNotificaiton");
+        }
     }
 
     /**
@@ -176,6 +151,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     public void partitionNotification(View view, int leader) {
         stabilityQueue.put(view, leader);
     }
+
     /**
      * PartitionNotification interface
      */
@@ -185,7 +161,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
          * Keep record of the current stability and which node is leader. The
          * leader holds the active global register.
          */
-        this.stable = view.isStable();
+        stable = view.isStable();
         this.leader = new Integer(leader);
 
         /**
@@ -198,22 +174,24 @@ public class Locator implements PartitionNotification, AnubisLocator {
          *
          * ....if the global has changed we need to start using the new one.
          */
-        if( view.isStable() ) {
+        if (view.isStable()) {
 
             /**
              * No point in putting jitter in at the global because it
              * doesn't send messages at stability.
              */
-            global.stable( leader );
+            global.stable(leader);
 
             /**
              * Introduce jitter to prevent the nodes all hitting the leader
              * at the same time. This should really have a max delay
              * proportional to the heartbeat interval.
              */
-            try { wait((long)random.nextInt(1000)); }
-            catch(Exception ex) { }
-            local.stable( leader, view.getTimeStamp() );
+            try {
+                wait(random.nextInt(1000));
+            } catch (Exception ex) {
+            }
+            local.stable(leader, view.getTimeStamp());
         }
 
         /**
@@ -227,98 +205,39 @@ public class Locator implements PartitionNotification, AnubisLocator {
          * ....check if the global has changed and check for lost providers.
          */
         else {
-            global.unstable( leader );
+            global.unstable(leader);
             local.unstable(view);
             dropBrokenConnections(view);
         }
     }
 
+    public void registerListener(AnubisListener listener) {
+        listener.setTimerQueue(timers);
+        local.registerListener(listener);
+    }
 
     /**
-     * PartitionNotification interface.
-     * delivery of a message from the partition transport
+     * AnubisLocator interface
      *
-     * @param obj - the message
-     * @param sender - the sending node
-     * @param time - the time sent
      */
-    public void objectNotification(Object obj, int sender, long time) {
-
+    public void registerProvider(AnubisProvider provider) {
         /**
-         * As a sanity check see that it is a valid message type.
-         * Then pass to the approriate register.
+         * set the time of registration and create an instance (UID) for this
+         * provider
          */
-        if( obj instanceof RegisterMsg )
-            deliverRequest( (RegisterMsg)obj );
-        else if( log.isLoggable(Level.SEVERE) )
-            log.severe("Locator received un-recognised message " +
-                      obj + " in objectNotificaiton");
+        provider.setAnubisData(this, System.currentTimeMillis(),
+                               instanceGenerator.instance());
+        local.registerProvider(provider);
     }
 
     /**
-     * Deliver a request to the locator.
-     *
-     * @param msg
+     * registerStability registers an interface for stability notifications.
+     * This interface is called to inform the user when the local partition
+     * becomes stable or unstable.
      */
-    private void deliverRequest(RegisterMsg msg) {
-        if( msg.register == RegisterMsg.GlobalRegister )
-            global.deliverRequest(msg);
-        else
-            local.deliverRequest(msg);
-    }
-
-    /**
-     * The locator manages connections between nodes. Connections are created
-     * on demand in the send method. If the recipient drops out of the partition
-     * during the connect() call we will get a null connection - in that case
-     * just do nothing.
-     *
-     * @param obj
-     * @param node
-     */
-    private void send(Object obj, Integer node) {
-        synchronized( links ) {
-            MessageConnection con = (MessageConnection)links.get(node);
-            if( con == null ) {
-                con = partition.connect(node.intValue());
-                if( con == null ) return;
-                links.put(node, con);
-            }
-            con.sendObject(obj);
-        }
-    }
-
-
-    /**
-     * Remove all connections managed by the locator.
-     */
-    private void clearConnections() {
-        synchronized( links ) {
-            Iterator iter = links.values().iterator();
-            while( iter.hasNext() )
-                ((MessageConnection)iter.next()).disconnect();
-            links.clear();
-        }
-    }
-
-    /**
-     * Drop connections to nodes that are not in the view - they will
-     * be broken.
-     *
-     * @param v
-     */
-    private void dropBrokenConnections(View v) {
-        synchronized( links ) {
-            Iterator iter = links.entrySet().iterator();
-            while( iter.hasNext() ) {
-                Map.Entry entry = (Map.Entry)iter.next();
-                Integer node = (Integer)entry.getKey();
-                if( !v.contains( node.intValue() ) ) {
-                    ((MessageConnection)entry.getValue()).disconnect();
-                    iter.remove();
-                }
-            }
-        }
+    public void registerStability(AnubisStability stability) {
+        stability.setTimerQueue(timers);
+        local.registerStability(stability);
     }
 
     /**
@@ -332,8 +251,8 @@ public class Locator implements PartitionNotification, AnubisLocator {
      * @param msg
      */
     public void sendToGlobal(RegisterMsg msg) {
-        if( stable ) {
-            if( leader.equals(me) ) {
+        if (stable) {
+            if (leader.equals(me)) {
 
                 global.deliverRequest(msg);
 
@@ -344,12 +263,13 @@ public class Locator implements PartitionNotification, AnubisLocator {
             }
         } else {
 
-            if( log.isLoggable(Level.INFO) )
-                log.info("Due to instability I am _NOT_ Sending " + msg + " to global register");
+            if (log.isLoggable(Level.INFO)) {
+                log.info("Due to instability I am _NOT_ Sending " + msg
+                         + " to global register");
+            }
 
         }
     }
-
 
     /**
      * Handle delivery of messages to local registers. Messages are delivered
@@ -362,7 +282,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
      */
     public void sendToLocal(RegisterMsg msg, Integer node) {
 
-         if( node.equals(me) ) {
+        if (node.equals(me)) {
 
             local.deliverRequest(msg);
 
@@ -372,12 +292,118 @@ public class Locator implements PartitionNotification, AnubisLocator {
         }
     }
 
-    public ActiveTimeQueue getTimeQueue() {
-        return timers;
+    public void setHeartbeatInterval(long heartbeatInterval) {
+        this.heartbeatInterval = heartbeatInterval;
     }
 
-    public long getmaxDelay() {
-        return maxTransDelay;
+    public void setHeartbeatTimeout(long heartbeatTimeout) {
+        this.heartbeatTimeout = heartbeatTimeout;
+    }
+
+    public void setMyId(Identity myId) {
+        this.myId = myId;
+    }
+
+    public void setPartition(Partition partition) {
+        this.partition = partition;
+    }
+
+    /**
+     * Prim interface
+     */
+    public void start() {
+        me = new Integer(myId.id);
+        maxTransDelay = heartbeatTimeout * heartbeatInterval;
+        timers = new ActiveTimeQueue("Anubis: Locator timers (node " + me + ")");
+        global = new GlobalRegisterImpl(myId, this);
+        local = new LocalRegisterImpl(myId, this);
+        random = new Random(System.currentTimeMillis() + 1966 * me.longValue());
+
+        global.start();
+        local.start();
+        timers.start();
+        stabilityQueue.start();
+        partition.register(this);
+    }
+
+    public void terminate() {
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Terminating Locator");
+        }
+        stabilityQueue.terminate();
+        global.terminate();
+        local.terminate();
+        timers.terminate();
+        log = null;
+    }
+
+    /**
+     * Remove all connections managed by the locator.
+     */
+    private void clearConnections() {
+        synchronized (links) {
+            Iterator iter = links.values().iterator();
+            while (iter.hasNext()) {
+                ((MessageConnection) iter.next()).disconnect();
+            }
+            links.clear();
+        }
+    }
+
+    /**
+     * Deliver a request to the locator.
+     *
+     * @param msg
+     */
+    private void deliverRequest(RegisterMsg msg) {
+        if (msg.register == RegisterMsg.GlobalRegister) {
+            global.deliverRequest(msg);
+        } else {
+            local.deliverRequest(msg);
+        }
+    }
+
+    /**
+     * Drop connections to nodes that are not in the view - they will
+     * be broken.
+     *
+     * @param v
+     */
+    private void dropBrokenConnections(View v) {
+        synchronized (links) {
+            Iterator iter = links.entrySet().iterator();
+            while (iter.hasNext()) {
+                Map.Entry entry = (Map.Entry) iter.next();
+                Integer node = (Integer) entry.getKey();
+                if (!v.contains(node.intValue())) {
+                    ((MessageConnection) entry.getValue()).disconnect();
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * The locator manages connections between nodes. Connections are created
+     * on demand in the send method. If the recipient drops out of the partition
+     * during the connect() call we will get a null connection - in that case
+     * just do nothing.
+     *
+     * @param obj
+     * @param node
+     */
+    private void send(Object obj, Integer node) {
+        synchronized (links) {
+            MessageConnection con = (MessageConnection) links.get(node);
+            if (con == null) {
+                con = partition.connect(node.intValue());
+                if (con == null) {
+                    return;
+                }
+                links.put(node, con);
+            }
+            con.sendObject(obj);
+        }
     }
 
 }

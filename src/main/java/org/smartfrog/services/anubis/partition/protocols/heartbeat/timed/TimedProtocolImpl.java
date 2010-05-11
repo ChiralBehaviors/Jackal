@@ -19,26 +19,26 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.timed;
 
-
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
-import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
-
-
 public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
 
-    private long              time       = 0;
-    private long              viewNumber = 0;
-    private ViewListener      listener   = null;
-    private Identity          sender     = null;
-    private ConnectionAddress address    = null;
-    private boolean           terminated = false;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    private ConnectionAddress address = null;
+    private ViewListener listener = null;
+    private Identity sender = null;
+    private boolean terminated = false;
+    private long time = 0;
+    private long viewNumber = 0;
 
     /**
      * Constructor - create a heartbeat protocol implementation using the
@@ -46,17 +46,34 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      * @param hb
      * @param vl
      */
-    public TimedProtocolImpl(Heartbeat hb, ViewListener vl, HeartbeatMsg sharedHeartbeat) {
+    public TimedProtocolImpl(Heartbeat hb, ViewListener vl,
+                             HeartbeatMsg sharedHeartbeat) {
         super(hb.getView());
-        time       = hb.getTime();
+        time = hb.getTime();
         viewNumber = hb.getViewNumber();
-        listener   = vl;
-        sender     = hb.getSender();
-        address    = hb.getSenderAddress();
+        listener = vl;
+        sender = hb.getSender();
+        address = hb.getSenderAddress();
     }
 
-    public void terminate() {
-        terminated = true;
+    /**
+     * Sender interface
+     * @return  identity
+     */
+    public Identity getSender() {
+        return sender;
+    }
+
+    public ConnectionAddress getSenderAddress() {
+        return address;
+    }
+
+    /**
+     * Timed interface
+     * @return  time
+     */
+    public long getTime() {
+        return time;
     }
 
     /**
@@ -70,7 +87,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      * @return true if expried, false if not
      */
     public boolean isNotTimely(long timenow, long timebound) {
-        return ((timenow - time) > timebound) || ((time - timenow) > timebound);
+        return timenow - time > timebound || time - timenow > timebound;
     }
 
     /**
@@ -86,7 +103,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      * @return true if expired, false if not
      */
     public boolean isQuiesced(long timenow, long quiesce) {
-        return (timenow - time) > quiesce;
+        return timenow - time > quiesce;
     }
 
     /**
@@ -100,7 +117,6 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
         return true;
     }
 
-
     /**
      * receives a heartbeat message and deals with it according to the
      * heartbeat protocol. This is protocol uses straight-forward
@@ -112,23 +128,24 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      */
     public boolean receiveHeartbeat(Heartbeat hb) {
 
-        if( terminated )
+        if (terminated) {
             return false;
+        }
 
         /**
          * Only bother with a heartbeat if it superceeds
          * the last one (ordered delivery is not guaranteed!)
          */
-        if( hb.getTime() > time ) {
+        if (hb.getTime() > time) {
             time = hb.getTime();
-            boolean viewChanged      = false;
+            boolean viewChanged = false;
             boolean timeStampChanged = false;
 
             /**
              * Check for a new view time stamp (as opposed to
              * the heartbeat time!)
              */
-            if( timeStamp != hb.getView().getTimeStamp() ) {
+            if (timeStamp != hb.getView().getTimeStamp()) {
                 timeStamp = hb.getView().getTimeStamp();
                 timeStampChanged = true;
             }
@@ -138,9 +155,9 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
              * but the views are the same then the view has changed and chaged back
              * without us noticing! We need to pick this up as a real change.
              */
-            if( hb.getViewNumber() != viewNumber ) {
+            if (hb.getViewNumber() != viewNumber) {
                 viewNumber = hb.getViewNumber();
-                view   = hb.getView().toBitSet();
+                view = hb.getView().toBitSet();
                 stable = hb.getView().isStable();
                 viewChanged = true;
             }
@@ -149,10 +166,10 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
              * generate appropriate notification to next protocol
              * layer if something changed.
              */
-            if( viewChanged ) {
-                listener.newView( sender, (View)this );
-            } else if( timeStampChanged ) {
-                listener.newViewTime( sender, (View)this );
+            if (viewChanged) {
+                listener.newView(sender, this);
+            } else if (timeStampChanged) {
+                listener.newViewTime(sender, this);
             }
 
             return true;
@@ -162,18 +179,12 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
         }
     }
 
-    /**
-     * Timed interface
-     * @return  time
-     */
-    public long              getTime()          { return time; }
-    public void              setTime(long t)    { time = t; }
+    public void setTime(long t) {
+        time = t;
+    }
 
-    /**
-     * Sender interface
-     * @return  identity
-     */
-    public Identity          getSender()        { return sender; }
-    public ConnectionAddress getSenderAddress() { return address; }
+    public void terminate() {
+        terminated = true;
+    }
 
 }

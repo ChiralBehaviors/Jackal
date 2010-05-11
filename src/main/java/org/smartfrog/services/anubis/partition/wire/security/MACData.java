@@ -20,9 +20,6 @@ import javax.crypto.spec.SecretKeySpec;
  * but generates MAC with the latest key only.
  */
 public class MACData {
-    private static String macType = "HmacSHA1"; //Use HmacSHA512 for better protection
-    private static int macSize = 20; //size in bytes 
-
     private static byte[] defaultKeyData = { (byte) 0x23, (byte) 0x45,
                                             (byte) 0x83, (byte) 0xad,
                                             (byte) 0x23, (byte) 0x46,
@@ -33,101 +30,9 @@ public class MACData {
                                             (byte) 0x83, (byte) 0xad,
                                             (byte) 0x23, (byte) 0x45,
                                             (byte) 0x83, (byte) 0xad };
+    private static int macSize = 20; //size in bytes 
 
-    private Mac lastMAC = null;
-    private Mac currentMAC = null;
-    private Mac defaultMAC = null; //only to be used if no key explicitly set 
-    private Key key = new SecretKeySpec(defaultKeyData, macType);
-
-    public Key getKey() {
-        return key;
-    }
-
-    public MACData() throws NoSuchAlgorithmException, InvalidKeyException {
-        defaultMAC = Mac.getInstance(macType);
-        defaultMAC.init(key);
-    }
-
-    /**
-     * Set the current key to use for the MAC. Makes the existing current key the last key.
-     * The default key is destroyed for this MACData object.
-     *
-     * @param k the key to use for the MAC
-     * @throws InvalidKeyException
-     */
-    public synchronized void setKey(Key k) throws InvalidKeyException {
-        lastMAC = currentMAC;
-        defaultMAC = null; //eliminate the default...
-        try {
-            currentMAC = Mac.getInstance(macType);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace(); //shouldn't happen as predefined to work...
-        }
-        currentMAC.init(k);
-    }
-
-    /**
-     * Return the size, in bytes, of the MAC
-     *
-     * @return the size in bytes
-     */
-    public int getMacSize() {
-        return macSize;
-    }
-
-    /**
-     * Adds a MAC of the data to the byte array following the data
-     *
-     * @param data  - the buffer holding the data for the MAC, and the MAC
-     * @param start - inclusive start of data
-     * @param end   - inclusive end of data, mac added after this
-     * @throws javax.crypto.ShortBufferException
-     *                           - if the buffer is insufficiently long to hold the mac
-     * @throws SecurityException - no key yet provided for MAC calculation
-     */
-    public synchronized void addMAC(byte[] data, int start, int end) throws ShortBufferException,
-                                                                    SecurityException {
-        Mac mac = (currentMAC == null) ? defaultMAC : currentMAC;
-        if (mac == null)
-            throw new SecurityException("no key for mac calculation");
-        mac.reset();
-        mac.update(data, start, end - start + 1);
-        mac.doFinal(data, end + 1);
-    }
-
-    /**
-     * validate a mac that is at the end of a piece of byte array data
-     *
-     * @param data  to validate
-     * @param start of the data - inclusive
-     * @param end   of the data - inlcusive, mac present after this
-     * @throws SecurityException - the mac does not match
-     */
-    public synchronized void checkMAC(byte[] data, int start, int end) throws SecurityException {
-        if (currentMAC != null)
-            if (validateMac(currentMAC, data, start, end))
-                return;
-        if (lastMAC != null)
-            if (validateMac(lastMAC, data, start, end))
-                return;
-        if (defaultMAC != null)
-            if (validateMac(defaultMAC, data, start, end))
-                return;
-        throw new SecurityException("MAC not valid");
-    }
-
-    private boolean validateMac(Mac m, byte[] data, int start, int end) {
-        m.reset();
-        m.update(data, start, end - start + 1);
-        byte[] checkMAC = m.doFinal();
-        int len = checkMAC.length;
-
-        for (int i = 0; i < len; i++) {
-            if (checkMAC[i] != data[end + 1 + i])
-                return false;
-        }
-        return true;
-    }
+    private static String macType = "HmacSHA1"; //Use HmacSHA512 for better protection
 
     public static void main(String[] args) {
         //for testing
@@ -233,5 +138,109 @@ public class MACData {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private Mac currentMAC = null;
+    private Mac defaultMAC = null; //only to be used if no key explicitly set 
+    private Key key = new SecretKeySpec(defaultKeyData, macType);
+
+    private Mac lastMAC = null;
+
+    public MACData() throws NoSuchAlgorithmException, InvalidKeyException {
+        defaultMAC = Mac.getInstance(macType);
+        defaultMAC.init(key);
+    }
+
+    /**
+     * Adds a MAC of the data to the byte array following the data
+     *
+     * @param data  - the buffer holding the data for the MAC, and the MAC
+     * @param start - inclusive start of data
+     * @param end   - inclusive end of data, mac added after this
+     * @throws javax.crypto.ShortBufferException
+     *                           - if the buffer is insufficiently long to hold the mac
+     * @throws SecurityException - no key yet provided for MAC calculation
+     */
+    public synchronized void addMAC(byte[] data, int start, int end) throws ShortBufferException,
+                                                                    SecurityException {
+        Mac mac = currentMAC == null ? defaultMAC : currentMAC;
+        if (mac == null) {
+            throw new SecurityException("no key for mac calculation");
+        }
+        mac.reset();
+        mac.update(data, start, end - start + 1);
+        mac.doFinal(data, end + 1);
+    }
+
+    /**
+     * validate a mac that is at the end of a piece of byte array data
+     *
+     * @param data  to validate
+     * @param start of the data - inclusive
+     * @param end   of the data - inlcusive, mac present after this
+     * @throws SecurityException - the mac does not match
+     */
+    public synchronized void checkMAC(byte[] data, int start, int end) throws SecurityException {
+        if (currentMAC != null) {
+            if (validateMac(currentMAC, data, start, end)) {
+                return;
+            }
+        }
+        if (lastMAC != null) {
+            if (validateMac(lastMAC, data, start, end)) {
+                return;
+            }
+        }
+        if (defaultMAC != null) {
+            if (validateMac(defaultMAC, data, start, end)) {
+                return;
+            }
+        }
+        throw new SecurityException("MAC not valid");
+    }
+
+    public Key getKey() {
+        return key;
+    }
+
+    /**
+     * Return the size, in bytes, of the MAC
+     *
+     * @return the size in bytes
+     */
+    public int getMacSize() {
+        return macSize;
+    }
+
+    /**
+     * Set the current key to use for the MAC. Makes the existing current key the last key.
+     * The default key is destroyed for this MACData object.
+     *
+     * @param k the key to use for the MAC
+     * @throws InvalidKeyException
+     */
+    public synchronized void setKey(Key k) throws InvalidKeyException {
+        lastMAC = currentMAC;
+        defaultMAC = null; //eliminate the default...
+        try {
+            currentMAC = Mac.getInstance(macType);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace(); //shouldn't happen as predefined to work...
+        }
+        currentMAC.init(k);
+    }
+
+    private boolean validateMac(Mac m, byte[] data, int start, int end) {
+        m.reset();
+        m.update(data, start, end - start + 1);
+        byte[] checkMAC = m.doFinal();
+        int len = checkMAC.length;
+
+        for (int i = 0; i < len; i++) {
+            if (checkMAC[i] != data[end + 1 + i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }

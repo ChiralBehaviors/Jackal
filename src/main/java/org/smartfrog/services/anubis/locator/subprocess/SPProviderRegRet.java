@@ -19,14 +19,18 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.subprocess;
 
-
 import java.io.Serializable;
 
 public class SPProviderRegRet implements Serializable {
-    public String            instance;
-    public long              time;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    public String instance;
+    public long time;
+
     public SPProviderRegRet(String instance, long time) {
         this.instance = instance;
-        this.time     = time;
+        this.time = time;
     }
 }

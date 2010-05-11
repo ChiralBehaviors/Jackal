@@ -19,16 +19,20 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition;
 
+import java.net.InetAddress;
 
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 
-import java.net.InetAddress;
-
 public interface Partition {
-    public Status getStatus();
-    public void register(PartitionNotification pn);
-    public void deregister(PartitionNotification pn);
     public MessageConnection connect(int node);
-    public InetAddress getNodeAddress(int node);
+
+    public void deregister(PartitionNotification pn);
+
     public int getId();
+
+    public InetAddress getNodeAddress(int node);
+
+    public Status getStatus();
+
+    public void register(PartitionNotification pn);
 }

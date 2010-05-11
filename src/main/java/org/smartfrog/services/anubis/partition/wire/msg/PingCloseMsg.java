@@ -21,15 +21,20 @@ package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public class PingCloseMsg extends PingHeartbeatMsg implements Close {
 
-    public static final int CLOSE_MSG_WIRE_TYPE = 301;
     public static final int CLOSE_MSG_WIRE_SIZE = HEARTBEAT_MSG_WIRE_SIZE;
+    public static final int CLOSE_MSG_WIRE_TYPE = 301;
 
-    protected int getType() { return CLOSE_MSG_WIRE_TYPE; }
-    public int getSize() { return CLOSE_MSG_WIRE_SIZE; }
+    public PingCloseMsg(ByteBuffer wireForm) throws ClassNotFoundException,
+            WireFormException,
+            IOException {
+        super();
+        readWireForm(wireForm);
+    }
 
     /**
      * Construct a close message that matches the heartbeat messsage
@@ -37,19 +42,23 @@ public class PingCloseMsg extends PingHeartbeatMsg implements Close {
      * @param hb HeartbeatMsg
      */
     public PingCloseMsg(HeartbeatMsg hb) {
-       super( (PingHeartbeatMsg)hb );
-   }
+        super((PingHeartbeatMsg) hb);
+    }
 
-   /**
-    * Constructor - used internally when reading from wire
-    */
-   protected PingCloseMsg() {
-       super();
-   }
+    /**
+        * Constructor - used internally when reading from wire
+        */
+    protected PingCloseMsg() {
+        super();
+    }
 
+    @Override
+    public int getSize() {
+        return CLOSE_MSG_WIRE_SIZE;
+    }
 
-   public PingCloseMsg(ByteBuffer wireForm) throws ClassNotFoundException, WireFormException, IOException {
-       super();
-       readWireForm(wireForm);
-   }
+    @Override
+    protected int getType() {
+        return CLOSE_MSG_WIRE_TYPE;
+    }
 }

@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.components.examples;
 
-
 import java.util.Iterator;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
@@ -29,25 +28,32 @@ import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 public class GroupListener extends AnubisListener {
 
     public GroupListener(String name) {
-            super(name);
+        super(name);
     }
+
+    @Override
     public AnubisValue createValue(ProviderInstance providerInstance) {
         return new GroupMember(providerInstance, this);
     }
+
+    @Override
     public void newValue(AnubisValue v) {
-        ((GroupMember)v).newValue();
+        ((GroupMember) v).newValue();
         printGroup();
     }
-    public void removeValue(AnubisValue v) {
-        ((GroupMember)v).removeValue();
-        printGroup();
-    }
+
     public void printGroup() {
         String str = "[ ";
         Iterator iter = values().iterator();
-        while( iter.hasNext() ) {
-            str += ((AnubisValue)iter.next()).getValue() + " ";
+        while (iter.hasNext()) {
+            str += ((AnubisValue) iter.next()).getValue() + " ";
         }
         System.out.println("Group " + getName() + ": " + str + "]");
+    }
+
+    @Override
+    public void removeValue(AnubisValue v) {
+        ((GroupMember) v).removeValue();
+        printGroup();
     }
 }

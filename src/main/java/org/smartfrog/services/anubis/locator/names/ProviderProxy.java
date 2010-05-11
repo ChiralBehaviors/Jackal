@@ -39,12 +39,17 @@ import java.io.Serializable;
 
 public class ProviderProxy extends NameData implements Serializable {
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
     public ProviderProxy(String name, Integer node) {
         super(name, node);
     }
 
+    @Override
     public String toString() {
-            return "ProviderProxy [" + name +
-                    ", on node=" + node + "]";
+        return "ProviderProxy [" + name + ", on node=" + node + "]";
     }
 }

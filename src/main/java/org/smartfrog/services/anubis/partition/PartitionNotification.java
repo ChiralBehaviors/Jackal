@@ -19,10 +19,10 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition;
 
-
 import org.smartfrog.services.anubis.partition.views.View;
 
 public interface PartitionNotification {
-    public void partitionNotification(View view, int leader);
     public void objectNotification(Object obj, int sender, long time);
+
+    public void partitionNotification(View view, int leader);
 }

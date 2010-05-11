@@ -35,16 +35,16 @@ public class MessageConnectionServerFactory implements
         super();
     }
 
+    public IOConnectionServer create(ConnectionAddress address, Identity id,
+                                     ConnectionSet cs) throws Exception {
+        return new MessageConnectionServer(address, id, cs, wireSecurity);
+    }
+
     public WireSecurity getWireSecurity() {
         return wireSecurity;
     }
 
     public void setWireSecurity(WireSecurity wireSecurity) {
         this.wireSecurity = wireSecurity;
-    }
-
-    public IOConnectionServer create(ConnectionAddress address, Identity id,
-                                     ConnectionSet cs) throws Exception {
-        return new MessageConnectionServer(address, id, cs, wireSecurity);
     }
 }

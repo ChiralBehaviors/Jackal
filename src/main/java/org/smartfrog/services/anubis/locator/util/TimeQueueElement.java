@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.locator.util;
 
-
-
 abstract public class TimeQueueElement {
 
     private Long timeQueueQueuedTime = new Long(0);
@@ -28,19 +26,8 @@ abstract public class TimeQueueElement {
     /**
      * Default constructor
      */
-    public TimeQueueElement() {}
-
-    /**
-     * get operation to retrieve the time stamp for this element
-     * @return the time-stamp as a Long
-     */
-    public Long getQueuedTime() { return timeQueueQueuedTime; }
-
-    /**
-     * the set operation to time-stamp the element.
-     * @param time the time-stamp for this element.
-     */
-    public void setQueuedTime(Long time) { timeQueueQueuedTime = time; }
+    public TimeQueueElement() {
+    }
 
     /**
      * An abstract method used to indicate that this element has
@@ -49,4 +36,20 @@ abstract public class TimeQueueElement {
      * according to the system time).
      */
     abstract public void expired();
+
+    /**
+     * get operation to retrieve the time stamp for this element
+     * @return the time-stamp as a Long
+     */
+    public Long getQueuedTime() {
+        return timeQueueQueuedTime;
+    }
+
+    /**
+     * the set operation to time-stamp the element.
+     * @param time the time-stamp for this element.
+     */
+    public void setQueuedTime(Long time) {
+        timeQueueQueuedTime = time;
+    }
 }
