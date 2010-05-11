@@ -1,0 +1,158 @@
+/** (C) Copyright 1998-2005 Hewlett-Packard Development Company, LP
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+For more information: www.smartfrog.org
+
+*/
+
+#include "org/smartfrog/components.sf"
+#include "org/smartfrog/services/anubis/locator/components.sf"
+#include "org/smartfrog/services/anubis/partition/components.sf"
+#include "org/smartfrog/services/anubis/partition/util/components.sf"
+#include "org/smartfrog/services/anubis/partition/protocols/heartbeat/components.sf"
+#include "org/smartfrog/services/anubis/partition/protocols/leader/components.sf"
+#include "org/smartfrog/services/anubis/partition/comms/components.sf"
+
+
+
+/**
+ * The currently proposed use of the Anubis service is to have a single
+ * instance the AnubisService running in the SF daemon process on each
+ * node and an instance of AnubisSubProcessLocator running in each subProcess.
+ * The AnubisSubProcessLocator component needs to locate its AnubisService
+ * instance, possibly instantiated in a seperate description.
+ *
+ * The Anubis service can optionally be named in the SF process compound to
+ * make it locatable through SF lookup (sfFind() etc.).
+ *
+ * Naming is achieved by assigning a value to the attribute anubisServiceName
+ * in AnubisService or AnubisSubProcessLocator. By assigning the same name to
+ * an instance of AnubisService in one process and an instance of
+ * AnubisSubProcessLocator in other processes on a node, the service will be
+ * accessible from any process in a uniform manner. e.g. if anubisServiceName
+ * is "anubis" then the service will be located in any process from any
+ * description using the link:
+ *     LAZY PROCESS:anubis:locator;
+ *
+ * Alternatively the service insterfaces can be unamed and accessed within
+ * a description using links.
+ */
+
+
+AnubisDefaultParameters extends Compound {
+
+    identity extends Compound {
+        magic              123456;
+        getNodeFromLocalIP false;
+        node               0;
+        epoch extends      Epoch;
+    }
+    contactAddress extends ConnectionAddress {
+        host       "localhost";
+        port       0;
+    }
+    heartbeatGroup extends MulticastAddress {
+        host       "233.1.2.30";
+        port       1960;
+        timeToLive 1;
+    }
+    heartbeatInterval  2000;
+    heartbeatTimeout   3;
+
+    heartbeatTransport       extends MulticastHeartbeatTransport;
+    connectionTransport      extends NonBlockingConnectionTransport;
+    heartbeatProtocolFactory extends TimedHeartbeatProtocol;
+    leaderProtocolFactory    extends MajorityLeaderProtocol;
+    security                 extends NoSecurity;
+
+    preferred                false;
+    testable                 true;
+    testAddress extends ConnectionAddress {
+        host       "localhost";
+        port       0;
+    }
+
+}
+
+
+/**
+ * if anubisServiceName is defined then the AnubisServiceCompound
+ * will create an attribute in the local ProcessCompound that has the name
+ * specified by the value of anubisServiceCompound and itself as the value.
+ * This allows the Anubis service to be located from the process compound.
+ *
+ */
+AnubisServiceCompound extends Compound {
+    sfClass            "org.smartfrog.services.anubis.AnubisServiceCompound";
+ // anubisServiceName  "anubis";
+}
+
+
+
+/**
+ * The AnubisService component represents a fully self contained node
+ * in an anubis partition. The top level attributes are:
+ *  node:              node identity, a low +ve integer unique in the group
+ *  magic:             a magic number (long), identical for whole group
+ *  address:           the multicast address, identical for whole group
+ *  port:              the mutlicast port, identical for whole group
+ *  heartbeatInterval: number of milliseconds between heartbeats, identical for whole group
+ *  heartbeatTimeout:  number of missing heartbeats to be tolerated, identical for whole group
+ *  testable:          provide for partition monitor test console
+ * Remember that if you want the service to be locatable, the anubisServiceName attribute
+ * must be set. This must be unique in the process compound.
+ */
+AnubisService extends AnubisServiceCompound {
+
+    anubisParameters TBD; // extends AnubisDefaultParameters
+
+    partitionManager extends AnubisPartitionManager;
+
+    locator extends AnubisLocator {
+         partitionManager LAZY PARENT:partitionManager;
+    }
+
+    subProcessAdapter extends AnubisSubProcessAdapter {
+         locator LAZY PARENT:locator;
+    }
+}
+
+
+
+/**
+ * The AnubisSubProcessLocator used to allow access from a subProcess to an
+ * instance of the anubis service running in another process. The anubisAdapter
+ * attribute should be set to locate the AnubisService instance. The default
+ * provided will locate an instance of AnubisService running in the daemon process
+ * if it has been named "anubis" (i.e. anubisServiceName is "anubis").
+ * The same naming method is used by AnubisSubProcessLocator - i.e. if you want
+ * it to be found then set anubisServiceName.
+ */
+AnubisSubProcessLocator extends AnubisServiceCompound {
+
+    anubisAdapter LAZY HOST localhost:anubis:subProcessAdapter;
+
+    anubisParameters TBD; // extend AnubisDefaultParameters here
+
+    locator extends Prim {
+        sfClass             "org.smartfrog.services.anubis.locator.subprocess.SPLocatorImpl";
+        subProcessAdapter  ATTRIB anubisAdapter;
+        heartbeatInterval  ATTRIB anubisParameters:heartbeatInterval;
+        heartbeatTimeout   ATTRIB anubisParameters:heartbeatTimeout;
+    }
+}
+
+
