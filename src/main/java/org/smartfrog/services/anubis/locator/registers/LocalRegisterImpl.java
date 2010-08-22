@@ -25,6 +25,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.AnubisStability;
@@ -100,6 +103,7 @@ public class LocalRegisterImpl {
     private class UserListenerRequest {
         public final static int Deregister = 2;
         public final static int Register = 1;
+        @SuppressWarnings("unused")
         public final static int Unknown = 0;
         public AnubisListener listener;
         public int type;
@@ -114,6 +118,7 @@ public class LocalRegisterImpl {
         public final static int Deregister = 2;
         public final static int NewValue = 3;
         public final static int Register = 1;
+        @SuppressWarnings("unused")
         public final static int Unknown = 0;
         public AnubisProvider provider;
         public long time;
@@ -132,6 +137,7 @@ public class LocalRegisterImpl {
     private class UserStabilityRequest {
         public final static int Deregister = 2;
         public final static int Register = 1;
+        @SuppressWarnings("unused")
         public final static int Unknown = 0;
         public AnubisStability stability;
         public int type;

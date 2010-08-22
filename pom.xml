@@ -9,6 +9,54 @@
     <name>Anubis</name>
     <description>The Anubis distributed state monitoring and failure detection service</description>
 
+    <repositories>
+        <repository>
+            <id>com.springsource.repository.bundles.release</id>
+            <name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>
+            <url>http://repository.springsource.com/maven/bundles/release</url>
+        </repository>
+
+        <repository>
+            <id>com.springsource.repository.bundles.external</id>
+            <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
+            <url>http://repository.springsource.com/maven/bundles/external</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>3.0.2.RELEASE</version>
+            <type>jar</type> 
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>3.0.2.RELEASE</version>
+            <type>jar</type> 
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>3.0.2.RELEASE</version>
+            <type>jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.cglib</groupId>
+            <artifactId>com.springsource.net.sf.cglib</artifactId>
+            <version>2.2.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -16,10 +64,6 @@
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
-                    <debug>true</debug>
-                    <fork>true</fork>
-                    <meminitial>128m</meminitial>
-                    <maxmem>512m</maxmem>
                 </configuration>
             </plugin>
         </plugins>

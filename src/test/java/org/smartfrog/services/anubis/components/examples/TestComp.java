@@ -17,9 +17,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 For more information: www.smartfrog.org
 
 */
+package org.smartfrog.services.anubis.components.examples;
 
-MajorityLeaderProtocol extends Prim {
-    sfExport           false;
-    sfClass            "org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory";
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+public class TestComp extends AnubisPrim {
+
+    public TestComp() throws Exception {
+        super();
+    }
+
+    @Override
+    @PostConstruct
+    public void start() {
+        System.out.println(name + ": started");
+    }
+
+    @Override
+    @PreDestroy
+    public void terminate() {
+        System.out.println(name + ": stopping");
+    }
 }
-

@@ -24,9 +24,6 @@ import org.smartfrog.services.anubis.locator.ValueData;
 
 public class ProviderInstance extends NameData {
 
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
     public String instance;
     public long time;

@@ -23,9 +23,6 @@ import java.io.Serializable;
 
 public class NameData implements Serializable {
 
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
     public String name;
     public Integer node;

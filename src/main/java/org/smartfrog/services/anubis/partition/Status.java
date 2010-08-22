@@ -24,9 +24,6 @@ import java.io.Serializable;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class Status implements Serializable {
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
     public int leader;
     public View view;

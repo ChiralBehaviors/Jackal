@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
+import java.io.IOException;
+
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastComms;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -31,7 +33,7 @@ public class Snoop extends MulticastComms {
     private Identity id;
 
     public Snoop(String threadName, MulticastAddress address, Identity id,
-                 Controller controller) throws Exception {
+                 Controller controller) throws IOException {
         super(threadName, address);
         this.controller = controller;
         this.id = id;

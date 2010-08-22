@@ -19,6 +19,7 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,11 +60,12 @@ public class HeartbeatComms extends MulticastComms implements
         * @param threadName - name for multicast server thread
         * @param id - local identify
         * @param sec - security module
+     * @throws IOException 
         * @throws Exception
         */
     public HeartbeatComms(MulticastAddress address, ConnectionAddress inf,
                           HeartbeatReceiver cs, String threadName, Identity id,
-                          WireSecurity sec) throws Exception {
+                          WireSecurity sec) throws IOException {
         super(threadName, address, inf);
         me = id;
         connectionSet = cs;
@@ -81,7 +83,7 @@ public class HeartbeatComms extends MulticastComms implements
     * @throws Exception
     */
     public HeartbeatComms(MulticastAddress address, HeartbeatReceiver cs,
-                          String threadName, Identity id, WireSecurity sec) throws Exception {
+                          String threadName, Identity id, WireSecurity sec) throws IOException {
         super(threadName, address);
         me = id;
         connectionSet = cs;

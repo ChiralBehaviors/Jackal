@@ -35,6 +35,7 @@ public class TimeQueue extends SortedSetMap {
                 return c.compareTo(obj2);
             }
 
+            @SuppressWarnings("unused")
             public boolean equals(Object obj1, Object obj2) {
                 return obj1.equals(obj2);
             }

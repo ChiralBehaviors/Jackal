@@ -26,8 +26,7 @@ public interface IOConnection {
     public static int INITIAL_MSG_ORDER = 0;
 
     public boolean connected();
-
-    //    public void send(byte[] msg);
+ 
     public void send(TimedMsg msg);
 
     public void setIgnoring(boolean ignoring);

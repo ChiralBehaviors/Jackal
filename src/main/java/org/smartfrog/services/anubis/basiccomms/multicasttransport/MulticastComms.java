@@ -64,7 +64,7 @@ public class MulticastComms extends Thread {
      * Constructor - uses MulticastAddress to define the multicast
      * group etc.
      */
-    public MulticastComms(String threadName, MulticastAddress address) throws Exception {
+    public MulticastComms(String threadName, MulticastAddress address) throws IOException {
 
         super(threadName);
         groupAddress = address;
@@ -80,7 +80,7 @@ public class MulticastComms extends Thread {
      * group etc.
      */
     public MulticastComms(String threadName, MulticastAddress address,
-                          ConnectionAddress inf) throws Exception {
+                          ConnectionAddress inf) throws IOException {
 
         super(threadName);
         groupAddress = address;
@@ -170,6 +170,7 @@ public class MulticastComms extends Thread {
      * convert the input buffer to a string - for debug purposes.
      * @return a stringified inBytes
      */
+    @SuppressWarnings("unused")
     private String inputToString() {
         return new String(inBytes);
     }

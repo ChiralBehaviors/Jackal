@@ -33,7 +33,7 @@ public class Epoch {
 
     private long value;
 
-    public Epoch() throws Exception {
+    public Epoch() {
         value = System.currentTimeMillis();
     }
 

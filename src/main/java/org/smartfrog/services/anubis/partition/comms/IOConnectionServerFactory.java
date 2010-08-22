@@ -19,11 +19,13 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms;
 
+import java.io.IOException;
+
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public interface IOConnectionServerFactory {
     public IOConnectionServer create(ConnectionAddress address, Identity id,
-                                     ConnectionSet cs) throws Exception;
+                                     ConnectionSet cs) throws IOException;
 }

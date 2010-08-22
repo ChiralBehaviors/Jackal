@@ -43,9 +43,6 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class MessageNioServer extends Thread implements IOConnectionServer {
-
-    private final static boolean debug = false;
-
     private ConnectionAddress connAdd = null;
     private ConnectionSet connectionSet = null;
     private RxQueue connectQueue = null;
@@ -73,9 +70,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
      * is only 1 decoupling thread.
      */
     public MessageNioServer(ConnectionAddress address, Identity id,
-                            ConnectionSet cs, WireSecurity sec) throws Exception {
+                            ConnectionSet cs, WireSecurity sec) throws IOException {
 
-        if (debug && asyncLog.isLoggable(Level.FINER)) {
+        if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: constructing a new server");
         }
 
@@ -92,7 +89,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                                        address.port));
             connAdd = new ConnectionAddress(server.socket().getInetAddress(),
                                             server.socket().getLocalPort());
-            if (debug && asyncLog.isLoggable(Level.FINER)) {
+            if (asyncLog.isLoggable(Level.FINER)) {
                 asyncLog.finer("MNS: server bound to: "
                                + connAdd.ipaddress.getHostName() + " - "
                                + connAdd.port);
@@ -136,7 +133,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     }
 
     public ConnectionAddress getAddress() {
-        if (debug && asyncLog.isLoggable(Level.FINER)) {
+        if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: getAddress is called");
         }
         return connAdd;
@@ -201,7 +198,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     public void startConnection(ConnectionAddress conAd, Identity me,
                                 ConnectionSet cs, MessageConnection con,
                                 NonBlockingConnectionInitiator mci) {
-        if (debug && asyncLog.isLoggable(Level.FINER)) {
+        if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: startConnection is called: "
                            + conAd.ipaddress.getHostName() + " - " + conAd.port);
         }
@@ -215,7 +212,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             mnh.init(me, cs, con, mci);
             sendingChannel.connect(new InetSocketAddress(conAd.ipaddress,
                                                          conAd.port));
-            if (debug && asyncLog.isLoggable(Level.FINER)) {
+            if (asyncLog.isLoggable(Level.FINER)) {
                 asyncLog.finer("MNS: Trying to register a new channel");
             }
             pendingNewChannels.put(sendingChannel, mnh);
@@ -230,7 +227,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
     public void terminate() {
 
-        if (debug && asyncLog.isLoggable(Level.FINER)) {
+        if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: terminate is called");
         }
         // do what shutdown does - i.e. wrap that thread up
@@ -258,7 +255,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         Iterator iter = null;
         SelectionKey key = null;
         while (open) {
-            if (debug && asyncLog.isLoggable(Level.FINER)) {
+            if (asyncLog.isLoggable(Level.FINER)) {
                 asyncLog.finer(getName()
                                + ": Calling select and presumably, block...");
             }
@@ -273,7 +270,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             // finally registering pending channels
             synchronized (pendingNewChannels) {
                 if (!pendingNewChannels.isEmpty()) {
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer("MNS: Registering pending channels: "
                                        + pendingNewChannels.size());
                     }
@@ -307,14 +304,14 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             }
 
             while (iter.hasNext()) {
-                if (debug && asyncLog.isLoggable(Level.FINER)) {
+                if (asyncLog.isLoggable(Level.FINER)) {
                     asyncLog.finer(getName()
                                    + ": going through the key iterator");
                 }
                 key = (SelectionKey) iter.next();
 
                 if (key.isAcceptable()) {
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer(getName()
                                        + ": isAcceptable() returned true");
                     }
@@ -343,7 +340,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                 }
 
                 if (key.isReadable()) {
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer(getName()
                                        + ": isReadable() returned true");
                     }
@@ -357,19 +354,19 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                 }
 
                 if (key.isWritable()) {
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer(getName()
                                        + ": isWritable() returned true");
                     }
                     key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
                     MessageNioHandler mnh = (MessageNioHandler) key.attachment();
                     if (mnh.isWritePending()) {
-                        if (debug && asyncLog.isLoggable(Level.FINER)) {
+                        if (asyncLog.isLoggable(Level.FINER)) {
                             asyncLog.finer("MNS: PENDING WRITE - SELECTOR WOKE UP ON OP_WRITE");
                         }
                         mnh.writeData();
                     } else {
-                        if (debug && asyncLog.isLoggable(Level.FINER)) {
+                        if (asyncLog.isLoggable(Level.FINER)) {
                             asyncLog.finer("MNS: setting channel readyForWriting");
                         }
                         mnh.readyForWriting();
@@ -377,7 +374,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                 }
 
                 if (key.isConnectable()) {
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer(getName()
                                        + ": isConnectable() returned true");
                     }
@@ -395,7 +392,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                         }
                     }
                     // merge both calls?
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer("MNS: setting mnh to right booleans in connectable switch test");
                     }
                     mnh.readyForWriting();
@@ -419,7 +416,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             // killing of dead Keys
             synchronized (deadKeys) {
                 if (!deadKeys.isEmpty()) {
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer("MNS: Killing of at least one key/channel: "
                                        + deadKeys.size());
                     }
@@ -428,14 +425,14 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                     int deadKeyNumber = deadKeys.size();
                     for (int i = 0; i < deadKeyNumber; ++i) {
                         deadKey = (SelectionKey) deadKeys.remove(0);
-                        if (debug && asyncLog.isLoggable(Level.FINER)) {
+                        if (asyncLog.isLoggable(Level.FINER)) {
                             asyncLog.finer("MNS: *** Cleanup starting ***" + i);
                         }
                         if (deadKey != null) {
                             deadChannel = (SocketChannel) deadKey.channel();
                             deadKey.cancel();
                             try {
-                                if (debug && asyncLog.isLoggable(Level.FINER)) {
+                                if (asyncLog.isLoggable(Level.FINER)) {
                                     asyncLog.finer("MNS: Calling deadChannel.close()");
                                 }
                                 deadChannel.close();
@@ -451,17 +448,17 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
             // registration of write interest for pending writes
             synchronized (writePendingKeys) {
-                if (debug && asyncLog.isLoggable(Level.FINER)) {
+                if (asyncLog.isLoggable(Level.FINER)) {
                     asyncLog.finer("MNS: Examining the content of writePendingKeys");
                 }
                 if (!writePendingKeys.isEmpty()) {
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer("MNS: Registering interest for write "
                                        + writePendingKeys.size());
                     }
                     SelectionKey pendingKey = null;
                     int pendingNumber = writePendingKeys.size();
-                    if (debug && asyncLog.isLoggable(Level.FINER)) {
+                    if (asyncLog.isLoggable(Level.FINER)) {
                         asyncLog.finer("MNS: pending write NUmber: "
                                        + pendingNumber);
                     }
@@ -476,7 +473,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         } // while open
 
         // thread is being killed - close down gracefully
-        if (debug && asyncLog.isLoggable(Level.FINER)) {
+        if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: server thread is EXITING... Why?");
         }
         try {

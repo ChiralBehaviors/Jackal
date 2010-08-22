@@ -43,14 +43,11 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
 public class MessageNioHandler implements SendingListener, IOConnection,
-                              WireSizes {
-
-    private final static boolean debug = false;
-    private final static boolean dumbReset = true;
-    public final int SENDING_DONE = 0;
-
-    public final int SENDING_PENDING = 1;
-    public final int SENDING_REFUSED = 2;
+                              WireSizes {  
+    public static final int SENDING_DONE = 0;
+    public static final int SENDING_PENDING = 1;
+    public static final int SENDING_REFUSED = 2;
+    
     private boolean announceTerm = true;
     private ConnectionSet connectionSet = null;
     private ByteBuffer[] dataToWrite = null;
@@ -91,7 +88,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     public MessageNioHandler(Selector selector, SocketChannel sc,
                              Vector deadKeys, Vector writePendingKeys,
                              RxQueue rxQueue, WireSecurity sec) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Constructing a new MessageNioHandler");
         }
         wireSecurity = sec;
@@ -114,7 +111,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     * close() is called when local end goes away
     */
     public void close() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: call to close results in call to cleanup");
         }
         SelectionKey selKey = sc.keyFor(selector);
@@ -127,7 +124,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     }
 
     public void closing() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: closing is being called");
         }
         //if(server != null)
@@ -138,14 +135,14 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     }
 
     public boolean connected() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: connected is being called");
         }
         return open;
     }
 
     public void deliverObject(ByteBuffer fullRxBuffer) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: deliverObject is being called");
         }
 
@@ -223,7 +220,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     }
 
     public void init(Identity id, ConnectionSet cs) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: init being called");
         }
         me = id;
@@ -234,7 +231,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     // methods added to relace constructors
     public void init(Identity id, ConnectionSet cs, MessageConnection mc,
                      NonBlockingConnectionInitiator mci) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: init with mc being called");
         }
         // establish connection should have been done before...
@@ -245,14 +242,14 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     }
 
     public boolean isReadyForWriting() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: IsReadyForWriting being called");
         }
         return writingOK;
     }
 
     public boolean isWritePending() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: isWritePending being called");
         }
         return writePending;
@@ -264,7 +261,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
      * @return the serialized object when it is fully read - null it the read is only partial
      */
     public ByteBuffer newDataToRead(SelectionKey key) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: newDataToread being called");
         }
         SocketChannel sockChan = (SocketChannel) key.channel();
@@ -294,23 +291,23 @@ public class MessageNioHandler implements SendingListener, IOConnection,
 
             // check if the buffer has been fully filled
             if (rxHeader.remaining() == 0) {
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: RxHeader buffer is full");
                 }
                 // check magic number and object length
                 rxHeaderAlreadyRead = true;
                 rxHeader.flip();
                 int readMagic = rxHeader.getInt();
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: Read magic number: " + readMagic);
                 }
                 if (readMagic == MAGIC_NUMBER) {
-                    if (debug && log.isLoggable(Level.FINER)) {
+                    if (log.isLoggable(Level.FINER)) {
                         log.finer("MNH: RxHeader magic-number fits");
                     }
                     // get the object size and create a new buffer for it
                     objectSize = rxHeader.getInt();
-                    if (debug && log.isLoggable(Level.FINER)) {
+                    if (log.isLoggable(Level.FINER)) {
                         log.finer("MNH: read objectSize: " + objectSize);
                     }
 
@@ -328,12 +325,12 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         }
 
         if (objectSize != -1) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.finer("MNH: Trying to read the object itself now...");
             }
             try {
                 readAmount = sockChan.read(rxObject);
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: This time round we have read:                      -->"
                               + readAmount);
                 }
@@ -343,7 +340,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 }
             } catch (IOException ioe) {
                 cleanup(key);
-                if (debug && log.isLoggable(Level.WARNING)) {
+                if (log.isLoggable(Level.WARNING)) {
                     log.log(Level.WARNING,
                             "MNH: IOException reading the object", ioe);
                 }
@@ -352,7 +349,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
 
             // check if object buffer has been fully filled - i.e. has the object arrived in full
             if (rxObject.remaining() == 0) {
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: RxObject is all here: " + readAmount);
                 }
                 // read the object then since it is all here
@@ -368,7 +365,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     }
 
     public void readyForWriting() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: readyForWriting being called");
         }
         synchronized (this) {
@@ -379,22 +376,22 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     // only called directly from NonBlockingConnectionInitiator
     public synchronized void send(byte[] bytesToSend) {
 
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: sendObject withOUT listener is being called");
         }
         sendingDoneOK = false;
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Trying to send an object - blocking call: ");
         }
         // this is a blocking call that will return only when all the object has been written
         int retVal = sendObject(bytesToSend, this);
         if (retVal == SENDING_DONE) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.finer("MNH: Sending object - blocking call WENT FINE!");
             }
             return;
         } else if (retVal == SENDING_REFUSED) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.finer("MNH: Object could not be sent SENDING_REFUSED!!! WHY NOT ?!");
                 //		shutdown();
             }
@@ -402,7 +399,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             // channel is busy so we need to wait to be called back
             synchronized (this) {
                 try {
-                    if (debug && log.isLoggable(Level.FINER)) {
+                    if (log.isLoggable(Level.FINER)) {
                         log.finer("MNH: SENDING_PENDING so go on wait for notification that writing is done");
                     }
                     wait(60 * 1000);
@@ -410,7 +407,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 }
             }
             if (!sendingDoneOK) {
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: Got woken up but boolean sendingDoneOK is still false !!!");
                 }
                 shutdown();
@@ -459,7 +456,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
      * @return sending error code from SENDING_DONE, SENDING_PENDING or SENDING_REFUSED
      */
     public int sendObject(byte[] bytesToSend, SendingListener listener) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: sendObject with Listener being called");
         }
         boolean goAndWrite = false;
@@ -468,11 +465,11 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             if (writingOK) {
                 writingOK = false;
                 goAndWrite = true;
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: all set to call writeData() - goAndWrite has been set to TRUE");
                 }
             } else {
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: writingOK is false -- object cannot be sent!!!");
                 }
             }
@@ -480,7 +477,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (goAndWrite) {
             dataToWrite = toByteBuffer(bytesToSend);
             sendingListener = listener;
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.finer("MNH: SendObject: Calling writeData...");
             }
             returnedInt = writeData();
@@ -489,21 +486,21 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     }
 
     public void setConnected(boolean conValue) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Setting open to " + conValue);
         }
         open = conValue;
     }
 
     public void setIgnoring(boolean ignoring) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: setIgnoring is being called");
         }
         this.ignoring = ignoring;
     }
 
     public void shutdown() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: shutdown is being called");
         }
         open = false;
@@ -517,7 +514,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     }
 
     public void silent() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: silent is being called");
         }
         announceTerm = false;
@@ -525,13 +522,13 @@ public class MessageNioHandler implements SendingListener, IOConnection,
 
     // methods added to mirror existing methods
     public void start() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: start is being called");
         }
     }
 
     public void terminate() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: terminate is being called");
         }
         announceTerm = false;
@@ -544,7 +541,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
      * @return sending error code from SENDING_DONE, SENDING_PENDING or SENDING_REFUSED
      */
     public int writeData() {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: writeData() being called");
         }
         int returnedInt = SENDING_REFUSED;
@@ -553,7 +550,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         try {
             dataSentThisTime = sc.write(dataToWrite);
             if (dataSentThisTime == dataLeftToSend) {
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.finer("MNH: OK, all data has now gone: "
                               + dataSentThisTime);
                 }
@@ -573,11 +570,11 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                     // schedule a register for OP_WRITEABLE so that this method is called
                     // again when the channel is free-open again
                     // how to get the key ???!!! try using keyFor...
-                    if (debug && log.isLoggable(Level.FINER)) {
+                    if (log.isLoggable(Level.FINER)) {
                         log.finer("MNH: could only write: " + dataSentThisTime);
                     }
                     writePendingKeys.add(sc.keyFor(selector));
-                    if (debug && log.isLoggable(Level.FINER)) {
+                    if (log.isLoggable(Level.FINER)) {
                         log.finer("MNH: waking up the selector so that it registers the keys");
                     }
                     selector.wakeup();
@@ -598,19 +595,19 @@ public class MessageNioHandler implements SendingListener, IOConnection,
 
     // cleanup is called if remote end goes away
     private void cleanup(SelectionKey key) {
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: cleanup is being called");
         }
         writingOK = false;
         deadKeys.add(key);
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Cleanup is called - socket has gone away");
         }
     }
 
     private void initialMsg(TimedMsg tm) {
 
-        if (debug && log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: initialMsg is being called");
         }
 
@@ -621,7 +618,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * must be a heartbeat message
          */
         if (!(obj instanceof HeartbeatMsg)) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.severe(me
                            + " did not receive a heartbeat message first - shutdown");
             }
@@ -635,7 +632,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * There must be a valid connection (heartbeat connection)
          */
         if (!connectionSet.getView().contains(hbmsg.getSender())) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.severe(me
                            + " did not have incoming connection in the connection set");
             }
@@ -659,7 +656,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 //                setName("Anubis: node " + con.getSender().id + " Connection Comms");
                 messageConnection.deliver(bytes);
             } else {
-                if (debug && log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(Level.FINER)) {
                     log.severe(me + " failed to assign incoming connection");
                 }
                 shutdown();
@@ -671,7 +668,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * By now we should be left with a heartbeat connection - sanity check
          */
         if (!(con instanceof HeartbeatConnection)) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.severe(me
                            + " ?!? incoming connection is in connection set, but not heartbeat or message type");
             }
@@ -695,7 +692,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * connect. Do not count this as an error, but do log its occurance.
          */
         if (!hbmsg.getMsgLinks().contains(me.id)) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.severe(me + " incoming connection from "
                            + con.getSender().toString()
                            + " when neither end wants the connection");
@@ -739,7 +736,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * comit suicide in disgust!!!!
          */
         if (!connectionSet.useNewMessageConnection(messageConnection)) {
-            if (debug && log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(Level.FINER)) {
                 log.severe(me
                            + "Concurrent creation of message connections from "
                            + messageConnection.getSender());

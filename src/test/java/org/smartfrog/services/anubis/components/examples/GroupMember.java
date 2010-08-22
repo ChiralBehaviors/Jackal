@@ -17,13 +17,29 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 For more information: www.smartfrog.org
 
 */
-package org.smartfrog.services.anubis.partition.test.msg;
+package org.smartfrog.services.anubis.components.examples;
 
-import java.io.Serializable;
+import org.smartfrog.services.anubis.locator.AnubisValue;
+import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
-public class TestConnectionMsg implements Serializable { 
-    private static final long serialVersionUID = 1L;
+public class GroupMember extends AnubisValue {
 
-    public TestConnectionMsg() {
+    GroupListener group;
+
+    public GroupMember(ProviderInstance instance, GroupListener groupListener) {
+        super(instance);
+        group = groupListener;
     }
+
+    public void newValue() {
+        System.out.println("New value in group " + getName() + " = "
+                           + getValue());
+
+    }
+
+    public void removeValue() {
+        System.out.println("Removed value in group " + getName() + " = "
+                           + getValue());
+    }
+
 }

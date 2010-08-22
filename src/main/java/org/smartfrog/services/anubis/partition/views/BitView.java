@@ -26,9 +26,6 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 
 public class BitView implements View, Cloneable, Serializable {
 
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
 
     public static BitView create(Identity id, long t) {

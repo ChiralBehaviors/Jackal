@@ -19,12 +19,16 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.Anubis;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
@@ -33,18 +37,20 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
+import com.hellblazer.anubis.annotations.Deployed;
+
 public class Controller {
 
     private MulticastAddress address;
     private AsymetryReportFrame asymetryReport = null;
-    private long checkPeriod;
+    private long checkPeriod = 1000;
     private ColorAllocator colorAllocator = new ColorAllocator();
     private MainConsoleFrame consoleFrame;
-    private long expirePeriod;
+    private long expirePeriod = 10000;
     private BitView globalView = new BitView();
-    private long heartbeatInterval = 0;
+    private long heartbeatInterval = 1000;
 
-    private long heartbeatTimeout = 0;
+    private long heartbeatTimeout = 2000;
     private Identity identity;
     private Map nodes = new HashMap();
     private Snoop snoop;
@@ -193,7 +199,7 @@ public class Controller {
         if (task != null) {
             task.cancel();
         }
-        timer.schedule(task, checkPeriod, checkPeriod);
+        timer.schedule(getTask(), checkPeriod, checkPeriod);
 
         /** set node's timers **/
         Iterator iter = nodes.values().iterator();
@@ -210,7 +216,25 @@ public class Controller {
         }
     }
 
-    public void start() throws Exception {
+    public long getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    public void setHeartbeatInterval(long heartbeatInterval) {
+        this.heartbeatInterval = heartbeatInterval;
+    }
+
+    public long getHeartbeatTimeout() {
+        return heartbeatTimeout;
+    }
+
+    public void setHeartbeatTimeout(long heartbeatTimeout) {
+        this.heartbeatTimeout = heartbeatTimeout;
+    }
+
+    @Deployed
+    public void deploy() throws IOException {
+
         timer.schedule(getTask(), checkPeriod, checkPeriod);
         snoop = new Snoop(
                           "Anubis: Partition Manager Test Console heartbeat snoop",
@@ -220,6 +244,10 @@ public class Controller {
                               + Anubis.version);
         consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
         snoop.start();
+    }
+
+    @PostConstruct
+    public void start() {
         consoleFrame.setVisible(true);
     }
 
@@ -250,6 +278,7 @@ public class Controller {
         }
     }
 
+    @PreDestroy
     public synchronized void terminate() {
         snoop.shutdown();
         if (task != null) {

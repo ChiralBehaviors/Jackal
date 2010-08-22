@@ -26,6 +26,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.smartfrog.services.anubis.Anubis;
 import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
 import org.smartfrog.services.anubis.locator.util.TimeQueueElement;
@@ -35,6 +38,8 @@ import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
+
+import com.hellblazer.anubis.annotations.Deployed;
 
 public class PartitionManager implements Partition {
 
@@ -121,11 +126,16 @@ public class PartitionManager implements Partition {
         this.partitionProtocol = partitionProtocol;
     }
 
-    public void start() {
+    @Deployed
+    public void deployed() {
         timer = new ActiveTimeQueue("Anubis: Partition Manager timers (node "
                                     + identity.id + ")");
         notifiedView = BitView.create(identity, identity.epoch);
         notifiedLeader = identity.id;
+    }
+
+    @PostConstruct
+    public void start() {
         timer.start();
 
         if (log.isLoggable(Level.INFO)) {
@@ -134,6 +144,7 @@ public class PartitionManager implements Partition {
         }
     }
 
+    @PreDestroy
     public void terminate() {
         if (log.isLoggable(Level.INFO)) {
             log.info("Terminating partition manager at " + identity);

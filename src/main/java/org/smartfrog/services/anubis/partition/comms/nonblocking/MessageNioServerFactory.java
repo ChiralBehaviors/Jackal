@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
+import java.io.IOException;
+
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
@@ -35,7 +37,7 @@ public class MessageNioServerFactory implements IOConnectionServerFactory {
     }
 
     public IOConnectionServer create(ConnectionAddress address, Identity id,
-                                     ConnectionSet cs) throws Exception {
+                                     ConnectionSet cs) throws IOException {
         return new MessageNioServer(address, id, cs, wireSecurity);
     }
 

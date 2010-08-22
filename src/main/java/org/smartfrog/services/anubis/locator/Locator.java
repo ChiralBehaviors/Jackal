@@ -26,6 +26,9 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.registers.GlobalRegisterImpl;
 import org.smartfrog.services.anubis.locator.registers.LocalRegisterImpl;
@@ -37,13 +40,15 @@ import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
+import com.hellblazer.anubis.annotations.Deployed;
+
 public class Locator implements PartitionNotification, AnubisLocator {
 
     private class InstanceGenerator {
         private long counter = 0;
 
         public String instance() {
-            return myId.id + "/" + myId.epoch + "/" + Long.toString(counter++);
+            return identity.id + "/" + identity.epoch + "/" + Long.toString(counter++);
         }
     }
 
@@ -58,7 +63,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     private Map links = new HashMap();
     private Logger log = Logger.getLogger(Locator.class.getCanonicalName());
     private long maxTransDelay;
-    private Identity myId = null;
+    private Identity identity = null;
     private Partition partition = null;
     private Random random;
 
@@ -99,8 +104,8 @@ public class Locator implements PartitionNotification, AnubisLocator {
         return maxTransDelay;
     }
 
-    public Identity getMyId() {
-        return myId;
+    public Identity getIdentity() {
+        return identity;
     }
 
     public Partition getPartition() {
@@ -300,23 +305,21 @@ public class Locator implements PartitionNotification, AnubisLocator {
         this.heartbeatTimeout = heartbeatTimeout;
     }
 
-    public void setMyId(Identity myId) {
-        this.myId = myId;
+    public void setIdentity(Identity myId) {
+        this.identity = myId;
     }
 
     public void setPartition(Partition partition) {
         this.partition = partition;
     }
 
-    /**
-     * Prim interface
-     */
-    public void start() {
-        me = new Integer(myId.id);
+    @Deployed
+    public void deployed() {
+        me = new Integer(identity.id);
         maxTransDelay = heartbeatTimeout * heartbeatInterval;
         timers = new ActiveTimeQueue("Anubis: Locator timers (node " + me + ")");
-        global = new GlobalRegisterImpl(myId, this);
-        local = new LocalRegisterImpl(myId, this);
+        global = new GlobalRegisterImpl(identity, this);
+        local = new LocalRegisterImpl(identity, this);
         random = new Random(System.currentTimeMillis() + 1966 * me.longValue());
 
         global.start();
@@ -326,6 +329,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
         partition.register(this);
     }
 
+    @PreDestroy
     public void terminate() {
         if (log.isLoggable(Level.INFO)) {
             log.info("Terminating Locator");
@@ -340,6 +344,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     /**
      * Remove all connections managed by the locator.
      */
+    @SuppressWarnings("unused")
     private void clearConnections() {
         synchronized (links) {
             Iterator iter = links.values().iterator();

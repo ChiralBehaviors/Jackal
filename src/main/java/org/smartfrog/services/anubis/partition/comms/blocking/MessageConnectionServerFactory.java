@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
+import java.io.IOException;
+
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
@@ -31,12 +33,12 @@ public class MessageConnectionServerFactory implements
 
     private WireSecurity wireSecurity;
 
-    public MessageConnectionServerFactory() throws Exception {
+    public MessageConnectionServerFactory() {
         super();
     }
 
     public IOConnectionServer create(ConnectionAddress address, Identity id,
-                                     ConnectionSet cs) throws Exception {
+                                     ConnectionSet cs) throws IOException   {
         return new MessageConnectionServer(address, id, cs, wireSecurity);
     }
 

@@ -18,26 +18,36 @@ For more information: www.smartfrog.org
 
 */
 
-#include "org/smartfrog/components.sf"
+#include "org/smartfrog/services/anubis/components.sf"
+#include "org/smartfrog/services/anubis/components/examples/components.sf"
 
 
-AnubisTestConsole extends Prim {
-    sfClass      "org.smartfrog.services.anubis.locator.test.Test";
-    locator      LAZY PROCESS:anubis:locator;
+AnubisNode extends AnubisService {
+
+    anubisServiceName "anubis";
+
+    anubisParameters extends AnubisDefaultParameters;
+
 }
 
-AnubisLocator extends Prim {
-     sfClass            "org.smartfrog.services.anubis.locator.Locator";
-     partitionManager   TBD;
-     heartbeatTimeout   ATTRIB anubisParameters:heartbeatTimeout;
-     heartbeatInterval  ATTRIB anubisParameters:heartbeatInterval;
+WebServerGroup extends AnubisCompound {
+
+    anubisName "webServerGroup";
+
+    -- extends AnubisPrim { anubisName "webServer"; }
+    -- extends AnubisPrim { anubisName "webServer"; }
+    -- extends AnubisPrim { anubisName "webServer"; }
+    -- extends AnubisPrim { anubisName "webServer"; }
+    -- extends AnubisPrim { anubisName "webServer"; }
+    -- extends AnubisPrim { anubisName "webServer"; }
+
 }
 
-AnubisSubProcessAdapter extends Prim {
-     sfClass            "org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapterImpl";
-     locator            TBD;
-     heartbeatTimeout   ATTRIB anubisParameters:heartbeatTimeout;
-     heartbeatInterval  ATTRIB anubisParameters:heartbeatInterval;
+Monitors extends Compound {
+
+    stability extends AnubisStabilityNotices;
+    group     extends AnubisGroup { groupName "webServer"; }
+
 }
 
 

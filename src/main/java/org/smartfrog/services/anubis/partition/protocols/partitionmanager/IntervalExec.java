@@ -45,7 +45,7 @@ public class IntervalExec extends Thread {
     private boolean testable = false;
     private TestMgr testManager = null;
 
-    public IntervalExec(Identity id, ConnectionSet cs, long i) throws Exception {
+    public IntervalExec(Identity id, ConnectionSet cs, long i) {
         super("Anubis: Interval Executive (node " + id.id + ")");
         me = id;
         connectionSet = cs;

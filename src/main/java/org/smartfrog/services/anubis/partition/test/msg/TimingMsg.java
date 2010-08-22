@@ -23,9 +23,6 @@ import java.io.Serializable;
 
 public class TimingMsg implements Serializable {
 
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
     public long interval;
     public long timeout;

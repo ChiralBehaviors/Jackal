@@ -26,6 +26,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.names.ListenerProxy;

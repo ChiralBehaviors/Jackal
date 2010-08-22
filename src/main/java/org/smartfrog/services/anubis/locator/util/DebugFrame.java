@@ -46,6 +46,7 @@ public class DebugFrame extends JFrame {
     private JTextArea jTextArea1 = new JTextArea();
 
     private boolean onDisplay = false;
+    @SuppressWarnings("unused")
     private TitledBorder titledBorder1;
 
     public DebugFrame(String title) {

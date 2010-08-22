@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
+import java.io.IOException;
+
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
@@ -29,21 +31,21 @@ public class HeartbeatCommsFactory {
 
     private WireSecurity wireSecurity = null;
 
-    public HeartbeatCommsFactory() throws Exception {
+    public HeartbeatCommsFactory() {
         super();
     }
 
     public HeartbeatCommsIntf create(MulticastAddress address,
                                      ConnectionAddress inf,
                                      HeartbeatReceiver cs, String threadName,
-                                     Identity id) throws Exception {
+                                     Identity id) throws IOException {
         return new HeartbeatComms(address, inf, cs, threadName, id,
                                   wireSecurity);
     }
 
     public HeartbeatCommsIntf create(MulticastAddress address,
                                      HeartbeatReceiver cs, String threadName,
-                                     Identity id) throws Exception {
+                                     Identity id) throws IOException {
         return new HeartbeatComms(address, cs, threadName, id, wireSecurity);
     }
 

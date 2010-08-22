@@ -72,6 +72,7 @@ public class MainConsoleFrame extends JFrame {
     private JSlider jSlider1 = new JSlider();
     private JSlider jSlider2 = new JSlider();
     private JTextField jTextField2 = new JTextField();
+    @SuppressWarnings("unused")
     private TitledBorder titledBorder1;
 
     public MainConsoleFrame(Controller controller) {

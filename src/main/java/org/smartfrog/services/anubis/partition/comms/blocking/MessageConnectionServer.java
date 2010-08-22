@@ -19,6 +19,7 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
@@ -66,10 +67,11 @@ public class MessageConnectionServer extends ConnectionServer
      * @param address - the address for the server socket
      * @param id - the id of this node
      * @param cs - the connection set
+     * @throws IOException 
      * @throws Exception - if problems with creating the server socket
      */
     public MessageConnectionServer(ConnectionAddress address, Identity id,
-                                   ConnectionSet cs, WireSecurity sec) throws Exception {
+                                   ConnectionSet cs, WireSecurity sec) throws IOException {
         super("Anubis: Connection Server (node " + id.id + ")",
               address.ipaddress.getHostName(), address.port);
         me = id;

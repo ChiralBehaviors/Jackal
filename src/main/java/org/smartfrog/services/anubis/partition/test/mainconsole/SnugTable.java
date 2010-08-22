@@ -35,9 +35,6 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
 public class SnugTable extends JTable {
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
 
     public SnugTable() {

@@ -21,11 +21,16 @@ package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
 import java.net.InetAddress;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
+
+import com.hellblazer.anubis.annotations.Deployed;
 
 public class PartitionProtocol {
 
@@ -122,6 +127,7 @@ public class PartitionProtocol {
 
     public void setPartitionMgr(PartitionManager partitionMgr) {
         this.partitionMgr = partitionMgr;
+        this.partitionMgr.setPartitionProtocol(this);
     }
 
     /**
@@ -139,14 +145,20 @@ public class PartitionProtocol {
         leader = connectionSet.electLeader(view);
     }
 
-    public void start() {
+    @Deployed
+    public void deploy() {
         leader = identity;
+    }
+
+    @PostConstruct
+    public void start() {
         view.add(identity);
         view.stablize();
         view.setTimeStamp(identity.epoch);
         partitionMgr.notify(view, leader.id);
     }
 
+    @PreDestroy
     public void terminate() {
         terminated = true;
     }

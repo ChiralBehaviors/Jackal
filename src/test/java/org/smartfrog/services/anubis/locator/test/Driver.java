@@ -26,6 +26,7 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -34,7 +35,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.WindowConstants;
-import javax.swing.border.TitledBorder;
 
 
 public class Driver extends JFrame {
@@ -47,7 +47,6 @@ public class Driver extends JFrame {
     private JTextField jTextField1 = new JTextField();
     private BorderLayout borderLayout1 = new BorderLayout();
     private BorderLayout borderLayout2 = new BorderLayout();
-    private TitledBorder titledBorder1;
 
     private Test test;
     private JScrollPane jScrollPane1 = new JScrollPane();
@@ -55,7 +54,7 @@ public class Driver extends JFrame {
     private JButton jButton5 = new JButton();
     private JPanel jPanel3 = new JPanel();
     private JButton jButton6 = new JButton();
-    private JButton jButton7 = new JButton();
+    private JButton jButton7 = new JButton(); 
 
     public Driver(Test t, String title) {
         test = t;
@@ -67,8 +66,7 @@ public class Driver extends JFrame {
             e.printStackTrace();
         }
     }
-    private void jbInit() throws Exception {
-        titledBorder1 = new TitledBorder("");
+    private void jbInit() throws Exception { 
         jButton2.setText("- Prov");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(ActionEvent e) {

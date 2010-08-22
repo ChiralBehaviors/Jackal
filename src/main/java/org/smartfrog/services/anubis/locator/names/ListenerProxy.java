@@ -35,10 +35,7 @@ import java.io.Serializable;
 
 public class ListenerProxy extends NameData implements Serializable {
 
-    public static final long undefinedRegId = -1;
-    /**
-     * 
-     */
+    public static final long undefinedRegId = -1; 
     private static final long serialVersionUID = 1L;
     private long uniqueRegId;
 

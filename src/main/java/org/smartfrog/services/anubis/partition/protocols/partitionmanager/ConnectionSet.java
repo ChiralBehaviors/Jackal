@@ -19,6 +19,7 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
@@ -52,6 +56,8 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+
+import com.hellblazer.anubis.annotations.Deployed;
 
 /**
  * Anubis Detection Service.
@@ -709,6 +715,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
     public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
         this.partitionProtocol = partitionProtocol;
+        this.partitionProtocol.setConnectionSet(this);
     }
 
     public void setPreferredLeaderNode(boolean isPreferredLeaderNode) {
@@ -722,8 +729,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         quiesce = interval * (timeout + 2);
         intervalExec.setInterval(interval);
     }
-
-    public void start() throws Exception {
+    
+    @Deployed
+    public void deploy() throws IOException {
         connectionServer = factory.create(connectionAddress, identity, this);
 
         heartbeatComms = heartbeatCommsFactory.create(heartbeatAddress,
@@ -767,7 +775,10 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          */
         connections.put(identity, self);
         connectionView.add(identity);
+    }
 
+    @PostConstruct
+    public void start() throws Exception {
         if (log.isLoggable(Level.INFO)) {
             log.info(identity + " connection address is "
                      + connectionServer.getAddress().toString());
@@ -777,9 +788,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         intervalExec.start();
         connectionServer.start();
         heartbeatComms.start();
-
     }
 
+    @PreDestroy
     public void terminate() {
         synchronized (this) {
             terminated = true;
