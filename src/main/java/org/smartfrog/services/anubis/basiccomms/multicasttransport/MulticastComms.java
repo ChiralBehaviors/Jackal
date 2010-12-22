@@ -55,8 +55,7 @@ public class MulticastComms extends Thread {
     private byte[] inBytes;
     private DatagramPacket inPacket;
     private MulticastSocket sock;
-    private Logger syncLog = Logger.getLogger(this.getClass().toString());
-    private Logger asyncLog = syncLog; //TODO fix with asynch wrapper over synclog
+    protected Logger log = Logger.getLogger(this.getClass().getCanonicalName());
     volatile private boolean terminating;
     Object outObject;
 
@@ -111,8 +110,10 @@ public class MulticastComms extends Thread {
      * the thread performs a blocking receive loop.
      */
     @Override
-    public void run() {
-
+    public void run() { 
+		if (log.isLoggable(Level.FINER)) {
+			log.finer("Starting receive processing on: " + groupAddress);
+		}
         while (!terminating) {
 
             try {
@@ -120,12 +121,15 @@ public class MulticastComms extends Thread {
                 inBytes = new byte[MAX_SEG_SIZE];
                 inPacket = new DatagramPacket(inBytes, inBytes.length);
                 sock.receive(inPacket);
+        		if (log.isLoggable(Level.FINEST)) {
+        			log.finest("Received packet from: " + inPacket.getSocketAddress());
+        		}
                 deliverBytes(inPacket.getData());
 
             } catch (Exception e) {
 
-                if (!terminating && asyncLog.isLoggable(Level.WARNING)) {
-                    asyncLog.log(Level.WARNING, "", e);
+                if (!terminating && log.isLoggable(Level.WARNING)) {
+                	log.log(Level.WARNING, "Exception processing inbound message", e);
                 }
 
             }
@@ -145,8 +149,8 @@ public class MulticastComms extends Thread {
             sock.send(bytesToPacket(bytes, groupAddress.ipaddress,
                                     groupAddress.port));
         } catch (IOException ioe) {
-            if (!terminating && asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "", ioe);
+            if (!terminating && log.isLoggable(Level.WARNING)) {
+            	log.log(Level.WARNING, "", ioe);
             }
         }
     }

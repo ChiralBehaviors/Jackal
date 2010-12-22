@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.node;
 
 import java.nio.channels.SocketChannel;
@@ -35,94 +35,93 @@ import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 
 public class TestConnection extends ConnectionComms implements
-                                                   PartitionNotification {
+		PartitionNotification {
 
-    private Logger log = Logger.getLogger(this.getClass().toString());
-    private TestMgr testManager;
+	private Logger log = Logger.getLogger(this.getClass().toString());
+	private TestMgr testManager;
 
-    public TestConnection(SocketChannel channel, TestMgr testManager,
-                          String threadName) {
-        super(threadName, channel);
-        this.testManager = testManager;
-    }
+	public TestConnection(SocketChannel channel, TestMgr testManager,
+			String threadName) {
+		super(threadName, channel);
+		this.testManager = testManager;
+	}
 
-    @Override
-    public void closing() {
-        testManager.closing(this);
-    }
+	@Override
+	public void closing() {
+		testManager.closing(this);
+	}
 
-    /**
-     * Connection comms interface
-     * @param bytes
-     */
-    @Override
-    public void deliver(byte[] bytes) {
+	/**
+	 * Connection comms interface
+	 * 
+	 * @param bytes
+	 */
+	@Override
+	public void deliver(byte[] bytes) {
 
-        SerializedMsg msg = null;
-        try {
-            msg = (SerializedMsg) Wire.fromWire(bytes);
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
-            }
-            return;
-        }
+		SerializedMsg msg = null;
+		try {
+			msg = (SerializedMsg) Wire.fromWire(bytes);
+		} catch (Exception ex) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "Cannot deserialize message bytes", ex);
+			}
+			return;
+		}
 
-        Object obj = msg.getObject();
+		Object obj = msg.getObject();
 
-        if (obj instanceof SetTimingMsg) {
-            SetTimingMsg m = (SetTimingMsg) obj;
-            testManager.setTiming(m.interval, m.timeout);
-        } else if (obj instanceof GetStatsMsg) {
-            testManager.updateStats(this);
-        } else if (obj instanceof SetIgnoringMsg) {
-            testManager.setIgnoring(((SetIgnoringMsg) obj).ignoring);
-        } else if (obj instanceof GetThreadsMsg) {
-            testManager.updateThreads(this);
-        } else {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "Unrecognised object received in test connection at node"
-                                + obj, new Exception());
-            }
-        }
-    }
+		if (obj instanceof SetTimingMsg) {
+			SetTimingMsg m = (SetTimingMsg) obj;
+			testManager.setTiming(m.interval, m.timeout);
+		} else if (obj instanceof GetStatsMsg) {
+			testManager.updateStats(this);
+		} else if (obj instanceof SetIgnoringMsg) {
+			testManager.setIgnoring(((SetIgnoringMsg) obj).ignoring);
+		} else if (obj instanceof GetThreadsMsg) {
+			testManager.updateThreads(this);
+		} else {
+			log.log(Level.SEVERE,
+					"Unrecognised object received in test connection at node"
+							+ obj, new Exception());
+		}
+	}
 
-    public void objectNotification(Object o, int i, long l) {
-    }
+	public void objectNotification(Object o, int i, long l) {
+	}
 
-    /**
-     * partition notification interface
-     * @param view
-     * @param leader
-     */
-    public void partitionNotification(View view, int leader) {
-        try {
-            super.send(new SerializedMsg(new PartitionMsg(view, leader)).toWire());
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
-            }
-        }
-    }
+	/**
+	 * partition notification interface
+	 * 
+	 * @param view
+	 * @param leader
+	 */
+	public void partitionNotification(View view, int leader) {
+		try {
+			super.send(new SerializedMsg(new PartitionMsg(view, leader))
+					.toWire());
+		} catch (Exception ex) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "", ex);
+			}
+		}
+	}
 
-    @Override
-    public void send(byte[] bytes) {
-        if (log.isLoggable(Level.SEVERE)) {
-            log.log(Level.SEVERE,
-                    "Should not call send(byte[] bytes) in TestConnection",
-                    new Exception());
-        }
-    }
+	@Override
+	public void send(byte[] bytes) {
+		log.log(Level.SEVERE,
+				"Should not call send(byte[] bytes) in TestConnection",
+				new Exception());
+	}
 
-    public void sendObject(Object obj) {
-        try {
-            SerializedMsg msg = new SerializedMsg(obj);
-            super.send(msg.toWire());
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
-            }
-        }
-    }
+	public void sendObject(Object obj) {
+		try {
+			SerializedMsg msg = new SerializedMsg(obj);
+			super.send(msg.toWire());
+		} catch (Exception ex) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "", ex);
+			}
+		}
+	}
 }

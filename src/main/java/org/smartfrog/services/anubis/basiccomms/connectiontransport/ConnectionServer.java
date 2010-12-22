@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.io.IOException;
@@ -29,172 +29,181 @@ import java.util.logging.Logger;
 
 /**
  * Server of connections.
- *
+ * 
  * ConnectionServer is a socket listener server that receives connection
- * requests on a given address, accepts them and creates an endpoint
- * object to handle the connection. The endpoint is created using a
- * ConnectionFactory interface.
+ * requests on a given address, accepts them and creates an endpoint object to
+ * handle the connection. The endpoint is created using a ConnectionFactory
+ * interface.
  */
 public class ConnectionServer extends Thread {
 
-    private ConnectionFactory connectionFactory;
-    private ServerSocketChannel listenSocket;
-    private Logger log = Logger.getLogger(this.getClass().toString());
-    volatile private boolean open;
+	private ConnectionFactory connectionFactory;
+	private ServerSocketChannel listenSocket;
+	private Logger log = Logger.getLogger(this.getClass().toString());
+	volatile private boolean open;
 
-    /**
-     * Default constructor is initually unusable.
-     * Constructor - sets a null listening socket and a null connection
-     * factory (i.e. an unusable server).
-     */
-    public ConnectionServer() {
+	/**
+	 * Default constructor is initially unusable. Constructor - sets a null
+	 * listening socket and a null connection factory (i.e. an unusable server).
+	 */
+	public ConnectionServer() {
 
-        super();
+		super();
 
-        listenSocket = null;
-        connectionFactory = null;
-        open = false;
-    }
+		listenSocket = null;
+		connectionFactory = null;
+		open = false;
+	}
 
-    /**
-     * Constructor - creates a listening socket on the default ip address
-     * returned for the given host name (should be this host), using the
-     * given port. Initially the default connection factory is assumed.
-     */
-    public ConnectionServer(String threadName, InetAddress addr, int port) throws IOException {
-        super(threadName);
-        constructServer(addr, port);
-    }
+	/**
+	 * Constructor - creates a listening socket on the default ip address
+	 * returned for the given host name (should be this host), using the given
+	 * port. Initially the default connection factory is assumed.
+	 */
+	public ConnectionServer(String threadName, InetAddress addr, int port)
+			throws IOException {
+		super(threadName);
+		constructServer(addr, port);
+	}
 
-    /**
-     * Constructor - creates a listening socket on the default ip address
-     * returned for the given host name (should be this host). Initially the
-     * default connection factory is assumed.
-     */
-    public ConnectionServer(String threadName, String hostName) throws IOException {
-        super(threadName);
-        constructServer(hostName, 0);
-    }
+	/**
+	 * Constructor - creates a listening socket on the default ip address
+	 * returned for the given host name (should be this host). Initially the
+	 * default connection factory is assumed.
+	 */
+	public ConnectionServer(String threadName, String hostName)
+			throws IOException {
+		super(threadName);
+		constructServer(hostName, 0);
+	}
 
-    /**
-     *
-     * Constructor - creates a listening socket on the default ip address
-     * returned for the given host name (should be this host), using the
-     * given port. Initially the default connection factory is assumed.
-     */
-    public ConnectionServer(String threadName, String hostName, int port) throws IOException {
-        super(threadName);
-        constructServer(hostName, port);
-    }
+	/**
+	 * 
+	 * Constructor - creates a listening socket on the default ip address
+	 * returned for the given host name (should be this host), using the given
+	 * port. Initially the default connection factory is assumed.
+	 */
+	public ConnectionServer(String threadName, String hostName, int port)
+			throws IOException {
+		super(threadName);
+		constructServer(hostName, port);
+	}
 
-    /**
-     * return the address being used by this ConnectionServer.
-     */
-    public ConnectionAddress getAddress() {
+	/**
+	 * return the address being used by this ConnectionServer.
+	 */
+	public ConnectionAddress getAddress() {
 
-        if (listenSocket == null) {
-            return null;
-        } else {
-            return new ConnectionAddress(
-                                         listenSocket.socket().getInetAddress(),
-                                         listenSocket.socket().getLocalPort());
-        }
-    }
+		if (listenSocket == null) {
+			return null;
+		} else {
+			return new ConnectionAddress(
+					listenSocket.socket().getInetAddress(), listenSocket
+							.socket().getLocalPort());
+		}
+	}
 
-    /**
-     * returns an string representing the status of this thread
-     */
-    public String getThreadStatusString() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(super.getName()).append(" ............................ ").setLength(
-                                                                                          30);
-        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
-        buffer.append(open ? ".. running ....." : ".. terminated ..");
-        buffer.append(" address = ").append(getAddress().toString());
-        return buffer.toString();
-    }
+	/**
+	 * returns an string representing the status of this thread
+	 */
+	public String getThreadStatusString() {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(super.getName()).append(" ............................ ")
+				.setLength(30);
+		buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
+		buffer.append(open ? ".. running ....." : ".. terminated ..");
+		buffer.append(" address = ").append(getAddress().toString());
+		return buffer.toString();
+	}
 
-    /**
-     * blocking connection accept loop - creates a connection endpoint
-     * in response to connection requests.
-     */
-    @Override
-    public void run() {
+	/**
+	 * blocking connection accept loop - creates a connection endpoint in
+	 * response to connection requests.
+	 */
+	@Override
+	public void run() {
+		if (log.isLoggable(Level.INFO)) {
+			log.info("Starting connection server");
+		}
+		while (open) {
 
-        while (open) {
+			try {
+				SocketChannel channel = listenSocket.accept();
+				if (log.isLoggable(Level.FINER)) {
+					log.finer("Accept new socket connection: " + channel);
+				}
+				connectionFactory.createConnection(channel);
+			} catch (Throwable ex) {
+				if (open) {
+					if (log.isLoggable(Level.INFO)) {
+						log.log(Level.INFO, "error accepting connection", ex);
+					}
+				}
+			}
 
-            try {
-                SocketChannel channel = listenSocket.accept();
-                connectionFactory.createConnection(channel);
-            } catch (Exception ex) {
-                if (open) {
-                    if (log.isLoggable(Level.INFO)) {
-                        log.log(Level.INFO, "", ex);
-                    }
-                }
-            }
+		}
 
-        }
+	}
 
-    }
+	/**
+	 * set the connection factory to the one specified as a parameter
+	 */
+	public void setConnectionFactory(ConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
+	}
 
-    /**
-     * set the connection factory to the one specified as a parameter
-     */
-    public void setConnectionFactory(ConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
-    }
+	public void shutdown() {
+		if (log.isLoggable(Level.INFO)) {
+			log.info("Shutting down connection server");
+		}
+		open = false;
+		try {
+			listenSocket.close();
+		} catch (IOException ioex) {
+		}
+	}
 
-    public void shutdown() {
-        open = false;
-        try {
-            listenSocket.close();
-        } catch (IOException ioex) {
-        }
-    }
+	/**
+	 * Constructor helper - creates a listening socket on the default ip address
+	 * returned for the given InetAddress (should be this host), using the given
+	 * port. Initially the default connection factory is assumed.
+	 */
 
-    /**
-     * Constructor helper - creates a listening socket on the default ip address
-     * returned for the given InetAddress (should be this host), using the
-     * given port. Initially the default connection factory is assumed.
-     */
+	private void constructServer(InetAddress inetAddress, int port)
+			throws IOException {
 
-    private void constructServer(InetAddress inetAddress, int port) throws IOException {
+		connectionFactory = new DefaultConnectionFactory();
 
-        connectionFactory = new DefaultConnectionFactory();
+		try {
 
-        try {
+			if (log.isLoggable(Level.INFO)) {
+				log.info("Binding blocking connection server to port: " + port);
+			}
 
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Binding blocking connection server to port: " + port);
-            }
+			listenSocket = ServerSocketChannel.open();
+			listenSocket.configureBlocking(true);
+			listenSocket.socket()
+					.bind(new InetSocketAddress(inetAddress, port));
 
-            listenSocket = ServerSocketChannel.open();
-            listenSocket.configureBlocking(true);
-            listenSocket.socket().bind(new InetSocketAddress(inetAddress, port));
+		} catch (IOException ioex) {
+			log.log(Level.SEVERE, "Failed to create server socket: ", ioex);
 
-        } catch (IOException ioex) {
+			listenSocket = null;
+			open = false;
+			throw ioex;
 
-            if (log.isLoggable(Level.FINE)) {
-                log.log(Level.FINE, "Failed to create server socket: ", ioex);
-            }
+		}
 
-            listenSocket = null;
-            open = false;
-            throw ioex;
+		open = true;
 
-        }
+	}
 
-        open = true;
-
-    }
-
-    /**
-     * Constructor helper - creates a listening socket on the default ip address
-     * returned for the given host name (should be this host), using the
-     * given port. Initially the default connection factory is assumed.
-     */
-    private void constructServer(String hostName, int port) throws IOException {
-        constructServer(InetAddress.getByName(hostName), port);
-    }
+	/**
+	 * Constructor helper - creates a listening socket on the default ip address
+	 * returned for the given host name (should be this host), using the given
+	 * port. Initially the default connection factory is assumed.
+	 */
+	private void constructServer(String hostName, int port) throws IOException {
+		constructServer(InetAddress.getByName(hostName), port);
+	}
 }

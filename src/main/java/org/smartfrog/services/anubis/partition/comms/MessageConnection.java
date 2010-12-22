@@ -238,6 +238,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter
      */
     @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
+    	if (log.isLoggable(Level.FINEST)) {
+    		log.finest("Ignoring out of band heart beat: " + hb);
+    	}
         return false;
     }
 

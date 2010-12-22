@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.test;
 
 import java.util.HashMap;
@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.UUID;
 
 import javax.annotation.PreDestroy;
 
@@ -38,236 +39,242 @@ import com.hellblazer.anubis.annotations.Deployed;
 
 public class Test {
 
-    class Listener extends AnubisListener {
-        public Listener(String name) {
-            super(name);
-        }
+	class Listener extends AnubisListener {
+		public Listener(String name) {
+			super(name);
+		}
 
-        public void display() {
-            String str = "Listener " + getName() + " has values:";
-            for (Iterator iter = values().iterator(); iter.hasNext(); str += " "
-                                                                             + iter.next().toString())
-                ;
-            driver.println(str);
-        }
+		public void display() {
+			String str = "Listener " + getName() + " has values:";
+			for (Iterator iter = values().iterator(); iter.hasNext(); str += " "
+					+ iter.next().toString())
+				;
+			driver.println(str);
+		}
 
-        public void newValue(AnubisValue v) {
-            display();
-            if (v.getValue().equals("throw")) {
-                // this expression intentionally leads to an exception
-                @SuppressWarnings("unused")
-                int x = ((Integer) null).intValue();
-            } else if (v.getValue().equals("wait")) {
-                // this expression intentially leads to a pause
-                try {
-                    wait(1000);
-                } catch (Exception ex) {
-                }
-            }
-        }
+		public void newValue(AnubisValue v) {
+			display();
+			if (v.getValue().equals("throw")) {
+				// this expression intentionally leads to an exception
+				@SuppressWarnings("unused")
+				int x = ((Integer) null).intValue();
+			} else if (v.getValue().equals("wait")) {
+				// this expression intentially leads to a pause
+				try {
+					wait(1000);
+				} catch (Exception ex) {
+				}
+			}
+		}
 
-        public void removeValue(AnubisValue v) {
-            driver.println("Removing value " + v.toString());
-            display();
-        }
-    }
+		public void removeValue(AnubisValue v) {
+			driver.println("Removing value " + v.toString());
+			display();
+		}
+	}
 
-    class Provider extends AnubisProvider {
-        Provider(String name) {
-            super(name);
-        }
-    }
+	class Provider extends AnubisProvider {
+		Provider(String name) {
+			super(name);
+		}
+	}
 
-    private Map providers;
-    private Map listeners;
-    private AnubisLocator locator;
-    private Driver driver;
-    private String title;
+	private Map providers;
+	private Map listeners;
+	private AnubisLocator locator;
+	private Driver driver;
+	private String title;
 
-    public Test() {
-        locator = null;
-        driver = null;
-        providers = new HashMap();
-        listeners = new HashMap();
-    }
+	public Test() {
+		this(UUID.randomUUID().toString());
+	}
 
-    public String getTitle() {
-        return title;
-    }
+	public Test(String title) {
+		this.title = title;
+		locator = null;
+		driver = null;
+		providers = new HashMap();
+		listeners = new HashMap();
+	}
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+	public String getTitle() {
+		return title;
+	}
 
-    public AnubisLocator getLocator() {
-        return locator;
-    }
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
-    public void setLocator(AnubisLocator locator) {
-        this.locator = locator;
-    }
+	public AnubisLocator getLocator() {
+		return locator;
+	}
 
-    /**
-     * Implementation of Prim interface.
-     *
-     * @throws Exception
-     */
-    @Deployed
-    public void start() {
-        driver = new Driver(this, "TestDriver: " + title);
-        driver.setVisible(true);
-    }
+	public void setLocator(AnubisLocator locator) {
+		this.locator = locator;
+	}
 
-    /**
-     * Implementation of Prim interface.
-     *
-     * @param tr
-     */
-    @PreDestroy
-    public void terminate() {
-        if (driver != null)
-            driver.setVisible(false);
-        removeLocal();
-        removeGlobal();
-    }
+	/**
+	 * Implementation of Prim interface.
+	 * 
+	 * @throws Exception
+	 */
+	@Deployed
+	public void start() {
+		driver = new Driver(this, "TestDriver: " + title);
+		driver.setVisible(true);
+	}
 
-    public String retrieveName(String str) {
-        String trimmed = str.trim();
-        int spaceIndex = trimmed.indexOf(' ');
-        return (spaceIndex == -1) ? trimmed : trimmed.substring(0, spaceIndex);
-    }
+	/**
+	 * Implementation of Prim interface.
+	 * 
+	 * @param tr
+	 */
+	@PreDestroy
+	public void terminate() {
+		if (driver != null)
+			driver.setVisible(false);
+		removeLocal();
+		removeGlobal();
+		System.exit(0);
+	}
 
-    public String retrieveValue(String str) {
-        String trimmed = str.trim();
-        int spaceIndex = trimmed.indexOf(' ');
-        return (spaceIndex == -1) ? "dummy"
-                                 : trimmed.substring(spaceIndex).trim();
-    }
+	public String retrieveName(String str) {
+		String trimmed = str.trim();
+		int spaceIndex = trimmed.indexOf(' ');
+		return (spaceIndex == -1) ? trimmed : trimmed.substring(0, spaceIndex);
+	}
 
-    public void addProvider(String str) {
+	public String retrieveValue(String str) {
+		String trimmed = str.trim();
+		int spaceIndex = trimmed.indexOf(' ');
+		return (spaceIndex == -1) ? "dummy" : trimmed.substring(spaceIndex)
+				.trim();
+	}
 
-        String name = retrieveName(str);
-        String value = retrieveValue(str);
+	public void addProvider(String str) {
 
-        if (name.equals("")) {
-            driver.println("Need a name");
-            return;
-        }
+		String name = retrieveName(str);
+		String value = retrieveValue(str);
 
-        Provider provider = (Provider) providers.get(name);
-        if (provider == null) {
-            provider = new Provider(name);
-            provider.setValue(value);
-            providers.put(name, provider);
-            locator.registerProvider(provider);
-            driver.println("Registered provider for " + name + " with value "
-                           + value);
-        } else {
-            provider.setValue(value);
-            driver.println("Set value of provider " + name + " to " + value);
-        }
-    }
+		if (name.equals("")) {
+			driver.println("Need a name");
+			return;
+		}
 
-    public void removeProvider(String str) {
+		Provider provider = (Provider) providers.get(name);
+		if (provider == null) {
+			provider = new Provider(name);
+			provider.setValue(value);
+			providers.put(name, provider);
+			locator.registerProvider(provider);
+			driver.println("Registered provider for " + name + " with value "
+					+ value);
+		} else {
+			provider.setValue(value);
+			driver.println("Set value of provider " + name + " to " + value);
+		}
+	}
 
-        String name = retrieveName(str);
+	public void removeProvider(String str) {
 
-        if (name.equals("")) {
-            driver.println("Need a name");
-            return;
-        }
+		String name = retrieveName(str);
 
-        if (providers.containsKey(name)) {
-            Provider p = (Provider) providers.remove(name);
-            locator.deregisterProvider(p);
-            driver.println("Deregistered provider for " + name);
-        } else
-            driver.println("Can't deregister a provider that does not exist");
-    }
+		if (name.equals("")) {
+			driver.println("Need a name");
+			return;
+		}
 
-    public void rapidStates(String str) {
+		if (providers.containsKey(name)) {
+			Provider p = (Provider) providers.remove(name);
+			locator.deregisterProvider(p);
+			driver.println("Deregistered provider for " + name);
+		} else
+			driver.println("Can't deregister a provider that does not exist");
+	}
 
-        StringTokenizer tokens = new StringTokenizer(str);
+	public void rapidStates(String str) {
 
-        if (tokens.countTokens() < 2) {
-            driver.println("Error - Usage: <name> <sequence of states>");
-            return;
-        }
+		StringTokenizer tokens = new StringTokenizer(str);
 
-        String name = tokens.nextToken();
-        if (!providers.containsKey(name)) {
-            driver.println("Error - unknown provider name");
-            return;
-        }
+		if (tokens.countTokens() < 2) {
+			driver.println("Error - Usage: <name> <sequence of states>");
+			return;
+		}
 
-        Provider provider = (Provider) providers.get(name);
-        while (tokens.hasMoreTokens())
-            provider.setValue(tokens.nextToken());
-    }
+		String name = tokens.nextToken();
+		if (!providers.containsKey(name)) {
+			driver.println("Error - unknown provider name");
+			return;
+		}
 
-    public void nonBlockAddListener(String str) {
+		Provider provider = (Provider) providers.get(name);
+		while (tokens.hasMoreTokens())
+			provider.setValue(tokens.nextToken());
+	}
 
-        String name = retrieveName(str);
+	public void nonBlockAddListener(String str) {
 
-        if (name.equals("")) {
-            driver.println("Need a name");
-            return;
-        }
+		String name = retrieveName(str);
 
-        Listener l = new Listener(name);
-        if (listeners.containsKey(name)) {
-            ((Set) listeners.get(name)).add(l);
-        } else {
-            Set s = new HashSet();
-            s.add(l);
-            listeners.put(name, s);
-        }
+		if (name.equals("")) {
+			driver.println("Need a name");
+			return;
+		}
 
-        locator.registerListener(l);
-    }
+		Listener l = new Listener(name);
+		if (listeners.containsKey(name)) {
+			((Set) listeners.get(name)).add(l);
+		} else {
+			Set s = new HashSet();
+			s.add(l);
+			listeners.put(name, s);
+		}
 
-    public void removeListener(String str) {
+		locator.registerListener(l);
+	}
 
-        String name = retrieveName(str);
+	public void removeListener(String str) {
 
-        if (name.equals("")) {
-            driver.println("Need a name");
-            return;
-        }
+		String name = retrieveName(str);
 
-        if (listeners.containsKey(name)) {
+		if (name.equals("")) {
+			driver.println("Need a name");
+			return;
+		}
 
-            Set s = (Set) listeners.get(name);
-            Listener l = (Listener) s.iterator().next();
-            s.remove(l);
-            if (s.isEmpty())
-                listeners.remove(name);
+		if (listeners.containsKey(name)) {
 
-            locator.deregisterListener(l);
-            driver.println("Deregistered listener for " + name + " -- "
-                           + s.size() + " left");
+			Set s = (Set) listeners.get(name);
+			Listener l = (Listener) s.iterator().next();
+			s.remove(l);
+			if (s.isEmpty())
+				listeners.remove(name);
 
-        } else {
-            driver.println("There are no listeners for " + name);
-        }
-    }
+			locator.deregisterListener(l);
+			driver.println("Deregistered listener for " + name + " -- "
+					+ s.size() + " left");
 
-    public void showGlobal() {
-        ((Locator) locator).global.showDebugFrame();
-    }
+		} else {
+			driver.println("There are no listeners for " + name);
+		}
+	}
 
-    public void removeGlobal() {
-        if (locator != null && ((Locator) locator).local != null)
-            ((Locator) locator).global.removeDebugFrame();
-    }
+	public void showGlobal() {
+		((Locator) locator).global.showDebugFrame();
+	}
 
-    public void showLocal() {
-        ((Locator) locator).local.showDebugFrame();
-    }
+	public void removeGlobal() {
+		if (locator != null && ((Locator) locator).local != null)
+			((Locator) locator).global.removeDebugFrame();
+	}
 
-    public void removeLocal() {
-        if (locator != null && ((Locator) locator).local != null)
-            ((Locator) locator).local.removeDebugFrame();
-    }
+	public void showLocal() {
+		((Locator) locator).local.showDebugFrame();
+	}
+
+	public void removeLocal() {
+		if (locator != null && ((Locator) locator).local != null)
+			((Locator) locator).local.removeDebugFrame();
+	}
 
 }

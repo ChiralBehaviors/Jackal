@@ -20,6 +20,8 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.views;
 
 import java.io.Serializable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
@@ -27,6 +29,7 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 public class BitView implements View, Cloneable, Serializable {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger log = Logger.getLogger(BitView.class.getCanonicalName());
 
     public static BitView create(Identity id, long t) {
         if (id == null) {

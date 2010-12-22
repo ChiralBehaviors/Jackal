@@ -19,6 +19,9 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.timed;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -39,6 +42,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
     private boolean terminated = false;
     private long time = 0;
     private long viewNumber = 0;
+    private static final Logger log = Logger.getLogger(TimedProtocolImpl.class.getCanonicalName());
 
     /**
      * Constructor - create a heartbeat protocol implementation using the
@@ -172,9 +176,15 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
                 listener.newViewTime(sender, this);
             }
 
+	    	if (log.isLoggable(Level.FINEST)) {
+	    		log.finest("Accepting heart beat: " + hb);
+	    	}
             return true;
 
         } else {
+	    	if (log.isLoggable(Level.FINEST)) {
+	    		log.finest("Rejecting heart beat: " + hb);
+	    	}
             return false;
         }
     }

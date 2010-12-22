@@ -59,7 +59,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     private ServerSocketChannel server = null;
     private Logger syncLog = Logger.getLogger(this.getClass().toString());
     private Logger asyncLog = syncLog; // need to wrap with async log wrapper
-    private WireSecurity wireSecurity = null;
+    private WireSecurity wireSecurity = null; 
 
     private Vector writePendingKeys = null;
 
@@ -155,6 +155,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
     public void initiateConnection(Identity id, MessageConnection con,
                                    HeartbeatMsg hb) {
+		if (syncLog.isLoggable(Level.FINEST)) {
+			syncLog.finest("Initiating connection to " + con.getSender());
+		}
         NonBlockingConnectionInitiator initiator = null;
         try {
             initiator = new NonBlockingConnectionInitiator(con, hb,

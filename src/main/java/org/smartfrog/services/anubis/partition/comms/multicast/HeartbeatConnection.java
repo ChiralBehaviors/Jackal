@@ -19,6 +19,9 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolAdapter;
@@ -74,6 +77,9 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter
          * ignore if the epoch is wrong or if this connection has terminated
          */
         if (!getSender().equalEpoch(hb.getSender()) || terminated) {
+        	if (!terminated && log.isLoggable(Level.FINEST)) {
+        		log.finest("Ignoring heart beat from wrong epoch: " + hb);
+        	}
             return false;
         }
 
@@ -89,6 +95,9 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter
              * connection should be converted to a messaging connection
              */
             if (hb.getMsgLinks().contains(me.id)) {
+            	if (log.isLoggable(Level.FINEST)) {
+            		log.finest("converting heart beat connection to message connection");
+            	}
                 connectionSet.convertToMessageConnection(this);
                 return true;
             }
@@ -105,5 +114,11 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter
         super.terminate();
         terminated = true;
     }
+
+	@Override
+	public String toString() {
+		return "HeartbeatConnection [from: " + me + " to:"
+				+ getId() + "]";
+	}
 
 }

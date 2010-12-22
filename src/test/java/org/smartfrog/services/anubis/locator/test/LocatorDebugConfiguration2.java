@@ -6,15 +6,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class LocatorDebugConfiguration extends BasicConfiguration {
+public class LocatorDebugConfiguration2 extends BasicConfiguration {
 	
     public static void main(String[] argv) {
-        new AnnotationConfigApplicationContext(LocatorDebugConfiguration.class);
+        new AnnotationConfigApplicationContext(LocatorDebugConfiguration2.class);
     }
 
-    @Bean
+    @Override
+	public int getNode() {
+		return 2;
+	}
+
+	@Bean
     public Test tester() {
-        Test test = new Test("1");
+        Test test = new Test("2");
         test.setLocator(locator());
         return test;
     }

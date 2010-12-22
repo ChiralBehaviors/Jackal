@@ -19,16 +19,18 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.util;
 
-public class Test {
+import junit.framework.TestCase;
+
+public class Test extends TestCase{
     public Test() {
     }
 
     public static void main(String[] args) {
         Test t = new Test();
-        t.doit();
+        t.testIt();
     }
 
-    public void doit() {
+    public void testIt() {
 
         NodeIdSet bs = new NodeIdSet();
 

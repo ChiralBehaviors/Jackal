@@ -52,4 +52,9 @@ public class MulticastAddress {
         this.timeToLive = timeToLive;
     }
 
+	@Override
+	public String toString() {
+		return "MulticastAddress [ipaddress=" + ipaddress + ", port=" + port
+				+ "]";
+	}
 }
