@@ -172,6 +172,14 @@ public class BasicConfiguration {
 	public TestMgr testMgr() throws Exception {
 		TestMgr mgr = new TestMgr(contactHost().getCanonicalHostName(),
 				contactPort(), partition(), getNode());
+		mgr.setConnectionAddress(contactAddress());
+		mgr.setConnectionSet(connectionSet());
+		mgr.setIdentity(partitionIdentity());
+		mgr.setTestable(getTestable());
 		return mgr;
+	}
+	
+	public boolean getTestable() {
+		return true;
 	}
 }

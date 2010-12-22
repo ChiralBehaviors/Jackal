@@ -25,6 +25,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.Status;
@@ -148,6 +151,7 @@ public class TestMgr {
 		statsInterval = STATSRATE * interval;
 	}
 
+    @PostConstruct
 	public void start() throws IOException {
 
 		if (!testable) {
@@ -168,6 +172,7 @@ public class TestMgr {
 		connectionServer.start();
 	}
 
+    @PreDestroy
 	public void terminate() {
 		if (testable) {
 			connectionServer.shutdown();
