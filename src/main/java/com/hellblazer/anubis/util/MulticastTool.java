@@ -1,4 +1,4 @@
-package com.hellblazer.anubis;
+package com.hellblazer.anubis.util;
 
 import java.io.IOException;
 import java.io.StringWriter;
