@@ -16,42 +16,41 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.names;
 
 import java.io.Serializable;
 
 public class NameData implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-    public String name;
-    public Integer node;
+	private static final long serialVersionUID = 1L;
+	public String name;
+	public Integer node;
 
-    public NameData(String name, Integer node) {
-        this.name = name;
-        this.node = node;
-    }
+	public NameData(String name, Integer node) {
+		this.name = name;
+		this.node = node;
+	}
 
-    /**
-     * Two name data are equivalent if they have the same name and the
-     * same node. This is because there may be multiple proxies for a
-     * particular name, but only one per node.
-     *
-     * @param obj
-     * @return boolean
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof NameData) {
-            return name.equals(((NameData) obj).name)
-                   && node.equals(((NameData) obj).node);
-        } else {
-            return false;
-        }
-    }
+	/**
+	 * Two name data are equivalent if they have the same name and the same
+	 * node. This is because there may be multiple proxies for a particular
+	 * name, but only one per node.
+	 * 
+	 * @param obj
+	 * @return boolean
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof NameData) {
+			return name.equals(((NameData) obj).name)
+					&& node.equals(((NameData) obj).node);
+		}
+		return false;
+	}
 
-    @Override
-    public int hashCode() {
-        return name.hashCode() + node.hashCode();
-    }
+	@Override
+	public int hashCode() {
+		return name.hashCode() + node.hashCode();
+	}
 }

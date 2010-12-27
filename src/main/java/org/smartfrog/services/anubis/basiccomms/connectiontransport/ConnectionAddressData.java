@@ -16,42 +16,41 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.net.InetAddress;
 
 public class ConnectionAddressData {
-    static final String LOCALHOST = "localhost";
-    private String hostName;
-    private int port = 0;
+	static final String LOCALHOST = "localhost";
+	private String hostName;
+	private int port = 0;
 
-    public ConnectionAddress getConnectionAddress() throws Exception {
-        return new ConnectionAddress(getAddress(), getPort());
-    }
+	public ConnectionAddress getConnectionAddress() throws Exception {
+		return new ConnectionAddress(getAddress(), getPort());
+	}
 
-    public String getHostName() {
-        return hostName;
-    }
+	public String getHostName() {
+		return hostName;
+	}
 
-    public int getPort() {
-        return port;
-    }
+	public int getPort() {
+		return port;
+	}
 
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
-    }
+	public void setHostName(String hostName) {
+		this.hostName = hostName;
+	}
 
-    public void setPort(int port) {
-        this.port = port;
-    }
+	public void setPort(int port) {
+		this.port = port;
+	}
 
-    protected InetAddress getAddress() throws Exception {
-        if (hostName.equals(LOCALHOST)) {
-            return InetAddress.getLocalHost();
-        } else {
-            return InetAddress.getByName(hostName);
-        }
-    }
+	protected InetAddress getAddress() throws Exception {
+		if (hostName.equals(LOCALHOST)) {
+			return InetAddress.getLocalHost();
+		}
+		return InetAddress.getByName(hostName);
+	}
 
 }

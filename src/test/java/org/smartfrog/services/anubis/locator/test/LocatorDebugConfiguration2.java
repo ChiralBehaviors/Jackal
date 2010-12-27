@@ -1,5 +1,7 @@
 package org.smartfrog.services.anubis.locator.test;
 
+import java.net.UnknownHostException;
+
 import org.smartfrog.services.anubis.BasicConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +20,7 @@ public class LocatorDebugConfiguration2 extends BasicConfiguration {
 	}
 
 	@Bean
-    public Test tester() {
+    public Test tester() throws UnknownHostException {
         Test test = new Test("2");
         test.setLocator(locator());
         return test;

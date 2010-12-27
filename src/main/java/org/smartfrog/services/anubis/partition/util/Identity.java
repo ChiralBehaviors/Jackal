@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
@@ -56,6 +58,29 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     public final int id;
 
     public final int magic;
+    
+    /**
+     * Construct an Identity using the local IP address as the node
+     * identity
+     * 
+     * @param magic
+     * @param epoch
+     * @throws UnknownHostException 
+     */
+    public Identity(int magic, long epoch) throws UnknownHostException {
+    	this(magic, getIdFromLocalIpAddress(), epoch);
+    }
+    
+    public static int getIdFromLocalIpAddress() throws UnknownHostException {
+    	return inetAddressToNode(InetAddress.getLocalHost());
+    }
+    
+    public static int inetAddressToNode(InetAddress address) {
+        String ipAsString = address.getHostAddress();
+        int dotIndex = ipAsString.lastIndexOf(".");
+        String nodeStr = ipAsString.substring(dotIndex + 1, ipAsString.length());
+        return Integer.parseInt(nodeStr);
+    }
 
     /**
      * constructor - takes a given magic number, id and epoch to construct the
@@ -78,8 +103,7 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     * @param s
     * @throws IOException
     */
-    public Identity(ObjectInputStream s) throws IOException,
-            ClassNotFoundException {
+    public Identity(ObjectInputStream s) throws IOException {
         id = s.readInt();
         magic = s.readInt();
         epoch = s.readLong();

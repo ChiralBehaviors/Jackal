@@ -147,6 +147,10 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
         return buffer.toString();
     }
 
+    /**
+	 * @param reason  
+     * @param throwable 
+	 */
     public void logClose(String reason, Throwable throwable) {
         return;
     }

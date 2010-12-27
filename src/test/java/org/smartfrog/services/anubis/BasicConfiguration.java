@@ -75,7 +75,7 @@ public class BasicConfiguration {
 	}
 
 	@Bean
-	public Identity partitionIdentity() {
+	public Identity partitionIdentity() throws UnknownHostException {
 		return new Identity(getMagic(), getNode(), epoch().longValue());
 	}
 
@@ -83,8 +83,8 @@ public class BasicConfiguration {
 		return 12345;
 	}
 
-	public int getNode() {
-		return 1;
+	public int getNode() throws UnknownHostException {
+		return Identity.getIdFromLocalIpAddress();
 	}
 
 	@Bean
@@ -99,7 +99,7 @@ public class BasicConfiguration {
 	}
 
 	@Bean
-	public AnubisLocator locator() {
+	public AnubisLocator locator() throws UnknownHostException {
 		Locator locator = new Locator();
 		locator.setIdentity(partitionIdentity());
 		locator.setPartition(partition());
@@ -109,7 +109,7 @@ public class BasicConfiguration {
 	}
 
 	@Bean
-	public PartitionManager partition() {
+	public PartitionManager partition() throws UnknownHostException {
 		PartitionManager partition = new PartitionManager();
 		partition.setIdentity(partitionIdentity());
 		return partition;

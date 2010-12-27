@@ -24,7 +24,7 @@ import java.util.Vector;
 public class RxQueue {
 
     private boolean open;
-    private Vector thisQueue = null;
+    private Vector<Object> thisQueue = null;
 
     /**
      * Queue where received serialized objects are put on.
@@ -32,7 +32,7 @@ public class RxQueue {
      * to anubis
      */
     public RxQueue() {
-        thisQueue = new Vector(10);
+        thisQueue = new Vector<Object>(10);
         open = true;
     }
 

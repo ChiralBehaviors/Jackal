@@ -20,7 +20,8 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms;
 
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
+import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 
-public interface Connection extends HeartbeatProtocol {
+public interface Connection extends HeartbeatProtocol, Candidate {
     public void terminate();
 }

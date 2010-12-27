@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.registers;
 
 import java.rmi.RemoteException;
@@ -25,9 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
@@ -41,414 +38,406 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class GlobalRegisterImpl {
 
-    /**
-     * RequestServer is required to avoid a potential deadlock
-     * between the local and global if they send messages to each
-     * other on the local node. Sending a message to the local node
-     * results in direct delivery by method call in the same thread.
-     * It is possible for a thread that holds the GlobalRegisterImpl monitor
-     * to make a call to the LocalRegisterImpl, and vice versa at the same time.
-     * So, instead of blocking on a monitor we create a queue of requests for
-     * the global and service the queue with a single thread.
-     */
-    private class RequestServer extends Thread {
-        private boolean running = false;
+	/**
+	 * RequestServer is required to avoid a potential deadlock between the local
+	 * and global if they send messages to each other on the local node. Sending
+	 * a message to the local node results in direct delivery by method call in
+	 * the same thread. It is possible for a thread that holds the
+	 * GlobalRegisterImpl monitor to make a call to the LocalRegisterImpl, and
+	 * vice versa at the same time. So, instead of blocking on a monitor we
+	 * create a queue of requests for the global and service the queue with a
+	 * single thread.
+	 */
+	private class RequestServer extends Thread {
+		private boolean running = false;
 
-        public RequestServer() {
-            super();
-        }
+		public RequestServer() {
+			super();
+		}
 
-        @Override
-        public void run() {
-            running = true;
-            while (running) {
-                Object obj = requests.get();
-                if (obj != null) {
-                    deliver((RegisterMsg) obj);
-                }
-            }
-        }
+		@Override
+		public void run() {
+			running = true;
+			while (running) {
+				Object obj = requests.get();
+				if (obj != null) {
+					deliver((RegisterMsg) obj);
+				}
+			}
+		}
 
-        public void terminate() {
-            running = false;
-        }
-    }
+		public void terminate() {
+			running = false;
+		}
+	}
 
-    private boolean active = true;
-    private DebugFrame debug = null;
-    private SetMap listenersByName = new SetMap();
-    private SetMap listenersByNode = new SetMap();
-    private Locator locator = null;
-    private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
-    private int me = -1;
-    private SetMap providersByName = new SetMap();
-    private SetMap providersByNode = new SetMap();
+	private boolean active = true;
+	private DebugFrame debug = null;
+	private SetMap<String, ListenerProxy> listenersByName = new SetMap<String, ListenerProxy>();
+	private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
+	private Locator locator = null;
+	private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+	private int me = -1;
+	private SetMap<String, ProviderProxy> providersByName = new SetMap<String, ProviderProxy>();
+	private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
 
-    private BlockingQueue requests = new BlockingQueue();
-    private RequestServer server = new RequestServer();
+	private BlockingQueue<RegisterMsg> requests = new BlockingQueue<RegisterMsg>();
+	private RequestServer server = new RequestServer();
 
-    /**
-     * Constructor - sets the local
-     * @param id
-     * @param locator
-     */
-    public GlobalRegisterImpl(Identity id, Locator locator) {
-        me = id.id;
-        this.locator = locator;
-    }
+	/**
+	 * Constructor - sets the local
+	 * 
+	 * @param id
+	 * @param locator
+	 */
+	public GlobalRegisterImpl(Identity id, Locator locator) {
+		me = id.id;
+		this.locator = locator;
+	}
 
-    /**
-     * Set this global register to be active. When active the register will
-     * process incoming requests.
-     */
-    public void activate() {
-        if (active) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me + " *** Global.activate called when active!!!");
-            }
-        } else {
-            active = true;
-            updateDebugFrame();
-        }
-    }
+	/**
+	 * Set this global register to be active. When active the register will
+	 * process incoming requests.
+	 */
+	public void activate() {
+		if (active) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.severe(me + " *** Global.activate called when active!!!");
+			}
+		} else {
+			active = true;
+			updateDebugFrame();
+		}
+	}
 
-    /**
-     * Removes registrations for listeners and providers that are located
-     * at a node absent from the view provided.
-     *
-     * @param view
-     */
-    public void checkNodes(View view) {
+	/**
+	 * Removes registrations for listeners and providers that are located at a
+	 * node absent from the view provided.
+	 * 
+	 * @param view
+	 */
+	public void checkNodes(View view) {
 
-        /**
-         * Check providers for nodes that are not in the view
-         */
-        Iterator piter = providersByNode.keySet().iterator();
-        while (piter.hasNext()) {
-            Integer node = (Integer) piter.next();
-            if (!view.contains(node.intValue())) {
-                Iterator iter = providersByNode.getSet(node).iterator();
-                while (iter.hasNext()) {
-                    ProviderProxy provider = (ProviderProxy) iter.next();
-                    providersByName.remove(provider);
-                }
-                piter.remove();
-            }
-        }
+		/**
+		 * Check providers for nodes that are not in the view
+		 */
+		Iterator<Integer> piter = providersByNode.keySet().iterator();
+		while (piter.hasNext()) {
+			Integer node = piter.next();
+			if (!view.contains(node.intValue())) {
+				Iterator<ProviderProxy> iter = providersByNode.getSet(node)
+						.iterator();
+				while (iter.hasNext()) {
+					ProviderProxy provider = iter.next();
+					providersByName.remove(provider);
+				}
+				piter.remove();
+			}
+		}
 
-        /**
-         * Check listeners for nodes that are not in the view
-         */
-        Iterator liter = listenersByNode.keySet().iterator();
-        while (liter.hasNext()) {
-            Integer node = (Integer) liter.next();
-            if (!view.contains(node.intValue())) {
-                Iterator iter = listenersByNode.getSet(node).iterator();
-                while (iter.hasNext()) {
-                    ListenerProxy listener = (ListenerProxy) iter.next();
-                    listenersByName.remove(listener);
-                }
-                liter.remove();
-            }
-        }
-    }
+		/**
+		 * Check listeners for nodes that are not in the view
+		 */
+		Iterator<Integer> liter = listenersByNode.keySet().iterator();
+		while (liter.hasNext()) {
+			Integer node = liter.next();
+			if (!view.contains(node.intValue())) {
+				Iterator<ListenerProxy> iter = listenersByNode.getSet(node)
+						.iterator();
+				while (iter.hasNext()) {
+					ListenerProxy listener = iter.next();
+					listenersByName.remove(listener);
+				}
+				liter.remove();
+			}
+		}
+	}
 
-    /**
-     * deactivate: simply drop all info. The new global will rebuild from
-     *             the local registers. Any new requests will be dropped
-     *             when not active.
-     */
-    public void deactivate() {
-        if (!active) {
-            return;
-        }
-        active = false;
-        providersByName.clear();
-        providersByNode.clear();
-        listenersByName.clear();
-        listenersByNode.clear();
-        updateDebugFrame();
-    }
+	/**
+	 * deactivate: simply drop all info. The new global will rebuild from the
+	 * local registers. Any new requests will be dropped when not active.
+	 */
+	public void deactivate() {
+		if (!active) {
+			return;
+		}
+		active = false;
+		providersByName.clear();
+		providersByNode.clear();
+		listenersByName.clear();
+		listenersByNode.clear();
+		updateDebugFrame();
+	}
 
-    /**
-     * call the appropirate method to execute the request. This method is called
-     * by the request server after pulling a request off of the requests queue.
-     *
-     * @param request
-     */
-    public void deliver(RegisterMsg request) {
+	/**
+	 * call the appropirate method to execute the request. This method is called
+	 * by the request server after pulling a request off of the requests queue.
+	 * 
+	 * @param request
+	 */
+	public void deliver(RegisterMsg request) {
 
-        switch (request.type) {
-            case RegisterMsg.Undefined:
+		switch (request.type) {
+		case RegisterMsg.Undefined:
 
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " Global received request explicitly declared as type Undefined "
-                               + request + " ?!?!?");
-                }
-                break;
+			if (log.isLoggable(Level.SEVERE)) {
+				log.severe(me
+						+ " Global received request explicitly declared as type Undefined "
+						+ request + " ?!?!?");
+			}
+			break;
 
-            case RegisterMsg.RegisterProvider:
+		case RegisterMsg.RegisterProvider:
 
-                registerProvider((ProviderProxy) request.data);
-                updateDebugFrame();
-                break;
+			registerProvider((ProviderProxy) request.data);
+			updateDebugFrame();
+			break;
 
-            case RegisterMsg.DeregisterProvider:
+		case RegisterMsg.DeregisterProvider:
 
-                deregisterProvider((ProviderProxy) request.data);
-                updateDebugFrame();
-                break;
+			deregisterProvider((ProviderProxy) request.data);
+			updateDebugFrame();
+			break;
 
-            case RegisterMsg.RegisterListener:
+		case RegisterMsg.RegisterListener:
 
-                registerListener((ListenerProxy) request.data);
-                updateDebugFrame();
-                break;
+			registerListener((ListenerProxy) request.data);
+			updateDebugFrame();
+			break;
 
-            case RegisterMsg.DeregisterListener:
+		case RegisterMsg.DeregisterListener:
 
-                deregisterListener((ListenerProxy) request.data);
-                updateDebugFrame();
-                break;
+			deregisterListener((ListenerProxy) request.data);
+			updateDebugFrame();
+			break;
 
-            default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me + " Global received unexpected message "
-                               + request + " ?!?!?");
-                }
-        }
-    }
+		default:
+			if (log.isLoggable(Level.SEVERE)) {
+				log.severe(me + " Global received unexpected message "
+						+ request + " ?!?!?");
+			}
+		}
+	}
 
-    /**
-     * If this global register is active queue the request in the request
-     * queue. If it is not active just return.
-     *
-     * @param request
-     */
-    public void deliverRequest(RegisterMsg request) {
-        requests.put(request);
-    }
+	/**
+	 * If this global register is active queue the request in the request queue.
+	 * If it is not active just return.
+	 * 
+	 * @param request
+	 */
+	public void deliverRequest(RegisterMsg request) {
+		requests.put(request);
+	}
 
-    public synchronized void removeDebugFrame() {
-        if (debug != null) {
-            debug.remove();
-            debug = null;
-        }
-    }
+	public synchronized void removeDebugFrame() {
+		if (debug != null) {
+			debug.remove();
+			debug = null;
+		}
+	}
 
-    public synchronized void showDebugFrame() {
-        if (debug == null) {
-            debug = new DebugFrame("Node " + me + " Global Register Contents:");
-        }
-        debug.makeVisible(this);
-    }
+	public synchronized void showDebugFrame() {
+		if (debug == null) {
+			debug = new DebugFrame("Node " + me + " Global Register Contents:");
+		}
+		debug.makeVisible(this);
+	}
 
-    /**
-     * When becoming stable there are four cases:
-     * - was leader (active) and still leader:           do nothing
-     * - was not leader (inactive) and still not leader: do nothing
-     * - was leader (active) and now not leader:         deativate
-     * - was not leader (inactive) and now leader:       activate
-     * @param leader
-     */
-    public void stable(int leader) {
-        if (active && leader != me) {
-            deactivate();
-        } else if (!active && leader == me) {
-            activate();
-        }
-    }
+	/**
+	 * When becoming stable there are four cases: - was leader (active) and
+	 * still leader: do nothing - was not leader (inactive) and still not
+	 * leader: do nothing - was leader (active) and now not leader: deativate -
+	 * was not leader (inactive) and now leader: activate
+	 * 
+	 * @param leader
+	 */
+	public void stable(int leader) {
+		if (active && leader != me) {
+			deactivate();
+		} else if (!active && leader == me) {
+			activate();
+		}
+	}
 
-    /**
-     * Starts the global register server
-     */
-    public void start() {
-        server.setName("Anubis: Global Register Request Server (node " + me
-                       + ")");
-        server.start();
-        updateDebugFrame();
-    }
+	/**
+	 * Starts the global register server
+	 */
+	public void start() {
+		server.setName("Anubis: Global Register Request Server (node " + me
+				+ ")");
+		server.start();
+		updateDebugFrame();
+	}
 
-    /**
-     * Stop the threads associated with the global register (the request
-     * server thread) and deactivate the global.
-     */
-    public void terminate() {
-        server.terminate();
-        requests.deactivate();
-    }
+	/**
+	 * Stop the threads associated with the global register (the request server
+	 * thread) and deactivate the global.
+	 */
+	public void terminate() {
+		server.terminate();
+		requests.deactivate();
+	}
 
-    /**
-     * List out the contents of the register by node.
-     * @return  String
-     */
-    @Override
-    public synchronized String toString() {
-        if (!active) {
-            return "** NOT ACTIVE **\n" + "** NOT ACTIVE **\n"
-                   + "** NOT ACTIVE **\n";
-        }
+	/**
+	 * List out the contents of the register by node.
+	 * 
+	 * @return String
+	 */
+	@Override
+	public synchronized String toString() {
+		if (!active) {
+			return "** NOT ACTIVE **\n" + "** NOT ACTIVE **\n"
+					+ "** NOT ACTIVE **\n";
+		}
 
-        String str = "Providers By Node:\n";
-        Iterator iter = providersByNode.entrySet().iterator();
+		String str = "Providers By Node:\n";
+		for (Map.Entry<Integer, Set<ProviderProxy>> entry : providersByNode
+				.entrySet()) {
+			for (ProviderProxy provider : entry.getValue()) {
+				str += "    " + provider.toString() + "\n";
+			}
+		}
 
-        while (iter.hasNext()) {
-            Map.Entry entry = (Map.Entry) iter.next();
-            Iterator piter = ((Set) entry.getValue()).iterator();
-            while (piter.hasNext()) {
-                str += "    " + ((ProviderProxy) piter.next()).toString()
-                       + "\n";
-            }
-        }
+		str += "\nPending Listeners:\n";
+		for (Map.Entry<Integer, Set<ListenerProxy>> entry : listenersByNode
+				.entrySet()) {
+			for (ListenerProxy listener : entry.getValue()) {
+				str += "    " + listener.toString() + "\n";
+			}
+		}
+		return str;
+	}
 
-        str += "\nPending Listeners:\n";
-        iter = listenersByNode.entrySet().iterator();
-        while (iter.hasNext()) {
-            Map.Entry entry = (Map.Entry) iter.next();
-            Iterator piter = ((Set) entry.getValue()).iterator();
-            while (piter.hasNext()) {
-                ListenerProxy listener = (ListenerProxy) piter.next();
-                str += "    " + listener.toString() + "\n";
-            }
-        }
-        return str;
-    }
+	/**
+	 * When becoming unstable there are four cases: - was leader (active) and
+	 * still leader: reset (deactivate+activate) - was leader (active) and not
+	 * now leader: deactivate - was not leader (inactive) and now leader:
+	 * activate - was not leader (inactive) and still not leader: do nothing
+	 * 
+	 * @param leader
+	 */
+	public void unstable(int leader) {
 
-    /**
-     * When becoming unstable there are four cases:
-     * - was leader (active) and still leader:           reset (deactivate+activate)
-     * - was leader (active) and not now leader:         deactivate
-     * - was not leader (inactive) and now leader:       activate
-     * - was not leader (inactive) and still not leader: do nothing
-     * @param leader
-     */
-    public void unstable(int leader) {
+		/**
+		 * deal with changes in leader (implies changes in global register
+		 * location)
+		 */
+		if (active && leader == me) {
+			deactivate();
+			activate();
+		} else if (active && leader != me) {
+			deactivate();
+		} else if (!active && leader == me) {
+			activate();
+		} else if (!active && leader != me) {
+			// do nothing
+		}
+	}
 
-        /**
-         * deal with changes in leader (implies changes in global register location)
-         */
-        if (active && leader == me) {
-            deactivate();
-            activate();
-        } else if (active && leader != me) {
-            deactivate();
-        } else if (!active && leader == me) {
-            activate();
-        } else if (!active && leader != me) {
-            // do nothing
-        }
-    }
+	/**
+	 * deregisterListener: just remove the entry. No action with providers, the
+	 * listener is responsible for informing them.
+	 * 
+	 * @param local
+	 * @param name
+	 * @return
+	 * @throws RemoteException
+	 */
+	private void deregisterListener(ListenerProxy listener) {
 
-    /**
-     * deregisterListener: just remove the entry. No action with
-     *                     providers, the listener is responsible
-     *                     for informing them.
+		/**
+		 * Remove from listener info
+		 */
+		listenersByNode.remove(listener.node, listener);
+		listenersByName.remove(listener.name, listener);
 
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void deregisterListener(ListenerProxy listener) {
+	}
 
-        /**
-         * Remove from listener info
-         */
-        listenersByNode.remove(listener.node, listener);
-        listenersByName.remove(listener.name, listener);
+	/**
+	 * deregisterProvider: just remove the entry. No action with listeners, the
+	 * provider is responsible for informing them.
+	 * 
+	 * @param local
+	 * @param name
+	 * @return
+	 * @throws RemoteException
+	 */
+	private void deregisterProvider(ProviderProxy provider) {
 
-    }
+		/**
+		 * Remove from provider info
+		 */
+		providersByNode.remove(provider.node, provider);
+		providersByName.remove(provider.name, provider);
+	}
 
-    /**
-     * deregisterProvider: just remove the entry. No action with
-     *                     listeners, the provider is responsible
-     *                     for informing them.
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void deregisterProvider(ProviderProxy provider) {
+	/**
+	 * registerListener: if there is no provider then add to the pending
+	 * listeners. If there is a provider simply return its location and do not
+	 * add to pending listeners (as its not pending!!)
+	 * 
+	 * @param local
+	 * @param name
+	 * @return
+	 * @throws RemoteException
+	 */
+	private void registerListener(ListenerProxy listener) {
 
-        /**
-         * Remove from provider info
-         */
-        providersByNode.remove(provider.node, provider);
-        providersByName.remove(provider.name, provider);
-    }
+		/**
+		 * Add to listener info
+		 */
+		listenersByNode.put(listener.node, listener);
+		listenersByName.put(listener.name, listener);
 
-    /**
-     * registerListener: if there is no provider then add to the pending
-     *                   listeners. If there is a provider simply return
-     *                   its location and do not add to pending listeners
-     *                   (as its not pending!!)
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void registerListener(ListenerProxy listener) {
+		/**
+		 * Check for existing providers and inform them of the new listener
+		 */
+		Set<ProviderProxy> providers = providersByName.getSet(listener.name);
+		if (providers == null) {
+			return;
+		}
 
-        /**
-         * Add to listener info
-         */
-        listenersByNode.put(listener.node, listener);
-        listenersByName.put(listener.name, listener);
+		for (ProviderProxy provider: providers) {
+			RegisterMsg msg = RegisterMsg.addListener(listener);
+			locator.sendToLocal(msg, provider.node);
+		}
+	}
 
-        /**
-         * Check for existing providers and inform them of the new
-         * listener
-         */
-        Set providers = providersByName.getSet(listener.name);
-        if (providers == null) {
-            return;
-        }
+	/**
+	 * registerProvider: Add the new provider to the provider list. Inform
+	 * pending listeners of the location.
+	 * 
+	 * @param local
+	 * @param name
+	 * @return
+	 * @throws RemoteException
+	 */
+	private void registerProvider(ProviderProxy provider) {
 
-        Iterator iter = providers.iterator();
-        while (iter.hasNext()) {
-            ProviderProxy provider = (ProviderProxy) iter.next();
-            RegisterMsg msg = RegisterMsg.addListener(listener);
-            locator.sendToLocal(msg, provider.node);
-        }
-    }
+		/**
+		 * Add to provider info
+		 */
+		providersByNode.put(provider.node, provider);
+		providersByName.put(provider.name, provider);
 
-    /**
-     * registerProvider: Add the new provider to the provider list.
-     *                   Inform pending listeners of the location.
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void registerProvider(ProviderProxy provider) {
+		/**
+		 * Check for existing listeners and inform the provider of their
+		 * existance
+		 */
+		Set<ListenerProxy> listeners = listenersByName.getSet(provider.name);
+		if (listeners == null) {
+			return;
+		}
 
-        /**
-         * Add to provider info
-         */
-        providersByNode.put(provider.node, provider);
-        providersByName.put(provider.name, provider);
+		for (ListenerProxy listener: listeners) {
+			RegisterMsg msg = RegisterMsg.addListener(listener);
+			locator.sendToLocal(msg, provider.node);
+		}
+	}
 
-        /**
-         * Check for existing listeners and inform the provider of their
-         * existance
-         */
-        Set listeners = listenersByName.getSet(provider.name);
-        if (listeners == null) {
-            return;
-        }
-
-        Iterator iter = listeners.iterator();
-        while (iter.hasNext()) {
-            ListenerProxy listener = (ListenerProxy) iter.next();
-            RegisterMsg msg = RegisterMsg.addListener(listener);
-            locator.sendToLocal(msg, provider.node);
-        }
-    }
-
-    private void updateDebugFrame() {
-        if (debug != null) {
-            debug.update();
-        }
-    }
+	private void updateDebugFrame() {
+		if (debug != null) {
+			debug.update();
+		}
+	}
 }

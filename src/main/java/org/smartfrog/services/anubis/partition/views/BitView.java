@@ -16,209 +16,205 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.views;
 
 import java.io.Serializable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 
 public class BitView implements View, Cloneable, Serializable {
 
-    private static final long serialVersionUID = 1L;
-    private static final Logger log = Logger.getLogger(BitView.class.getCanonicalName());
+	private static final long serialVersionUID = 1L;
 
-    public static BitView create(Identity id, long t) {
-        if (id == null) {
-            throw new NullPointerException(
-                                           "Attempt to create BitView from null pointer");
-        }
-        return create(id.id, t);
-    }
+	public static BitView create(Identity id, long t) {
+		if (id == null) {
+			throw new NullPointerException(
+					"Attempt to create BitView from null pointer");
+		}
+		return create(id.id, t);
+	}
 
-    public static BitView create(int id, long t) {
-        BitView bv = new BitView();
-        bv.add(id);
-        bv.stablize();
-        bv.setTimeStamp(t);
-        return bv;
-    }
+	public static BitView create(int id, long t) {
+		BitView bv = new BitView();
+		bv.add(id);
+		bv.stablize();
+		bv.setTimeStamp(t);
+		return bv;
+	}
 
-    protected boolean stable = true;
+	protected boolean stable = true;
 
-    protected long timeStamp = View.undefinedTimeStamp;
+	protected long timeStamp = View.undefinedTimeStamp;
 
-    protected NodeIdSet view = null;
+	protected NodeIdSet view = null;
 
-    public BitView() {
-        view = new NodeIdSet();
-    }
+	public BitView() {
+		view = new NodeIdSet();
+	}
 
-    public BitView(boolean s, NodeIdSet v, long t) {
-        if (v == null) {
-            throw new NullPointerException(
-                                           "Attempt to construct BitView from null pointer");
-        }
-        stable = s;
-        view = v;
-        timeStamp = t;
-    }
+	public BitView(boolean s, NodeIdSet v, long t) {
+		if (v == null) {
+			throw new NullPointerException(
+					"Attempt to construct BitView from null pointer");
+		}
+		stable = s;
+		view = v;
+		timeStamp = t;
+	}
 
-    public BitView(View v) {
-        if (v == null) {
-            throw new NullPointerException(
-                                           "Attempt to construct BitView from null pointer");
-        }
-        stable = v.isStable();
-        view = v.toBitSet();
-        timeStamp = v.getTimeStamp();
-    }
+	public BitView(View v) {
+		if (v == null) {
+			throw new NullPointerException(
+					"Attempt to construct BitView from null pointer");
+		}
+		stable = v.isStable();
+		view = v.toBitSet();
+		timeStamp = v.getTimeStamp();
+	}
 
-    public boolean add(Identity i) {
-        return add(i.id);
-    }
+	public boolean add(Identity i) {
+		return add(i.id);
+	}
 
-    public boolean add(int i) {
-        if (!view.contains(i)) {
-            view.add(i);
-            destablize();
-            return true;
-        }
-        return false;
-    }
+	public boolean add(int i) {
+		if (!view.contains(i)) {
+			view.add(i);
+			destablize();
+			return true;
+		}
+		return false;
+	}
 
-    public int cardinality() {
-        return view.cardinality();
-    }
+	public int cardinality() {
+		return view.cardinality();
+	}
 
-    public boolean containedIn(View v) {
-        return v.contains(this);
-    }
+	public boolean containedIn(View v) {
+		return v.contains(this);
+	}
 
-    public boolean contains(Identity id) {
-        return contains(id.id);
-    }
+	public boolean contains(Identity id) {
+		return contains(id.id);
+	}
 
-    public boolean contains(int i) {
-        return view.contains(i);
-    }
+	public boolean contains(int i) {
+		return view.contains(i);
+	}
 
-    public boolean contains(View v) {
-        if (view.size() < v.size()) {
-            return false;
-        }
-        for (int i = 0; i < view.size(); i++) {
-            if (v.contains(i) && !contains(i)) {
-                return false;
-            }
-        }
-        return true;
-    }
+	public boolean contains(View v) {
+		if (view.size() < v.size()) {
+			return false;
+		}
+		for (int i = 0; i < view.size(); i++) {
+			if (v.contains(i) && !contains(i)) {
+				return false;
+			}
+		}
+		return true;
+	}
 
-    public BitView copyView(View v) {
-        stable = v.isStable();
-        view = (NodeIdSet) v.toBitSet().clone();
-        timeStamp = v.getTimeStamp();
-        return this;
-    }
+	public BitView copyView(View v) {
+		stable = v.isStable();
+		view = (NodeIdSet) v.toBitSet().clone();
+		timeStamp = v.getTimeStamp();
+		return this;
+	}
 
-    public void destablize() {
-        stable = false;
-    }
+	public void destablize() {
+		stable = false;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof View) {
-            return equalsView((View) obj);
-        } else {
-            return false;
-        }
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof View) {
+			return equalsView((View) obj);
+		}
+		return false;
+	}
 
-    public boolean equalsView(View v) {
-        return view.equals(v.toBitSet());
-    }
+	public boolean equalsView(View v) {
+		return view.equals(v.toBitSet());
+	}
 
-    public long getTimeStamp() {
-        return timeStamp;
-    }
+	public long getTimeStamp() {
+		return timeStamp;
+	}
 
-    public boolean isEmpty() {
-        return view.isEmpty();
-    }
+	public boolean isEmpty() {
+		return view.isEmpty();
+	}
 
-    public boolean isStable() {
-        return stable;
-    }
+	public boolean isStable() {
+		return stable;
+	}
 
-    public BitView merge(View v) {
-        view.merge(v.toBitSet());
-        return this;
-    }
+	public BitView merge(View v) {
+		view.merge(v.toBitSet());
+		return this;
+	}
 
-    public boolean overlap(View v) {
-        return view.overlap(v.toBitSet());
-    }
+	public boolean overlap(View v) {
+		return view.overlap(v.toBitSet());
+	}
 
-    public boolean remove(Identity i) {
-        return remove(i.id);
-    }
+	public boolean remove(Identity i) {
+		return remove(i.id);
+	}
 
-    public boolean remove(int i) {
-        if (view.contains(i)) {
-            view.remove(i);
-            destablize();
-            return true;
-        }
-        return false;
-    }
+	public boolean remove(int i) {
+		if (view.contains(i)) {
+			view.remove(i);
+			destablize();
+			return true;
+		}
+		return false;
+	}
 
-    public boolean removeComplement(View v) {
-        boolean anyremoved = false;
-        for (int i = 0; i < size(); i++) {
-            if (!v.contains(i)) {
-                remove(i);
-                anyremoved = true;
-            }
-        }
-        return anyremoved;
-    }
+	public boolean removeComplement(View v) {
+		boolean anyremoved = false;
+		for (int i = 0; i < size(); i++) {
+			if (!v.contains(i)) {
+				remove(i);
+				anyremoved = true;
+			}
+		}
+		return anyremoved;
+	}
 
-    public void setTimeStamp(long t) {
-        timeStamp = t;
-    }
+	public void setTimeStamp(long t) {
+		timeStamp = t;
+	}
 
-    public int size() {
-        return view.size();
-    }
+	public int size() {
+		return view.size();
+	}
 
-    public void stablize() {
-        stable = true;
-    }
+	public void stablize() {
+		stable = true;
+	}
 
-    public BitView subtract(View v) {
-        view.subtract(v.toBitSet());
-        return this;
-    }
+	public BitView subtract(View v) {
+		view.subtract(v.toBitSet());
+		return this;
+	}
 
-    public NodeIdSet toBitSet() {
-        return view;
-    }
+	public NodeIdSet toBitSet() {
+		return view;
+	}
 
-    @Override
-    public String toString() {
-        String str = "<";
-        str += timeStamp + "|";
-        str += isStable() ? "stable: " : "unstable: ";
-        for (int i = 0; i < size(); i++) {
-            if (contains(i)) {
-                str += i + " ";
-            }
-        }
-        str += ">";
-        return str;
-    }
+	@Override
+	public String toString() {
+		String str = "<";
+		str += timeStamp + "|";
+		str += isStable() ? "stable: " : "unstable: ";
+		for (int i = 0; i < size(); i++) {
+			if (contains(i)) {
+				str += i + " ";
+			}
+		}
+		str += ">";
+		return str;
+	}
 }

@@ -60,6 +60,9 @@ public class PeriodicTimer extends Thread {
         now = System.currentTimeMillis();
     }
 
+    /**
+	 * @param now  
+	 */
     protected void act(long now) {
         // override this method for action calls
     }

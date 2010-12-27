@@ -29,7 +29,7 @@ public class ControllerConfiguration extends BasicConfiguration {
         controller.setAddress(heartbeatGroup());
         controller.setTimer(timer());
         controller.setCheckPeriod(1000);
-        controller.setExpirePeriod(1000);
+        controller.setExpirePeriod(10000);
         controller.setIdentity(partitionIdentity()); 
         controller.setHeartbeatTimeout(heartbeatTimeout()); 
         controller.setHeartbeatInterval(heartbeatInterval());

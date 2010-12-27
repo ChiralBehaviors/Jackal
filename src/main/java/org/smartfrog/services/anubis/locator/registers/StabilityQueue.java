@@ -45,7 +45,7 @@ abstract public class StabilityQueue {
         public void run() {
             running = true;
             while (running) {
-                Notification notification = (Notification) requests.get();
+                Notification notification = requests.get();
                 if (notification != null) {
                     doit(notification.view, notification.leader);
                 }
@@ -57,7 +57,7 @@ abstract public class StabilityQueue {
         }
     }
 
-    private BlockingQueue requests = new BlockingQueue();
+    private BlockingQueue<Notification> requests = new BlockingQueue<Notification>();
     private RequestServer server = new RequestServer();
 
     public StabilityQueue() {

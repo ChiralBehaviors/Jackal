@@ -16,90 +16,91 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.rmi.MarshalledObject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ValueData implements Serializable {
-    static private Logger log = Logger.getLogger(ValueData.class.getClass().toString()); // TODO use asynch wrapper
-    static private Object noMarshall = "state could not be marshalled";
-    static private Object noUnmarshall = "state could not be unmarshalled";
-    /**
+	static private Logger log = Logger.getLogger(ValueData.class.getClass()
+			.toString()); // TODO use asynch wrapper
+	static private Object noMarshall = "state could not be marshalled";
+	static private Object noUnmarshall = "state could not be unmarshalled";
+	/**
      * 
      */
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    static public ValueData newMarshalledValue(Object value) {
-        try {
-            return new ValueData(true, new java.rmi.MarshalledObject(value));
-        } catch (IOException ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
-                        "While creating a marshalled ValueData, failed to marshall the value: "
-                                + value, ex);
-            }
-            return new ValueData(false, noMarshall);
-        }
-    }
+	static public ValueData newMarshalledValue(Object value) {
+		try {
+			return new ValueData(true, new MarshalledObject<Object>(value));
+		} catch (IOException ex) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING,
+						"While creating a marshalled ValueData, failed to marshall the value: "
+								+ value, ex);
+			}
+			return new ValueData(false, noMarshall);
+		}
+	}
 
-    static public ValueData newValue(Object value) {
-        return new ValueData(false, value);
-    }
+	static public ValueData newValue(Object value) {
+		return new ValueData(false, value);
+	}
 
-    static public ValueData nullValue() {
-        return new ValueData(false, null);
-    }
+	static public ValueData nullValue() {
+		return new ValueData(false, null);
+	}
 
-    private boolean marshalled;
+	private boolean marshalled;
 
-    private Object value;
+	private Object value;
 
-    private ValueData(boolean marshalled, Object value) {
-        this.marshalled = marshalled;
-        this.value = value;
-    }
+	private ValueData(boolean marshalled, Object value) {
+		this.marshalled = marshalled;
+		this.value = value;
+	}
 
-    public Object getValue() {
-        if (marshalled) {
-            try {
-                return ((java.rmi.MarshalledObject) value).get();
-            } catch (ClassNotFoundException ex) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(
-                            Level.WARNING,
-                            "Attempt to unmarshall a DataValue value in a JVM that does not have access to that class",
-                            ex);
-                }
-                return noUnmarshall;
-            } catch (IOException ex) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING,
-                            "Failed to unmarshall a DataValue value", ex);
-                }
-                return noUnmarshall;
-            }
-        } else {
-            return value;
-        }
-    }
+	@SuppressWarnings("unchecked")
+	public Object getValue() {
+		if (marshalled) {
+			try {
+				return ((MarshalledObject<Object>) value).get();
+			} catch (ClassNotFoundException ex) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.log(Level.WARNING,
+							"Attempt to unmarshall a DataValue value in a JVM that does not have access to that class",
+							ex);
+				}
+				return noUnmarshall;
+			} catch (IOException ex) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.log(Level.WARNING,
+							"Failed to unmarshall a DataValue value", ex);
+				}
+				return noUnmarshall;
+			}
+		}
+		return value;
+	}
 
-    @Override
-    public String toString() {
-        if (marshalled) {
-            try {
-                return "Marshalled[ "
-                       + ((java.rmi.MarshalledObject) value).get() + " ]";
-            } catch (ClassNotFoundException ex) {
-                return "Marshalled[ class not known here ]";
-            } catch (IOException ex) {
-                return "Marshalled[ IOException when unmarshalling ]";
-            }
-        } else {
-            return getValue().toString();
-        }
-    }
+	@SuppressWarnings("unchecked")
+	@Override
+	public String toString() {
+		if (marshalled) {
+			try {
+				return "Marshalled[ "
+						+ ((MarshalledObject<Object>) value).get() + " ]";
+			} catch (ClassNotFoundException ex) {
+				return "Marshalled[ class not known here ]";
+			} catch (IOException ex) {
+				return "Marshalled[ IOException when unmarshalling ]";
+			}
+		}  
+			return getValue().toString(); 
+	}
 }

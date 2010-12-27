@@ -21,10 +21,10 @@ package org.smartfrog.services.anubis.locator.util;
 
 import java.util.LinkedList;
 
-public class BlockingQueue {
+public class BlockingQueue<T> {
 
     private boolean active = true;
-    private LinkedList queue = new LinkedList();
+    private LinkedList<T> queue = new LinkedList<T>();
 
     /**
      * Constructor
@@ -70,8 +70,8 @@ public class BlockingQueue {
      *
      * @return an object from the queue or null if the queue is terminated
      */
-    public synchronized Object get() {
-        Object result = null;
+    public synchronized T get() {
+        T result = null;
         while (active && result == null) {
             if (queue.isEmpty()) {
                 try {
@@ -93,7 +93,7 @@ public class BlockingQueue {
      *
      * @param obj
      */
-    public synchronized void put(Object obj) {
+    public synchronized void put(T obj) {
         queue.addLast(obj);
         notifyAll();
     }

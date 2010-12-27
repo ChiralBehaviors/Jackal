@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -144,8 +145,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
 	private long timeout = 0;
 
-	private long timeoutCount;
-
 	private long viewNumber = 0;
 
 	/**
@@ -202,9 +201,10 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 	 */
 	public synchronized void checkTimeouts(long timenow) {
 
-		Iterator iter = connections.entrySet().iterator();
+		Iterator<Entry<Identity, Connection>> iter = connections.entrySet()
+				.iterator();
 		while (iter.hasNext()) {
-			Connection con = (Connection) ((Map.Entry) iter.next()).getValue();
+			Connection con = iter.next().getValue();
 
 			/**
 			 * Only bother if the connection has missed its deadline
@@ -598,13 +598,11 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 			addConnection(con);
 			// should this return true?
 			return true;
-		} else {
-			if (log.isLoggable(Level.FINEST)) {
-				log.finest("Heart beat for existing connection: "
-						+ hb.getSender());
-			}
-			return con.receiveHeartbeat(hb);
 		}
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Heart beat for existing connection: " + hb.getSender());
+		}
+		return con.receiveHeartbeat(hb);
 	}
 
 	public synchronized void receiveObject(Object obj, Identity id, long time) {
@@ -786,7 +784,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 		 * Heartbeat and leader protocols
 		 */
 		leaderMgr = leaderProtocolFactory.createMgr(connections, self);
- 
+
 		stability = heartbeatInterval + timeout;
 		quiesce = heartbeatInterval + stability;
 

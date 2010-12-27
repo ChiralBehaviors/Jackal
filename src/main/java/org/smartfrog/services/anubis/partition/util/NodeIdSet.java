@@ -41,7 +41,10 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      */
     private static final long serialVersionUID = 1L;
 
-    public static NodeIdSet readWireForm(ByteBuffer bytes, int idx, int len) throws WireFormException {
+    /**
+	 * @param len  
+	 */
+    public static NodeIdSet readWireForm(ByteBuffer bytes, int idx, int len) {
 
         bytes.position(idx);
         byte[] storage = new byte[bytes.getInt()];

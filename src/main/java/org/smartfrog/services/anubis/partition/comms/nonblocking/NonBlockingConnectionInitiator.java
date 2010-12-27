@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
 */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,8 +36,7 @@ public class NonBlockingConnectionInitiator {
     private WireSecurity wireSecurity = null;
 
     public NonBlockingConnectionInitiator(MessageConnection con,
-                                          HeartbeatMsg hb, WireSecurity sec) throws IOException,
-            WireFormException {
+                                          HeartbeatMsg hb, WireSecurity sec) {
         connection = con;
         heartbeat = hb;
         wireSecurity = sec;

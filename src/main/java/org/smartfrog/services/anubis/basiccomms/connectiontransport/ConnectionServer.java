@@ -96,11 +96,9 @@ public class ConnectionServer extends Thread {
 
 		if (listenSocket == null) {
 			return null;
-		} else {
-			return new ConnectionAddress(
-					listenSocket.socket().getInetAddress(), listenSocket
-							.socket().getLocalPort());
 		}
+		return new ConnectionAddress(listenSocket.socket().getInetAddress(),
+				listenSocket.socket().getLocalPort());
 	}
 
 	/**

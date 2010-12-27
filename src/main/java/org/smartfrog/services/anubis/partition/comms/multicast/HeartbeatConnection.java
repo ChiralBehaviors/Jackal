@@ -20,7 +20,6 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
@@ -33,8 +32,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class HeartbeatConnection extends HeartbeatProtocolAdapter
                                                                  implements
                                                                  Connection,
-                                                                 HeartbeatProtocol,
-                                                                 Candidate {
+                                                                 HeartbeatProtocol {
 
     /**
      * Others for this implementation
