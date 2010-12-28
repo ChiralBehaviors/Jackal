@@ -103,7 +103,7 @@ abstract public class AnubisStability {
         timers = t;
     }
 
-    abstract public void stability(boolean isStabile, long timeRef);
+    abstract public void stability(boolean isStable, long timeRef);
 
     public synchronized long timeReference() {
         return lastTimeRef;
