@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.smartfrog.services.anubis.locator.util.SetMap;
 import org.smartfrog.services.anubis.partition.test.mainconsole.NodeData;
+import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class ColorAllocator {
@@ -33,7 +34,7 @@ public class ColorAllocator {
      * keep a list of colors that have been allocated indexed
      * by bitmap (from the view)
      */
-    private Map allocations = new HashMap();
+    private Map<NodeIdSet, Color> allocations = new HashMap<NodeIdSet, Color>();
 
     private ColorMap colorMap = new ColorMap();
 
@@ -41,7 +42,7 @@ public class ColorAllocator {
      * keep a list of nodes that have a color allocated indexed by
      * bitmap (from the view)
      */
-    private SetMap nodes = new SetMap();
+    private SetMap<NodeIdSet, NodeData> nodes = new SetMap<NodeIdSet, NodeData>();
 
     public ColorAllocator() {
     }
@@ -50,7 +51,7 @@ public class ColorAllocator {
 
         if (nodes.containsKey(view.toBitSet())) {
             nodes.put(view.toBitSet(), node);
-            return (Color) allocations.get(view.toBitSet());
+            return allocations.get(view.toBitSet());
         }
 
         nodes.put(view.toBitSet(), node);

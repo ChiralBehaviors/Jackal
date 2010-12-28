@@ -1,4 +1,4 @@
-package org.smartfrog.services.anubis.loadtesting;
+package org.smartfrog.services.anubis;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +71,7 @@ public class Node {
 				if (stable) {
 					latch.countDown();
 				}
-				System.out.println("Stable: " + stable);
+				// System.out.println("Stable: " + stable);
 				stabilityHistory.add(new StabilityHistory(stable, timeRef));
 			}
 		};

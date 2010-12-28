@@ -30,7 +30,7 @@ public class ColorMap {
     public static final Color defaultColor = Color.white;
     private ColorMatrix color;
 
-    private Map viewColor = new HashMap();
+    private Map<Integer, NodeIdSet> viewColor = new HashMap<Integer, NodeIdSet>();
 
     public ColorMap() {
         color = new ColorMatrix();

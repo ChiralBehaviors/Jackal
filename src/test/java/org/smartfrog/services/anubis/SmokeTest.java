@@ -1,4 +1,4 @@
-package org.smartfrog.services.anubis.loadtesting;
+package org.smartfrog.services.anubis;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 
-import org.smartfrog.services.anubis.BasicConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,7 +38,6 @@ public class SmokeTest extends TestCase {
 				List<ValueHistory> received = receiver.getValueHistory(sender
 						.getInstance());
 				assertNotNull(received);
-				// Should be no removals
 				int lastCounter = -1;
 				boolean first = true;
 				boolean second = false;

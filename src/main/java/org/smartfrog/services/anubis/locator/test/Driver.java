@@ -37,8 +37,9 @@ import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 
 
-public class Driver extends JFrame {
-    private JPanel jPanel1 = new JPanel();
+public class Driver extends JFrame { 
+	private static final long serialVersionUID = 1L;
+	private JPanel jPanel1 = new JPanel();
     private JButton jButton2 = new JButton();
     private JButton jButton3 = new JButton();
     private JButton jButton4 = new JButton();

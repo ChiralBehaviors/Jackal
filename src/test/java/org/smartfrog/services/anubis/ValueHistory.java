@@ -1,4 +1,4 @@
-package org.smartfrog.services.anubis.loadtesting;
+package org.smartfrog.services.anubis;
 
 import org.smartfrog.services.anubis.locator.AnubisValue;
 

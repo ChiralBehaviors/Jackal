@@ -1,4 +1,4 @@
-package org.smartfrog.services.anubis.loadtesting;
+package org.smartfrog.services.anubis;
 
 public class SendHistory {
 	public final long timeRef;

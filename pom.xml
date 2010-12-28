@@ -47,7 +47,7 @@
             <artifactId>spring-context</artifactId>
             <version>3.0.2.RELEASE</version>
             <type>jar</type>
-            <scope>test</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.cglib</groupId>
