@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
 import java.util.Vector;
@@ -27,9 +27,8 @@ public class RxQueue {
     private Vector<Object> thisQueue = null;
 
     /**
-     * Queue where received serialized objects are put on.
-     * Worker threads empty that queue and deliver the object
-     * to anubis
+     * Queue where received serialized objects are put on. Worker threads empty
+     * that queue and deliver the object to anubis
      */
     public RxQueue() {
         thisQueue = new Vector<Object>(10);
@@ -37,11 +36,11 @@ public class RxQueue {
     }
 
     /**
-     * method to add a new rx serialized object to the queue
-     * this method notifies sleeping worker threads there is a job
-     * to deliver
-     *
-     * @param objectToAdd rx object
+     * method to add a new rx serialized object to the queue this method
+     * notifies sleeping worker threads there is a job to deliver
+     * 
+     * @param objectToAdd
+     *            rx object
      */
     public synchronized void add(Object objectToAdd) {
         if (open) {
@@ -52,7 +51,7 @@ public class RxQueue {
 
     /**
      * method used to check if queue is empty
-     *
+     * 
      * @return boolean value, true if queue is empty, false otherwise
      */
     public synchronized boolean isEmpty() {
@@ -70,6 +69,7 @@ public class RxQueue {
 
     /**
      * get teh next item in the queue; blocking if the queue is empty.
+     * 
      * @return the next item or null if the queue is closed.
      */
     public synchronized Object next() {

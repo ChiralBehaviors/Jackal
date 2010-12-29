@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.stats;
 
 import java.util.Iterator;
@@ -46,6 +46,7 @@ public class TimedAveCalculator implements AveCalculator {
         this.period = period;
     }
 
+    @Override
     public void add(long time, long delay) {
         entries.add(new Entry(time, delay));
         if (delay > biggest) {
@@ -66,15 +67,17 @@ public class TimedAveCalculator implements AveCalculator {
         }
     }
 
+    @Override
     public long average() {
         return count == 0 ? 0 : accumulator / count;
     }
 
+    @Override
     public long biggest() {
         long result = 0;
         Iterator<Entry> iter = entries.listIterator();
         while (iter.hasNext()) {
-            long current = (iter.next()).delay;
+            long current = iter.next().delay;
             if (current > result) {
                 result = current;
             }
@@ -82,10 +85,12 @@ public class TimedAveCalculator implements AveCalculator {
         return result;
     }
 
+    @Override
     public long biggestEver() {
         return biggest;
     }
 
+    @Override
     public boolean isComplete() {
         return complete;
     }

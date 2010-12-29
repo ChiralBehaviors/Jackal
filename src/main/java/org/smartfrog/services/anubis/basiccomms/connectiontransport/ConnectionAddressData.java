@@ -22,35 +22,35 @@ package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 import java.net.InetAddress;
 
 public class ConnectionAddressData {
-	static final String LOCALHOST = "localhost";
-	private String hostName;
-	private int port = 0;
+    static final String LOCALHOST = "localhost";
+    private String hostName;
+    private int port = 0;
 
-	public ConnectionAddress getConnectionAddress() throws Exception {
-		return new ConnectionAddress(getAddress(), getPort());
-	}
+    protected InetAddress getAddress() throws Exception {
+        if (hostName.equals(LOCALHOST)) {
+            return InetAddress.getLocalHost();
+        }
+        return InetAddress.getByName(hostName);
+    }
 
-	public String getHostName() {
-		return hostName;
-	}
+    public ConnectionAddress getConnectionAddress() throws Exception {
+        return new ConnectionAddress(getAddress(), getPort());
+    }
 
-	public int getPort() {
-		return port;
-	}
+    public String getHostName() {
+        return hostName;
+    }
 
-	public void setHostName(String hostName) {
-		this.hostName = hostName;
-	}
+    public int getPort() {
+        return port;
+    }
 
-	public void setPort(int port) {
-		this.port = port;
-	}
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
 
-	protected InetAddress getAddress() throws Exception {
-		if (hostName.equals(LOCALHOST)) {
-			return InetAddress.getLocalHost();
-		}
-		return InetAddress.getByName(hostName);
-	}
+    public void setPort(int port) {
+        this.port = port;
+    }
 
 }

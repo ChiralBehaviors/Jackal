@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.node;
 
 import java.io.IOException;
@@ -36,6 +36,7 @@ public class TestServer extends ConnectionServer implements ConnectionFactory {
         setConnectionFactory(this);
     }
 
+    @Override
     public void createConnection(SocketChannel channel) {
         testManager.newConnection(channel);
     }

@@ -28,242 +28,242 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class IntervalExec extends Thread {
 
-	private ConnectionSet connectionSet = null;
-	private long heartbeatTime = 0;
+    private ConnectionSet connectionSet = null;
+    private long heartbeatTime = 0;
 
-	private long interval = 0;
-	private long lastCheckTime = 0;
-	private Logger log = Logger.getLogger(this.getClass().toString()); // Use
-																		// asynch
-																		// wrapper...
+    private long interval = 0;
+    private long lastCheckTime = 0;
+    private Logger log = Logger.getLogger(this.getClass().toString()); // Use
+                                                                       // asynch
+                                                                       // wrapper...
 
-	private Identity me = null;
-	private Random random = null;
+    private Identity me = null;
+    private Random random = null;
 
-	private boolean running = false;
-	private boolean stabalizing = false;
+    private boolean running = false;
+    private boolean stabalizing = false;
 
-	private long stabilityTime = 0;
-	private boolean testable = false;
-	private TestMgr testManager = null;
+    private long stabilityTime = 0;
+    private boolean testable = false;
+    private TestMgr testManager = null;
 
-	public IntervalExec(Identity id, ConnectionSet cs, long i) {
-		super("Anubis: Interval Executive (node " + id.id + ")");
-		me = id;
-		connectionSet = cs;
-		interval = i;
-		setPriority(MAX_PRIORITY);
-		random = new Random(System.currentTimeMillis() + 100 * me.id);
-	}
+    public IntervalExec(Identity id, ConnectionSet cs, long i) {
+        super("Anubis: Interval Executive (node " + id.id + ")");
+        me = id;
+        connectionSet = cs;
+        interval = i;
+        setPriority(MAX_PRIORITY);
+        random = new Random(System.currentTimeMillis() + 100 * me.id);
+    }
 
-	/**
-	 * prevent the interval executive from checking for stability times
-	 */
-	public void clearStability() {
-		stabalizing = false;
-		stabilityTime = 0;
-	}
+    private void checkSleepDelays(long timenow, long stabilityTime,
+                                  long heartbeatTime) {
+        long earliest;
+        long delay;
 
-	/**
-	 * returns an string representing the status of this thread
-	 */
-	public String getThreadStatusString() {
-		StringBuffer buffer = new StringBuffer();
-		buffer.append(super.getName()).append(" ............................ ")
-				.setLength(30);
-		buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
-		buffer.append(running ? ".. running    " : ".. terminated ");
-		return buffer.toString();
-	}
+        if (timenow < lastCheckTime) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
+            }
+        }
 
-	public void registerTestMgr(TestMgr testManager) {
-		this.testManager = testManager;
-		testable = true;
-	}
+        lastCheckTime = timenow;
 
-	/**
-	 * Connection set periodically sends heartbeat messages.
-	 */
-	@Override
-	public void run() {
-		running = true;
+        if (!stabalizing || stabilityTime > heartbeatTime) {
+            earliest = heartbeatTime;
+        } else {
+            earliest = stabilityTime;
+        }
 
-		long timenow = System.currentTimeMillis();
-		heartbeatTime = timenow + random.nextInt((int) interval);
-		lastCheckTime = timenow;
-		synchronized (connectionSet) {
+        delay = timenow - earliest;
 
-			while (running) {
+        if (delay > 15000) {
+            log.severe("IntervalExec may have observed a system time adjustment - overslept by "
+                       + delay
+                       + "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
+        } else if (delay > 200) {
+            if (log.isLoggable(Level.INFO)) {
+                log.info("IntervalExec overslept by " + delay
+                         + "ms - this is a scheduling delay or time adjustment");
+            }
+        }
+    }
 
-				/**
-				 * enter a sleep interval. Normally this is the regular
-				 * heartbeat interval as defined by wakeup. If we are stablizing
-				 * and the stability period ends before the next heartbeat
-				 * interval then wake up at the stability interval end as
-				 * defined by stabilityTime.
-				 */
-				timenow = stabalizing && heartbeatTime > stabilityTime ? sleepInterval(
-						timenow, stabilityTime) : sleepInterval(timenow,
-						heartbeatTime);
+    /**
+     * prevent the interval executive from checking for stability times
+     */
+    public void clearStability() {
+        stabalizing = false;
+        stabilityTime = 0;
+    }
 
-				checkSleepDelays(timenow, stabilityTime, heartbeatTime);
+    /**
+     * returns an string representing the status of this thread
+     */
+    public String getThreadStatusString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(super.getName()).append(" ............................ ").setLength(30);
+        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
+        buffer.append(running ? ".. running    " : ".. terminated ");
+        return buffer.toString();
+    }
 
-				/**
-				 * Operations performed once per heartbeat period only
-				 */
-				if (timenow >= heartbeatTime) {
+    /**
+     * calculates next heartbeatTime. It is likely that the sleep will actually
+     * wake up just after it is supposed to due to scheduling delays. If the
+     * delay is particularly long the node may start to miss the heartbeat
+     * interval all together. Make sure we go to the next appropriate regular
+     * interval boundary, no matter what the delay.
+     * 
+     * @param timenow
+     * @param wakeup
+     * @return
+     */
+    private long nextHeartbeatTime(long timenow, long wakeup) {
+        while (wakeup <= timenow) {
+            wakeup += interval;
+        }
+        return wakeup;
+    }
 
-					/**
-					 * If testing then produce delay info
-					 */
-					if (testable) {
-						testManager.schedulingInfo(timenow, timenow
-								- heartbeatTime);
-					}
+    public void registerTestMgr(TestMgr testManager) {
+        this.testManager = testManager;
+        testable = true;
+    }
 
-					/**
-					 * check the timeouts and cleanup
-					 */
-					connectionSet.checkTimeouts(timenow);
+    /**
+     * Connection set periodically sends heartbeat messages.
+     */
+    @Override
+    public void run() {
+        running = true;
 
-					/**
-					 * viewChangeCheck - this is done before sending the
-					 * heartbeat so that any information determined in the
-					 * report check (i.e. convergence time for the partition)
-					 * can be sent out on the heartbeat
-					 */
-					connectionSet.viewChangeCheck(timenow);
+        long timenow = System.currentTimeMillis();
+        heartbeatTime = timenow + random.nextInt((int) interval);
+        lastCheckTime = timenow;
+        synchronized (connectionSet) {
 
-					/**
-					 * send a new heartbeat from this node - note comments about
-					 * doing the viewChangeCheck first (above).
-					 */
-					connectionSet.sendHeartbeat(timenow);
+            while (running) {
 
-					/**
-					 * set next heartbeatTime time
-					 */
-					heartbeatTime = nextHeartbeatTime(timenow, heartbeatTime);
+                /**
+                 * enter a sleep interval. Normally this is the regular
+                 * heartbeat interval as defined by wakeup. If we are stablizing
+                 * and the stability period ends before the next heartbeat
+                 * interval then wake up at the stability interval end as
+                 * defined by stabilityTime.
+                 */
+                timenow = stabalizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
+                                                                                       stabilityTime)
+                                                                      : sleepInterval(timenow,
+                                                                                      heartbeatTime);
 
-				}
+                checkSleepDelays(timenow, stabilityTime, heartbeatTime);
 
-				/**
-				 * check for stability - only done on a stability boundary
-				 */
-				if (stabalizing && timenow >= stabilityTime) {
+                /**
+                 * Operations performed once per heartbeat period only
+                 */
+                if (timenow >= heartbeatTime) {
 
-					/**
-					 * If testing then produce delay info
-					 */
-					if (testable) {
-						testManager.schedulingInfo(timenow, timenow
-								- stabilityTime);
-					}
+                    /**
+                     * If testing then produce delay info
+                     */
+                    if (testable) {
+                        testManager.schedulingInfo(timenow, timenow
+                                                            - heartbeatTime);
+                    }
 
-					connectionSet.checkStability(timenow);
-				}
+                    /**
+                     * check the timeouts and cleanup
+                     */
+                    connectionSet.checkTimeouts(timenow);
 
-			}
-		}
-	}
+                    /**
+                     * viewChangeCheck - this is done before sending the
+                     * heartbeat so that any information determined in the
+                     * report check (i.e. convergence time for the partition)
+                     * can be sent out on the heartbeat
+                     */
+                    connectionSet.viewChangeCheck(timenow);
 
-	public void setInterval(long interval) {
-		this.interval = interval;
-		heartbeatTime = System.currentTimeMillis()
-				+ random.nextInt((int) interval);
-		interrupt();
-	}
+                    /**
+                     * send a new heartbeat from this node - note comments about
+                     * doing the viewChangeCheck first (above).
+                     */
+                    connectionSet.sendHeartbeat(timenow);
 
-	/**
-	 * set the interval executive to wake up and check stability times as well
-	 * as regular heartbeat intervals.
-	 * 
-	 * @param s
-	 *            - the time that stability is expected.
-	 */
-	public void setStability(long s) {
-		stabalizing = true;
-		stabilityTime = s;
-	}
+                    /**
+                     * set next heartbeatTime time
+                     */
+                    heartbeatTime = nextHeartbeatTime(timenow, heartbeatTime);
 
-	/**
-	 * stops the connection set including shutdown on multicast communication
-	 * and ending the current wait period.
-	 */
-	public void terminate() {
-		synchronized (connectionSet) {
-			running = false;
-			connectionSet.notify();
-		}
-	}
+                }
 
-	private void checkSleepDelays(long timenow, long stabilityTime,
-			long heartbeatTime) {
-		long earliest;
-		long delay;
+                /**
+                 * check for stability - only done on a stability boundary
+                 */
+                if (stabalizing && timenow >= stabilityTime) {
 
-		if (timenow < lastCheckTime) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE,
-						"IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
-			}
-		}
+                    /**
+                     * If testing then produce delay info
+                     */
+                    if (testable) {
+                        testManager.schedulingInfo(timenow, timenow
+                                                            - stabilityTime);
+                    }
 
-		lastCheckTime = timenow;
+                    connectionSet.checkStability(timenow);
+                }
 
-		if (!stabalizing || stabilityTime > heartbeatTime) {
-			earliest = heartbeatTime;
-		} else {
-			earliest = stabilityTime;
-		}
+            }
+        }
+    }
 
-		delay = timenow - earliest;
+    public void setInterval(long interval) {
+        this.interval = interval;
+        heartbeatTime = System.currentTimeMillis()
+                        + random.nextInt((int) interval);
+        interrupt();
+    }
 
-		if (delay > 15000) {
-			log.severe("IntervalExec may have observed a system time adjustment - overslept by "
-					+ delay
-					+ "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
-		} else if (delay > 200) {
-			if (log.isLoggable(Level.INFO)) {
-				log.info("IntervalExec overslept by " + delay
-						+ "ms - this is a scheduling delay or time adjustment");
-			}
-		}
-	}
+    /**
+     * set the interval executive to wake up and check stability times as well
+     * as regular heartbeat intervals.
+     * 
+     * @param s
+     *            - the time that stability is expected.
+     */
+    public void setStability(long s) {
+        stabalizing = true;
+        stabilityTime = s;
+    }
 
-	/**
-	 * calculates next heartbeatTime. It is likely that the sleep will actually
-	 * wake up just after it is supposed to due to scheduling delays. If the
-	 * delay is particularly long the node may start to miss the heartbeat
-	 * interval all together. Make sure we go to the next appropriate regular
-	 * interval boundary, no matter what the delay.
-	 * 
-	 * @param timenow
-	 * @param wakeup
-	 * @return
-	 */
-	private long nextHeartbeatTime(long timenow, long wakeup) {
-		while (wakeup <= timenow) {
-			wakeup += interval;
-		}
-		return wakeup;
-	}
+    /**
+     * goes to sleep for a period of time determined by the difference between
+     * the timenow and the wakeup time. returns the time that wait returns (due
+     * to completing wait timeout, notify on terminate, or interrupt).
+     * 
+     * @param timenow
+     * @param wakeup
+     * @return
+     */
+    private long sleepInterval(long timenow, long wakeup) {
+        try {
+            connectionSet.wait(wakeup - timenow);
+        } catch (InterruptedException ex) {
+        }
+        return System.currentTimeMillis();
+    }
 
-	/**
-	 * goes to sleep for a period of time determined by the difference between
-	 * the timenow and the wakeup time. returns the time that wait returns (due
-	 * to completing wait timeout, notify on terminate, or interrupt).
-	 * 
-	 * @param timenow
-	 * @param wakeup
-	 * @return
-	 */
-	private long sleepInterval(long timenow, long wakeup) {
-		try {
-			connectionSet.wait(wakeup - timenow);
-		} catch (InterruptedException ex) {
-		}
-		return System.currentTimeMillis();
-	}
+    /**
+     * stops the connection set including shutdown on multicast communication
+     * and ending the current wait period.
+     */
+    public void terminate() {
+        synchronized (connectionSet) {
+            running = false;
+            connectionSet.notify();
+        }
+    }
 
 }

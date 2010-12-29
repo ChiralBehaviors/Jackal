@@ -16,18 +16,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.util;
 
 /**
- * The Epoch.
- * we need an epoch that monotonically increases to identify
- * incarnations of a partition manager. Previously we used a value
- * stored on stable storage, but then we wanted to be able to refresh
- * the storage with a blank image, so we chose time instead.
- * Assumes no two partition managers with the same name are started
- * within the clock resolution. Also if started on different machines,
- * then the epochs must still be monotonically increasing.
+ * The Epoch. we need an epoch that monotonically increases to identify
+ * incarnations of a partition manager. Previously we used a value stored on
+ * stable storage, but then we wanted to be able to refresh the storage with a
+ * blank image, so we chose time instead. Assumes no two partition managers with
+ * the same name are started within the clock resolution. Also if started on
+ * different machines, then the epochs must still be monotonically increasing.
  */
 public class Epoch {
 

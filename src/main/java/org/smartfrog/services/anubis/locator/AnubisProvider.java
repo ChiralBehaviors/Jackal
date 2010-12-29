@@ -16,17 +16,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator;
 
 /**
  * Abstract base class for the provider object.
- *
- * This is an abstract base class for the provider object. The
- * provider is defined by the user by extendeding this class and
- * can then be registered with the locator. When a named provider
- * registers the locator recognises its presence in the partition.
- *
+ * 
+ * This is an abstract base class for the provider object. The provider is
+ * defined by the user by extendeding this class and can then be registered with
+ * the locator. When a named provider registers the locator recognises its
+ * presence in the partition.
+ * 
  * @version 1.0
  */
 
@@ -77,7 +77,7 @@ public class AnubisProvider {
 
     /**
      * to get the assigned name of the provider.
-     *
+     * 
      * @return the providers name
      */
     public synchronized String getName() {
@@ -99,7 +99,8 @@ public class AnubisProvider {
     }
 
     /**
-     * get the internal representation of the value assocaited with this provider
+     * get the internal representation of the value assocaited with this
+     * provider
      */
     public synchronized ValueData getValueData() {
         return value;
@@ -116,6 +117,20 @@ public class AnubisProvider {
         setInstance(instance);
     }
 
+    protected void setInstance(String instance) {
+        this.instance = instance;
+    }
+
+    /**
+     * setTime is introduced to allow for the SubProcess interface. Remote
+     * interfaces need to be re-done - this is a temporary fix.
+     * 
+     * @param time
+     */
+    protected void setTime(long time) {
+        this.time = time;
+    }
+
     /**
      * set the value supplied by the provider.
      */
@@ -130,10 +145,19 @@ public class AnubisProvider {
     }
 
     /**
-     * abstract method to be defined by the user. This method may be called
-     * by the locator periodically to pro-activly check the status of the
-     * provider.
-     *
+     * setTime is introduced to allow for the SubProcess interface. Remote
+     * interfaces need to be re-done - this is a temporary fix.
+     * 
+     * @param value
+     */
+    protected void setValueObj(ValueData value) {
+        this.value = value;
+    }
+
+    /**
+     * abstract method to be defined by the user. This method may be called by
+     * the locator periodically to pro-activly check the status of the provider.
+     * 
      * @return true if the provider is ok, false if not.
      */
     // abstract public boolean anubisLivenessPoll();
@@ -142,28 +166,6 @@ public class AnubisProvider {
     public synchronized String toString() {
         return "Provider " + getName() + "=[" + getValue() + ", " + getTime()
                + "]";
-    }
-
-    protected void setInstance(String instance) {
-        this.instance = instance;
-    }
-
-    /**
-     * setTime is introduced to allow for the SubProcess interface. Remote
-     * interfaces need to be re-done - this is a temporary fix.
-     * @param time
-     */
-    protected void setTime(long time) {
-        this.time = time;
-    }
-
-    /**
-     * setTime is introduced to allow for the SubProcess interface. Remote
-     * interfaces need to be re-done - this is a temporary fix.
-     * @param value
-     */
-    protected void setValueObj(ValueData value) {
-        this.value = value;
     }
 
     protected void update() {

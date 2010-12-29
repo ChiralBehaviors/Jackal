@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.Component;
@@ -42,20 +42,8 @@ public class SnugTable extends JTable {
     }
 
     @SuppressWarnings("rawtypes")
-	public SnugTable(Vector v1, Vector v2) {
+    public SnugTable(Vector v1, Vector v2) {
         super(v1, v2);
-        resizeColumns();
-    }
-
-    @Override
-    public void setModel(TableModel dataModel) {
-        super.setModel(dataModel);
-        resizeColumns();
-    }
-
-    @Override
-    public void setSize(Dimension d) {
-        super.setSize(d);
         resizeColumns();
     }
 
@@ -134,8 +122,7 @@ public class SnugTable extends JTable {
                     headerRenderer = getTableHeader().getDefaultRenderer();
                 }
 
-                comp = headerRenderer.getTableCellRendererComponent(
-                                                                    this,
+                comp = headerRenderer.getTableCellRendererComponent(this,
                                                                     column.getHeaderValue(),
                                                                     false,
                                                                     false, -1,
@@ -184,5 +171,17 @@ public class SnugTable extends JTable {
             //Trace.log( this, "resizeColumns", t.getMessage() );
             //Trace.exception( this, "resizeColumns", t );
         }
+    }
+
+    @Override
+    public void setModel(TableModel dataModel) {
+        super.setModel(dataModel);
+        resizeColumns();
+    }
+
+    @Override
+    public void setSize(Dimension d) {
+        super.setSize(d);
+        resizeColumns();
     }
 }

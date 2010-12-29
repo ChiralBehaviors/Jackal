@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire.msg.untimed;
 
 import java.io.ByteArrayInputStream;
@@ -43,9 +43,12 @@ public final class SerializedMsg extends WireMsg {
     private int payloadSz = UNDEFINED_SIZE;
     protected Object msg;
 
+    protected SerializedMsg() {
+        super();
+    }
+
     public SerializedMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                             WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
@@ -55,33 +58,6 @@ public final class SerializedMsg extends WireMsg {
      */
     public SerializedMsg(Object obj) {
         msg = obj;
-    }
-
-    protected SerializedMsg() {
-        super();
-    }
-
-    public Object getObject() {
-        return msg;
-    }
-
-    @Override
-    public int getSize() throws WireFormException {
-        if (payloadSz == UNDEFINED_SIZE) {
-            throw new WireFormException(
-                                        "Attampt to get size of message when it has not been defined");
-        }
-        return payloadIdx + payloadSz;
-    }
-
-    /**
-     * toString method for debugging and logging
-     *
-     * @return String
-     */
-    @Override
-    public String toString() {
-        return "[" + msg + "]";
     }
 
     @Override
@@ -100,6 +76,19 @@ public final class SerializedMsg extends WireMsg {
         }
     }
 
+    public Object getObject() {
+        return msg;
+    }
+
+    @Override
+    public int getSize() throws WireFormException {
+        if (payloadSz == UNDEFINED_SIZE) {
+            throw new WireFormException(
+                                        "Attampt to get size of message when it has not been defined");
+        }
+        return payloadIdx + payloadSz;
+    }
+
     @Override
     protected int getType() {
         return SERIALIZED_MSG_WIRE_TYPE;
@@ -107,8 +96,9 @@ public final class SerializedMsg extends WireMsg {
 
     /**
      * read wire message format
-     *
-     * @param buf byte[]
+     * 
+     * @param buf
+     *            byte[]
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
@@ -136,9 +126,18 @@ public final class SerializedMsg extends WireMsg {
     }
 
     /**
-     * Writes the timed message attributes to wire form in the given byte
-     * array
-     *
+     * toString method for debugging and logging
+     * 
+     * @return String
+     */
+    @Override
+    public String toString() {
+        return "[" + msg + "]";
+    }
+
+    /**
+     * Writes the timed message attributes to wire form in the given byte array
+     * 
      */
     @Override
     protected void writeWireForm() throws WireFormException {

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
@@ -38,16 +38,22 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
 
     private NodeIdSet pings;
 
+    /**
+     * Constructor - used internally when reading from wire
+     */
+    protected PingHeartbeatMsg() {
+        super();
+    }
+
     public PingHeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                                WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
 
     /**
      * Construct a ping heartbeat message
-     *
+     * 
      * @param identity
      * @param address
      */
@@ -59,13 +65,6 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
     public PingHeartbeatMsg(PingHeartbeatMsg pinghb) {
         super(pinghb);
         pings = pinghb.pings;
-    }
-
-    /**
-     * Constructor - used internally when reading from wire
-     */
-    protected PingHeartbeatMsg() {
-        super();
     }
 
     public synchronized void clearPingBit(Identity id) {
@@ -85,9 +84,30 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
         return PING_HEARTBEAT_MSG_WIRE_SIZE;
     }
 
+    @Override
+    protected int getType() {
+        return PING_HEARTBEAT_MSG_WIRE_TYPE;
+    }
+
+    /**
+     * Read the attributes from the wire format.
+     * 
+     * @param buf
+     *            byte[]
+     */
+    @Override
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+        super.readWireForm(buf);
+        pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
+    }
+
     /**
      * pings accessors
-     * @param id Identity
+     * 
+     * @param id
+     *            Identity
      */
     public synchronized void setPingBit(Identity id) {
         pings.add(id.id);
@@ -104,24 +124,6 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
     @Override
     public String toString() {
         return "[" + super.toString() + ", pings=" + pings.toString() + "]";
-    }
-
-    @Override
-    protected int getType() {
-        return PING_HEARTBEAT_MSG_WIRE_TYPE;
-    }
-
-    /**
-     * Read the attributes from the wire format.
-     *
-     * @param buf byte[]
-     */
-    @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-        super.readWireForm(buf);
-        pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
     }
 
     /**

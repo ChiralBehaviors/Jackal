@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator;
 
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
@@ -56,12 +56,6 @@ public class AnubisValue {
         setValue(v);
     }
 
-    @Override
-    public String toString() {
-        return "Value [name=" + getName() + ", instance=" + getInstance()
-               + ", time=" + getTime() + ", value=" + getValue() + "]";
-    }
-
     private void setInstance(String instance) {
         this.instance = instance;
     }
@@ -76,6 +70,12 @@ public class AnubisValue {
 
     private void setValue(ValueData value) {
         this.value = value.getValue();
+    }
+
+    @Override
+    public String toString() {
+        return "Value [name=" + getName() + ", instance=" + getInstance()
+               + ", time=" + getTime() + ", value=" + getValue() + "]";
     }
 
 }

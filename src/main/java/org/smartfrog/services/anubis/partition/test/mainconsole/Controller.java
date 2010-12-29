@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.io.IOException;
@@ -113,7 +113,7 @@ public class Controller {
     public synchronized void clearPartitions() {
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
-            (iter.next()).setIgnoring(new BitView());
+            iter.next().setIgnoring(new BitView());
         }
     }
 
@@ -123,13 +123,27 @@ public class Controller {
             nodeData.heartbeat(hb);
             return;
         }
-		nodeData = new NodeData(hb, consoleFrame, colorAllocator, this);
-		nodes.put(hb.getSender(), nodeData);
-		globalView.add(hb.getSender());
+        nodeData = new NodeData(hb, consoleFrame, colorAllocator, this);
+        nodes.put(hb.getSender(), nodeData);
+        globalView.add(hb.getSender());
     }
 
     public synchronized void deliverObject(Object obj, NodeData node) {
         node.deliverObject(obj);
+    }
+
+    @Deployed
+    public void deploy() throws IOException {
+
+        timer.schedule(getTask(), checkPeriod, checkPeriod);
+        snoop = new Snoop(
+                          "Anubis: Partition Manager Test Console heartbeat snoop",
+                          address, identity, this);
+        consoleFrame = new MainConsoleFrame(this);
+        consoleFrame.setTitle("Partition Manager Test Controller - "
+                              + Anubis.version);
+        consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
+        snoop.start();
     }
 
     public synchronized void disconnectNode(NodeData node) {
@@ -148,8 +162,27 @@ public class Controller {
         return expirePeriod;
     }
 
+    public long getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    public long getHeartbeatTimeout() {
+        return heartbeatTimeout;
+    }
+
     public Identity getIdentity() {
         return identity;
+    }
+
+    private TimerTask getTask() {
+        task = new TimerTask() {
+
+            @Override
+            public void run() {
+                checkNodes();
+            }
+        };
+        return task;
     }
 
     public Timer getTimer() {
@@ -182,6 +215,14 @@ public class Controller {
         this.expirePeriod = expirePeriod;
     }
 
+    public void setHeartbeatInterval(long heartbeatInterval) {
+        this.heartbeatInterval = heartbeatInterval;
+    }
+
+    public void setHeartbeatTimeout(long heartbeatTimeout) {
+        this.heartbeatTimeout = heartbeatTimeout;
+    }
+
     public void setIdentity(Identity identity) {
         this.identity = identity;
     }
@@ -203,7 +244,7 @@ public class Controller {
         /** set node's timers **/
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
-            (iter.next()).setTiming(interval, timeout);
+            iter.next().setTiming(interval, timeout);
         }
     }
 
@@ -213,36 +254,6 @@ public class Controller {
         } else {
             asymetryReport.recalculate(nodes);
         }
-    }
-
-    public long getHeartbeatInterval() {
-        return heartbeatInterval;
-    }
-
-    public void setHeartbeatInterval(long heartbeatInterval) {
-        this.heartbeatInterval = heartbeatInterval;
-    }
-
-    public long getHeartbeatTimeout() {
-        return heartbeatTimeout;
-    }
-
-    public void setHeartbeatTimeout(long heartbeatTimeout) {
-        this.heartbeatTimeout = heartbeatTimeout;
-    }
-
-    @Deployed
-    public void deploy() throws IOException {
-
-        timer.schedule(getTask(), checkPeriod, checkPeriod);
-        snoop = new Snoop(
-                          "Anubis: Partition Manager Test Console heartbeat snoop",
-                          address, identity, this);
-        consoleFrame = new MainConsoleFrame(this);
-        consoleFrame.setTitle("Partition Manager Test Controller - "
-                              + Anubis.version);
-        consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
-        snoop.start();
     }
 
     @PostConstruct
@@ -272,8 +283,7 @@ public class Controller {
 
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
-            (iter.next()).setIgnoringSymPartition(globalView,
-                                                             partition);
+            iter.next().setIgnoringSymPartition(globalView, partition);
         }
     }
 
@@ -287,17 +297,6 @@ public class Controller {
         consoleFrame.setVisible(false);
         consoleFrame.dispose();
         consoleFrame = null;
-    }
-
-    private TimerTask getTask() {
-        task = new TimerTask() {
-
-            @Override
-            public void run() {
-                checkNodes();
-            }
-        };
-        return task;
     }
 
 }

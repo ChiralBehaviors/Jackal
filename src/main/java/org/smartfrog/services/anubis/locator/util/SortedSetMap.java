@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.util;
 
 import java.util.Comparator;
@@ -27,19 +27,20 @@ import java.util.TreeMap;
 public class SortedSetMap<K, V> extends SetMap<K, V> {
 
     /**
-     * Construct a SetMap using the TreeMap as an implementation.
-     * The TreeMap implements the SortedMap interface.
-     *
-     * @param comp the comparator to be used by the TreeMap.
+     * Construct a SetMap using the TreeMap as an implementation. The TreeMap
+     * implements the SortedMap interface.
+     * 
+     * @param comp
+     *            the comparator to be used by the TreeMap.
      */
     public SortedSetMap(Comparator<K> comp) {
         super(new TreeMap<K, Set<V>>(comp));
     }
 
     /**
-     * get the first key according to the sorted order - leaves the
-     * map unchanged.
-     *
+     * get the first key according to the sorted order - leaves the map
+     * unchanged.
+     * 
      * @return the first key or null if the map is empty
      */
     public K firstKey() {
@@ -49,7 +50,7 @@ public class SortedSetMap<K, V> extends SetMap<K, V> {
     /**
      * get the last key according to the sorted order - leaves the map
      * unchanged.
-     *
+     * 
      * @return the last key or null if the map is empty
      */
     public Object lastKey() {

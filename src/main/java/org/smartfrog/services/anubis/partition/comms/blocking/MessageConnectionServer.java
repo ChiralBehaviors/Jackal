@@ -60,108 +60,114 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
  * @version 1.0
  */
 public class MessageConnectionServer extends ConnectionServer implements
-		IOConnectionServer, ConnectionFactory {
+        IOConnectionServer, ConnectionFactory {
 
-	private ConnectionSet connectionSet = null;
-	private Logger log = Logger.getLogger(this.getClass().toString());
-	private Identity me = null;
-	private Set<MessageConnectionImpl> pending = new HashSet<MessageConnectionImpl>();
-	private WireSecurity wireSecurity = null;
+    private ConnectionSet connectionSet = null;
+    private Logger log = Logger.getLogger(this.getClass().toString());
+    private Identity me = null;
+    private Set<MessageConnectionImpl> pending = new HashSet<MessageConnectionImpl>();
+    private WireSecurity wireSecurity = null;
 
-	/**
-	 * Constructor - sets this class as the ConnectionFactory.
-	 * 
-	 * @param address
-	 *            - the address for the server socket
-	 * @param id
-	 *            - the id of this node
-	 * @param cs
-	 *            - the connection set
-	 * @throws IOException
-	 * @throws Exception
-	 *             - if problems with creating the server socket
-	 */
-	public MessageConnectionServer(ConnectionAddress address, Identity id,
-			ConnectionSet cs, WireSecurity sec) throws IOException {
-		super("Anubis: Connection Server (node " + id.id + ")",
-				address.ipaddress.getHostName(), address.port);
-		me = id;
-		connectionSet = cs;
-		wireSecurity = sec;
-		setConnectionFactory(this);
-		setPriority(MAX_PRIORITY);
-	}
+    /**
+     * Constructor - sets this class as the ConnectionFactory.
+     * 
+     * @param address
+     *            - the address for the server socket
+     * @param id
+     *            - the id of this node
+     * @param cs
+     *            - the connection set
+     * @throws IOException
+     * @throws Exception
+     *             - if problems with creating the server socket
+     */
+    public MessageConnectionServer(ConnectionAddress address, Identity id,
+                                   ConnectionSet cs, WireSecurity sec)
+                                                                      throws IOException {
+        super("Anubis: Connection Server (node " + id.id + ")",
+              address.ipaddress.getHostName(), address.port);
+        me = id;
+        connectionSet = cs;
+        wireSecurity = sec;
+        setConnectionFactory(this);
+        setPriority(MAX_PRIORITY);
+    }
 
-	/**
-	 * ConnectionFactory interface Create a new MessageConnectionImpl in
-	 * response to a connection request. This method is called by the
-	 * ConnectionServer base class.
-	 * 
-	 * @param channel
-	 * 
-	 *            public void createConnection(Socket so) {
-	 *            MessageConnectionImpl impl = new MessageConnectionImpl(me, so,
-	 *            this, connectionSet); impl.start(); pending.add(impl); }
-	 */
-	public void createConnection(SocketChannel channel) {
-		if (log.isLoggable(Level.FINER)) {
-			log.finer("creating connection for: " + channel);
-		}
-		MessageConnectionImpl impl = new MessageConnectionImpl(me, channel,
-				this, connectionSet, wireSecurity);
-		impl.start();
-		pending.add(impl);
-	}
+    /**
+     * ConnectionFactory interface Create a new MessageConnectionImpl in
+     * response to a connection request. This method is called by the
+     * ConnectionServer base class.
+     * 
+     * @param channel
+     * 
+     *            public void createConnection(Socket so) {
+     *            MessageConnectionImpl impl = new MessageConnectionImpl(me, so,
+     *            this, connectionSet); impl.start(); pending.add(impl); }
+     */
+    @Override
+    public void createConnection(SocketChannel channel) {
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("creating connection for: " + channel);
+        }
+        MessageConnectionImpl impl = new MessageConnectionImpl(me, channel,
+                                                               this,
+                                                               connectionSet,
+                                                               wireSecurity);
+        impl.start();
+        pending.add(impl);
+    }
 
-	/**
-	 * Asynchronously initiate a new connection.
-	 * 
-	 * @param id
-	 *            Identity
-	 * @param con
-	 *            MessageConnection
-	 * @param hb
-	 *            HeartbeatMsg
-	 */
-	public void initiateConnection(Identity id, MessageConnection con,
-			HeartbeatMsg hb) {
-		if (log.isLoggable(Level.FINER)) {
-			log.finer("Initiating connection to: " + id);
-		}
-		BlockingConnectionInitiator initiator = null;
-		try {
-			initiator = new BlockingConnectionInitiator(id, con, connectionSet,
-					hb, wireSecurity);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error initiating a blocking connection to: "
-					+ id, ex);
-			return;
-		}
-		initiator.setDaemon(true);
-		initiator.start();
-	}
+    /**
+     * Asynchronously initiate a new connection.
+     * 
+     * @param id
+     *            Identity
+     * @param con
+     *            MessageConnection
+     * @param hb
+     *            HeartbeatMsg
+     */
+    @Override
+    public void initiateConnection(Identity id, MessageConnection con,
+                                   HeartbeatMsg hb) {
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("Initiating connection to: " + id);
+        }
+        BlockingConnectionInitiator initiator = null;
+        try {
+            initiator = new BlockingConnectionInitiator(id, con, connectionSet,
+                                                        hb, wireSecurity);
+        } catch (Exception ex) {
+            log.log(Level.SEVERE, "Error initiating a blocking connection to: "
+                                  + id, ex);
+            return;
+        }
+        initiator.setDaemon(true);
+        initiator.start();
+    }
 
-	/**
-	 * Remove a MessageConnectionImpl from the pending set - called when an
-	 * initial message has been received by the impl.
-	 * 
-	 * @param con
-	 *            - the impl
-	 */
-	public void removeConnection(MessageConnectionImpl con) {
-		if (log.isLoggable(Level.FINER)) {
-			log.finer("removing connection : " + con);
-		}
-		pending.remove(con);
-	}
+    /**
+     * Remove a MessageConnectionImpl from the pending set - called when an
+     * initial message has been received by the impl.
+     * 
+     * @param con
+     *            - the impl
+     */
+    public void removeConnection(MessageConnectionImpl con) {
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("removing connection : " + con);
+        }
+        pending.remove(con);
+    }
 
-	/**
-	 * kill this MessageConnectionServer - stops the server thread. Should also
-	 * remove any pending implementations
-	 */
-	public void terminate() {
-		// FIX ME: remove all pending impls
-		shutdown();
-	}
+    /**
+     * kill this MessageConnectionServer - stops the server thread. Should also
+     * remove any pending implementations
+     */
+    @Override
+    public void terminate() {
+        // FIX ME: remove all pending impls
+        shutdown();
+    }
 
 }

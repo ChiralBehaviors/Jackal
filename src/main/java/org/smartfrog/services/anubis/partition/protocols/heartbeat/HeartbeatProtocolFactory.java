@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
@@ -26,13 +26,13 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 /**
- * <p>Description: The HeartbeatProtocolFactory creates a heartbeat protocol
- *                 implementation. A unique instance is created for each
- *                 connection. This class can be specialised to change the
- *                 implementation of the heartbeat protocol that gets created.
- *                 The protocol is created by the HeartbeatComms class
- *                 when a new heartbeat arrives that is from a sender that is
- *                 unknown.</p>
+ * <p>
+ * Description: The HeartbeatProtocolFactory creates a heartbeat protocol
+ * implementation. A unique instance is created for each connection. This class
+ * can be specialised to change the implementation of the heartbeat protocol
+ * that gets created. The protocol is created by the HeartbeatComms class when a
+ * new heartbeat arrives that is from a sender that is unknown.
+ * </p>
  */
 
 public interface HeartbeatProtocolFactory {

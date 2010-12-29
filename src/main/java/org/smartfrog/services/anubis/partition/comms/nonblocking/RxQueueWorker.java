@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
 public class RxQueueWorker extends Thread {
@@ -24,8 +24,8 @@ public class RxQueueWorker extends Thread {
     private RxQueue rxQueue = null;
 
     /**
-     * worker thread taking rx objects off the queue and
-     * delivering that object to anubis code
+     * worker thread taking rx objects off the queue and delivering that object
+     * to anubis code
      */
     public RxQueueWorker(RxQueue rxQueue) {
         this.rxQueue = rxQueue;

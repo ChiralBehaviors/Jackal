@@ -39,409 +39,414 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class LocalRegisterImpl {
 
-	/**
-	 * RequestServer is required to avoid a potential deadlock between the local
-	 * and global if they send messages to each other on the local node. Sending
-	 * a message to the local node results in direct delivery by method call in
-	 * the same thread. It is possible for a thread that holds the
-	 * GlobalRegisterImpl monitor to make a call to the LocalRegisterImpl, and
-	 * vice versa at the same time. So, instead of blocking on a monitor we
-	 * create a queue of requests for the global and service the queue with a
-	 * single thread.
-	 */
-	private class RequestServer extends Thread {
-		private boolean running = false;
+    /**
+     * RequestServer is required to avoid a potential deadlock between the local
+     * and global if they send messages to each other on the local node. Sending
+     * a message to the local node results in direct delivery by method call in
+     * the same thread. It is possible for a thread that holds the
+     * GlobalRegisterImpl monitor to make a call to the LocalRegisterImpl, and
+     * vice versa at the same time. So, instead of blocking on a monitor we
+     * create a queue of requests for the global and service the queue with a
+     * single thread.
+     */
+    private class RequestServer extends Thread {
+        private boolean running = false;
 
-		public RequestServer() {
-			super();
-		}
+        public RequestServer() {
+            super();
+        }
 
-		@Override
-		public void run() {
-			/**
-			 * The thread specific object locator.callingThread is set to this
-			 * server object for this thread. The locator is then able to check
-			 * if calls to its interface are made by this thread by checking the
-			 * value of locator.callingThread and comparing it to this object.
-			 * 
-			 * This is the method used to check if the user is making illegal
-			 * re-entrant calls during an upcall initiated by the local
-			 * register.
-			 */
-			locator.callingThread.set(this);
-			running = true;
-			while (running) {
-				Object obj = requests.get();
-				if (obj instanceof RegisterMsg) {
-					deliver((RegisterMsg) obj);
-				} else if (obj instanceof UserProviderRequest) {
-					deliver((UserProviderRequest) obj);
-				} else if (obj instanceof UserListenerRequest) {
-					deliver((UserListenerRequest) obj);
-				} else if (obj instanceof UserStabilityRequest) {
-					deliver((UserStabilityRequest) obj);
-				} else if (obj == null) {
-					continue;
-				} else {
-					if (log.isLoggable(Level.SEVERE)) {
-						log.severe(me
-								+ " *** Local register encountered unknown request or message type: "
-								+ obj);
-					}
-				}
-			}
-		}
+        @Override
+        public void run() {
+            /**
+             * The thread specific object locator.callingThread is set to this
+             * server object for this thread. The locator is then able to check
+             * if calls to its interface are made by this thread by checking the
+             * value of locator.callingThread and comparing it to this object.
+             * 
+             * This is the method used to check if the user is making illegal
+             * re-entrant calls during an upcall initiated by the local
+             * register.
+             */
+            locator.callingThread.set(this);
+            running = true;
+            while (running) {
+                Object obj = requests.get();
+                if (obj instanceof RegisterMsg) {
+                    deliver((RegisterMsg) obj);
+                } else if (obj instanceof UserProviderRequest) {
+                    deliver((UserProviderRequest) obj);
+                } else if (obj instanceof UserListenerRequest) {
+                    deliver((UserListenerRequest) obj);
+                } else if (obj instanceof UserStabilityRequest) {
+                    deliver((UserStabilityRequest) obj);
+                } else if (obj == null) {
+                    continue;
+                } else {
+                    if (log.isLoggable(Level.SEVERE)) {
+                        log.severe(me
+                                   + " *** Local register encountered unknown request or message type: "
+                                   + obj);
+                    }
+                }
+            }
+        }
 
-		public void terminate() {
-			running = false;
-		}
-	}
+        public void terminate() {
+            running = false;
+        }
+    }
 
-	private class UserListenerRequest {
-		public final static int Deregister = 2;
-		public final static int Register = 1;
-		@SuppressWarnings("unused")
-		public final static int Unknown = 0;
-		public AnubisListener listener;
-		public int type;
+    private class UserListenerRequest {
+        public final static int Deregister = 2;
+        public final static int Register = 1;
+        @SuppressWarnings("unused")
+        public final static int Unknown = 0;
+        public AnubisListener listener;
+        public int type;
 
-		public UserListenerRequest(int t, AnubisListener l) {
-			type = t;
-			listener = l;
-		}
-	}
+        public UserListenerRequest(int t, AnubisListener l) {
+            type = t;
+            listener = l;
+        }
+    }
 
-	private class UserProviderRequest {
-		public final static int Deregister = 2;
-		public final static int NewValue = 3;
-		public final static int Register = 1;
-		@SuppressWarnings("unused")
-		public final static int Unknown = 0;
-		public AnubisProvider provider;
-		public long time;
-		public int type;
-		public ValueData value;
+    private class UserProviderRequest {
+        public final static int Deregister = 2;
+        public final static int NewValue = 3;
+        public final static int Register = 1;
+        @SuppressWarnings("unused")
+        public final static int Unknown = 0;
+        public AnubisProvider provider;
+        public long time;
+        public int type;
+        public ValueData value;
 
-		public UserProviderRequest(int t, AnubisProvider p, ValueData value,
-				long time) {
-			type = t;
-			provider = p;
-			this.value = value;
-			this.time = time;
-		}
-	}
+        public UserProviderRequest(int t, AnubisProvider p, ValueData value,
+                                   long time) {
+            type = t;
+            provider = p;
+            this.value = value;
+            this.time = time;
+        }
+    }
 
-	private class UserStabilityRequest {
-		public final static int Deregister = 2;
-		public final static int Register = 1;
-		@SuppressWarnings("unused")
-		public final static int Unknown = 0;
-		public AnubisStability stability;
-		public int type;
+    private class UserStabilityRequest {
+        public final static int Deregister = 2;
+        public final static int Register = 1;
+        @SuppressWarnings("unused")
+        public final static int Unknown = 0;
+        public AnubisStability stability;
+        public int type;
 
-		public UserStabilityRequest(int t, AnubisStability s) {
-			type = t;
-			stability = s;
-		}
-	}
+        public UserStabilityRequest(int t, AnubisStability s) {
+            type = t;
+            stability = s;
+        }
+    }
 
-	public RequestServer server = new RequestServer(); // public so Locator can
-														// test for re-entry
-	public Set<AnubisStability> stabilityNotifications = new HashSet<AnubisStability>();
-	public boolean stable = true;
-	public long timeRef = -1;
-	private DebugFrame debug = null;
-	private LocalListeners listeners = null; // name to Listeners + the provider
-	private Locator locator = null;
-	private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
-	private Identity me = null;
-	private Integer node = null;
-	private LocalProviders providers = null; // name to provider + their
-												// registered listeners
-	private BlockingQueue<Object> requests = new BlockingQueue<Object>();
+    public RequestServer server = new RequestServer(); // public so Locator can
+                                                       // test for re-entry
+    public Set<AnubisStability> stabilityNotifications = new HashSet<AnubisStability>();
+    public boolean stable = true;
+    public long timeRef = -1;
+    private DebugFrame debug = null;
+    private LocalListeners listeners = null; // name to Listeners + the provider
+    private Locator locator = null;
+    private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+    private Identity me = null;
+    private Integer node = null;
+    private LocalProviders providers = null; // name to provider + their
+                                             // registered listeners
+    private BlockingQueue<Object> requests = new BlockingQueue<Object>();
 
-	public LocalRegisterImpl(Identity id, Locator locator) {
-		me = id;
-		node = new Integer(me.id);
-		providers = new LocalProviders(locator, node);
-		listeners = new LocalListeners(locator, node);
-		this.locator = locator;
-		timeRef = me.epoch;
-	}
+    public LocalRegisterImpl(Identity id, Locator locator) {
+        me = id;
+        node = new Integer(me.id);
+        providers = new LocalProviders(locator, node);
+        listeners = new LocalListeners(locator, node);
+        this.locator = locator;
+        timeRef = me.epoch;
+    }
 
-	public void deliverRequest(RegisterMsg msg) {
+    private void deliver(RegisterMsg msg) {
 
-		requests.put(msg);
-	}
+        switch (msg.type) {
 
-	/**
-	 * deregisterListener: deregister locally. deregister with providers local
-	 * if appropriate. deregister globally if the listener was pending and there
-	 * are no more. The global only has pending listeners registered.
-	 * 
-	 * @param listener
-	 */
-	public void deregisterListener(AnubisListener listener) {
-		requests.put(new UserListenerRequest(UserListenerRequest.Deregister,
-				listener));
-	}
+            case RegisterMsg.ProviderValue:
 
-	/**
-	 * deregisterProvider: deregister with global register. local register is
-	 * responsible for informing listeners that have already contacted this
-	 * register. deregister with local register.
-	 * 
-	 * @param provider
-	 */
-	public void deregisterProvider(AnubisProvider provider) {
-		requests.put(new UserProviderRequest(UserProviderRequest.Deregister,
-				provider, null, 0));
-	}
+                listeners.providerValue((ProviderInstance) msg.data);
+                updateDebugFrame();
+                break;
 
-	/**
-	 * deregisterStability: deregister a stability notification object.
-	 * 
-	 * @param stability
-	 *            AnubisStability
-	 */
-	public void deregisterStability(AnubisStability stability) {
-		requests.put(new UserStabilityRequest(UserStabilityRequest.Deregister,
-				stability));
-	}
+            case RegisterMsg.ProviderNotPresent:
 
-	/**
-	 * indicates that a provider has been assigned a new value.
-	 * 
-	 * @param provider
-	 */
-	public void newProviderValue(AnubisProvider provider) {
-		requests.put(new UserProviderRequest(UserProviderRequest.NewValue,
-				provider, provider.getValueData(), provider.getTime()));
-	}
+                listeners.providerNotPresent((ProviderInstance) msg.data);
+                updateDebugFrame();
+                break;
 
-	/**
-	 * @param listener
-	 */
-	public void registerListener(AnubisListener listener) {
-		requests.put(new UserListenerRequest(UserListenerRequest.Register,
-				listener));
-	}
+            case RegisterMsg.AddListener:
 
-	/**
-	 * registerProvider: add provider to global registry and locally. the global
-	 * is responsible for telling listeners where the provider is. the listeners
-	 * are responsible for contacting this local registry to get provider info.
-	 * 
-	 * @param provider
-	 */
-	public void registerProvider(AnubisProvider provider) {
-		requests.put(new UserProviderRequest(UserProviderRequest.Register,
-				provider, provider.getValueData(), provider.getTime()));
-	}
+                providers.addListener((ListenerProxy) msg.data);
+                updateDebugFrame();
+                break;
 
-	/**
-	 * registerStability: register a stability notification object.
-	 * 
-	 * @param stability
-	 *            AnubisStability
-	 */
-	public void registerStability(AnubisStability stability) {
-		requests.put(new UserStabilityRequest(UserStabilityRequest.Register,
-				stability));
-	}
+            case RegisterMsg.RemoveListener:
 
-	public synchronized void removeDebugFrame() {
-		if (debug != null) {
-			debug.remove();
-			debug = null;
-		}
-	}
+                providers.removeListener((ListenerProxy) msg.data);
+                updateDebugFrame();
+                break;
 
-	public synchronized void showDebugFrame() {
-		if (debug == null) {
-			debug = new DebugFrame("Node " + me + " Local Register Contents:");
-		}
-		debug.makeVisible(this);
-	}
+            default:
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe(me + " *** Local received unexpected message "
+                               + msg);
+                }
+        }
+    }
 
-	/**
-	 * When stable: 1) find the global 2) start accessing it 3) register all
-	 * providers and listeners again Note: we are being dumb and pessimistic
-	 * here - always recover all registrations - could be more clever.
-	 * 
-	 * @param leader
-	 * @param timeStamp
-	 */
-	public synchronized void stable(int leader, long timeStamp) {
-		stable = true;
-		timeRef = timeStamp;
-		providers.reRegisterAll();
-		listeners.reRegisterAll();
-		notifyStability();
-		updateDebugFrame();
-	}
+    private void deliver(UserListenerRequest request) {
 
-	/**
-	 * Starts the local register server
-	 */
-	public void start() {
-		server.setName("Anubis: Local Register Request Server (node " + me.id
-				+ ")");
-		server.start();
-		updateDebugFrame();
-	}
+        switch (request.type) {
 
-	/**
-	 * Stop the threads associated with the local register. Also clears the
-	 * queue.
-	 */
-	public void terminate() {
-		server.terminate();
-		requests.deactivate();
-	}
+            case UserListenerRequest.Register:
+                listeners.register(request.listener);
+                updateDebugFrame();
+                break;
 
-	@Override
-	public synchronized String toString() {
-		return providers.toString() + listeners.toString();
-	}
+            case UserListenerRequest.Deregister:
+                listeners.deregister(request.listener);
+                updateDebugFrame();
+                break;
 
-	/**
-	 * When unstable: 1) stop accessing the global - it needs time to clear up
-	 * 2) check provider and listener dependencies - I could have lost some
-	 * 
-	 * @param view
-	 */
-	public synchronized void unstable(View view) {
-		stable = false;
-		timeRef = -1;
-		providers.checkNodes(view);
-		listeners.checkNodes(view);
-		notifyStability();
-		updateDebugFrame();
-	}
+            default:
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe(me
+                               + " *** Local register encountered unknown user stability request type: "
+                               + request.type);
+                }
+        }
+    }
 
-	private void deliver(RegisterMsg msg) {
+    private void deliver(UserProviderRequest request) {
 
-		switch (msg.type) {
+        switch (request.type) {
 
-		case RegisterMsg.ProviderValue:
+            case UserProviderRequest.Register:
+                providers.register(request.provider, request.value,
+                                   request.time);
+                updateDebugFrame();
+                break;
 
-			listeners.providerValue((ProviderInstance) msg.data);
-			updateDebugFrame();
-			break;
+            case UserProviderRequest.Deregister:
 
-		case RegisterMsg.ProviderNotPresent:
+                providers.deregister(request.provider);
+                updateDebugFrame();
+                break;
 
-			listeners.providerNotPresent((ProviderInstance) msg.data);
-			updateDebugFrame();
-			break;
+            case UserProviderRequest.NewValue:
 
-		case RegisterMsg.AddListener:
+                providers.newValue(request.provider, request.value,
+                                   request.time);
+                updateDebugFrame();
+                break;
 
-			providers.addListener((ListenerProxy) msg.data);
-			updateDebugFrame();
-			break;
+            default:
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe(me
+                               + " *** Local register encountered unknown user provider request type: "
+                               + request.type);
+                }
+        }
+    }
 
-		case RegisterMsg.RemoveListener:
+    private void deliver(UserStabilityRequest request) {
 
-			providers.removeListener((ListenerProxy) msg.data);
-			updateDebugFrame();
-			break;
+        switch (request.type) {
 
-		default:
-			if (log.isLoggable(Level.SEVERE)) {
-				log.severe(me + " *** Local received unexpected message " + msg);
-			}
-		}
-	}
+            case UserStabilityRequest.Register:
+                stabilityNotifications.add(request.stability);
+                request.stability.notifyStability(stable, timeRef);
+                break;
 
-	private void deliver(UserListenerRequest request) {
+            case UserStabilityRequest.Deregister:
+                stabilityNotifications.remove(request.stability);
+                break;
 
-		switch (request.type) {
+            default:
+                if (log.isLoggable(Level.SEVERE)) {
+                    log.severe(me
+                               + " *** Local register encountered unknown user stability request type: "
+                               + request.type);
+                }
+        }
+    }
 
-		case UserListenerRequest.Register:
-			listeners.register(request.listener);
-			updateDebugFrame();
-			break;
+    public void deliverRequest(RegisterMsg msg) {
 
-		case UserListenerRequest.Deregister:
-			listeners.deregister(request.listener);
-			updateDebugFrame();
-			break;
+        requests.put(msg);
+    }
 
-		default:
-			if (log.isLoggable(Level.SEVERE)) {
-				log.severe(me
-						+ " *** Local register encountered unknown user stability request type: "
-						+ request.type);
-			}
-		}
-	}
+    /**
+     * deregisterListener: deregister locally. deregister with providers local
+     * if appropriate. deregister globally if the listener was pending and there
+     * are no more. The global only has pending listeners registered.
+     * 
+     * @param listener
+     */
+    public void deregisterListener(AnubisListener listener) {
+        requests.put(new UserListenerRequest(UserListenerRequest.Deregister,
+                                             listener));
+    }
 
-	private void deliver(UserProviderRequest request) {
+    /**
+     * deregisterProvider: deregister with global register. local register is
+     * responsible for informing listeners that have already contacted this
+     * register. deregister with local register.
+     * 
+     * @param provider
+     */
+    public void deregisterProvider(AnubisProvider provider) {
+        requests.put(new UserProviderRequest(UserProviderRequest.Deregister,
+                                             provider, null, 0));
+    }
 
-		switch (request.type) {
+    /**
+     * deregisterStability: deregister a stability notification object.
+     * 
+     * @param stability
+     *            AnubisStability
+     */
+    public void deregisterStability(AnubisStability stability) {
+        requests.put(new UserStabilityRequest(UserStabilityRequest.Deregister,
+                                              stability));
+    }
 
-		case UserProviderRequest.Register:
-			providers.register(request.provider, request.value, request.time);
-			updateDebugFrame();
-			break;
+    /**
+     * indicates that a provider has been assigned a new value.
+     * 
+     * @param provider
+     */
+    public void newProviderValue(AnubisProvider provider) {
+        requests.put(new UserProviderRequest(UserProviderRequest.NewValue,
+                                             provider, provider.getValueData(),
+                                             provider.getTime()));
+    }
 
-		case UserProviderRequest.Deregister:
+    /**
+     * notify all stability notification objects
+     */
+    private void notifyStability() {
+        for (AnubisStability notification : stabilityNotifications) {
+            notification.notifyStability(stable, timeRef);
+        }
+    }
 
-			providers.deregister(request.provider);
-			updateDebugFrame();
-			break;
+    /**
+     * @param listener
+     */
+    public void registerListener(AnubisListener listener) {
+        requests.put(new UserListenerRequest(UserListenerRequest.Register,
+                                             listener));
+    }
 
-		case UserProviderRequest.NewValue:
+    /**
+     * registerProvider: add provider to global registry and locally. the global
+     * is responsible for telling listeners where the provider is. the listeners
+     * are responsible for contacting this local registry to get provider info.
+     * 
+     * @param provider
+     */
+    public void registerProvider(AnubisProvider provider) {
+        requests.put(new UserProviderRequest(UserProviderRequest.Register,
+                                             provider, provider.getValueData(),
+                                             provider.getTime()));
+    }
 
-			providers.newValue(request.provider, request.value, request.time);
-			updateDebugFrame();
-			break;
+    /**
+     * registerStability: register a stability notification object.
+     * 
+     * @param stability
+     *            AnubisStability
+     */
+    public void registerStability(AnubisStability stability) {
+        requests.put(new UserStabilityRequest(UserStabilityRequest.Register,
+                                              stability));
+    }
 
-		default:
-			if (log.isLoggable(Level.SEVERE)) {
-				log.severe(me
-						+ " *** Local register encountered unknown user provider request type: "
-						+ request.type);
-			}
-		}
-	}
+    public synchronized void removeDebugFrame() {
+        if (debug != null) {
+            debug.remove();
+            debug = null;
+        }
+    }
 
-	private void deliver(UserStabilityRequest request) {
+    public synchronized void showDebugFrame() {
+        if (debug == null) {
+            debug = new DebugFrame("Node " + me + " Local Register Contents:");
+        }
+        debug.makeVisible(this);
+    }
 
-		switch (request.type) {
+    /**
+     * When stable: 1) find the global 2) start accessing it 3) register all
+     * providers and listeners again Note: we are being dumb and pessimistic
+     * here - always recover all registrations - could be more clever.
+     * 
+     * @param leader
+     * @param timeStamp
+     */
+    public synchronized void stable(int leader, long timeStamp) {
+        stable = true;
+        timeRef = timeStamp;
+        providers.reRegisterAll();
+        listeners.reRegisterAll();
+        notifyStability();
+        updateDebugFrame();
+    }
 
-		case UserStabilityRequest.Register:
-			stabilityNotifications.add(request.stability);
-			request.stability.notifyStability(stable, timeRef);
-			break;
+    /**
+     * Starts the local register server
+     */
+    public void start() {
+        server.setName("Anubis: Local Register Request Server (node " + me.id
+                       + ")");
+        server.start();
+        updateDebugFrame();
+    }
 
-		case UserStabilityRequest.Deregister:
-			stabilityNotifications.remove(request.stability);
-			break;
+    /**
+     * Stop the threads associated with the local register. Also clears the
+     * queue.
+     */
+    public void terminate() {
+        server.terminate();
+        requests.deactivate();
+    }
 
-		default:
-			if (log.isLoggable(Level.SEVERE)) {
-				log.severe(me
-						+ " *** Local register encountered unknown user stability request type: "
-						+ request.type);
-			}
-		}
-	}
+    @Override
+    public synchronized String toString() {
+        return providers.toString() + listeners.toString();
+    }
 
-	/**
-	 * notify all stability notification objects
-	 */
-	private void notifyStability() {
-		for (AnubisStability notification : stabilityNotifications) {
-			notification.notifyStability(stable, timeRef);
-		}
-	}
+    /**
+     * When unstable: 1) stop accessing the global - it needs time to clear up
+     * 2) check provider and listener dependencies - I could have lost some
+     * 
+     * @param view
+     */
+    public synchronized void unstable(View view) {
+        stable = false;
+        timeRef = -1;
+        providers.checkNodes(view);
+        listeners.checkNodes(view);
+        notifyStability();
+        updateDebugFrame();
+    }
 
-	private void updateDebugFrame() {
-		if (debug != null) {
-			debug.update();
-		}
-	}
+    private void updateDebugFrame() {
+        if (debug != null) {
+            debug.update();
+        }
+    }
 }

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.BorderLayout;
@@ -40,6 +40,7 @@ public class MainConsoleFrame extends JFrame {
     abstract class SliderListener implements ChangeListener {
         abstract public void newValue(int value);
 
+        @Override
         public void stateChanged(ChangeEvent e) {
             JSlider source = (JSlider) e.getSource();
             if (!source.getValueIsAdjusting()) {
@@ -124,19 +125,6 @@ public class MainConsoleFrame extends JFrame {
         jTextField2.setText("[" + errorStr + "]" + jTextField2.getText());
     }
 
-    public void removeNode(NodeData nodeData) {
-        jPanel2.remove(nodeData.getButton());
-        jPanel2.updateUI();
-    }
-
-    public String stripErrorPart(String inputStr) {
-        String input = inputStr.trim();
-        if (input.indexOf('[') == 0 && input.indexOf(']') != -1) {
-            input = input.substring(input.indexOf(']') + 1);
-        }
-        return input;
-    }
-
     private void jbInit() throws Exception {
         titledBorder1 = new TitledBorder("");
         jPanel1.setBorder(BorderFactory.createLoweredBevelBorder());
@@ -161,24 +149,28 @@ public class MainConsoleFrame extends JFrame {
         jPanel4.setLayout(borderLayout3);
         jButton1.setText("Clear Partitions");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton1_actionPerformed(e);
             }
         });
         jButton2.setText("Sim Partition");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton2_actionPerformed(e);
             }
         });
         jButton3.setText("Asim Partition");
         jButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton3_actionPerformed(e);
             }
         });
         jButton4.setText("Asymetry Analysis");
         jButton4.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton4_actionPerformed(e);
             }
@@ -203,6 +195,43 @@ public class MainConsoleFrame extends JFrame {
         });
     }
 
+    /**
+     * @param e
+     */
+    void jButton1_actionPerformed(ActionEvent e) {
+        controller.clearPartitions();
+    }
+
+    /**
+     * @param e
+     */
+    void jButton2_actionPerformed(ActionEvent e) {
+        String input = stripErrorPart(jTextField2.getText());
+        jTextField2.setText(input);
+        controller.symPartition(input);
+    }
+
+    /**
+     * @param e
+     */
+    void jButton3_actionPerformed(ActionEvent e) {
+        String input = stripErrorPart(jTextField2.getText());
+        jTextField2.setText(input);
+        controller.asymPartition(input);
+    }
+
+    /**
+     * @param e
+     */
+    void jButton4_actionPerformed(ActionEvent e) {
+        controller.showAsymetryReport();
+    }
+
+    public void removeNode(NodeData nodeData) {
+        jPanel2.remove(nodeData.getButton());
+        jPanel2.updateUI();
+    }
+
     private void setInterval(int interval) {
         controller.setTiming(interval, getTimeout());
     }
@@ -211,35 +240,11 @@ public class MainConsoleFrame extends JFrame {
         controller.setTiming(getInterval(), timeout);
     }
 
-    /**
-	 * @param e  
-	 */
-    void jButton1_actionPerformed(ActionEvent e) {
-        controller.clearPartitions();
-    }
-
-    /**
-	 * @param e  
-	 */
-    void jButton2_actionPerformed(ActionEvent e) {
-        String input = stripErrorPart(jTextField2.getText());
-        jTextField2.setText(input);
-        controller.symPartition(input);
-    }
-
-    /**
-	 * @param e  
-	 */
-    void jButton3_actionPerformed(ActionEvent e) {
-        String input = stripErrorPart(jTextField2.getText());
-        jTextField2.setText(input);
-        controller.asymPartition(input);
-    }
-
-    /**
-	 * @param e  
-	 */
-    void jButton4_actionPerformed(ActionEvent e) {
-        controller.showAsymetryReport();
+    public String stripErrorPart(String inputStr) {
+        String input = inputStr.trim();
+        if (input.indexOf('[') == 0 && input.indexOf(']') != -1) {
+            input = input.substring(input.indexOf(']') + 1);
+        }
+        return input;
     }
 }

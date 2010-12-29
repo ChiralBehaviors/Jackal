@@ -39,137 +39,137 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class AsymetryReportFrame extends JFrame {
 
-	/**
+    /**
      * 
      */
-	private static final long serialVersionUID = 1L;
-	private JTable asymetryTable = null;
-	private Controller controller;
-	private JPanel jPanel1 = new JPanel();
-	private JScrollPane jScrollPane = new JScrollPane(jPanel1);
-	private int magic;
+    private static final long serialVersionUID = 1L;
+    private JTable asymetryTable = null;
+    private Controller controller;
+    private JPanel jPanel1 = new JPanel();
+    private JScrollPane jScrollPane = new JScrollPane(jPanel1);
+    private int magic;
 
-	public AsymetryReportFrame(Controller controller, Map<?, ?> nodes,
-			Identity id) throws HeadlessException {
-		this.controller = controller;
-		magic = id.magic;
-		asymetryTable = getTable(nodes);
-		try {
-			jbInit();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    public AsymetryReportFrame(Controller controller, Map<?, ?> nodes,
+                               Identity id) throws HeadlessException {
+        this.controller = controller;
+        magic = id.magic;
+        asymetryTable = getTable(nodes);
+        try {
+            jbInit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-	public void recalculate(Map<?, ?> nodes) {
-		jPanel1.remove(asymetryTable);
-		asymetryTable = getTable(nodes);
-		jPanel1.add(asymetryTable);
-		jPanel1.updateUI();
-	}
+    private int getHighestNodeId(Map<?, ?> nodes) {
+        int highestSoFar = -1;
+        int highest;
+        Iterator<?> iter = nodes.values().iterator();
 
-	private int getHighestNodeId(Map<?, ?> nodes) {
-		int highestSoFar = -1;
-		int highest;
-		Iterator<?> iter = nodes.values().iterator();
+        while (iter.hasNext()) {
+            highest = highestIdInData((NodeData) iter.next());
+            if (highest > highestSoFar) {
+                highestSoFar = highest;
+            }
+        }
 
-		while (iter.hasNext()) {
-			highest = highestIdInData((NodeData) iter.next());
-			if (highest > highestSoFar) {
-				highestSoFar = highest;
-			}
-		}
+        return highestSoFar;
+    }
 
-		return highestSoFar;
-	}
+    private Vector<String> getRow(int highestId, int id, Map<?, ?> nodes) {
 
-	private Vector<String> getRow(int highestId, int id, Map<?, ?> nodes) {
+        NodeData nodeData = (NodeData) nodes.get(identity(id));
+        Vector<String> vector = new Vector<String>(highestId + 2);
+        boolean itseesme;
+        boolean iseeit;
+        NodeData it;
 
-		NodeData nodeData = (NodeData) nodes.get(identity(id));
-		Vector<String> vector = new Vector<String>(highestId + 2);
-		boolean itseesme;
-		boolean iseeit;
-		NodeData it;
+        vector.add(String.valueOf(id));
 
-		vector.add(String.valueOf(id));
+        if (nodeData == null) {
 
-		if (nodeData == null) {
+            for (int i = 0; i < highestId + 1; i++) {
+                vector.add("");
+            }
+            return vector;
 
-			for (int i = 0; i < highestId + 1; i++) {
-				vector.add("");
-			}
-			return vector;
+        }
 
-		}
+        for (int i = 0; i < highestId; i++) {
+            iseeit = nodeData.getView().contains(i);
+            it = (NodeData) nodes.get(identity(i));
+            itseesme = it == null ? false : it.getView().contains(id);
+            if (iseeit && !itseesme) {
+                vector.add("X");
+            } else {
+                vector.add("");
+            }
+        }
+        return vector;
+    }
 
-		for (int i = 0; i < highestId; i++) {
-			iseeit = nodeData.getView().contains(i);
-			it = (NodeData) nodes.get(identity(i));
-			itseesme = it == null ? false : it.getView().contains(id);
-			if (iseeit && !itseesme) {
-				vector.add("X");
-			} else {
-				vector.add("");
-			}
-		}
-		return vector;
-	}
+    private JTable getTable(Map<?, ?> nodes) {
 
-	private JTable getTable(Map<?, ?> nodes) {
+        int highestId = getHighestNodeId(nodes);
+        Vector<String> columnNames = new Vector<String>(highestId + 2);
+        Vector<Vector<String>> rowData = new Vector<Vector<String>>(
+                                                                    highestId + 2);
 
-		int highestId = getHighestNodeId(nodes);
-		Vector<String> columnNames = new Vector<String>(highestId + 2);
-		Vector<Vector<String>> rowData = new Vector<Vector<String>>(
-				highestId + 2);
+        columnNames.add("\\");
+        for (int i = 0; i < highestId; i++) {
+            columnNames.add(new Integer(i).toString());
+        }
 
-		columnNames.add("\\");
-		for (int i = 0; i < highestId; i++) {
-			columnNames.add(new Integer(i).toString());
-		}
+        rowData.add(columnNames);
 
-		rowData.add(columnNames);
+        for (int i = 0; i < highestId; i++) {
+            rowData.add(getRow(highestId, i, nodes));
+        }
 
-		for (int i = 0; i < highestId; i++) {
-			rowData.add(getRow(highestId, i, nodes));
-		}
+        return new SnugTable(rowData, columnNames);
+    }
 
-		return new SnugTable(rowData, columnNames);
-	}
+    private int highestIdInData(NodeData nodeData) {
+        int id = nodeData.getIdentity().id;
+        int sz = nodeData.getView().size();
+        return id > sz ? id : sz;
+    }
 
-	private int highestIdInData(NodeData nodeData) {
-		int id = nodeData.getIdentity().id;
-		int sz = nodeData.getView().size();
-		return id > sz ? id : sz;
-	}
+    /**
+     * Creates an identity that is equal to the node with the given id in this
+     * system (same magic).
+     * 
+     * @param id
+     * @return
+     */
+    private Identity identity(int id) {
+        return new Identity(magic, id, 0);
+    }
 
-	/**
-	 * Creates an identity that is equal to the node with the given id in this
-	 * system (same magic).
-	 * 
-	 * @param id
-	 * @return
-	 */
-	private Identity identity(int id) {
-		return new Identity(magic, id, 0);
-	}
+    private void jbInit() throws Exception {
 
-	private void jbInit() throws Exception {
+        setTitle("Asymetry Report (where Y sees X but not seen by X)");
+        setSize(new Dimension(250, 200));
+        jScrollPane.setBorder(BorderFactory.createRaisedBevelBorder());
+        getContentPane().add(jScrollPane, BorderLayout.CENTER);
 
-		setTitle("Asymetry Report (where Y sees X but not seen by X)");
-		setSize(new Dimension(250, 200));
-		jScrollPane.setBorder(BorderFactory.createRaisedBevelBorder());
-		getContentPane().add(jScrollPane, BorderLayout.CENTER);
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                setVisible(false);
+                controller.removeAsymetryReport();
+            }
+        });
+        // asymetryTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        jPanel1.add(asymetryTable);
+        setVisible(true);
+    }
 
-		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				setVisible(false);
-				controller.removeAsymetryReport();
-			}
-		});
-		// asymetryTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-		jPanel1.add(asymetryTable);
-		setVisible(true);
-	}
+    public void recalculate(Map<?, ?> nodes) {
+        jPanel1.remove(asymetryTable);
+        asymetryTable = getTable(nodes);
+        jPanel1.add(asymetryTable);
+        jPanel1.updateUI();
+    }
 }

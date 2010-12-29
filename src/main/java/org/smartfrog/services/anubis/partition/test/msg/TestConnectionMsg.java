@@ -16,12 +16,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.msg;
 
 import java.io.Serializable;
 
-public class TestConnectionMsg implements Serializable { 
+public class TestConnectionMsg implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public TestConnectionMsg() {

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.net.InetAddress;
@@ -26,8 +26,8 @@ import java.nio.ByteBuffer;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
 /**
- * ConnectionAddress is a class used to represent an endpoint for a
- * tcp connection. Its for convienience.
+ * ConnectionAddress is a class used to represent an endpoint for a tcp
+ * connection. Its for convienience.
  */
 public class ConnectionAddress implements Cloneable, WireSizes {
 

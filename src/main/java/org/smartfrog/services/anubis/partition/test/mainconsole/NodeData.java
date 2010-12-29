@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.Color;
@@ -91,6 +91,22 @@ public class NodeData {
             window.setVisible(false);
             window.dispose();
             window = null;
+        }
+    }
+
+    private void connectIfAvailable(ConnectionAddress address) {
+
+        if (address == null) {
+            return;
+        }
+
+        connection = new TestConnection(address, this, nodeId, controller);
+        if (connection.connected()) {
+            connection.sendObject(new SetTimingMsg(consoleFrame.getInterval(),
+                                                   consoleFrame.getTimeout()));
+            connection.start();
+        } else {
+            connection = null;
         }
     }
 
@@ -181,6 +197,11 @@ public class NodeData {
         }
     }
 
+    private void ignoring(IgnoringMsg ignoringMsg) {
+        ignoring = ignoringMsg.ignoring;
+        update();
+    }
+
     public boolean olderThan(long oldTime) {
         return lastReceive < oldTime;
     }
@@ -192,6 +213,31 @@ public class NodeData {
             update();
             window.setVisible(true);
         }
+    }
+
+    private View partCompOrIgnoring(View globalView, View partition,
+                                    View ignoring) {
+        View complement = new BitView().copyView(globalView).subtract(partition);
+        return new BitView().copyView(complement).merge(ignoring);
+    }
+
+    private void partitionNotification(View partition, int leader) {
+
+        /**
+         * if partition has changed membership deallocate current color and then
+         * reallocate new color
+         */
+        if (!this.partition.toBitSet().equals(partition.toBitSet())) {
+            colorAllocator.deallocate(this.partition, this);
+            partitionColor = colorAllocator.allocate(partition, this);
+        }
+        this.partition = partition;
+        this.leader = leader;
+        update();
+    }
+
+    private View partOrIgnoring(View partition, View ignoring) {
+        return new BitView().copyView(partition).merge(ignoring);
     }
 
     public void removeNode() {
@@ -242,8 +288,7 @@ public class NodeData {
 
         if (partition.contains(getIdentity())) {
             connection.sendObject(new SetIgnoringMsg(
-                                                     partCompOrIgnoring(
-                                                                        globalView,
+                                                     partCompOrIgnoring(globalView,
                                                                         partition,
                                                                         ignoring)));
         }
@@ -256,8 +301,7 @@ public class NodeData {
 
         if (partition.contains(getIdentity())) {
             connection.sendObject(new SetIgnoringMsg(
-                                                     partCompOrIgnoring(
-                                                                        globalView,
+                                                     partCompOrIgnoring(globalView,
                                                                         partition,
                                                                         ignoring)));
         } else {
@@ -271,51 +315,6 @@ public class NodeData {
             return;
         }
         connection.sendObject(new SetTimingMsg(interval, timeout));
-    }
-
-    private void connectIfAvailable(ConnectionAddress address) {
-
-        if (address == null) {
-            return;
-        }
-
-        connection = new TestConnection(address, this, nodeId, controller);
-        if (connection.connected()) {
-            connection.sendObject(new SetTimingMsg(consoleFrame.getInterval(),
-                                                   consoleFrame.getTimeout()));
-            connection.start();
-        } else {
-            connection = null;
-        }
-    }
-    private void ignoring(IgnoringMsg ignoringMsg) {
-        ignoring = ignoringMsg.ignoring;
-        update();
-    }
-
-    private View partCompOrIgnoring(View globalView, View partition,
-                                    View ignoring) {
-        View complement = new BitView().copyView(globalView).subtract(partition);
-        return new BitView().copyView(complement).merge(ignoring);
-    }
-
-    private void partitionNotification(View partition, int leader) {
-
-        /**
-         * if partition has changed membership deallocate current color
-         * and then reallocate new color
-         */
-        if (!this.partition.toBitSet().equals(partition.toBitSet())) {
-            colorAllocator.deallocate(this.partition, this);
-            partitionColor = colorAllocator.allocate(partition, this);
-        }
-        this.partition = partition;
-        this.leader = leader;
-        update();
-    }
-
-    private View partOrIgnoring(View partition, View ignoring) {
-        return new BitView().copyView(partition).merge(ignoring);
     }
 
     private void stats(StatsMsg stats) {

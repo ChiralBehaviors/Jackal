@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.util;
 
 import java.awt.BorderLayout;
@@ -59,29 +59,6 @@ public class DebugFrame extends JFrame {
         }
     }
 
-    public void makeVisible(Object obj) {
-        onDisplay = true;
-        displayObject = obj;
-        setVisible(true);
-        update();
-    }
-
-    public void remove() {
-        onDisplay = false;
-        displayObject = null;
-        setVisible(false);
-    }
-
-    public void setText(String text) {
-        jTextArea1.setText(text);
-    }
-
-    public void update() {
-        if (onDisplay) {
-            setText(displayObject.toString());
-        }
-    }
-
     private void jbInit() throws Exception {
         titledBorder1 = new TitledBorder("");
         getContentPane().setLayout(borderLayout1);
@@ -102,6 +79,13 @@ public class DebugFrame extends JFrame {
         });
     }
 
+    public void makeVisible(Object obj) {
+        onDisplay = true;
+        displayObject = obj;
+        setVisible(true);
+        update();
+    }
+
     void print(String str) {
         jTextArea1.append(str);
     }
@@ -109,5 +93,21 @@ public class DebugFrame extends JFrame {
     void println(String str) {
         jTextArea1.append(str);
         jTextArea1.append("\n");
+    }
+
+    public void remove() {
+        onDisplay = false;
+        displayObject = null;
+        setVisible(false);
+    }
+
+    public void setText(String text) {
+        jTextArea1.setText(text);
+    }
+
+    public void update() {
+        if (onDisplay) {
+            setText(displayObject.toString());
+        }
     }
 }

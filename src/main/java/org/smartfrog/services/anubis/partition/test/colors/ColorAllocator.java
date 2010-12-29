@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.colors;
 
 import java.awt.Color;
@@ -31,16 +31,16 @@ import org.smartfrog.services.anubis.partition.views.View;
 public class ColorAllocator {
 
     /**
-     * keep a list of colors that have been allocated indexed
-     * by bitmap (from the view)
+     * keep a list of colors that have been allocated indexed by bitmap (from
+     * the view)
      */
     private Map<NodeIdSet, Color> allocations = new HashMap<NodeIdSet, Color>();
 
     private ColorMap colorMap = new ColorMap();
 
     /**
-     * keep a list of nodes that have a color allocated indexed by
-     * bitmap (from the view)
+     * keep a list of nodes that have a color allocated indexed by bitmap (from
+     * the view)
      */
     private SetMap<NodeIdSet, NodeData> nodes = new SetMap<NodeIdSet, NodeData>();
 

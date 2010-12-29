@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
 import java.io.IOException;
@@ -36,6 +36,7 @@ public class MessageNioServerFactory implements IOConnectionServerFactory {
         super();
     }
 
+    @Override
     public IOConnectionServer create(ConnectionAddress address, Identity id,
                                      ConnectionSet cs) throws IOException {
         return new MessageNioServer(address, id, cs, wireSecurity);

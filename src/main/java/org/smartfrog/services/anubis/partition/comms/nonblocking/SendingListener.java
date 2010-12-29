@@ -16,15 +16,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
 public interface SendingListener {
 
     /**
-     * method called byt he thread writing data on the actual socketChannel
-     * when all the data has gone
-     * this enables to notify a blocking writer
+     * method called byt he thread writing data on the actual socketChannel when
+     * all the data has gone this enables to notify a blocking writer
      */
     public void sendingDone();
 }

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.subprocess;
 
 public class PeriodicTimer extends Thread {
@@ -29,6 +29,28 @@ public class PeriodicTimer extends Thread {
     public PeriodicTimer(String name, long period) {
         super(name);
         this.period = period;
+    }
+
+    /**
+     * @param now
+     */
+    protected void act(long now) {
+        // override this method for action calls
+    }
+
+    private void doSleep() {
+        while (wakeup <= now) {
+            wakeup += period;
+        }
+        try {
+            sleep(wakeup - now);
+        } catch (InterruptedException ex) {
+        }
+        now = System.currentTimeMillis();
+    }
+
+    protected void init() {
+        // override this method for initial actions if any
     }
 
     @Override
@@ -47,27 +69,5 @@ public class PeriodicTimer extends Thread {
 
     public void terminate() {
         running = false;
-    }
-
-    private void doSleep() {
-        while (wakeup <= now) {
-            wakeup += period;
-        }
-        try {
-            sleep(wakeup - now);
-        } catch (InterruptedException ex) {
-        }
-        now = System.currentTimeMillis();
-    }
-
-    /**
-	 * @param now  
-	 */
-    protected void act(long now) {
-        // override this method for action calls
-    }
-
-    protected void init() {
-        // override this method for initial actions if any
     }
 }

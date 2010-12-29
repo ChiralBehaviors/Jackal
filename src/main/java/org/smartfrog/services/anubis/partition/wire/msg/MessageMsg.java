@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.ByteArrayInputStream;
@@ -41,9 +41,12 @@ public final class MessageMsg extends TimedMsg {
     private byte[] payload = null;
     private int payloadSz = UNDEFINED_SIZE;
 
+    protected MessageMsg() {
+        super();
+    }
+
     public MessageMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                          WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
@@ -51,29 +54,6 @@ public final class MessageMsg extends TimedMsg {
     public MessageMsg(Identity id, Object msg) {
         super(id);
         message = msg;
-    }
-
-    protected MessageMsg() {
-        super();
-    }
-
-    public Object getMessageObject() {
-        return message;
-    }
-
-    @Override
-    public int getSize() throws WireFormException {
-        if (payloadSz == UNDEFINED_SIZE) {
-            throw new WireFormException(
-                                        "Attampt to get size of message when it has not been defined");
-        }
-        return payloadIdx + payloadSz;
-    }
-
-    @Override
-    public String toString() {
-        return "[message " + super.toString()
-               + (message == null ? "null" : message.toString()) + "]";
     }
 
     @Override
@@ -92,16 +72,29 @@ public final class MessageMsg extends TimedMsg {
         }
     }
 
+    public Object getMessageObject() {
+        return message;
+    }
+
+    @Override
+    public int getSize() throws WireFormException {
+        if (payloadSz == UNDEFINED_SIZE) {
+            throw new WireFormException(
+                                        "Attampt to get size of message when it has not been defined");
+        }
+        return payloadIdx + payloadSz;
+    }
+
     @Override
     protected int getType() {
         return MESSAGE_MSG_WIRE_TYPE;
     }
 
     /**
-     * Sets the timed message attributes to the wire form held in a
-     * byte array
-     *
-     * @param buf byte[]
+     * Sets the timed message attributes to the wire form held in a byte array
+     * 
+     * @param buf
+     *            byte[]
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
@@ -127,9 +120,14 @@ public final class MessageMsg extends TimedMsg {
         //        payloadSz = UNDEFINED_SIZE;
     }
 
+    @Override
+    public String toString() {
+        return "[message " + super.toString()
+               + (message == null ? "null" : message.toString()) + "]";
+    }
+
     /**
-     * Writes the timed message attributes to wire form in the given byte
-     * array
+     * Writes the timed message attributes to wire form in the given byte array
      */
     @Override
     protected void writeWireForm() throws WireFormException {

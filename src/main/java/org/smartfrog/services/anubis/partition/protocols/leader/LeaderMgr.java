@@ -28,153 +28,153 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class LeaderMgr {
 
-	protected Map<Identity, Connection> candidates = null;
-	protected Candidate localCandidate = null;
+    protected Map<Identity, Connection> candidates = null;
+    protected Candidate localCandidate = null;
 
-	public LeaderMgr(Map<Identity, Connection> candidateMap, Candidate local) {
-		candidates = candidateMap;
-		localCandidate = local;
-		localCandidate.setVote(localCandidate.getId());
-	}
+    public LeaderMgr(Map<Identity, Connection> candidateMap, Candidate local) {
+        candidates = candidateMap;
+        localCandidate = local;
+        localCandidate.setVote(localCandidate.getId());
+    }
 
-	/**
-	 * electLeader(v) performs an election amoung the members of the view v and
-	 * sets the local candidate's vote to that member. The election uses one of
-	 * two selection criteria depending on the stability of the view.
-	 * 
-	 * @param v
-	 * @return Identity
-	 */
-	public synchronized Identity electLeader(View v) {
-		return v.isStable() ? stableElection(v) : unstableElection(v);
-	}
+    /**
+     * The election is based on the criteria for picking a leader set in
+     * CandidateInfo. The election has two passes - the first just initialises
+     * the candidates, the second pass counts votes and keeps a running note on
+     * the best candidate (to avoid a third pass to find the best candidate).
+     * the winner is returned.
+     * 
+     * The election is relative to the view passed in (this will be the local
+     * parititon). Votes are only valid if the node voting and the node voted
+     * for are both in the partition.
+     * 
+     * @param v
+     * @return Candidate
+     */
+    private synchronized Candidate election(View v) {
 
-	/**
-	 * Returns the current leader - assumes there has been an election. The
-	 * local candidate always votes for the winner of the local election. So
-	 * return the local candidates vote
-	 * 
-	 * @return Identity
-	 */
-	public Identity getLeader() {
-		return localCandidate.getVote();
-	}
+        Iterator<Connection> iter;
 
-	/**
-	 * predictLeader(v) performs an election amoung the members of the view v
-	 * but does not set the local candidate's vote.
-	 * 
-	 * This method can be used to predict which candidate would win the election
-	 * at stability if the votes remain unchanged. There is no guarantee on
-	 * accuracy, but it can be used as a guide.
-	 * 
-	 * @param v
-	 * @return Identity
-	 */
-	public synchronized Identity predictLeader(View v) {
-		return election(v).getId();
-	}
+        /**
+         * reset the candidates (clear the votes)
+         */
+        iter = candidates.values().iterator();
+        while (iter.hasNext()) {
+            iter.next().clearReceivedVotes();
+        }
 
-	/**
-	 * The election is based on the criteria for picking a leader set in
-	 * CandidateInfo. The election has two passes - the first just initialises
-	 * the candidates, the second pass counts votes and keeps a running note on
-	 * the best candidate (to avoid a third pass to find the best candidate).
-	 * the winner is returned.
-	 * 
-	 * The election is relative to the view passed in (this will be the local
-	 * parititon). Votes are only valid if the node voting and the node voted
-	 * for are both in the partition.
-	 * 
-	 * @param v
-	 * @return Candidate
-	 */
-	private synchronized Candidate election(View v) {
+        /**
+         * Count all the votes and note which has the highest identity - this
+         * will be the winner in the event of no votes!
+         */
+        Candidate bestSoFar = localCandidate;
+        if (!v.contains(localCandidate.getVote())) {
+            localCandidate.setVote(localCandidate.getId());
+        }
 
-		Iterator<Connection> iter;
+        iter = candidates.values().iterator();
+        while (iter.hasNext()) {
+            Candidate voter = iter.next();
 
-		/**
-		 * reset the candidates (clear the votes)
-		 */
-		iter = candidates.values().iterator();
-		while (iter.hasNext()) {
-			iter.next().clearReceivedVotes();
-		}
+            /**
+             * If the voter is in the view then the voter is valid.
+             */
+            if (v.contains(voter.getId())) {
 
-		/**
-		 * Count all the votes and note which has the highest identity - this
-		 * will be the winner in the event of no votes!
-		 */
-		Candidate bestSoFar = localCandidate;
-		if (!v.contains(localCandidate.getVote())) {
-			localCandidate.setVote(localCandidate.getId());
-		}
+                /**
+                 * Note if the voter itself is the best candidate we have seen
+                 * so far.
+                 */
+                if (voter.winsAgainst(bestSoFar)) {
+                    bestSoFar = voter;
+                }
 
-		iter = candidates.values().iterator();
-		while (iter.hasNext()) {
-			Candidate voter = iter.next();
+                /**
+                 * If the vote is valid count it.
+                 */
+                if (v.contains(voter.getVote())) {
 
-			/**
-			 * If the voter is in the view then the voter is valid.
-			 */
-			if (v.contains(voter.getId())) {
+                    Candidate votedFor = candidates.get(voter.getVote());
+                    votedFor.receiveVote(voter);
 
-				/**
-				 * Note if the voter itself is the best candidate we have seen
-				 * so far.
-				 */
-				if (voter.winsAgainst(bestSoFar)) {
-					bestSoFar = voter;
-				}
+                    /**
+                     * Note if the voted for is the best candidate we have seen
+                     * so far.
+                     */
+                    if (votedFor.winsAgainst(bestSoFar)) {
+                        bestSoFar = votedFor;
+                    }
+                }
+            }
+        }
 
-				/**
-				 * If the vote is valid count it.
-				 */
-				if (v.contains(voter.getVote())) {
+        /**
+         * return the winner
+         */
+        return bestSoFar;
+    }
 
-					Candidate votedFor = candidates.get(voter.getVote());
-					votedFor.receiveVote(voter);
+    /**
+     * electLeader(v) performs an election amoung the members of the view v and
+     * sets the local candidate's vote to that member. The election uses one of
+     * two selection criteria depending on the stability of the view.
+     * 
+     * @param v
+     * @return Identity
+     */
+    public synchronized Identity electLeader(View v) {
+        return v.isStable() ? stableElection(v) : unstableElection(v);
+    }
 
-					/**
-					 * Note if the voted for is the best candidate we have seen
-					 * so far.
-					 */
-					if (votedFor.winsAgainst(bestSoFar)) {
-						bestSoFar = votedFor;
-					}
-				}
-			}
-		}
+    /**
+     * Returns the current leader - assumes there has been an election. The
+     * local candidate always votes for the winner of the local election. So
+     * return the local candidates vote
+     * 
+     * @return Identity
+     */
+    public Identity getLeader() {
+        return localCandidate.getVote();
+    }
 
-		/**
-		 * return the winner
-		 */
-		return bestSoFar;
-	}
+    /**
+     * predictLeader(v) performs an election amoung the members of the view v
+     * but does not set the local candidate's vote.
+     * 
+     * This method can be used to predict which candidate would win the election
+     * at stability if the votes remain unchanged. There is no guarantee on
+     * accuracy, but it can be used as a guide.
+     * 
+     * @param v
+     * @return Identity
+     */
+    public synchronized Identity predictLeader(View v) {
+        return election(v).getId();
+    }
 
-	/**
-	 * Perform the stable election (most votes wins - highest id as tie-breaker)
-	 * 
-	 * @param v
-	 * @return Identity
-	 */
-	private Identity stableElection(View v) {
-		localCandidate.setVote(election(v));
-		return localCandidate.getVote();
-	}
+    /**
+     * Perform the stable election (most votes wins - highest id as tie-breaker)
+     * 
+     * @param v
+     * @return Identity
+     */
+    private Identity stableElection(View v) {
+        localCandidate.setVote(election(v));
+        return localCandidate.getVote();
+    }
 
-	/**
-	 * Perform the unstable election (previous winner wins if still in view,
-	 * otherwise local candidate)
-	 * 
-	 * @param v
-	 * @return Identity
-	 */
-	private Identity unstableElection(View v) {
-		if (!v.contains(localCandidate.getVote())) {
-			localCandidate.setVote(localCandidate);
-		}
-		return localCandidate.getVote();
-	}
+    /**
+     * Perform the unstable election (previous winner wins if still in view,
+     * otherwise local candidate)
+     * 
+     * @param v
+     * @return Identity
+     */
+    private Identity unstableElection(View v) {
+        if (!v.contains(localCandidate.getVote())) {
+            localCandidate.setVote(localCandidate);
+        }
+        return localCandidate.getVote();
+    }
 
 }

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat;
 
 import org.smartfrog.services.anubis.partition.protocols.Sender;
@@ -24,7 +24,7 @@ import org.smartfrog.services.anubis.partition.protocols.Timed;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public interface HeartbeatProtocol extends HeartbeatReceiver, Timed, Sender,
-                                  View {
+        View {
     public boolean isNotTimely(long timenow, long timebound);
 
     public boolean isQuiesced(long timenow, long quiesce);

@@ -16,18 +16,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.util;
 
 import junit.framework.TestCase;
 
-public class Test extends TestCase{
-    public Test() {
-    }
-
+public class Test extends TestCase {
     public static void main(String[] args) {
         Test t = new Test();
         t.testIt();
+    }
+
+    public Test() {
     }
 
     public void testIt() {

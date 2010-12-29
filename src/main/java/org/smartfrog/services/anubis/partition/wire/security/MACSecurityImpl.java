@@ -12,6 +12,7 @@ public class MACSecurityImpl implements WireSecurity {
 
     private MACData macData;
 
+    @Override
     public WireMsg fromWireForm(byte[] wireForm) throws WireSecurityException,
                                                 WireFormException {
         try {
@@ -39,6 +40,7 @@ public class MACSecurityImpl implements WireSecurity {
         this.macData = macData;
     }
 
+    @Override
     public byte[] toWireForm(WireMsg msg) throws WireFormException {
         try {
 

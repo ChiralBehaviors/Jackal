@@ -29,116 +29,134 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public class SelfConnection extends BitView implements Connection,
-		HeartbeatProtocol {
+        HeartbeatProtocol {
 
-	/**
+    /**
      * 
      */
-	private static final long serialVersionUID = 1L;
-	private ConnectionAddress address = null;
-	private Candidate candidate = null;
-	private Identity me = null;
+    private static final long serialVersionUID = 1L;
+    private ConnectionAddress address = null;
+    private Candidate candidate = null;
+    private Identity me = null;
 
-	public SelfConnection(Identity id, View v, ConnectionAddress addr,
-			boolean preferred) {
-		me = id;
-		address = addr;
-		view = v.toBitSet();
-		stable = v.isStable();
-		candidate = new CandidateImpl(me, me, preferred);
-	}
+    public SelfConnection(Identity id, View v, ConnectionAddress addr,
+                          boolean preferred) {
+        me = id;
+        address = addr;
+        view = v.toBitSet();
+        stable = v.isStable();
+        candidate = new CandidateImpl(me, me, preferred);
+    }
 
-	public void clearReceivedVotes() {
-		candidate.clearReceivedVotes();
-	}
+    @Override
+    public void clearReceivedVotes() {
+        candidate.clearReceivedVotes();
+    }
 
-	public int countReceivedVotes() {
-		return candidate.countReceivedVotes();
-	}
+    @Override
+    public int countReceivedVotes() {
+        return candidate.countReceivedVotes();
+    }
 
-	/**
-	 * Candidate interface - redirect to CandidateImpl
-	 * 
-	 * @return Indentity
-	 */
-	public Identity getId() {
-		return getSender();
-	}
+    /**
+     * Candidate interface - redirect to CandidateImpl
+     * 
+     * @return Indentity
+     */
+    @Override
+    public Identity getId() {
+        return getSender();
+    }
 
-	/**
-	 * Connection interface - includes Sender interface
-	 */
-	public Identity getSender() {
-		return me;
-	}
+    /**
+     * Connection interface - includes Sender interface
+     */
+    @Override
+    public Identity getSender() {
+        return me;
+    }
 
-	public ConnectionAddress getSenderAddress() {
-		return address;
-	}
+    @Override
+    public ConnectionAddress getSenderAddress() {
+        return address;
+    }
 
-	/**
-	 * Timed interface
-	 */
-	public long getTime() {
-		return System.currentTimeMillis();
-	}
+    /**
+     * Timed interface
+     */
+    @Override
+    public long getTime() {
+        return System.currentTimeMillis();
+    }
 
-	public Identity getVote() {
-		return candidate.getVote();
-	}
+    @Override
+    public Identity getVote() {
+        return candidate.getVote();
+    }
 
-	/**
-	 * HeartbeatProtocol interface
-	 */
-	public boolean isNotTimely(long timenow, long timeout) {
-		return false;
-	}
+    /**
+     * HeartbeatProtocol interface
+     */
+    @Override
+    public boolean isNotTimely(long timenow, long timeout) {
+        return false;
+    }
 
-	public boolean isPreferred() {
-		return candidate.isPreferred();
-	}
+    @Override
+    public boolean isPreferred() {
+        return candidate.isPreferred();
+    }
 
-	public boolean isQuiesced(long timenow, long quiesce) {
-		return false;
-	}
+    @Override
+    public boolean isQuiesced(long timenow, long quiesce) {
+        return false;
+    }
 
-	/**
-	 * Self connection is clearly not skewed
-	 */
-	public boolean measuresClockSkew() {
-		return true;
-	}
+    /**
+     * Self connection is clearly not skewed
+     */
+    @Override
+    public boolean measuresClockSkew() {
+        return true;
+    }
 
-	/**
-	 * HeartbeatProtocol interface
-	 * 
-	 * @param h
-	 */
-	public boolean receiveHeartbeat(Heartbeat h) {
-		return true;
-	}
+    /**
+     * HeartbeatProtocol interface
+     * 
+     * @param h
+     */
+    @Override
+    public boolean receiveHeartbeat(Heartbeat h) {
+        return true;
+    }
 
-	public void receiveVote(Candidate c) {
-		candidate.receiveVote(c);
-	}
+    @Override
+    public void receiveVote(Candidate c) {
+        candidate.receiveVote(c);
+    }
 
-	public void setTime(long t) {
-		return;
-	}
+    @Override
+    public void setTime(long t) {
+        return;
+    }
 
-	public void setVote(Candidate c) {
-		candidate.setVote(c);
-	}
+    @Override
+    public void setVote(Candidate c) {
+        candidate.setVote(c);
+    }
 
-	public void setVote(Identity v) {
-		candidate.setVote(v);
-	}
+    @Override
+    public void setVote(Identity v) {
+        candidate.setVote(v);
+    }
 
-	public void terminate() {
-		return;
-	}
+    @Override
+    public void terminate() {
+        return;
+    }
 
-	public boolean winsAgainst(Candidate c) {
-		return candidate.winsAgainst(c);
-	}
+    @Override
+    public boolean winsAgainst(Candidate c) {
+        return candidate.winsAgainst(c);
+    }
 }

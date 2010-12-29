@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.BorderLayout;
@@ -61,6 +61,7 @@ public class NodeFrame extends JFrame {
     private JTextArea jTextArea1 = new JTextArea();
     private JTextField jTextField1 = new JTextField();
     private NodeData nodeData;
+
     public NodeFrame(NodeData nodeData) {
         this.nodeData = nodeData;
         try {
@@ -68,6 +69,10 @@ public class NodeFrame extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    void clear() {
+        jTextArea1.setText("");
     }
 
     /**
@@ -79,6 +84,120 @@ public class NodeFrame extends JFrame {
 
     public void inputError(String errorStr) {
         jTextField1.setText("[" + errorStr + "]" + jTextField1.getText());
+    }
+
+    private void jbInit() throws Exception {
+        new TitledBorder("");
+        jButton2.setText("Noop");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jButton2_actionPerformed(e);
+            }
+        });
+        jButton3.setText("Noop");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jButton3_actionPerformed(e);
+            }
+        });
+        jButton4.setText("Threads");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jButton4_actionPerformed(e);
+            }
+        });
+        jButton1.setText("Ignore");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jButton1_actionPerformed(e);
+            }
+        });
+        getContentPane().setLayout(borderLayout1);
+        jPanel2.setLayout(borderLayout2);
+        jPanel1.setBorder(BorderFactory.createRaisedBevelBorder());
+        jPanel2.setBorder(BorderFactory.createRaisedBevelBorder());
+        jTextArea1.setBorder(BorderFactory.createLoweredBevelBorder());
+        jButton7.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jButton7_actionPerformed(e);
+            }
+        });
+        jButton7.setActionCommand("+ Listener");
+        jButton7.setText("Noop");
+        jButton8.setMaximumSize(new Dimension(60, 27));
+        jButton8.setActionCommand("Local");
+        jButton8.setMinimumSize(new Dimension(60, 27));
+        jButton8.setText("Stats");
+        jButton8.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jButton8_actionPerformed(e);
+            }
+        });
+        jPanel1.add(jButton8, null);
+        jPanel1.add(jButton1, null);
+        jPanel1.add(jButton2, null);
+        jPanel1.add(jButton7, null);
+        jPanel1.add(jButton3, null);
+        jPanel1.add(jButton4, null);
+        getContentPane().add(jPanel2, BorderLayout.CENTER);
+        jPanel2.add(jTextField1, BorderLayout.SOUTH);
+        jPanel2.add(jScrollPane1, BorderLayout.CENTER);
+        getContentPane().add(jPanel1, BorderLayout.SOUTH);
+        jScrollPane1.getViewport().add(jTextArea1, null);
+
+        this.setSize(new Dimension(499, 300));
+
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closeEvent();
+            }
+        });
+    }
+
+    /**
+     * @param e
+     */
+    void jButton1_actionPerformed(ActionEvent e) {
+        String text = stripErrorPart(jTextField1.getText());
+        jTextField1.setText(text);
+        nodeData.setIgnoring(text);
+    }
+
+    /**
+     * @param e
+     */
+    void jButton2_actionPerformed(ActionEvent e) {
+    }
+
+    void jButton3_actionPerformed(ActionEvent e) {
+    }
+
+    void jButton4_actionPerformed(ActionEvent e) {
+        nodeData.getThreads();
+    }
+
+    void jButton7_actionPerformed(ActionEvent e) {
+    }
+
+    void jButton8_actionPerformed(ActionEvent e) {
+        nodeData.getStats();
+    }
+
+    void print(String str) {
+        jTextArea1.append(str);
+    }
+
+    void println(String str) {
+        jTextArea1.append(str);
+        jTextArea1.append("\n");
     }
 
     public String stripErrorPart(String inputStr) {
@@ -140,118 +259,6 @@ public class NodeFrame extends JFrame {
             }
         }
         return str;
-    }
-
-    private void jbInit() throws Exception {
-        new TitledBorder("");
-        jButton2.setText("Noop");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                jButton2_actionPerformed(e);
-            }
-        });
-        jButton3.setText("Noop");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                jButton3_actionPerformed(e);
-            }
-        });
-        jButton4.setText("Threads");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                jButton4_actionPerformed(e);
-            }
-        });
-        jButton1.setText("Ignore");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                jButton1_actionPerformed(e);
-            }
-        });
-        getContentPane().setLayout(borderLayout1);
-        jPanel2.setLayout(borderLayout2);
-        jPanel1.setBorder(BorderFactory.createRaisedBevelBorder());
-        jPanel2.setBorder(BorderFactory.createRaisedBevelBorder());
-        jTextArea1.setBorder(BorderFactory.createLoweredBevelBorder());
-        jButton7.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                jButton7_actionPerformed(e);
-            }
-        });
-        jButton7.setActionCommand("+ Listener");
-        jButton7.setText("Noop");
-        jButton8.setMaximumSize(new Dimension(60, 27));
-        jButton8.setActionCommand("Local");
-        jButton8.setMinimumSize(new Dimension(60, 27));
-        jButton8.setText("Stats");
-        jButton8.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                jButton8_actionPerformed(e);
-            }
-        });
-        jPanel1.add(jButton8, null);
-        jPanel1.add(jButton1, null);
-        jPanel1.add(jButton2, null);
-        jPanel1.add(jButton7, null);
-        jPanel1.add(jButton3, null);
-        jPanel1.add(jButton4, null);
-        getContentPane().add(jPanel2, BorderLayout.CENTER);
-        jPanel2.add(jTextField1, BorderLayout.SOUTH);
-        jPanel2.add(jScrollPane1, BorderLayout.CENTER);
-        getContentPane().add(jPanel1, BorderLayout.SOUTH);
-        jScrollPane1.getViewport().add(jTextArea1, null);
-
-        this.setSize(new Dimension(499, 300));
-
-        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                closeEvent();
-            }
-        });
-    }
-
-    void clear() {
-        jTextArea1.setText("");
-    }
-
-    /**
-	 * @param e  
-	 */
-    void jButton1_actionPerformed(ActionEvent e) {
-        String text = stripErrorPart(jTextField1.getText());
-        jTextField1.setText(text);
-        nodeData.setIgnoring(text);
-    }
-
-    /**
-	 * @param e  
-	 */
-    void jButton2_actionPerformed(ActionEvent e) {
-    }
-
-    void jButton3_actionPerformed(ActionEvent e) {
-    }
-
-    void jButton4_actionPerformed(ActionEvent e) {
-        nodeData.getThreads();
-    }
-
-    void jButton7_actionPerformed(ActionEvent e) {
-    }
-
-    void jButton8_actionPerformed(ActionEvent e) {
-        nodeData.getStats();
-    }
-
-    void print(String str) {
-        jTextArea1.append(str);
-    }
-
-    void println(String str) {
-        jTextArea1.append(str);
-        jTextArea1.append("\n");
     }
 
 }

@@ -13,26 +13,22 @@ public class ControllerConfiguration extends BasicConfiguration {
     public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(ControllerConfiguration.class);
     }
-    
-    
 
-    @Override
-	public int getNode() {
-		return 3;
-	}
-
-
-
-	@Bean
+    @Bean
     public Controller controller() throws UnknownHostException {
         Controller controller = new Controller();
         controller.setAddress(heartbeatGroup());
         controller.setTimer(timer());
         controller.setCheckPeriod(1000);
         controller.setExpirePeriod(10000);
-        controller.setIdentity(partitionIdentity()); 
-        controller.setHeartbeatTimeout(heartbeatTimeout()); 
+        controller.setIdentity(partitionIdentity());
+        controller.setHeartbeatTimeout(heartbeatTimeout());
         controller.setHeartbeatInterval(heartbeatInterval());
         return controller;
+    }
+
+    @Override
+    public int getNode() {
+        return 3;
     }
 }

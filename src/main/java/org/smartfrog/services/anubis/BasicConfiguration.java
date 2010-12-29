@@ -30,156 +30,156 @@ import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 @Configuration
 public class BasicConfiguration {
 
-	@Bean
-	public DeployedPostProcessor deployedPostProcessor() {
-		return new DeployedPostProcessor();
-	}
+    @Bean
+    public ConnectionSet connectionSet() throws Exception {
+        ConnectionSet connectionSet = new ConnectionSet();
+        connectionSet.setLeaderProtocolFactory(leaderProtocolFactory());
+        connectionSet.setConnectionAddress(contactAddress());
+        connectionSet.setHeartbeatAddress(heartbeatGroup());
+        connectionSet.setFactory(ioConnectionServerFactory());
+        connectionSet.setHeartbeatCommsFactory(heartbeatCommsFactory());
+        connectionSet.setHeartbeatProtocolFactory(heartbeatProtocolFactory());
+        connectionSet.setIdentity(partitionIdentity());
+        connectionSet.setPartitionProtocol(partitionProtocol());
+        connectionSet.setTiming(heartbeatInterval(), heartbeatTimeout());
+        return connectionSet;
+    }
 
-	public long heartbeatInterval() {
-		return 2000L;
-	}
+    @Bean
+    public ConnectionAddress contactAddress() throws UnknownHostException {
+        return new ConnectionAddress(contactHost(), contactPort());
+    }
 
-	public long heartbeatTimeout() {
-		return 3L;
-	}
+    public InetAddress contactHost() throws UnknownHostException {
+        return InetAddress.getLocalHost();
+    }
 
-	public int heartbeatGroupPort() {
-		return 1966;
-	}
+    public int contactPort() {
+        return 0;
+    }
 
-	public InetAddress heartbeatGroupMulticastAddress()
-			throws UnknownHostException {
-		return InetAddress.getByName("233.1.2.30");
-	}
+    @Bean
+    public DeployedPostProcessor deployedPostProcessor() {
+        return new DeployedPostProcessor();
+    }
 
-	public int heartbeatGroupTTL() {
-		return 1;
-	}
+    @Bean
+    public Epoch epoch() {
+        return new Epoch();
+    }
 
-	@Bean
-	public ConnectionAddress contactAddress() throws UnknownHostException {
-		return new ConnectionAddress(contactHost(), contactPort());
-	}
+    public int getMagic() {
+        return 12345;
+    }
 
-	public int contactPort() {
-		return 0;
-	}
+    public int getNode() throws UnknownHostException {
+        return Identity.getProcessUniqueId();
+    }
 
-	public InetAddress contactHost() throws UnknownHostException {
-		return InetAddress.getLocalHost();
-	}
+    public boolean getTestable() {
+        return true;
+    }
 
-	@Bean
-	public Epoch epoch() {
-		return new Epoch();
-	}
+    @Bean
+    public HeartbeatCommsFactory heartbeatCommsFactory() {
+        HeartbeatCommsFactory factory = new HeartbeatCommsFactory();
+        factory.setWireSecurity(wireSecurity());
+        return factory;
+    }
 
-	@Bean
-	public Identity partitionIdentity() throws UnknownHostException {
-		return new Identity(getMagic(), getNode(), epoch().longValue());
-	}
+    @Bean
+    public MulticastAddress heartbeatGroup() throws UnknownHostException {
+        return new MulticastAddress(heartbeatGroupMulticastAddress(),
+                                    heartbeatGroupPort(), heartbeatGroupTTL());
+    }
 
-	public int getMagic() {
-		return 12345;
-	}
+    public InetAddress heartbeatGroupMulticastAddress()
+                                                       throws UnknownHostException {
+        return InetAddress.getByName("233.1.2.30");
+    }
 
-	public int getNode() throws UnknownHostException {
-		return Identity.getProcessUniqueId();
-	}
+    public int heartbeatGroupPort() {
+        return 1966;
+    }
 
-	@Bean
-	public MulticastAddress heartbeatGroup() throws UnknownHostException {
-		return new MulticastAddress(heartbeatGroupMulticastAddress(),
-				heartbeatGroupPort(), heartbeatGroupTTL());
-	}
+    public int heartbeatGroupTTL() {
+        return 1;
+    }
 
-	@Bean
-	public WireSecurity wireSecurity() {
-		return new NoSecurityImpl();
-	}
+    public long heartbeatInterval() {
+        return 2000L;
+    }
 
-	@Bean
-	public AnubisLocator locator() throws UnknownHostException {
-		Locator locator = new Locator();
-		locator.setIdentity(partitionIdentity());
-		locator.setPartition(partition());
-		locator.setHeartbeatInterval(heartbeatInterval());
-		locator.setHeartbeatTimeout(heartbeatTimeout());
-		return locator;
-	}
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        return new TimedProtocolFactory();
+    }
 
-	@Bean
-	public PartitionManager partition() throws UnknownHostException {
-		PartitionManager partition = new PartitionManager();
-		partition.setIdentity(partitionIdentity());
-		return partition;
-	}
+    public long heartbeatTimeout() {
+        return 3L;
+    }
 
-	@Bean
-	public Timer timer() {
-		return new Timer("Partition timer", true);
-	}
+    @Bean
+    public IOConnectionServerFactory ioConnectionServerFactory()
+                                                                throws Exception {
+        MessageNioServerFactory factory = new MessageNioServerFactory();
+        factory.setWireSecurity(wireSecurity());
+        return factory;
+    }
 
-	@Bean
-	public LeaderProtocolFactory leaderProtocolFactory() {
-		return new LeaderProtocolFactory();
-	}
+    @Bean
+    public LeaderProtocolFactory leaderProtocolFactory() {
+        return new LeaderProtocolFactory();
+    }
 
-	@Bean
-	public ConnectionSet connectionSet() throws Exception {
-		ConnectionSet connectionSet = new ConnectionSet();
-		connectionSet.setLeaderProtocolFactory(leaderProtocolFactory());
-		connectionSet.setConnectionAddress(contactAddress());
-		connectionSet.setHeartbeatAddress(heartbeatGroup());
-		connectionSet.setFactory(ioConnectionServerFactory());
-		connectionSet.setHeartbeatCommsFactory(heartbeatCommsFactory());
-		connectionSet.setHeartbeatProtocolFactory(heartbeatProtocolFactory());
-		connectionSet.setIdentity(partitionIdentity());
-		connectionSet.setPartitionProtocol(partitionProtocol());
-		connectionSet.setTiming(heartbeatInterval(), heartbeatTimeout());
-		return connectionSet;
-	}
+    @Bean
+    public AnubisLocator locator() throws UnknownHostException {
+        Locator locator = new Locator();
+        locator.setIdentity(partitionIdentity());
+        locator.setPartition(partition());
+        locator.setHeartbeatInterval(heartbeatInterval());
+        locator.setHeartbeatTimeout(heartbeatTimeout());
+        return locator;
+    }
 
-	@Bean
-	public PartitionProtocol partitionProtocol() throws UnknownHostException {
-		PartitionProtocol protocol = new PartitionProtocol();
-		protocol.setPartitionMgr(partition());
-		protocol.setIdentity(partitionIdentity());
-		return protocol;
-	}
+    @Bean
+    public PartitionManager partition() throws UnknownHostException {
+        PartitionManager partition = new PartitionManager();
+        partition.setIdentity(partitionIdentity());
+        return partition;
+    }
 
-	@Bean
-	public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-		return new TimedProtocolFactory();
-	}
+    @Bean
+    public Identity partitionIdentity() throws UnknownHostException {
+        return new Identity(getMagic(), getNode(), epoch().longValue());
+    }
 
-	@Bean
-	public HeartbeatCommsFactory heartbeatCommsFactory() {
-		HeartbeatCommsFactory factory = new HeartbeatCommsFactory();
-		factory.setWireSecurity(wireSecurity());
-		return factory;
-	}
+    @Bean
+    public PartitionProtocol partitionProtocol() throws UnknownHostException {
+        PartitionProtocol protocol = new PartitionProtocol();
+        protocol.setPartitionMgr(partition());
+        protocol.setIdentity(partitionIdentity());
+        return protocol;
+    }
 
-	@Bean
-	public IOConnectionServerFactory ioConnectionServerFactory()
-			throws Exception {
-		MessageNioServerFactory factory = new MessageNioServerFactory();
-		factory.setWireSecurity(wireSecurity());
-		return factory;
-	}
+    @Bean
+    public TestMgr testMgr() throws Exception {
+        TestMgr mgr = new TestMgr(contactHost().getCanonicalHostName(),
+                                  contactPort(), partition(), getNode());
+        mgr.setConnectionAddress(contactAddress());
+        mgr.setConnectionSet(connectionSet());
+        mgr.setIdentity(partitionIdentity());
+        mgr.setTestable(getTestable());
+        return mgr;
+    }
 
-	@Bean
-	public TestMgr testMgr() throws Exception {
-		TestMgr mgr = new TestMgr(contactHost().getCanonicalHostName(),
-				contactPort(), partition(), getNode());
-		mgr.setConnectionAddress(contactAddress());
-		mgr.setConnectionSet(connectionSet());
-		mgr.setIdentity(partitionIdentity());
-		mgr.setTestable(getTestable());
-		return mgr;
-	}
-	
-	public boolean getTestable() {
-		return true;
-	}
+    @Bean
+    public Timer timer() {
+        return new Timer("Partition timer", true);
+    }
+
+    @Bean
+    public WireSecurity wireSecurity() {
+        return new NoSecurityImpl();
+    }
 }

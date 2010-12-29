@@ -16,10 +16,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.test;
-
-
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -36,10 +34,9 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 
-
-public class Driver extends JFrame { 
-	private static final long serialVersionUID = 1L;
-	private JPanel jPanel1 = new JPanel();
+public class Driver extends JFrame {
+    private static final long serialVersionUID = 1L;
+    private JPanel jPanel1 = new JPanel();
     private JButton jButton2 = new JButton();
     private JButton jButton3 = new JButton();
     private JButton jButton4 = new JButton();
@@ -55,21 +52,22 @@ public class Driver extends JFrame {
     private JButton jButton5 = new JButton();
     private JPanel jPanel3 = new JPanel();
     private JButton jButton6 = new JButton();
-    private JButton jButton7 = new JButton(); 
+    private JButton jButton7 = new JButton();
 
     public Driver(Test t, String title) {
         test = t;
         try {
             jbInit();
-            this.setTitle(title);
-        }
-        catch(Exception e) {
+            setTitle(title);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    private void jbInit() throws Exception { 
+
+    private void jbInit() throws Exception {
         jButton2.setText("- Prov");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton2_actionPerformed(e);
             }
@@ -77,28 +75,32 @@ public class Driver extends JFrame {
         jButton3.setActionCommand("Rapido");
         jButton3.setText("Rapido");
         jButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton3_actionPerformed(e);
             }
         });
         jButton4.setText("- Lsnr");
         jButton4.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton4_actionPerformed(e);
             }
         });
         jButton1.setText("+ Prov");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton1_actionPerformed(e);
             }
         });
-        this.getContentPane().setLayout(borderLayout1);
+        getContentPane().setLayout(borderLayout1);
         jPanel2.setLayout(borderLayout2);
         jPanel1.setBorder(BorderFactory.createRaisedBevelBorder());
         jPanel2.setBorder(BorderFactory.createRaisedBevelBorder());
         jTextArea1.setBorder(BorderFactory.createLoweredBevelBorder());
         jButton5.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton5_actionPerformed(e);
             }
@@ -113,11 +115,13 @@ public class Driver extends JFrame {
         jButton6.setActionCommand("Global");
         jButton6.setText("Global");
         jButton6.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton6_actionPerformed(e);
             }
         });
         jButton7.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton7_actionPerformed(e);
             }
@@ -129,20 +133,23 @@ public class Driver extends JFrame {
         jPanel1.add(jButton3, null);
         jPanel1.add(jButton7, null);
         jPanel1.add(jButton4, null);
-        this.getContentPane().add(jPanel3, BorderLayout.NORTH);
+        getContentPane().add(jPanel3, BorderLayout.NORTH);
         jPanel3.add(jButton6, null);
         jPanel3.add(jButton5, null);
-        this.getContentPane().add(jPanel2, BorderLayout.CENTER);
-        jPanel2.add(jTextField1,  BorderLayout.SOUTH);
+        getContentPane().add(jPanel2, BorderLayout.CENTER);
+        jPanel2.add(jTextField1, BorderLayout.SOUTH);
         jPanel2.add(jScrollPane1, BorderLayout.CENTER);
-        this.getContentPane().add(jPanel1, BorderLayout.SOUTH);
+        getContentPane().add(jPanel1, BorderLayout.SOUTH);
         jScrollPane1.getViewport().add(jTextArea1, null);
 
         this.setSize(new Dimension(499, 300));
 
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) { test.terminate(); }
+            @Override
+            public void windowClosing(WindowEvent e) {
+                test.terminate();
+            }
         });
     }
 
@@ -166,11 +173,6 @@ public class Driver extends JFrame {
         jTextField1.setText("");
     }
 
-    void jButton7_actionPerformed(ActionEvent e) {
-        test.nonBlockAddListener(jTextField1.getText());
-        jTextField1.setText("");
-    }
-
     void jButton5_actionPerformed(ActionEvent e) {
         test.showLocal();
     }
@@ -179,14 +181,18 @@ public class Driver extends JFrame {
         test.showGlobal();
     }
 
-    void println(String str) {
-        jTextArea1.append(str);
-        jTextArea1.append("\n");
+    void jButton7_actionPerformed(ActionEvent e) {
+        test.nonBlockAddListener(jTextField1.getText());
+        jTextField1.setText("");
     }
 
     void print(String str) {
         jTextArea1.append(str);
     }
 
+    void println(String str) {
+        jTextArea1.append(str);
+        jTextArea1.append("\n");
+    }
 
 }

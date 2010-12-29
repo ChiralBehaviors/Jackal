@@ -9,14 +9,15 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class LocatorDebugConfiguration extends BasicConfiguration {
-	
+
     public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(LocatorDebugConfiguration.class);
     }
 
-	public int getNode() {
-		return 1;
-	}
+    @Override
+    public int getNode() {
+        return 1;
+    }
 
     @Bean
     public Test tester() throws UnknownHostException {

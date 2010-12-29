@@ -24,137 +24,138 @@ import java.nio.ByteBuffer;
 
 public class WireMsg implements WireSizes {
 
-	public static final int WIRE_TYPE = 100;
-	protected static final int WIRE_SIZE = intSz;
-	protected byte[] bytes = null;
+    public static final int WIRE_TYPE = 100;
+    protected static final int WIRE_SIZE = intSz;
+    protected byte[] bytes = null;
 
-	protected int trailerSize = 0;
-	protected ByteBuffer wireForm = null;
+    protected int trailerSize = 0;
+    protected ByteBuffer wireForm = null;
 
-	/**
-	 * Construct from the wire form. Each substype should implement a similar
-	 * constructor.
-	 * 
-	 * @param wireForm
-	 *            ByteBuffer
-	 * @throws ClassNotFoundException
-	 * @throws WireFormException
-	 * @throws IOException
-	 */
-	public WireMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-			WireFormException, IOException {
-		super();
-		readWireForm(wireForm);
-	}
+    /**
+     * Default constructor - used when constructing from wire form
+     */
+    protected WireMsg() {
+        super();
+    }
 
-	/**
-	 * Default constructor - used when constructing from wire form
-	 */
-	protected WireMsg() {
-		super();
-	}
+    /**
+     * Construct from the wire form. Each substype should implement a similar
+     * constructor.
+     * 
+     * @param wireForm
+     *            ByteBuffer
+     * @throws ClassNotFoundException
+     * @throws WireFormException
+     * @throws IOException
+     */
+    public WireMsg(ByteBuffer wireForm) throws ClassNotFoundException,
+                                       WireFormException, IOException {
+        super();
+        readWireForm(wireForm);
+    }
 
-	/**
-	 * Each subtype should over-ride getSize() to return its own calculation of
-	 * size.
-	 * 
-	 * @return int
-	 * @throws WireFormException
-	 */
-	public int getSize() throws WireFormException {
-		return WIRE_SIZE;
-	}
+    /**
+     * This method should be over-ridden if the subtype has dynamic sized
+     * attributes to determine their size and prepare them for writing.
+     */
+    protected void fixDynamicSizedAttributes() {
+    }
 
-	/**
-	 * Set the size of the trailer. When the message is converted to its wire
-	 * form, the byte array will include a sequence of unused bytes equal to the
-	 * trailer size at the end. The byte array length will be getSize() +
-	 * trailerSize.
-	 * 
-	 * @param n
-	 * @throws WireFormException
-	 */
-	public void setTrailerSize(int n) throws WireFormException {
-		if (n < 0) {
-			throw new WireFormException("Negative trailer size specified: " + n);
-		}
-		trailerSize = n;
-	}
+    /**
+     * Each subtype should over-ride getSize() to return its own calculation of
+     * size.
+     * 
+     * @return int
+     * @throws WireFormException
+     */
+    public int getSize() throws WireFormException {
+        return WIRE_SIZE;
+    }
 
-	/**
-	 * toWire() generates a byte array from this message. Messages that have an
-	 * attribute with dynamic size should implement the
-	 * fixDynamicSizeAttributes() method to prepare these attributes and so that
-	 * their getSize() method can return the actual desired size. Otherwise this
-	 * method should be over-ridden completely.
-	 * 
-	 * their size in
-	 * 
-	 * @return byte[]
-	 * @throws WireFormException
-	 * @throws IOException
-	 */
-	public byte[] toWire() throws WireFormException, IOException {
+    /**
+     * Each subtype should over-ride getType() to return its own type.
+     * 
+     * @return int
+     */
+    protected int getType() {
+        return WIRE_TYPE;
+    }
 
-		fixDynamicSizedAttributes();
+    /**
+     * top level readWireForm method. All subtypes should implement this method
+     * to call their super.readWireForm(ByteBuffer) method and then read their
+     * own attributes.
+     * 
+     * @param buf
+     *            ByteBuffer
+     * @throws IOException
+     * @throws WireFormException
+     * @throws ClassNotFoundException
+     */
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
 
-		bytes = new byte[getSize() + trailerSize];
-		wireForm = ByteBuffer.wrap(bytes);
+        wireForm = buf;
+        bytes = buf.array();
 
-		writeWireForm();
+        if (wireForm.getInt(0) != getType()) {
+            throw new WireFormException(
+                                        "Incorrect type in wire form - can not read as "
+                                                + this.getClass());
+        }
+    }
 
-		return bytes;
-	}
+    /**
+     * Set the size of the trailer. When the message is converted to its wire
+     * form, the byte array will include a sequence of unused bytes equal to the
+     * trailer size at the end. The byte array length will be getSize() +
+     * trailerSize.
+     * 
+     * @param n
+     * @throws WireFormException
+     */
+    public void setTrailerSize(int n) throws WireFormException {
+        if (n < 0) {
+            throw new WireFormException("Negative trailer size specified: " + n);
+        }
+        trailerSize = n;
+    }
 
-	/**
-	 * This method should be over-ridden if the subtype has dynamic sized
-	 * attributes to determine their size and prepare them for writing.
-	 */
-	protected void fixDynamicSizedAttributes() {
-	}
+    /**
+     * toWire() generates a byte array from this message. Messages that have an
+     * attribute with dynamic size should implement the
+     * fixDynamicSizeAttributes() method to prepare these attributes and so that
+     * their getSize() method can return the actual desired size. Otherwise this
+     * method should be over-ridden completely.
+     * 
+     * their size in
+     * 
+     * @return byte[]
+     * @throws WireFormException
+     * @throws IOException
+     */
+    public byte[] toWire() throws WireFormException, IOException {
 
-	/**
-	 * Each subtype should over-ride getType() to return its own type.
-	 * 
-	 * @return int
-	 */
-	protected int getType() {
-		return WIRE_TYPE;
-	}
+        fixDynamicSizedAttributes();
 
-	/**
-	 * top level readWireForm method. All subtypes should implement this method
-	 * to call their super.readWireForm(ByteBuffer) method and then read their
-	 * own attributes.
-	 * 
-	 * @param buf
-	 *            ByteBuffer
-	 * @throws IOException
-	 * @throws WireFormException
-	 * @throws ClassNotFoundException
-	 */
-	protected void readWireForm(ByteBuffer buf) throws IOException,
-			WireFormException, ClassNotFoundException {
+        bytes = new byte[getSize() + trailerSize];
+        wireForm = ByteBuffer.wrap(bytes);
 
-		wireForm = buf;
-		bytes = buf.array();
+        writeWireForm();
 
-		if (wireForm.getInt(0) != getType()) {
-			throw new WireFormException(
-					"Incorrect type in wire form - can not read as "
-							+ this.getClass());
-		}
-	}
+        return bytes;
+    }
 
-	/**
-	 * Top level writeWireForm() method. subtypes should implement this method
-	 * to call their super.writeWireForm and then write their own attributes.
-	 * 
-	 * @throws WireFormException
-	 *             on trouble
-	 */
-	protected void writeWireForm() throws WireFormException {
-		wireForm.putInt(0, getType());
-	}
+    /**
+     * Top level writeWireForm() method. subtypes should implement this method
+     * to call their super.writeWireForm and then write their own attributes.
+     * 
+     * @throws WireFormException
+     *             on trouble
+     */
+    protected void writeWireForm() throws WireFormException {
+        wireForm.putInt(0, getType());
+    }
 
 }
