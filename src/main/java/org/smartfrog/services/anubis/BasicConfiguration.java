@@ -84,7 +84,7 @@ public class BasicConfiguration {
 	}
 
 	public int getNode() throws UnknownHostException {
-		return Identity.getIdFromLocalIpAddress();
+		return Identity.getProcessUniqueId();
 	}
 
 	@Bean

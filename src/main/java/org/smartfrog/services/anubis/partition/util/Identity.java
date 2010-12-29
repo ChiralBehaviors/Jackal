@@ -16,13 +16,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.util;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -30,177 +31,186 @@ import java.nio.ByteBuffer;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
 /**
- * The identity of a partiton manager.
- * Identity represents the identity of a partiton manager. The identity
- * is based on a magic number (to allow multiple instances in the same
- * network not to conflict), an integer id, and an epoch number to differentiate
- * incarnations of the same manager.
+ * The identity of a partiton manager. Identity represents the identity of a
+ * partiton manager. The identity is based on a magic number (to allow multiple
+ * instances in the same network not to conflict), an integer id, and an epoch
+ * number to differentiate incarnations of the same manager.
  */
 public class Identity implements Serializable, Cloneable, WireSizes {
 
-    static final private int magicIdx = 0;
-    static final private int idIdx = magicIdx + intSz;
-    static final private int epochIdx = idIdx + intSz;
-    static final public int identityWireSz = epochIdx + longSz;
+	static final private int magicIdx = 0;
+	static final private int idIdx = magicIdx + intSz;
+	static final private int epochIdx = idIdx + intSz;
+	static final public int identityWireSz = epochIdx + longSz;
 
-    /**
+	/**
        * 
        */
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    public static Identity readWireForm(ByteBuffer bytes, int idx) {
-        return new Identity(bytes.getInt(idx + magicIdx),
-                            bytes.getInt(idx + idIdx),
-                            bytes.getLong(idx + epochIdx));
-    }
+	public static Identity readWireForm(ByteBuffer bytes, int idx) {
+		return new Identity(bytes.getInt(idx + magicIdx), bytes.getInt(idx
+				+ idIdx), bytes.getLong(idx + epochIdx));
+	}
 
-    public final long epoch;
-    public final int id;
+	public final long epoch;
+	public final int id;
 
-    public final int magic;
-    
-    /**
-     * Construct an Identity using the local IP address as the node
-     * identity
-     * 
-     * @param magic
-     * @param epoch
-     * @throws UnknownHostException 
-     */
-    public Identity(int magic, long epoch) throws UnknownHostException {
-    	this(magic, getIdFromLocalIpAddress(), epoch);
-    }
-    
-    public static int getIdFromLocalIpAddress() throws UnknownHostException {
-    	return inetAddressToNode(InetAddress.getLocalHost());
-    }
-    
-    public static int inetAddressToNode(InetAddress address) {
-        String ipAsString = address.getHostAddress();
-        int dotIndex = ipAsString.lastIndexOf(".");
-        String nodeStr = ipAsString.substring(dotIndex + 1, ipAsString.length());
-        return Integer.parseInt(nodeStr);
-    }
+	public final int magic;
 
-    /**
-     * constructor - takes a given magic number, id and epoch to construct the
-     * identity object from.
-     */
-    public Identity(int magic, int id, long epoch) {
-        this.magic = magic;
-        this.id = id;
-        this.epoch = epoch;
-    }
+	/**
+	 * Construct an Identity using the local IP address as the node identity
+	 * 
+	 * @param magic
+	 * @param epoch
+	 * @throws UnknownHostException
+	 */
+	public Identity(int magic, long epoch) throws UnknownHostException {
+		this(magic, getIdFromLocalIpAddress(), epoch);
+	}
 
-    /**
-    * This method is similar to the readObject() method but is not
-    * part of the Serializable interface. This can be used to unmarshall
-    * this object including the super class properties, without using that
-    * interface. There are no descriptors, so the use needs to
-    * know what objects and what versions to unmarshall from a stream by
-    * other means.
-    *
-    * @param s
-    * @throws IOException
-    */
-    public Identity(ObjectInputStream s) throws IOException {
-        id = s.readInt();
-        magic = s.readInt();
-        epoch = s.readLong();
-    }
+	public static int getProcessUniqueId() throws UnknownHostException {
+		int nanoTime = (int) (System.nanoTime()& 0xFFFFFFFF) << 24;
+		int localIP = getIdFromLocalIpAddress();
+		int pid = getPID() << 8;
+		return nanoTime | pid | localIP;
+	}
 
-    /**
-     * create another identity object like this one.
-     */
-    @Override
-    public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException ex) {
-            ex.printStackTrace();
-            return null;
-        }
-    }
+	public static int getPID() {
+		String name = ManagementFactory.getRuntimeMXBean().getName();
+		String pid = name.substring(0, name.indexOf('@'));
+		return Integer.parseInt(pid);
+	}
 
-    /**
-     * does the identitiy match on epoch
-     */
-    public boolean equalEpoch(Identity identity) {
-        return epoch == identity.epoch;
-    }
+	public static int getIdFromLocalIpAddress() throws UnknownHostException {
+		return inetAddressToNode(InetAddress.getLocalHost());
+	}
 
-    /**
-     * does the identity match on magic and id (not epoch)
-     */
-    public boolean equalId(Identity identity) {
-        return id == identity.id;
-    }
+	public static int inetAddressToNode(InetAddress address) {
+		String ipAsString = address.getHostAddress();
+		int dotIndex = ipAsString.lastIndexOf(".");
+		String nodeStr = ipAsString
+				.substring(dotIndex + 1, ipAsString.length());
+		return Integer.parseInt(nodeStr);
+	}
 
-    /**
-     * does the identity match on magic number
-     */
-    public boolean equalMagic(Identity identity) {
-        return magic == identity.magic;
-    }
+	/**
+	 * constructor - takes a given magic number, id and epoch to construct the
+	 * identity object from.
+	 */
+	public Identity(int magic, int id, long epoch) {
+		this.magic = magic;
+		this.id = id;
+		this.epoch = epoch;
+	}
 
-    /**
-     * Equality test: does not use epoch.
-     * Defines the equality relation for identities - used in containers
-     * e.g. hash tables. - note: does not use epoch for equality!!!!
-     * TWO IDENTITIES ARE EQUIVALENT IF THE HAVE THE SAME ID AND MAGIC NUMBER
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
+	/**
+	 * This method is similar to the readObject() method but is not part of the
+	 * Serializable interface. This can be used to unmarshall this object
+	 * including the super class properties, without using that interface. There
+	 * are no descriptors, so the use needs to know what objects and what
+	 * versions to unmarshall from a stream by other means.
+	 * 
+	 * @param s
+	 * @throws IOException
+	 */
+	public Identity(ObjectInputStream s) throws IOException {
+		id = s.readInt();
+		magic = s.readInt();
+		epoch = s.readLong();
+	}
 
-        if (obj instanceof Identity) {
-            Identity identity = (Identity) obj;
-            return magic == identity.magic && id == identity.id;
-        }
+	/**
+	 * create another identity object like this one.
+	 */
+	@Override
+	public Object clone() {
+		try {
+			return super.clone();
+		} catch (CloneNotSupportedException ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
 
-        return false;
-    }
+	/**
+	 * does the identitiy match on epoch
+	 */
+	public boolean equalEpoch(Identity identity) {
+		return epoch == identity.epoch;
+	}
 
-    /**
-     * a hash code for the epoch - used in containers.
-     */
-    @Override
-    public int hashCode() {
-        return magic + id * 101;
-    }
+	/**
+	 * does the identity match on magic and id (not epoch)
+	 */
+	public boolean equalId(Identity identity) {
+		return id == identity.id;
+	}
 
-    /**
-     * for debug purposes
-     */
-    @Override
-    public String toString() {
-        // return "<id=" + id + ", " + magic + ", " + epoch + ">";
-        return "<id " + id + " >";
-    }
+	/**
+	 * does the identity match on magic number
+	 */
+	public boolean equalMagic(Identity identity) {
+		return magic == identity.magic;
+	}
 
-    /**
-     * This method is similar to the writeObject() method but is not
-     * part of the Serializable interface. This can be used to marshall
-     * this object including the super class properties, without using that
-     * interface. It does not serialize descriptors, so the use needs to
-     * know what objects and what versions to unmarshall from a stream by
-     * other means.
-     *
-     * @param s
-     * @throws IOException
-     */
-    public void writeToObjectStream(ObjectOutputStream s) throws IOException {
-        s.writeInt(id);
-        s.writeInt(magic);
-        s.writeLong(epoch);
-    }
+	/**
+	 * Equality test: does not use epoch. Defines the equality relation for
+	 * identities - used in containers e.g. hash tables. - note: does not use
+	 * epoch for equality!!!! TWO IDENTITIES ARE EQUIVALENT IF THE HAVE THE SAME
+	 * ID AND MAGIC NUMBER
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
 
-    public void writeWireForm(ByteBuffer bytes, int idx) {
-        bytes.putInt(idx + magicIdx, magic);
-        bytes.putInt(idx + idIdx, id);
-        bytes.putLong(idx + epochIdx, epoch);
-    }
+		if (obj instanceof Identity) {
+			Identity identity = (Identity) obj;
+			return magic == identity.magic && id == identity.id;
+		}
+
+		return false;
+	}
+
+	/**
+	 * a hash code for the epoch - used in containers.
+	 */
+	@Override
+	public int hashCode() {
+		return magic + id * 101;
+	}
+
+	/**
+	 * for debug purposes
+	 */
+	@Override
+	public String toString() {
+		// return "<id=" + id + ", " + magic + ", " + epoch + ">";
+		return "<id " + id + " >";
+	}
+
+	/**
+	 * This method is similar to the writeObject() method but is not part of the
+	 * Serializable interface. This can be used to marshall this object
+	 * including the super class properties, without using that interface. It
+	 * does not serialize descriptors, so the use needs to know what objects and
+	 * what versions to unmarshall from a stream by other means.
+	 * 
+	 * @param s
+	 * @throws IOException
+	 */
+	public void writeToObjectStream(ObjectOutputStream s) throws IOException {
+		s.writeInt(id);
+		s.writeInt(magic);
+		s.writeLong(epoch);
+	}
+
+	public void writeWireForm(ByteBuffer bytes, int idx) {
+		bytes.putInt(idx + magicIdx, magic);
+		bytes.putInt(idx + idIdx, id);
+		bytes.putLong(idx + epochIdx, epoch);
+	}
 
 }
