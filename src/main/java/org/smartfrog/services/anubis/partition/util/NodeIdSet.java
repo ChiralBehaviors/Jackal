@@ -22,7 +22,6 @@ package org.smartfrog.services.anubis.partition.util;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
-import org.smartfrog.services.anubis.partition.test.msg.GetStatsMsg;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
@@ -120,7 +119,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      * @return BitSet
      */
     @Override
-    public Object clone() {
+    public NodeIdSet clone() {
         NodeIdSet cloneBS;
         try {
             cloneBS = (NodeIdSet) super.clone();

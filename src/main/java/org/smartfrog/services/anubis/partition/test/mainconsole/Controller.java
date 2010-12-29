@@ -133,7 +133,7 @@ public class Controller {
     }
 
     @Deployed
-    public void deploy() throws IOException {
+    public synchronized void deploy() throws IOException {
 
         timer.schedule(getTask(), checkPeriod, checkPeriod);
         snoop = new Snoop(

@@ -122,7 +122,7 @@ public class BitView implements View, Cloneable, Serializable {
 
     public BitView copyView(View v) {
         stable = v.isStable();
-        view = (NodeIdSet) v.toBitSet().clone();
+        view = v.toBitSet().clone();
         timeStamp = v.getTimeStamp();
         return this;
     }
