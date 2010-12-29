@@ -23,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
-import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
+import org.smartfrog.services.anubis.locator.util.TimeQueueElement;
 
 abstract public class AnubisStability {
 
@@ -68,26 +68,26 @@ abstract public class AnubisStability {
         }
     }
 
-    public void safeStability(boolean isStable, long timeRef) {
+    public void safeStability(final boolean isStable, final long timeRef) {
 
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
-                                                                       log,
-                                                                       "User API Upcall took >200ms in stability(s,t) where s="
-                                                                               + isStable
-                                                                               + ", t="
-                                                                               + timeRef);
+        TimeQueueElement timeoutErrorLogger = new TimeQueueElement() {
+            @Override
+            public void expired() {
+                log.severe("User API Upcall took >200ms in stability(s,t) where s="
+                           + isStable + ", t=" + timeRef);
+            }
+
+        };
         timers.add(timeoutErrorLogger, (timein + 200));
         try {
             stability(isStable, timeRef);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in stability(s,t) where s="
-                                + isStable + ", t=" + timeRef, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in stability(s,t) where s="
+                            + isStable + ", t=" + timeRef, ex);
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);

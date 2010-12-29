@@ -16,7 +16,7 @@ public class SmokeTest extends TestCase {
     static class testA extends BasicConfiguration {
         @Override
         public int getNode() throws UnknownHostException {
-            return 1;
+            return 0;
         }
     }
 
@@ -24,7 +24,7 @@ public class SmokeTest extends TestCase {
     static class testB extends BasicConfiguration {
         @Override
         public int getNode() throws UnknownHostException {
-            return 2;
+            return 1;
         }
     }
 
@@ -32,7 +32,7 @@ public class SmokeTest extends TestCase {
     static class testC extends BasicConfiguration {
         @Override
         public int getNode() throws UnknownHostException {
-            return 3;
+            return 2;
         }
     }
 
@@ -40,7 +40,7 @@ public class SmokeTest extends TestCase {
     static class testD extends BasicConfiguration {
         @Override
         public int getNode() throws UnknownHostException {
-            return 4;
+            return 3;
         }
     }
 
@@ -48,7 +48,7 @@ public class SmokeTest extends TestCase {
     static class testE extends BasicConfiguration {
         @Override
         public int getNode() throws UnknownHostException {
-            return 5;
+            return 4;
         }
     }
 
@@ -56,7 +56,7 @@ public class SmokeTest extends TestCase {
     static class testF extends BasicConfiguration {
         @Override
         public int getNode() throws UnknownHostException {
-            return 6;
+            return 5;
         }
     }
 
@@ -64,7 +64,7 @@ public class SmokeTest extends TestCase {
     static class testG extends BasicConfiguration {
         @Override
         public int getNode() throws UnknownHostException {
-            return 7;
+            return 6;
         }
     }
 

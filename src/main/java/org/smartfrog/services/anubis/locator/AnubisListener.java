@@ -41,7 +41,7 @@ import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
-import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
+import org.smartfrog.services.anubis.locator.util.TimeQueueElement;
 
 abstract public class AnubisListener {
     private long mostRecentChange = -1;
@@ -121,23 +121,26 @@ abstract public class AnubisListener {
      * 
      * @param listener
      */
-    private void safeNewValue(AnubisValue v) {
+    private void safeNewValue(final AnubisValue v) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
-                                                                       log,
-                                                                       "User API Upcall took >200ms in newValue(p) where p="
-                                                                               + v);
+        TimeQueueElement timeoutErrorLogger = new TimeQueueElement() {
+            @Override
+            public void expired() {
+                log.severe("User API Upcall took >200ms in newValue(p) where p="
+                    + v);
+            }
+
+        };
+
         timers.add(timeoutErrorLogger, (timein + 200));
         try {
             newValue(v);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in newValue(p) where p="
-                                + v, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in newValue(p) where p="
+                            + v, ex);
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
@@ -153,23 +156,25 @@ abstract public class AnubisListener {
      * 
      * @param listener
      */
-    private void safeRemoveValue(AnubisValue v) {
+    private void safeRemoveValue(final AnubisValue v) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
-                                                                       log,
-                                                                       "User API Upcall took >200ms in removeValue(p) where p="
-                                                                               + v);
+        TimeQueueElement timeoutErrorLogger = new TimeQueueElement() {
+            @Override
+            public void expired() {
+                log.severe("User API Upcall took >200ms in removeValue(p) where p="
+                           + v);
+            }
+
+        };
         timers.add(timeoutErrorLogger, (timein + 200));
         try {
             removeValue(v);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in removeValue(p) where p="
-                                + v, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in removeValue(p) where p="
+                            + v, ex);
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);

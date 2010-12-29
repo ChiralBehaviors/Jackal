@@ -37,15 +37,12 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
  * number to differentiate incarnations of the same manager.
  */
 public class Identity implements Serializable, Cloneable, WireSizes {
+    public static int MAX_ID = 2047; // The maximum id possible
 
     static final private int magicIdx = 0;
     static final private int idIdx = magicIdx + intSz;
     static final private int epochIdx = idIdx + intSz;
     static final public int identityWireSz = epochIdx + longSz;
-
-    /**
-       * 
-       */
     private static final long serialVersionUID = 1L;
 
     public static int getIdFromLocalIpAddress() throws UnknownHostException {
@@ -59,10 +56,9 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     }
 
     public static int getProcessUniqueId() throws UnknownHostException {
-        int nanoTime = (int) (System.nanoTime() & 0xFFFFFFFF) << 24;
-        int localIP = getIdFromLocalIpAddress();
-        int pid = getPID() << 8;
-        return nanoTime | pid | localIP;
+        int ip = getIdFromLocalIpAddress();
+        int pid = getPID();
+        return (pid ^ ip) & MAX_ID;
     }
 
     public static int inetAddressToNode(InetAddress address) {
@@ -89,27 +85,19 @@ public class Identity implements Serializable, Cloneable, WireSizes {
      * identity object from.
      */
     public Identity(int magic, int id, long epoch) {
+        if (id > MAX_ID) {
+            throw new IllegalArgumentException("Id cannot be > " + MAX_ID);
+        }
         this.magic = magic;
         this.id = id;
         this.epoch = epoch;
     }
 
     /**
-     * Construct an Identity using the local IP address as the node identity
-     * 
-     * @param magic
-     * @param epoch
-     * @throws UnknownHostException
-     */
-    public Identity(int magic, long epoch) throws UnknownHostException {
-        this(magic, getIdFromLocalIpAddress(), epoch);
-    }
-
-    /**
      * This method is similar to the readObject() method but is not part of the
      * Serializable interface. This can be used to unmarshall this object
      * including the super class properties, without using that interface. There
-     * are no descriptors, so the use needs to know what objects and what
+     * are no descriptors, so the user needs to know what objects and what
      * versions to unmarshall from a stream by other means.
      * 
      * @param s
@@ -117,6 +105,7 @@ public class Identity implements Serializable, Cloneable, WireSizes {
      */
     public Identity(ObjectInputStream s) throws IOException {
         id = s.readInt();
+        assert id < MAX_ID;
         magic = s.readInt();
         epoch = s.readLong();
     }

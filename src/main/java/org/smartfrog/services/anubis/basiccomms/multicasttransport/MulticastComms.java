@@ -174,7 +174,7 @@ public class MulticastComms extends Thread {
                                     groupAddress.port));
         } catch (IOException ioe) {
             if (!terminating && log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ioe);
+                log.log(Level.WARNING, "Error sending object", ioe);
             }
         }
     }
