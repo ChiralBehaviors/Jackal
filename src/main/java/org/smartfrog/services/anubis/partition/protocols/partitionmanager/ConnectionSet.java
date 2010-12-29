@@ -165,7 +165,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * 
      * @param timenow
      */
-    public void checkStability(long timenow) {
+    public synchronized void checkStability(long timenow) {
         if (!stablizing) {
             if (log.isLoggable(Level.FINER)) {
                 log.finer("Stablilizing @ " + timenow);
@@ -419,7 +419,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     @Deployed
-    public void deploy() throws IOException {
+    public synchronized void deploy() throws IOException {
         connectionServer = factory.create(connectionAddress, identity, this);
 
         heartbeatComms = heartbeatCommsFactory.create(heartbeatAddress,
@@ -539,7 +539,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return heartbeatProtocolFactory;
     }
 
-    public Identity getIdentity() {
+    public synchronized Identity getIdentity() {
         return identity;
     }
 
@@ -587,7 +587,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * returns an string representing the status of all threads
      */
     public String getThreadStatusString() {
-        String str = new String();
+        String str = "";
         str += intervalExec.getThreadStatusString() + "\n";
         str += heartbeatComms.getThreadStatusString() + "\n";
         str += connectionServer.getThreadStatusString() + "\n";
@@ -722,7 +722,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         }
     }
 
-    public void registerTestManager(TestMgr tm) {
+    public synchronized void registerTestManager(TestMgr tm) {
         heartbeat.setTestInterface(tm.getAddress());
         intervalExec.registerTestMgr(tm);
         testable = true;
@@ -855,7 +855,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         this.leaderProtocolFactory = leaderProtocolFactory;
     }
 
-    public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
+    public synchronized void setPartitionProtocol(PartitionProtocol partitionProtocol) {
         this.partitionProtocol = partitionProtocol;
         this.partitionProtocol.setConnectionSet(this);
     }
@@ -875,7 +875,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     @PostConstruct
-    public void start() throws Exception {
+    public synchronized void start() throws Exception {
         if (log.isLoggable(Level.INFO)) {
             log.info(identity + " connection address is "
                      + connectionServer.getAddress().toString());

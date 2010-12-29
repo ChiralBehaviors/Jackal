@@ -117,7 +117,7 @@ public class AsymetryReportFrame extends JFrame {
 
         columnNames.add("\\");
         for (int i = 0; i < highestId; i++) {
-            columnNames.add(new Integer(i).toString());
+            columnNames.add(Integer.toString(i));
         }
 
         rowData.add(columnNames);

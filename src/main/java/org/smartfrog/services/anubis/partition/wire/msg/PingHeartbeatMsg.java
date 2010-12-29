@@ -130,7 +130,7 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
      * Write the message attributes to the
      */
     @Override
-    protected void writeWireForm() throws WireFormException {
+    protected synchronized void writeWireForm() throws WireFormException {
         super.writeWireForm();
         pings.writeWireForm(wireForm, pingBitIdx, pingBitSz);
     }

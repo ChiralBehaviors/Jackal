@@ -56,7 +56,6 @@ public class MulticastComms extends Thread {
     private MulticastSocket sock;
     protected Logger log = Logger.getLogger(this.getClass().getCanonicalName());
     volatile private boolean terminating;
-    Object outObject;
 
     /**
      * Constructor - uses MulticastAddress to define the multicast group etc.

@@ -49,7 +49,7 @@ public class TimeQueue extends SortedSetMap<Long, TimeQueueElement> {
      * @return true
      */
     public boolean add(TimeQueueElement element, long time) {
-        Long queuedTime = new Long(time);
+        Long queuedTime = Long.valueOf(time);
         put(queuedTime, element);
         element.setQueuedTime(queuedTime);
         return true;

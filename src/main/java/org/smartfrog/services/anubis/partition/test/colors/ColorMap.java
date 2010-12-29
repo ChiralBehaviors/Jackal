@@ -119,7 +119,7 @@ class ColorMatrix {
     }
 
     Integer getIndex(int hash) {
-        return hash < 0 ? new Integer(-hash % size) : new Integer(hash % size);
+        return hash < 0 ? -hash % size : hash % size;
     }
 
     Integer nextIndex(Integer idx) {

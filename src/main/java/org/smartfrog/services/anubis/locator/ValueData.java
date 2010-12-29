@@ -100,6 +100,6 @@ public class ValueData implements Serializable {
                 return "Marshalled[ IOException when unmarshalling ]";
             }
         }
-        return getValue().toString();
+        return "" + getValue();
     }
 }

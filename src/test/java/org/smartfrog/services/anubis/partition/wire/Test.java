@@ -34,72 +34,64 @@ import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 
 public class Test extends TestCase {
-    public static void main(String[] args) {
-        Test untitled1 = new Test();
-        untitled1.testIt3();
+    public static void main(String[] args) throws Exception {
+        new Test().testIt3();
     }
 
     public Test() {
     }
 
-    public void testIt() {
-        try {
+    public void testIt() throws Exception {
+        int loops = 100000;
 
-            int loops = 100000;
+        Identity outId = new Identity(123456, 1, 654321);
+        ConnectionAddress outAddress = new ConnectionAddress(
+                                                             InetAddress.getLocalHost(),
+                                                             1066);
 
-            Identity outId = new Identity(123456, 1, 654321);
-            ConnectionAddress outAddress = new ConnectionAddress(
-                                                                 InetAddress.getLocalHost(),
-                                                                 1066);
+        ConnectionAddress outTestIF = new ConnectionAddress(
+                                                            InetAddress.getLocalHost(),
+                                                            2020);
 
-            ConnectionAddress outTestIF = new ConnectionAddress(
-                                                                InetAddress.getLocalHost(),
-                                                                2020);
+        NodeIdSet outView = new NodeIdSet();
+        outView.add(700);
 
-            NodeIdSet outView = new NodeIdSet();
-            outView.add(700);
+        NodeIdSet outMsgLinks = new NodeIdSet();
+        outMsgLinks.add(700);
 
-            NodeIdSet outMsgLinks = new NodeIdSet();
-            outMsgLinks.add(700);
+        HeartbeatMsg outMsg = new HeartbeatMsg(outId, outAddress);
+        outMsg.setCandidate(outId);
+        outMsg.setMsgLinks(outMsgLinks);
+        outMsg.setTestInterface(outTestIF);
+        outMsg.setView(new BitView(true, outView, 162534));
+        outMsg.setViewNumber(23);
+        outMsg.setTime(9876);
+        System.out.println("Heartbeat Test message for output is: " + outMsg);
 
-            HeartbeatMsg outMsg = new HeartbeatMsg(outId, outAddress);
-            outMsg.setCandidate(outId);
-            outMsg.setMsgLinks(outMsgLinks);
-            outMsg.setTestInterface(outTestIF);
-            outMsg.setView(new BitView(true, outView, 162534));
-            outMsg.setViewNumber(23);
-            outMsg.setTime(9876);
-            System.out.println("Heartbeat Test message for output is: "
-                               + outMsg);
-
-            System.out.println("STARTING HeabeatTestMsg marshalling test run");
-            long start = System.currentTimeMillis();
-            byte[] wireForm = null;
-            for (int i = 0; i < loops; i++) {
-                wireForm = outMsg.toWire();
-            }
-            long end = System.currentTimeMillis();
-            System.out.println("END HeartbeatTestMsg marshalling test run took "
-                               + (end - start) + "ms");
-
-            System.out.println("STARTING HeabeatTestMsg UNmarshalling test run");
-            HeartbeatMsg inMsg;
-            start = System.currentTimeMillis();
-            for (int i = 0; i < loops; i++) {
-                inMsg = new HeartbeatMsg(ByteBuffer.wrap(wireForm));
-                inMsg.getCandidate();
-                inMsg.getMsgLinks();
-                inMsg.getView();
-                inMsg.getTestInterface();
-                inMsg.getSenderAddress();
-            }
-            end = System.currentTimeMillis();
-            System.out.println("END HeartbeatTestMsg UNmarshalling test run took "
-                               + (end - start) + "ms");
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        System.out.println("STARTING HeabeatTestMsg marshalling test run");
+        long start = System.currentTimeMillis();
+        byte[] wireForm = null;
+        for (int i = 0; i < loops; i++) {
+            wireForm = outMsg.toWire();
         }
+        long end = System.currentTimeMillis();
+        System.out.println("END HeartbeatTestMsg marshalling test run took "
+                           + (end - start) + "ms");
+
+        System.out.println("STARTING HeabeatTestMsg UNmarshalling test run");
+        HeartbeatMsg inMsg;
+        start = System.currentTimeMillis();
+        for (int i = 0; i < loops; i++) {
+            inMsg = new HeartbeatMsg(ByteBuffer.wrap(wireForm));
+            inMsg.getCandidate();
+            inMsg.getMsgLinks();
+            inMsg.getView();
+            inMsg.getTestInterface();
+            inMsg.getSenderAddress();
+        }
+        end = System.currentTimeMillis();
+        System.out.println("END HeartbeatTestMsg UNmarshalling test run took "
+                           + (end - start) + "ms");
     }
 
     public void testIt2() {
@@ -121,55 +113,48 @@ public class Test extends TestCase {
         }
     }
 
-    public void testIt3() {
-        try {
-            Identity outId = new Identity(123456, 1, 654321);
-            ConnectionAddress outAddress = new ConnectionAddress(
-                                                                 InetAddress.getLocalHost(),
-                                                                 1066);
+    public void testIt3() throws Exception {
+        Identity outId = new Identity(123456, 1, 654321);
+        ConnectionAddress outAddress = new ConnectionAddress(
+                                                             InetAddress.getLocalHost(),
+                                                             1066);
 
-            ConnectionAddress outTestIF = new ConnectionAddress(
-                                                                InetAddress.getLocalHost(),
-                                                                2020);
+        ConnectionAddress outTestIF = new ConnectionAddress(
+                                                            InetAddress.getLocalHost(),
+                                                            2020);
 
-            NodeIdSet outView = new NodeIdSet();
-            outView.add(700);
+        NodeIdSet outView = new NodeIdSet();
+        outView.add(700);
 
-            NodeIdSet outMsgLinks = new NodeIdSet();
-            outMsgLinks.add(700);
+        NodeIdSet outMsgLinks = new NodeIdSet();
+        outMsgLinks.add(700);
 
-            PingHeartbeatMsg outMsg = new PingHeartbeatMsg(outId, outAddress);
-            outMsg.setCandidate(outId);
-            outMsg.setMsgLinks(outMsgLinks);
-            outMsg.setTestInterface(outTestIF);
-            outMsg.setView(new BitView(true, outView, 162534));
-            outMsg.setViewNumber(23);
-            outMsg.setTime(9876);
-            outMsg.setPingBit(outId);
-            System.out.println("Heartbeat Test message for output is: "
-                               + outMsg);
+        PingHeartbeatMsg outMsg = new PingHeartbeatMsg(outId, outAddress);
+        outMsg.setCandidate(outId);
+        outMsg.setMsgLinks(outMsgLinks);
+        outMsg.setTestInterface(outTestIF);
+        outMsg.setView(new BitView(true, outView, 162534));
+        outMsg.setViewNumber(23);
+        outMsg.setTime(9876);
+        outMsg.setPingBit(outId);
+        System.out.println("Heartbeat Test message for output is: " + outMsg);
 
-            byte[] wireForm = outMsg.toWire();
+        byte[] wireForm = outMsg.toWire();
 
-            PingHeartbeatMsg inMsg = (PingHeartbeatMsg) Wire.fromWire(wireForm);
-            System.out.println("Heartbeat Test message for input is: " + inMsg);
-            inMsg.getCandidate();
-            System.out.println("Heartbeat Test message with candidate is: "
-                               + inMsg);
-            inMsg.getMsgLinks();
-            System.out.println("Heartbeat Test message with msgLinks is: "
-                               + inMsg);
-            inMsg.getView();
-            System.out.println("Heartbeat Test message with view is: " + inMsg);
-            inMsg.getTestInterface();
-            System.out.println("Heartbeat Test message with getTestInterface is: "
-                               + inMsg);
-            inMsg.getSenderAddress();
-            System.out.println("Heartbeat Test message with sender address is: "
-                               + inMsg);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        PingHeartbeatMsg inMsg = (PingHeartbeatMsg) Wire.fromWire(wireForm);
+        System.out.println("Heartbeat Test message for input is: " + inMsg);
+        inMsg.getCandidate();
+        System.out.println("Heartbeat Test message with candidate is: " + inMsg);
+        inMsg.getMsgLinks();
+        System.out.println("Heartbeat Test message with msgLinks is: " + inMsg);
+        inMsg.getView();
+        System.out.println("Heartbeat Test message with view is: " + inMsg);
+        inMsg.getTestInterface();
+        System.out.println("Heartbeat Test message with getTestInterface is: "
+                           + inMsg);
+        inMsg.getSenderAddress();
+        System.out.println("Heartbeat Test message with sender address is: "
+                           + inMsg);
     }
 
     public void testIt4() {

@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
@@ -42,6 +44,7 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
     private byte[] headerBytesIn = new byte[HEADER_SIZE];
     private byte[] headerBytesOut = new byte[HEADER_SIZE];
     volatile private boolean open;
+    private static Logger log = Logger.getLogger(ConnectionComms.class.getCanonicalName());
 
     /**
      * constructor - creates a tcp connection with the remote address provided
@@ -63,10 +66,8 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
             connection.socket().setKeepAlive(true);
             open = true;
 
-        } catch (Exception ex) {
-
-            // ex.printStackTrace();
-
+        } catch (IOException ex) {
+            log.log(Level.WARNING, "Cannot open connection", ex);
             try {
                 connection.close();
             } catch (Exception ex2) {

@@ -24,7 +24,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 abstract public class StabilityQueue {
 
-    private class Notification {
+    private static class Notification {
         int leader;
         View view;
 

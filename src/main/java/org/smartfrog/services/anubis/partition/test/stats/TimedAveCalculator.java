@@ -25,7 +25,7 @@ import java.util.List;
 
 public class TimedAveCalculator implements AveCalculator {
 
-    public class Entry {
+    static public class Entry {
         public long delay;
         public long time;
 

@@ -21,7 +21,7 @@ package org.smartfrog.services.anubis.locator.util;
 
 abstract public class TimeQueueElement {
 
-    private Long timeQueueQueuedTime = new Long(0);
+    private Long timeQueueQueuedTime = Long.valueOf(0);
 
     /**
      * Default constructor

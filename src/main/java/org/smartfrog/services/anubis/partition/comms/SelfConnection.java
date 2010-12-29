@@ -35,8 +35,8 @@ public class SelfConnection extends BitView implements Connection,
      * 
      */
     private static final long serialVersionUID = 1L;
-    private ConnectionAddress address = null;
-    private Candidate candidate = null;
+    private transient ConnectionAddress address = null;
+    private transient Candidate candidate = null;
     private Identity me = null;
 
     public SelfConnection(Identity id, View v, ConnectionAddress addr,

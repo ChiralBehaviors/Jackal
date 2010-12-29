@@ -37,6 +37,9 @@ public class PingProtocolFactory implements HeartbeatProtocolFactory {
     @Override
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
                                             HeartbeatMsg sharedHeartbeat) {
-        return new PingProtocolImpl(hb, vl, sharedHeartbeat);
+        if (!(sharedHeartbeat instanceof PingHeartbeatMsg)) {
+            throw new IllegalArgumentException("shared heart beat must be instanceof PingHeartbeatMsg");
+        }
+        return new PingProtocolImpl(hb, vl, (PingHeartbeatMsg) sharedHeartbeat);
     }
 }

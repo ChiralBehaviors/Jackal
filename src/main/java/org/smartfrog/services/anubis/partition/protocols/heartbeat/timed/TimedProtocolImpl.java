@@ -36,8 +36,8 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      * 
      */
     private static final long serialVersionUID = 1L;
-    private ConnectionAddress address = null;
-    private ViewListener listener = null;
+    private transient ConnectionAddress address = null;
+    private transient ViewListener listener = null;
     private Identity sender = null;
     private boolean terminated = false;
     private long time = 0;

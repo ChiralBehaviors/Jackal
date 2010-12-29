@@ -49,7 +49,7 @@ public class LocalListeners {
     private class ListenerInfo {
 
         public Set<AnubisListener> listeners = new HashSet<AnubisListener>();
-        public Map<ProviderInstance, ProviderInstance> providers = new HashMap<ProviderInstance, ProviderInstance>(); // instance
+        public Map<ProviderProxy, ProviderInstance> providers = new HashMap<ProviderProxy, ProviderInstance>(); // instance
                                                                                                                       // -->
                                                                                                                       // name
         public ListenerProxy proxy = null;
@@ -280,7 +280,7 @@ public class LocalListeners {
          * instance was not already known then make sure the providersByNode map
          * contains a record for the source node.
          */
-        if (info.providers.put(provider, provider) == null) {
+        if (info.providers.put(provider.proxy(), provider) == null) {
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me
                           + ": listeners received state of previously unknown "

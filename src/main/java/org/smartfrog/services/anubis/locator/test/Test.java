@@ -58,8 +58,7 @@ public class Test {
             display();
             if (v.getValue().equals("throw")) {
                 // this expression intentionally leads to an exception
-                @SuppressWarnings("unused")
-                int x = ((Integer) null).intValue();
+                throw new NullPointerException("intentional exeception");
             } else if (v.getValue().equals("wait")) {
                 // this expression intentially leads to a pause
                 try {
@@ -76,7 +75,7 @@ public class Test {
         }
     }
 
-    class Provider extends AnubisProvider {
+    static class Provider extends AnubisProvider {
         Provider(String name) {
             super(name);
         }

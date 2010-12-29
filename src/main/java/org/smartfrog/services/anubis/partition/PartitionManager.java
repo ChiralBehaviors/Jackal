@@ -65,7 +65,7 @@ public class PartitionManager implements Partition {
     }
 
     @Deployed
-    public void deployed() {
+    public synchronized void deployed() {
         timer = new ActiveTimeQueue("Anubis: Partition Manager timers (node "
                                     + identity.id + ")");
         notifiedView = BitView.create(identity, identity.epoch);
@@ -247,7 +247,7 @@ public class PartitionManager implements Partition {
     }
 
     @PostConstruct
-    public void start() {
+    public synchronized void start() {
         timer.start();
 
         if (log.isLoggable(Level.INFO)) {
@@ -257,7 +257,7 @@ public class PartitionManager implements Partition {
     }
 
     @PreDestroy
-    public void terminate() {
+    public synchronized void terminate() {
         if (log.isLoggable(Level.INFO)) {
             log.info("Terminating partition manager at " + identity);
         }

@@ -48,8 +48,8 @@ public class PingCloseMsg extends PingHeartbeatMsg implements Close {
      * @param hb
      *            HeartbeatMsg
      */
-    public PingCloseMsg(HeartbeatMsg hb) {
-        super((PingHeartbeatMsg) hb);
+    public PingCloseMsg(PingHeartbeatMsg hb) {
+        super(hb);
     }
 
     @Override

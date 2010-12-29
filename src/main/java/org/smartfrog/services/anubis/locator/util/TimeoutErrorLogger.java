@@ -25,7 +25,6 @@ public class TimeoutErrorLogger extends TimeQueueElement {
 
     private Logger log;
     private String message;
-    private Object value;
 
     public TimeoutErrorLogger(Logger log, String message) {
         super();
@@ -35,6 +34,6 @@ public class TimeoutErrorLogger extends TimeQueueElement {
 
     @Override
     public void expired() {
-        log.severe(message + value);
+        log.severe(message);
     }
 }

@@ -174,7 +174,7 @@ public class Controller {
         return identity;
     }
 
-    private TimerTask getTask() {
+    private synchronized TimerTask getTask() {
         task = new TimerTask() {
 
             @Override
@@ -211,7 +211,7 @@ public class Controller {
         this.checkPeriod = checkPeriod;
     }
 
-    public void setExpirePeriod(long expirePeriod) {
+    public synchronized void setExpirePeriod(long expirePeriod) {
         this.expirePeriod = expirePeriod;
     }
 
@@ -257,7 +257,7 @@ public class Controller {
     }
 
     @PostConstruct
-    public void start() {
+    public synchronized void start() {
         consoleFrame.setVisible(true);
     }
 

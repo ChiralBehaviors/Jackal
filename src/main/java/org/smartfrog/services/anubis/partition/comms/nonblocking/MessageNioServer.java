@@ -53,7 +53,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     volatile private boolean open = false;
 
     private Hashtable<SelectableChannel, MessageNioHandler> pendingNewChannels = null;
-    private final int RX_WORKERS = 4;
+    private static final int RX_WORKERS = 4;
     private RxQueue[] rxQueue = null;
     private int rxQueueCounter = 0;
     private Selector selector = null;

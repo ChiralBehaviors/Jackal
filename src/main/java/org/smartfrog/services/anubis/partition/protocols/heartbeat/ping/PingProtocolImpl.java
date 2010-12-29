@@ -56,18 +56,15 @@ import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
  */
 public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
 
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
-    private ConnectionAddress address = null;
+    private transient ConnectionAddress address = null;
     private boolean expected = true;
-    private ViewListener listener = null;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private transient ViewListener listener = null;
+    private static Logger log = Logger.getLogger(PingProtocolImpl.class.toString());
     private Identity me = null;
     private long pingTime = 0;
     private Identity sender = null;
-    private PingHeartbeatMsg sharedData = null;
+    private transient PingHeartbeatMsg sharedData = null;
     private boolean terminated = false;
     private long time = 0;
     private long viewNumber = 0;
@@ -80,14 +77,14 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
      * @param vl
      */
     public PingProtocolImpl(Heartbeat hb, ViewListener vl,
-                            HeartbeatMsg sharedHeartbeat) {
+                            PingHeartbeatMsg sharedHeartbeat) {
         super(hb.getView());
         time = hb.getTime();
         viewNumber = hb.getViewNumber();
         listener = vl;
         sender = hb.getSender();
         address = hb.getSenderAddress();
-        sharedData = (PingHeartbeatMsg) sharedHeartbeat;
+        sharedData = sharedHeartbeat;
         me = sharedData.getSender();
         pingTime = System.currentTimeMillis();
         if (me.id < sender.id) {
