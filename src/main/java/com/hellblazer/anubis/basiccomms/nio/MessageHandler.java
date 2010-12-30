@@ -1,30 +1,11 @@
-/** (C) Copyright 1998-2005 Hewlett-Packard Development Company, LP
+package com.hellblazer.anubis.basiccomms.nio;
 
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-For more information: www.smartfrog.org
-
- */
-package org.smartfrog.services.anubis.partition.comms.blocking;
-
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionComms;
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.comms.IOConnection;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
@@ -32,79 +13,108 @@ import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatConnecti
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
+import org.smartfrog.services.anubis.partition.wire.WireSizes;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
-public class MessageConnectionImpl extends ConnectionComms implements
-        IOConnection {
+public class MessageHandler implements WireSizes, IOConnection {
+    static enum State {
+        INITIAL, HEADER, MESSAGE, ERROR, CLOSE;
+    }
 
+    private static Logger log = Logger.getLogger(MessageHandler.class.toString());
     private boolean announceTerm = true;
-    private ConnectionSet connectionSet = null;
-    /**
-     * for testing purposes - can set to ignoring incoming messages
-     */
+    private ConnectionSet connectionSet;
     private boolean ignoring = false;
-    private Logger log = Logger.getLogger(this.getClass().toString());
-    private Identity me = null;
-    private MessageConnection messageConnection = null;
+    private Identity me;
+    private MessageConnection messageConnection;
     private long receiveCount = INITIAL_MSG_ORDER;
     private long sendCount = INITIAL_MSG_ORDER;
-    private MessageConnectionServer server = null;
+    private WireSecurity wireSecurity;
+    private volatile boolean open = true;
+    private SocketChannel channel;
+    private ByteBuffer headerIn = ByteBuffer.allocateDirect(HEADER_SIZE);
+    private ByteBuffer headerOut = ByteBuffer.allocateDirect(HEADER_SIZE);
+    private ByteBuffer msgIn;
+    private ByteBuffer msgOut;
+    private ServerChannelHandler handler;
+    private volatile State readState = State.INITIAL;
+    private volatile State writeState = State.INITIAL;
+    private String toString;
 
-    private WireSecurity wireSecurity = null;
-
-    public MessageConnectionImpl(Identity id, ConnectionSet cs,
-                                 ConnectionAddress address,
-                                 MessageConnection mc, WireSecurity sec) {
-        super("Anubis: Connection Comms (node " + id.id + ", remote node "
-              + mc.getSender().id + ")", address);
+    public MessageHandler(Identity id, ConnectionSet cs, MessageConnection mc,
+                          WireSecurity sec, SocketChannel chan) {
         me = id;
         connectionSet = cs;
         messageConnection = mc;
         wireSecurity = sec;
-        setPriority(MAX_PRIORITY);
+        toString = "Anubis: Message Handler (node " + me.id + ", remote node "
+                   + messageConnection.getSender().id + ")";
+        channel = chan;
     }
 
-    public MessageConnectionImpl(Identity id, SocketChannel channel,
-                                 MessageConnectionServer mcs, ConnectionSet cs,
-                                 WireSecurity sec) {
-        super("Anubis: " + id + " Connection Comms (node " + id.id + ")",
-              channel);
+    public MessageHandler(Identity id, ConnectionSet cs, WireSecurity sec,
+                          SocketChannel chan) {
         me = id;
-        server = mcs;
         connectionSet = cs;
         wireSecurity = sec;
-        setPriority(MAX_PRIORITY);
+        channel = chan;
     }
 
-    /**
-     * Close down the connection.
-     * 
-     * Closing is called by {@link #shutdown()}. shutdown is used to terminate
-     * the connection both here (from the "outside") and in the implementation
-     * of ConnectionComms (from the "inside"). The connection closes itself from
-     * the inside if there is some kind of error on the connection.
-     * 
-     * Here closing is used to clean up by telling the server socket to remove
-     * any record it has of this connection and telling the messageConnection
-     * that the connection has closed. The later can be disabled (as is done in
-     * terminate()).
-     */
     @Override
-    public void closing() {
-        if (server != null) {
-            server.removeConnection(this);
+    public boolean connected() {
+        return open;
+    }
+
+    @Override
+    public void send(TimedMsg tm) {
+        try {
+            tm.setOrder(sendCount);
+            sendCount++;
+            send(wireSecurity.toWireForm(tm));
+        } catch (Exception ex) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE, me
+                                      + " failed to marshall timed message: "
+                                      + tm + " - shutting down connection", ex);
+            }
+            shutdown();
         }
+    }
+
+    @Override
+    public void setIgnoring(boolean ignoring) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(this + "set ignoring: " + ignoring);
+        }
+        this.ignoring = ignoring;
+    }
+
+    @Override
+    public void silent() {
+        announceTerm = false;
+    }
+
+    @Override
+    public void terminate() {
+        announceTerm = false;
+        shutdown();
+    }
+
+    @Override
+    public String toString() {
+        return toString;
+    }
+
+    private void closing() {
         if (announceTerm && messageConnection != null) {
             messageConnection.closing();
         }
     }
 
-    @Override
-    public void deliver(byte[] bytes) {
-
+    private void deliver(byte[] bytes) {
         if (ignoring) {
             return;
         }
@@ -161,7 +171,7 @@ public class MessageConnectionImpl extends ConnectionComms implements
         if (!(obj instanceof HeartbeatMsg)) {
             log.log(Level.SEVERE,
                     me
-                            + " did not receive a heartbeat message first - shutdown",
+                            + " did not receive a heartbeat message as first message - shutdown",
                     new Exception());
             shutdown();
             return;
@@ -191,8 +201,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
         if (con instanceof MessageConnection) {
             if (((MessageConnection) con).assignImpl(this)) {
                 messageConnection = (MessageConnection) con;
-                setName("Anubis: Connection Comms (node " + me.id
-                        + ", remote node " + con.getSender().id + ")");
+                toString = "Anubis: Message Handler (node " + me.id
+                           + ", remote node " + con.getSender().id + ")";
                 messageConnection.deliver(bytes);
             } else {
                 log.severe(me + " failed to assign incoming connection from "
@@ -277,74 +287,221 @@ public class MessageConnectionImpl extends ConnectionComms implements
             shutdown();
             return;
         }
-        setName("Anubis: Connection Comms (node " + me.id + ", remote node "
-                + messageConnection.getSender().id + ")");
+        toString = "Anubis: Message Handler (node " + me.id + ", remote node "
+                   + messageConnection.getSender().id + ")";
     }
 
-    @Override
-    public void logClose(String reason, Throwable throwable) {
-
+    private void logClose(String reason, Throwable throwable) {
         if (ignoring) {
             return;
         }
-
         if (messageConnection == null) {
-
             if (log.isLoggable(Level.FINE)) {
                 log.log(Level.FINE,
                         me
                                 + " shutdown unassigned message connection transport:"
                                 + reason, throwable);
             }
-
         } else {
             messageConnection.logClose(reason, throwable);
         }
     }
 
-    @Override
-    public void send(TimedMsg tm) {
+    private void readHeader() {
+        // Clear the buffer and read bytes 
+        int numBytesRead;
         try {
-            tm.setOrder(sendCount);
-            sendCount++;
-            super.send(wireSecurity.toWireForm(tm));
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE, me
-                                      + " failed to marshall timed message: "
-                                      + tm + " - shutting down connection", ex);
-            }
+            numBytesRead = channel.read(headerIn);
+        } catch (IOException e) {
+            logClose("Errror reading header", e);
             shutdown();
+            return;
+        }
+
+        if (numBytesRead == -1) {
+            readState = State.CLOSE;
+            close();
+        } else if (!headerIn.hasRemaining()) {
+            headerIn.flip();
+            if (headerIn.getInt(0) != MAGIC_NUMBER) {
+                readState = State.ERROR;
+                logClose("incorrect magic number in header", null);
+                shutdown();
+                return;
+            }
+            int length = headerIn.getInt(4);
+            byte[] msg = new byte[length];
+            msgIn = ByteBuffer.wrap(msg);
+            readState = State.MESSAGE;
+            readMessage();
+        } else {
+            handler.selectForRead(this);
         }
     }
 
-    /**
-     * set ignoring value to determine if connections should be ignored
-     * 
-     * @param ignoring
-     */
-    @Override
-    public void setIgnoring(boolean ignoring) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(this + "set ignoring: " + ignoring);
+    private void readMessage() {
+        int numBytesRead;
+        try {
+            numBytesRead = channel.read(msgIn);
+        } catch (IOException e) {
+            readState = State.ERROR;
+            logClose("Error reading message body", e);
+            terminate();
+            return;
         }
-        this.ignoring = ignoring;
+        if (numBytesRead == -1) {
+            readState = State.CLOSE;
+            close();
+        } else if (msgIn.hasRemaining()) {
+            handler.selectForRead(this);
+        } else {
+            byte[] msg = msgIn.array();
+            msgIn = null;
+            readState = State.INITIAL;
+            deliver(msg);
+            handler.selectForRead(this);
+        }
     }
 
-    @Override
-    public void silent() {
-        announceTerm = false;
+    private void send(byte[] bytes) {
+        writeState = State.INITIAL;
+        headerOut.clear();
+        headerOut.putInt(0, MAGIC_NUMBER);
+        headerOut.putInt(4, bytes.length);
+        msgOut = ByteBuffer.wrap(bytes);
+        writeHeader();
+
     }
 
-    /**
-     * Shut down the connection. Terminate is used to instruct the
-     * implementation to shutdown the connection. announceTerm is set to false
-     * so that the closing() method does not call back to the messageConnection.
-     */
-    @Override
-    public void terminate() {
-        announceTerm = false;
-        shutdown();
+    private void shutdown() {
+        open = false;
+        closing();
+        try {
+            close();
+        } catch (Exception ex) {
+        }
+
     }
 
+    private void writeHeader() {
+        int bytesWritten;
+        try {
+            bytesWritten = channel.write(headerOut);
+        } catch (IOException e) {
+            writeState = State.ERROR;
+            logClose("Unable to send message header", e);
+            shutdown();
+            return;
+        }
+        if (bytesWritten == -1) {
+            writeState = State.CLOSE;
+            close();
+            return;
+        } else if (headerOut.hasRemaining()) {
+            writeState = State.HEADER;
+            handler.selectForWrite(this);
+        } else {
+            writeState = State.MESSAGE;
+            writeMessage();
+        }
+    }
+
+    private void writeMessage() {
+        int bytesWritten;
+        try {
+            bytesWritten = channel.write(msgOut);
+        } catch (IOException e) {
+            writeState = State.ERROR;
+            logClose("Unable to send message body", e);
+            shutdown();
+            return;
+        }
+        if (bytesWritten == -1) {
+            writeState = State.CLOSE;
+            close();
+        } else if (headerOut.hasRemaining()) {
+            handler.selectForWrite(this);
+        } else {
+            writeState = State.INITIAL;
+            msgOut = null;
+        }
+    }
+
+    protected void close() {
+        readState = writeState = State.CLOSE;
+        if (announceTerm && messageConnection != null) {
+            messageConnection.closing();
+        }
+        try {
+            channel.close();
+        } catch (IOException e) {
+        }
+    }
+
+    protected SocketChannel getChannel() {
+        return channel;
+    }
+
+    protected void handleAccept() {
+        readState = State.INITIAL;
+        writeState = State.INITIAL;
+        handler.selectForRead(this);
+    }
+
+    protected void handleRead() {
+        switch (readState) {
+            case INITIAL: {
+                headerIn.clear();
+                readState = State.HEADER;
+                readHeader();
+                break;
+            }
+            case HEADER: {
+                readHeader();
+                break;
+            }
+            case ERROR: {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("In error, ignoring read ready");
+                }
+                break; // Don't read while in error
+            }
+            case MESSAGE: {
+                readMessage();
+                break;
+            }
+            case CLOSE: {
+                break; // ignore
+            }
+            default:
+                throw new IllegalStateException("Invalid read state");
+        }
+    }
+
+    protected void handleWrite() {
+        switch (writeState) {
+            case INITIAL: {
+                throw new IllegalStateException("Should never be initial state");
+            }
+            case HEADER: {
+                writeHeader();
+                break;
+            }
+            case ERROR: {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("In error, ignoring write ready");
+                }
+                break; // Don't write while in error
+            }
+            case MESSAGE: {
+                writeMessage();
+                break;
+            }
+            case CLOSE: {
+                break; // ignore
+            }
+            default:
+                throw new IllegalStateException("Invalid write state");
+        }
+    }
 }

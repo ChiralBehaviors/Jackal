@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
@@ -67,6 +68,10 @@ public class ConnectionAddress implements Cloneable, WireSizes {
     public InetAddress ipaddress;
 
     public int port;
+    
+    public ConnectionAddress(InetSocketAddress address) {
+        this(address.getAddress(), address.getPort());
+    }
 
     /**
      * constructing from given parameters
@@ -109,5 +114,9 @@ public class ConnectionAddress implements Cloneable, WireSizes {
             bytes.put(idx + addressIdx + i, address[i]);
         }
         bytes.putInt(idx + portIdx, port);
+    }
+    
+    public InetSocketAddress asSocketAddress() {
+        return new InetSocketAddress(ipaddress, port);
     }
 }

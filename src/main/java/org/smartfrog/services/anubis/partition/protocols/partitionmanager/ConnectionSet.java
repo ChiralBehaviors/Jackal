@@ -708,7 +708,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
             return true;
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("Heart beat for existing connection: " + hb.getSender());
+            log.finest("Heart beat for existing connection: " + con);
         }
         return con.receiveHeartbeat(hb);
     }

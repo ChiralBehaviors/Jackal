@@ -94,14 +94,12 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             }
 
             if (connectionImpl != null) {
-                if (log.isLoggable(Level.SEVERE)) {
-                    Exception e = new Exception();
-                    e.fillInStackTrace();
-                    log.log(Level.SEVERE,
-                            me
-                                    + " attempt to assign a new implementation when one exists",
-                            e);
-                }
+                Exception e = new Exception();
+                e.fillInStackTrace();
+                log.log(Level.SEVERE,
+                        me
+                                + " attempt to assign a new implementation when one exists",
+                        e);
                 return false;
             }
 
@@ -122,8 +120,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     }
 
     private void checkInitiatingClose(HeartbeatMsg msg) {
-        // System.out.println(me + " initiator close check on link to " +
-        // getSender() );
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(me + " initiator close check on link to " + getSender());
+        }
         /**
          * If the connection is already closing check for the returned close
          * heartbeat - note that normal messages and heartbeats are accepted up
@@ -141,16 +140,21 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                  */
                 if (!msgQ.isEmpty() || msg.getMsgLinks().contains(me.id)
                     || connectionSet.wantsMsgLinkTo(getSender())) {
-
-                    // System.out.println(me +
-                    // " connection closed but re-opening ");
-                    // if( !msgQ.isEmpty() ) System.out.println(me +
-                    // "  -- the message queue is not empty");
-                    // if( msg.getMsgLinks().get(me.id) ) System.out.println(me
-                    // + "  -- the other end appears to want the connection");
-                    // if( connectionSet.wantsMsgLinkTo( getSender() ) )
-                    // System.out.println(me +
-                    // "  -- this end appears to want the connection");
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest(me + " connection closed but re-opening ");
+                        if (!msgQ.isEmpty()) {
+                            log.finest(me
+                                       + "  -- the message queue is not empty");
+                        }
+                        if (msg.getMsgLinks().contains(me.id)) {
+                            log.finest(me
+                                       + "  -- the other end appears to want the connection");
+                        }
+                        if (connectionSet.wantsMsgLinkTo(getSender())) {
+                            log.finest(me
+                                       + "  -- this end appears to want the connection");
+                        }
+                    }
 
                     connectionSet.getConnectionServer().initiateConnection(me,
                                                                            this,
@@ -162,13 +166,17 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                  * heartbeat connection in the connection set.
                  */
                 else {
-                    // System.out.println(me +
-                    // " connection fully closed - converting back to heartbeat connection");
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest(me
+                                   + " connection fully closed - converting back to heartbeat connection");
+                    }
                     connectionSet.convertToHeartbeatConnection(this);
                 }
             } else {
-                // System.out.println(me +
-                // " connection closing but not a CloseMsg heartbeat");
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(me
+                               + " connection closing but not a CloseMsg heartbeat");
+                }
             }
         }
 
@@ -182,8 +190,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         else if (!msg.getMsgLinks().contains(me.id)
                  && !connectionSet.wantsMsgLinkTo(getSender())
                  && msgQ.isEmpty()) {
-            // System.out.println(me + " entering close on connection to " +
-            // getSender() );
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(me + " entering close on connection to "
+                           + getSender());
+            }
             closingImpl = connectionImpl;
             connectionImpl = null;
             try {
@@ -191,21 +201,17 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                 closingImpl.send(connectionSet.getHeartbeatMsg().toClose());
 
             } catch (Exception ex) {
-
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.log(Level.SEVERE,
-                            me
-                                    + "failed to marshall close message - not sent to "
-                                    + getSender(), ex);
-                }
-
+                log.log(Level.SEVERE,
+                        me + "failed to marshall close message - not sent to "
+                                + getSender(), ex);
             }
         }
     }
 
     private void checkRespondingClose(HeartbeatMsg msg) {
-        // System.out.println(me + " responder close check on link to " +
-        // getSender() );
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(me + " responder close check on link to " + getSender());
+        }
         /**
          * If we have a close message then immediately drop the connection. We
          * need to tell the connection impl to be silent - this means don't tell
@@ -215,14 +221,17 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
          * too!
          */
         if (msg instanceof Close) {
-            // System.out.println(me +
-            // " received CloseMsg - closing connection to " + getSender() );
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(me + " received CloseMsg - closing connection to "
+                           + getSender());
+            }
             sendMsg(connectionSet.getHeartbeatMsg().toClose());
             connectionImpl.silent();
             connectionImpl = null;
             if (!connectionSet.wantsMsgLinkTo(getSender())) {
-                // System.out.println(me +
-                // " converting back to heartbeat connection");
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(me + " converting back to heartbeat connection");
+                }
                 connectionSet.convertToHeartbeatConnection(this);
             }
         }
@@ -290,20 +299,13 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                                         mmsg.getSender(), mmsg.getTime());
 
         } else if (msg == null) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport delivered null message from "
-                           + getSender());
-            }
+            log.severe(me + "connection transport delivered null message from "
+                       + getSender());
 
         } else {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport delivered unknown message type from "
-                           + getSender() + " message=" + msg);
-            }
+            log.severe(me
+                       + "connection transport delivered unknown message type from "
+                       + getSender() + " message=" + msg);
         }
     }
 
@@ -328,13 +330,11 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     }
 
     public void logClose(String reason, Throwable throwable) {
-
         if (log.isLoggable(Level.FINE)) {
             log.log(Level.FINE, me + " message connection transport for "
                                 + getSender() + " shutdown:" + reason,
                     throwable);
         }
-
     }
 
     /**
@@ -358,13 +358,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     public void sendMsg(TimedMsg msg) {
 
         if (msg == null) {
-            if (log.isLoggable(Level.SEVERE)) {
-                Exception e = new Exception();
-                e.fillInStackTrace();
-                log.log(Level.SEVERE,
-                        me + " sendBytes(WireMsg) called with null parameter ",
-                        e);
-            }
+            Exception e = new Exception();
+            e.fillInStackTrace();
+            log.log(Level.SEVERE,
+                    me + " sendBytes(WireMsg) called with null parameter ", e);
             return;
         }
 
@@ -375,6 +372,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * deal with too many messages!
              */
             if (connectionImpl == null) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("buffering message as connection implementation has not been constructed");
+                }
                 msgQ.addLast(msg);
                 return;
             }

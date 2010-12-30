@@ -28,7 +28,6 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
 
 /**
@@ -181,13 +180,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     public boolean receiveHeartbeat(Heartbeat hb) {
 
         if (!(hb instanceof PingHeartbeatMsg)) {
-            if (log.isLoggable(Level.FINE)) {
-                Exception e = new Exception("Non ping heartbeat");
-                e.fillInStackTrace();
-                log.log(Level.WARNING, me + " ping protocol received a non-ping heartbeat", e);
-            } else if (log.isLoggable(Level.WARNING)) {
                 log.warning(me + " ping protocol received a non-ping heartbeat");
-            }
             return false;
         }
 

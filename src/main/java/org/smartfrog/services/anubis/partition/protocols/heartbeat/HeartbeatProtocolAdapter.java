@@ -37,7 +37,7 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol {
      */
     private HeartbeatProtocol heartbeatProtocol = null;
 
-    protected Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private static Logger log = Logger.getLogger(HeartbeatProtocolAdapter.class.getCanonicalName());
 
     /**
      * Constructor - creates a HeartbeatProtocolAdapter pointing to the given

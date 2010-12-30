@@ -3,6 +3,9 @@ package org.smartfrog.services.anubis;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Timer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
@@ -48,9 +51,9 @@ public class BasicConfiguration {
 
     @Bean
     public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        if (useTimed()) { 
+        if (useTimed()) {
             return new TimedProtocolFactory();
-        } 
+        }
         return new PingProtocolFactory();
     }
 
@@ -90,7 +93,7 @@ public class BasicConfiguration {
     }
 
     public boolean getTestable() {
-        return true;
+        return false;
     }
 
     @Bean
@@ -170,7 +173,6 @@ public class BasicConfiguration {
         return protocol;
     }
 
-    @Bean
     public TestMgr testMgr() throws Exception {
         TestMgr mgr = new TestMgr(contactHost().getCanonicalHostName(),
                                   contactPort(), partition(), getNode());
@@ -189,5 +191,32 @@ public class BasicConfiguration {
     @Bean
     public WireSecurity wireSecurity() {
         return new NoSecurityImpl();
+    }
+
+    protected int poolSize() {
+        return 5;
+    }
+
+    protected ExecutorService executorService() {
+        int poolSize = poolSize();
+        if (poolSize < 3) {
+            throw new IllegalArgumentException("Pool size must be >= 3");
+        }
+        return Executors.newFixedThreadPool(poolSize, getTheadFactory());
+    }
+
+    protected ThreadFactory getTheadFactory() {
+        return new ThreadFactory() {
+            int counter = 0;
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r,
+                                           "Anubis: ServerChannelHandler thread "
+                                                   + counter++);
+                thread.setDaemon(true);
+                return thread;
+            }
+        };
     }
 }

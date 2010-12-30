@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
@@ -32,6 +33,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
         Connection, HeartbeatProtocol {
 
+    private static Logger log = Logger.getLogger(HeartbeatConnection.class.getCanonicalName());
     /**
      * Others for this implementation
      */
@@ -71,7 +73,6 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
      */
     @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
-
         /**
          * ignore if the epoch is wrong or if this connection has terminated
          */
@@ -82,13 +83,7 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
             return false;
         }
 
-        /**
-         * pass to heartbeat protocol implementation
-         */
-        boolean accepted = super.receiveHeartbeat(hb);
-
-        if (accepted) {
-
+        if (super.receiveHeartbeat(hb)) {
             /**
              * Extract piggy-backed messaging information to see if this
              * connection should be converted to a messaging connection
@@ -98,11 +93,19 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
                     log.finest("converting heart beat connection to message connection");
                 }
                 connectionSet.convertToMessageConnection(this);
-                return true;
+            } else {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("not converting heart beat connection to message connection as connection does not contain my identity: "
+                               + me.id);
+                }
             }
+            return true;
         }
 
-        return accepted;
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("heartbeat rejected");
+        }
+        return false;
     }
 
     /**

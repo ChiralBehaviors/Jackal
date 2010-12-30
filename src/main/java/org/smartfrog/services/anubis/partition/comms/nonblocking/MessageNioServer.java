@@ -58,7 +58,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     private int rxQueueCounter = 0;
     private Selector selector = null;
     private ServerSocketChannel server = null;
-    private Logger syncLog = Logger.getLogger(this.getClass().toString());
+    private static Logger syncLog = Logger.getLogger(MessageNioServer.class.getCanonicalName());
     private Logger asyncLog = syncLog; // need to wrap with async log wrapper
     private WireSecurity wireSecurity = null;
 

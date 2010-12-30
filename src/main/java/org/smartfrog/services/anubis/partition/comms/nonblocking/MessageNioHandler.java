@@ -55,7 +55,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     private ByteBuffer[] fullObject = null;
     // fields to replace MessageConectionImpl
     private boolean ignoring = false;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(MessageNioHandler.class.getCanonicalName());
     private NonBlockingConnectionInitiator mci = null;
     private Identity me = null;
     private MessageConnection messageConnection = null;
