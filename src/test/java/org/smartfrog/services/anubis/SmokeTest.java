@@ -84,12 +84,12 @@ public class SmokeTest extends TestCase {
     public void testInProcess() throws Exception {
         String stateName = "Whip It";
         int maxSleep = 500;
-        int messageCount = 100;
+        int messageCount = 10;
         ArrayList<Node> nodes = new ArrayList<Node>();
         Class<?>[] configurations = new Class[] { testA.class, testB.class,
                                                  testC.class, testD.class,
                                                  testE.class, testF.class,
-                                                 testG.class };
+                                                 testG.class};
         CyclicBarrier startBarrier = new CyclicBarrier(configurations.length);
         CyclicBarrier endBarrier = new CyclicBarrier(configurations.length + 1);
         for (Class<?> config : configurations) {
@@ -107,7 +107,7 @@ public class SmokeTest extends TestCase {
             List<SendHistory> sent = sender.getSendHistory();
             for (Node receiver : nodes) {
                 List<ValueHistory> received = receiver.getValueHistory(sender.getInstance());
-                assertNotNull(received);
+                assertNotNull("Received no history from " + sender.getInstance(), received);
                 int lastCounter = -1;
                 boolean first = true;
                 boolean second = false;

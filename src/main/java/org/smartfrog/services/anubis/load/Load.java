@@ -6,7 +6,7 @@ import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class Load {
-    static int WAIT_TIME = 500;
+    static int WAIT_TIME = 1500;
     static String STATE_NAME = "Whip It Good";
 
     public static void main(String[] argv) {

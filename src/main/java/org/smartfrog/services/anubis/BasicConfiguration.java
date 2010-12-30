@@ -13,6 +13,7 @@ import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.ping.PingProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
@@ -43,6 +44,18 @@ public class BasicConfiguration {
         connectionSet.setPartitionProtocol(partitionProtocol());
         connectionSet.setTiming(heartbeatInterval(), heartbeatTimeout());
         return connectionSet;
+    }
+
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        if (useTimed()) { 
+            return new TimedProtocolFactory();
+        } 
+        return new PingProtocolFactory();
+    }
+
+    protected boolean useTimed() {
+        return false;
     }
 
     @Bean
@@ -108,11 +121,6 @@ public class BasicConfiguration {
 
     public long heartbeatInterval() {
         return 2000L;
-    }
-
-    @Bean
-    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        return new TimedProtocolFactory();
     }
 
     public long heartbeatTimeout() {

@@ -14,7 +14,10 @@ import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.AnubisStability;
 import org.smartfrog.services.anubis.locator.AnubisValue;
+import org.smartfrog.services.anubis.partition.PartitionManager;
+import org.smartfrog.services.anubis.partition.PartitionNotification;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.views.View;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class Node {
@@ -24,12 +27,8 @@ public class Node {
     private AnubisProvider provider;
     private int messagesToSend;
     private CyclicBarrier barrier;
-    private String instance;
-    /*
-     * We use a latch with 2 as we need two notifications of stability to ensure
-     * that the entire group is present in the view.
-     */
-    private CountDownLatch latch = new CountDownLatch(2);
+    private String instance; 
+    private CountDownLatch latch = new CountDownLatch(1);
 
     private ArrayList<SendHistory> sendHistory = new ArrayList<SendHistory>();
     private ConcurrentHashMap<String, List<ValueHistory>> receiveHistory = new ConcurrentHashMap<String, List<ValueHistory>>();
@@ -39,6 +38,26 @@ public class Node {
     Node(AnnotationConfigApplicationContext context, String stateName)
                                                                       throws Exception {
         this.context = context;
+        
+        PartitionManager pm = context.getBean(PartitionManager.class);
+        pm.register(new PartitionNotification() {
+            
+            @Override
+            public void partitionNotification(View view, int leader) {
+                if (view.isStable() && view.cardinality() == 7) {
+                    System.out.println("Launching");
+                    latch.countDown();
+                } else { 
+                    System.out.println("Not launching: " + view);
+                }
+            }
+            
+            @Override
+            public void objectNotification(Object obj, int sender, long time) {
+                // TODO Auto-generated method stub
+                
+            }
+        });
 
         AnubisListener listener = new AnubisListener(stateName) {
             @Override
@@ -63,15 +82,10 @@ public class Node {
                 history.add(new ValueHistory(value, Action.REMOVE));
             }
         };
-
         provider = new AnubisProvider(stateName);
         AnubisStability stability = new AnubisStability() {
             @Override
             public void stability(boolean stable, long timeRef) {
-                if (stable) {
-                    latch.countDown();
-                }
-                // System.out.println("Stable: " + stable);
                 stabilityHistory.add(new StabilityHistory(stable, timeRef));
             }
         };
@@ -79,7 +93,7 @@ public class Node {
         AnubisLocator locator = context.getBean(AnubisLocator.class);
         locator.registerStability(stability);
         locator.registerListener(listener);
-        locator.registerProvider(provider);
+        locator.registerProvider(provider); 
         instance = provider.getInstance();
     }
 

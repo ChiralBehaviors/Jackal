@@ -325,7 +325,8 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         }
         byte[] test = s.getBytes();
         byte oldValue = 0;
-        for (int i = 0; i < storage.length; ++i) {
+        int bytes = Math.min(storage.length, test.length);
+        for (int i = 0; i < bytes; ++i) {
             oldValue = storage[i];
             storage[i] |= test[i];
             if (storage[i] != oldValue) {

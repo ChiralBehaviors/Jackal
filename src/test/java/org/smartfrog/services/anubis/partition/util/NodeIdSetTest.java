@@ -24,21 +24,14 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
-
 import junit.framework.TestCase;
 
+import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+
 public class NodeIdSetTest extends TestCase {
-    public static void main(String[] args) {
-        NodeIdSetTest t = new NodeIdSetTest();
-        t.testIt();
-    }
 
-    public NodeIdSetTest() {
-    }
-
-    public void testIt() {
-        int max = Identity.MAX_ID; 
+    public void testBasic() {
+        int max = Identity.MAX_ID;
         Random random = new Random(666);
         NodeIdSet bs = new NodeIdSet();
         Set<Integer> entered = new HashSet<Integer>();
@@ -46,13 +39,13 @@ public class NodeIdSetTest extends TestCase {
         entered.add(max);
         bs.add(0);
         entered.add(0);
-        for (int i = 0; i < 1000;) { 
+        for (int i = 0; i < 1000;) {
             int candidate = random.nextInt(max);
             if (entered.add(candidate)) {
                 bs.add(candidate);
                 i++;
             }
-        } 
+        }
         assertEquals(entered.size(), bs.cardinality());
         assertEquals(HeartbeatMsg.MAX_BIT_SIZE * 8, bs.size());
         for (Iterator<Integer> stream = entered.iterator(); stream.hasNext(); stream.remove()) {
@@ -67,4 +60,31 @@ public class NodeIdSetTest extends TestCase {
         assertEquals(0, bs.cardinality());
     }
 
+    public void testMergeDifferentBitSize() {
+        NodeIdSet small = new NodeIdSet();
+        NodeIdSet large = new NodeIdSet();
+
+        small.add(10);
+        small.add(20);
+
+        large.add(Identity.MAX_ID);
+
+        assertTrue(small.size() < large.size());
+        
+        large.merge(small);
+    }
+
+    public void testOverlapDifferentBitSize() {
+        NodeIdSet small = new NodeIdSet();
+        NodeIdSet large = new NodeIdSet();
+
+        small.add(10);
+        small.add(20);
+
+        large.add(Identity.MAX_ID);
+
+        assertTrue(small.size() < large.size());
+        
+        large.overlap(small);
+    }
 }
