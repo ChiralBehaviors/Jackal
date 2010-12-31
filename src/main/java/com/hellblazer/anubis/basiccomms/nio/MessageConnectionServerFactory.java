@@ -13,8 +13,8 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 public class MessageConnectionServerFactory implements
         IOConnectionServerFactory {
     private WireSecurity wireSecurity;
-    private SocketOptions options;
-    private int selectTimeout;
+    private SocketOptions options = new SocketOptions();
+    private int selectTimeout = 1000;
     private ExecutorService executor;
 
     @Override
@@ -28,6 +28,7 @@ public class MessageConnectionServerFactory implements
         handler.setExecutor(executor);
         handler.setIdentity(id);
         handler.setConnectionSet(cs);
+        handler.connect();
         return handler;
     }
 

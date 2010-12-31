@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.anubis.annotations.DeployedPostProcessor;
+import com.hellblazer.anubis.basiccomms.nio.MessageConnectionServerFactory;
 
 @Configuration
 public class BasicConfiguration {
@@ -133,9 +134,15 @@ public class BasicConfiguration {
     @Bean
     public IOConnectionServerFactory ioConnectionServerFactory()
                                                                 throws Exception {
-        MessageNioServerFactory factory = new MessageNioServerFactory();
-        factory.setWireSecurity(wireSecurity());
-        return factory;
+        if (useNewNioServer()) {
+            return newNioServer();
+        } else {
+            return oldNioServer();
+        }
+    }
+
+    protected boolean useNewNioServer() {
+        return true;
     }
 
     @Bean
@@ -218,5 +225,18 @@ public class BasicConfiguration {
                 return thread;
             }
         };
+    }
+
+    protected IOConnectionServerFactory newNioServer() throws Exception {
+        MessageConnectionServerFactory factory = new MessageConnectionServerFactory();
+        factory.setWireSecurity(wireSecurity());
+        factory.setExecutor(executorService());
+        return factory;
+    }
+
+    protected IOConnectionServerFactory oldNioServer() throws Exception {
+        MessageNioServerFactory factory = new MessageNioServerFactory();
+        factory.setWireSecurity(wireSecurity());
+        return factory;
     }
 }

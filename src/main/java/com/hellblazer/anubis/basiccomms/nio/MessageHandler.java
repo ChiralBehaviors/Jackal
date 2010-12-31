@@ -3,6 +3,7 @@ package com.hellblazer.anubis.basiccomms.nio;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,26 +27,37 @@ public class MessageHandler implements WireSizes, IOConnection {
 
     private static Logger log = Logger.getLogger(MessageHandler.class.toString());
     private boolean announceTerm = true;
-    private ConnectionSet connectionSet;
+    private final ConnectionSet connectionSet;
     private boolean ignoring = false;
-    private Identity me;
+    private final Identity me;
     private MessageConnection messageConnection;
     private long receiveCount = INITIAL_MSG_ORDER;
     private long sendCount = INITIAL_MSG_ORDER;
-    private WireSecurity wireSecurity;
+    private final WireSecurity wireSecurity;
     private volatile boolean open = true;
-    private SocketChannel channel;
-    private ByteBuffer headerIn = ByteBuffer.allocateDirect(HEADER_SIZE);
-    private ByteBuffer headerOut = ByteBuffer.allocateDirect(HEADER_SIZE);
+    private final SocketChannel channel;
+    private ByteBuffer headerIn = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private ByteBuffer headerOut = ByteBuffer.wrap(new byte[HEADER_SIZE]);
     private ByteBuffer msgIn;
     private ByteBuffer msgOut;
-    private ServerChannelHandler handler;
+    private final ServerChannelHandler handler;
     private volatile State readState = State.INITIAL;
     private volatile State writeState = State.INITIAL;
     private String toString;
+    private final Semaphore writeGate = new Semaphore(1);
 
-    public MessageHandler(Identity id, ConnectionSet cs, MessageConnection mc,
-                          WireSecurity sec, SocketChannel chan) {
+    public MessageHandler(Identity id, ConnectionSet cs, WireSecurity sec,
+                          SocketChannel chan, ServerChannelHandler h) {
+        me = id;
+        connectionSet = cs;
+        wireSecurity = sec;
+        channel = chan;
+        handler = h;
+    }
+
+    public MessageHandler(Identity id, ConnectionSet cs, WireSecurity sec,
+                          SocketChannel chan, ServerChannelHandler h,
+                          MessageConnection mc) {
         me = id;
         connectionSet = cs;
         messageConnection = mc;
@@ -53,14 +65,7 @@ public class MessageHandler implements WireSizes, IOConnection {
         toString = "Anubis: Message Handler (node " + me.id + ", remote node "
                    + messageConnection.getSender().id + ")";
         channel = chan;
-    }
-
-    public MessageHandler(Identity id, ConnectionSet cs, WireSecurity sec,
-                          SocketChannel chan) {
-        me = id;
-        connectionSet = cs;
-        wireSecurity = sec;
-        channel = chan;
+        handler = h;
     }
 
     @Override
@@ -70,18 +75,7 @@ public class MessageHandler implements WireSizes, IOConnection {
 
     @Override
     public void send(TimedMsg tm) {
-        try {
-            tm.setOrder(sendCount);
-            sendCount++;
-            send(wireSecurity.toWireForm(tm));
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE, me
-                                      + " failed to marshall timed message: "
-                                      + tm + " - shutting down connection", ex);
-            }
-            shutdown();
-        }
+        send(tm, false);
     }
 
     @Override
@@ -106,6 +100,101 @@ public class MessageHandler implements WireSizes, IOConnection {
     @Override
     public String toString() {
         return toString;
+    }
+
+    protected void close() {
+        readState = writeState = State.CLOSE;
+        if (announceTerm && messageConnection != null) {
+            messageConnection.closing();
+        }
+        open = false;
+        try {
+            channel.close();
+        } catch (IOException e) {
+        }
+        handler.closeHandler(this);
+    }
+
+    protected SocketChannel getChannel() {
+        return channel;
+    }
+
+    protected void handleAccept() {
+        readState = State.INITIAL;
+        writeState = State.INITIAL;
+        handler.selectForRead(this);
+    }
+
+    protected void handleRead() {
+        switch (readState) {
+            case INITIAL: {
+                headerIn.clear();
+                readState = State.HEADER;
+                readHeader();
+                break;
+            }
+            case HEADER: {
+                readHeader();
+                break;
+            }
+            case ERROR: {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("In error, ignoring read ready");
+                }
+                break; // Don't read while in error
+            }
+            case MESSAGE: {
+                readMessage();
+                break;
+            }
+            case CLOSE: {
+                break; // ignore
+            }
+            default:
+                throw new IllegalStateException("Invalid read state");
+        }
+    }
+
+    protected void handleWrite() {
+        switch (writeState) {
+            case INITIAL: {
+                throw new IllegalStateException("Should never be initial state");
+            }
+            case HEADER: {
+                writeHeader();
+                break;
+            }
+            case ERROR: {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("In error, ignoring write ready");
+                }
+                break; // Don't write while in error
+            }
+            case MESSAGE: {
+                writeMessage();
+                break;
+            }
+            case CLOSE: {
+                break; // ignore
+            }
+            default:
+                throw new IllegalStateException("Invalid write state");
+        }
+    }
+
+    protected void send(TimedMsg timedMessage, boolean initial) {
+        try {
+            timedMessage.setOrder(sendCount);
+            if (!initial) {
+                sendCount++;
+            }
+            send(wireSecurity.toWireForm(timedMessage));
+        } catch (Exception ex) {
+            log.log(Level.SEVERE, me + " failed to marshall timed message: "
+                                  + timedMessage
+                                  + " - shutting down connection", ex);
+            shutdown();
+        }
     }
 
     private void closing() {
@@ -143,7 +232,9 @@ public class MessageHandler implements WireSizes, IOConnection {
 
         if (tm.getOrder() != receiveCount) {
             log.severe(me
-                       + "connection transport has delivered a message out of order - shutting down");
+                       + "connection transport has delivered a message out of order.  Expected: "
+                       + receiveCount + " actual: " + tm.getOrder()
+                       + " - shutting down");
             shutdown();
             return;
         }
@@ -364,13 +455,17 @@ public class MessageHandler implements WireSizes, IOConnection {
     }
 
     private void send(byte[] bytes) {
+        try {
+            writeGate.acquire();
+        } catch (InterruptedException e) {
+            return;
+        }
         writeState = State.INITIAL;
         headerOut.clear();
         headerOut.putInt(0, MAGIC_NUMBER);
         headerOut.putInt(4, bytes.length);
         msgOut = ByteBuffer.wrap(bytes);
         writeHeader();
-
     }
 
     private void shutdown() {
@@ -424,84 +519,7 @@ public class MessageHandler implements WireSizes, IOConnection {
         } else {
             writeState = State.INITIAL;
             msgOut = null;
-        }
-    }
-
-    protected void close() {
-        readState = writeState = State.CLOSE;
-        if (announceTerm && messageConnection != null) {
-            messageConnection.closing();
-        }
-        try {
-            channel.close();
-        } catch (IOException e) {
-        }
-    }
-
-    protected SocketChannel getChannel() {
-        return channel;
-    }
-
-    protected void handleAccept() {
-        readState = State.INITIAL;
-        writeState = State.INITIAL;
-        handler.selectForRead(this);
-    }
-
-    protected void handleRead() {
-        switch (readState) {
-            case INITIAL: {
-                headerIn.clear();
-                readState = State.HEADER;
-                readHeader();
-                break;
-            }
-            case HEADER: {
-                readHeader();
-                break;
-            }
-            case ERROR: {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("In error, ignoring read ready");
-                }
-                break; // Don't read while in error
-            }
-            case MESSAGE: {
-                readMessage();
-                break;
-            }
-            case CLOSE: {
-                break; // ignore
-            }
-            default:
-                throw new IllegalStateException("Invalid read state");
-        }
-    }
-
-    protected void handleWrite() {
-        switch (writeState) {
-            case INITIAL: {
-                throw new IllegalStateException("Should never be initial state");
-            }
-            case HEADER: {
-                writeHeader();
-                break;
-            }
-            case ERROR: {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("In error, ignoring write ready");
-                }
-                break; // Don't write while in error
-            }
-            case MESSAGE: {
-                writeMessage();
-                break;
-            }
-            case CLOSE: {
-                break; // ignore
-            }
-            default:
-                throw new IllegalStateException("Invalid write state");
+            writeGate.release();
         }
     }
 }

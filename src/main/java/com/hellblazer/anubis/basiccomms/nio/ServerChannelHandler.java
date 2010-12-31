@@ -13,7 +13,9 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -39,7 +41,7 @@ public class ServerChannelHandler implements IOConnectionServer {
     }
 
     protected InetSocketAddress endpoint;
-    protected SocketOptions options;
+    protected SocketOptions options = new SocketOptions();
     protected volatile int queueIndex = 0;
     protected final ArrayList<MessageHandler>[] readQueue;
     protected ExecutorService executor;
@@ -49,12 +51,12 @@ public class ServerChannelHandler implements IOConnectionServer {
     protected ServerSocket serverSocket;
     protected AtomicBoolean run = new AtomicBoolean();
     private WireSecurity wireSecurity;
-
     protected final ArrayList<MessageHandler>[] writeQueue;
-
     protected volatile int writeQueueIndex = 0;
     private Identity identity;
     private ConnectionSet connectionSet;
+    private final Set<MessageHandler> openHandlers = new HashSet<MessageHandler>();
+    private InetSocketAddress localAddress;
 
     @SuppressWarnings("unchecked")
     public ServerChannelHandler() {
@@ -68,35 +70,9 @@ public class ServerChannelHandler implements IOConnectionServer {
         writeQueue[1] = new ArrayList<MessageHandler>();
     }
 
-    public void connect() throws IOException {
-        server = ServerSocketChannel.open();
-        serverSocket = server.socket();
-        serverSocket.bind(endpoint, options.getBacklog());
-        server.configureBlocking(false);
-        selector = Selector.open();
-        server.register(selector, SelectionKey.OP_ACCEPT);
-        log.fine("Socket is connected");
-    }
-
-    public void disconnect() {
-        run.set(false);
-        try {
-            server.close();
-        } catch (IOException e) {
-        }
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-        }
-        try {
-            selector.close();
-        } catch (IOException e) {
-        }
-    }
-
     @Override
     public ConnectionAddress getAddress() {
-        return new ConnectionAddress(endpoint);
+        return new ConnectionAddress(localAddress);
     }
 
     public ConnectionSet getConnectionSet() {
@@ -116,7 +92,7 @@ public class ServerChannelHandler implements IOConnectionServer {
     }
 
     public SocketAddress getLocalAddress() {
-        return endpoint;
+        return localAddress;
     }
 
     public SocketOptions getOptions() {
@@ -129,7 +105,7 @@ public class ServerChannelHandler implements IOConnectionServer {
 
     @Override
     public String getThreadStatusString() {
-        return "ServerChannelHandler for " + endpoint + " running: "
+        return "ServerChannelHandler for " + localAddress + " running: "
                + run.get();
     }
 
@@ -139,14 +115,16 @@ public class ServerChannelHandler implements IOConnectionServer {
 
     @Override
     public void initiateConnection(Identity id, MessageConnection connection,
-                                   HeartbeatMsg hb) {
+                                   HeartbeatMsg heartbeat) {
         SocketChannel channel = null;
         InetSocketAddress toAddress = connection.getSenderAddress().asSocketAddress();
         try {
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             channel.connect(toAddress);
-
+            while (!channel.finishConnect()) {
+                Thread.sleep(10);
+            }
         } catch (IOException ex) {
             log.log(Level.WARNING, "Cannot open connection to: " + toAddress,
                     ex);
@@ -156,12 +134,22 @@ public class ServerChannelHandler implements IOConnectionServer {
                 }
             } catch (Exception ex2) {
             }
-
+            return;
+        } catch (InterruptedException e) {
+            return;
         }
         MessageHandler handler = new MessageHandler(id, connectionSet,
-                                                    connection, wireSecurity,
-                                                    channel);
-        handler.handleAccept();
+                                                    wireSecurity, channel,
+                                                    this, connection);
+        synchronized (openHandlers) {
+            openHandlers.add(handler);
+        }
+        handler.send(heartbeat, true);
+        if (connection.assignImpl(handler)) {
+            handler.handleAccept();
+        } else {
+            handler.terminate();
+        }
     }
 
     public void setConnectionSet(ConnectionSet cs) {
@@ -201,8 +189,19 @@ public class ServerChannelHandler implements IOConnectionServer {
 
     @Override
     public void terminate() {
-        run.set(false);
+        if (!run.compareAndSet(true, false)) {
+            return;
+        }
         selector.wakeup();
+        disconnect();
+        executor.shutdownNow();
+        for (MessageHandler handler : openHandlers) {
+            try {
+                handler.getChannel().close();
+            } catch (IOException e) {
+            }
+        }
+        openHandlers.clear();
     }
 
     protected void addQueuedSelects() throws ClosedChannelException,
@@ -250,6 +249,40 @@ public class ServerChannelHandler implements IOConnectionServer {
         writeQueue[myQueueIndex].clear();
     }
 
+    protected void closeHandler(MessageHandler handler) {
+        synchronized (openHandlers) {
+            openHandlers.remove(handler);
+        }
+    }
+
+    protected void connect() throws IOException {
+        server = ServerSocketChannel.open();
+        serverSocket = server.socket();
+        serverSocket.bind(endpoint, options.getBacklog());
+        localAddress = new InetSocketAddress(server.socket().getInetAddress(),
+                                             server.socket().getLocalPort());
+        server.configureBlocking(false);
+        selector = Selector.open();
+        server.register(selector, SelectionKey.OP_ACCEPT);
+        log.fine("Socket is connected");
+    }
+
+    protected void disconnect() {
+        run.set(false);
+        try {
+            server.close();
+        } catch (IOException e) {
+        }
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+        }
+        try {
+            selector.close();
+        } catch (IOException e) {
+        }
+    }
+
     protected void handleAccept(SelectionKey key,
                                 Iterator<SelectionKey> selected)
                                                                 throws IOException {
@@ -265,7 +298,13 @@ public class ServerChannelHandler implements IOConnectionServer {
         SocketChannel accepted = server.accept();
         options.configure(accepted.socket());
         accepted.configureBlocking(false);
-        new MessageHandler(identity, connectionSet, wireSecurity, accepted).handleAccept();
+        MessageHandler handler = new MessageHandler(identity, connectionSet,
+                                                    wireSecurity, accepted,
+                                                    this);
+        synchronized (openHandlers) {
+            openHandlers.add(handler);
+        }
+        handler.handleAccept();
     }
 
     protected void handleRead(SelectionKey key, Iterator<SelectionKey> selected) {
