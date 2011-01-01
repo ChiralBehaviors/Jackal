@@ -297,6 +297,7 @@ public class Controller {
         consoleFrame.setVisible(false);
         consoleFrame.dispose();
         consoleFrame = null;
+        System.exit(0);
     }
 
 }

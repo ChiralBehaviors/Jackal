@@ -1,3 +1,19 @@
+/** (C) Copyright 2010 Hal Hildebrand, all rights reserved.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 package org.smartfrog.services.anubis;
 
 import java.net.InetAddress;
@@ -51,18 +67,6 @@ public class BasicConfiguration {
     }
 
     @Bean
-    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        if (useTimed()) {
-            return new TimedProtocolFactory();
-        }
-        return new PingProtocolFactory();
-    }
-
-    protected boolean useTimed() {
-        return false;
-    }
-
-    @Bean
     public ConnectionAddress contactAddress() throws UnknownHostException {
         return new ConnectionAddress(contactHost(), contactPort());
     }
@@ -83,18 +87,6 @@ public class BasicConfiguration {
     @Bean
     public Epoch epoch() {
         return new Epoch();
-    }
-
-    public int getMagic() {
-        return 12345;
-    }
-
-    public int getNode() throws UnknownHostException {
-        return Identity.getProcessUniqueId();
-    }
-
-    public boolean getTestable() {
-        return false;
     }
 
     @Bean
@@ -127,6 +119,14 @@ public class BasicConfiguration {
         return 2000L;
     }
 
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        if (useTimed()) {
+            return new TimedProtocolFactory();
+        }
+        return new PingProtocolFactory();
+    }
+
     public long heartbeatTimeout() {
         return 3L;
     }
@@ -139,10 +139,6 @@ public class BasicConfiguration {
         } else {
             return oldNioServer();
         }
-    }
-
-    protected boolean useNewNioServer() {
-        return true;
     }
 
     @Bean
@@ -186,7 +182,7 @@ public class BasicConfiguration {
         mgr.setConnectionAddress(contactAddress());
         mgr.setConnectionSet(connectionSet());
         mgr.setIdentity(partitionIdentity());
-        mgr.setTestable(getTestable());
+        mgr.setTestable(isTestable());
         return mgr;
     }
 
@@ -200,16 +196,20 @@ public class BasicConfiguration {
         return new NoSecurityImpl();
     }
 
-    protected int poolSize() {
-        return 5;
-    }
-
     protected ExecutorService executorService() {
         int poolSize = poolSize();
         if (poolSize < 3) {
             throw new IllegalArgumentException("Pool size must be >= 3");
         }
         return Executors.newFixedThreadPool(poolSize, getTheadFactory());
+    }
+
+    protected int getMagic() {
+        return 12345;
+    }
+
+    protected int getNode() throws UnknownHostException {
+        return Identity.getProcessUniqueId();
     }
 
     protected ThreadFactory getTheadFactory() {
@@ -227,6 +227,10 @@ public class BasicConfiguration {
         };
     }
 
+    protected boolean isTestable() {
+        return true;
+    }
+
     protected IOConnectionServerFactory newNioServer() throws Exception {
         MessageConnectionServerFactory factory = new MessageConnectionServerFactory();
         factory.setWireSecurity(wireSecurity());
@@ -238,5 +242,17 @@ public class BasicConfiguration {
         MessageNioServerFactory factory = new MessageNioServerFactory();
         factory.setWireSecurity(wireSecurity());
         return factory;
+    }
+
+    protected int poolSize() {
+        return 5;
+    }
+
+    protected boolean useNewNioServer() {
+        return true;
+    }
+
+    protected boolean useTimed() {
+        return false;
     }
 }
