@@ -13,14 +13,13 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/
+ */
 package com.hellblazer.anubis.basiccomms.nio;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.net.SocketAddress;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ClosedSelectorException;
@@ -29,6 +28,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -37,20 +37,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
-import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
-import org.smartfrog.services.anubis.partition.comms.MessageConnection;
-import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
-import org.smartfrog.services.anubis.partition.util.Identity;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
-import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
-
 /**
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class ServerChannelHandler implements IOConnectionServer {
+public abstract class ServerChannelHandler {
     private final static Logger log = Logger.getLogger(ServerChannelHandler.class.getCanonicalName());
 
     @SuppressWarnings("unchecked")
@@ -58,58 +50,66 @@ public class ServerChannelHandler implements IOConnectionServer {
         return (T[]) java.lang.reflect.Array.newInstance(c, 2);
     }
 
-    protected InetSocketAddress endpoint;
-    protected SocketOptions options = new SocketOptions();
-    protected volatile int queueIndex = 0;
-    protected final ArrayList<MessageHandler>[] readQueue;
-    protected ExecutorService executor;
-    protected Selector selector;
-    protected int selectTimeout = 1000;
-    protected ServerSocketChannel server;
-    protected ServerSocket serverSocket;
-    protected AtomicBoolean run = new AtomicBoolean();
-    private WireSecurity wireSecurity;
-    protected final ArrayList<MessageHandler>[] writeQueue;
-    protected volatile int writeQueueIndex = 0;
-    private Identity identity;
-    private ConnectionSet connectionSet;
-    private final Set<MessageHandler> openHandlers = new HashSet<MessageHandler>();
+    private InetSocketAddress endpoint;
+    private SocketOptions options = new SocketOptions();
+    private volatile int queueIndex = 0;
+    private final ArrayList<CommunicationsHandler>[] readQueue;
+    private ExecutorService commsExecutor;
+    private ExecutorService dispatchExecutor;
+    private Selector selector;
+    private int selectTimeout = 1000;
+    private ServerSocketChannel server;
+    private ServerSocket serverSocket;
+    private AtomicBoolean run = new AtomicBoolean();
+    private final ArrayList<CommunicationsHandler>[] writeQueue;
+    private final Set<CommunicationsHandler> openHandlers = new HashSet<CommunicationsHandler>();
     private InetSocketAddress localAddress;
 
     @SuppressWarnings("unchecked")
     public ServerChannelHandler() {
-        ArrayList<MessageHandler> proto = new ArrayList<MessageHandler>();
+        ArrayList<CommunicationsHandler> proto = new ArrayList<CommunicationsHandler>();
         readQueue = newArray(proto.getClass());
-        readQueue[0] = new ArrayList<MessageHandler>();
-        readQueue[1] = new ArrayList<MessageHandler>();
+        readQueue[0] = new ArrayList<CommunicationsHandler>();
+        readQueue[1] = new ArrayList<CommunicationsHandler>();
 
         writeQueue = newArray(proto.getClass());
-        writeQueue[0] = new ArrayList<MessageHandler>();
-        writeQueue[1] = new ArrayList<MessageHandler>();
+        writeQueue[0] = new ArrayList<CommunicationsHandler>();
+        writeQueue[1] = new ArrayList<CommunicationsHandler>();
+        try {
+            selector = Selector.open();
+        } catch (IOException e) {
+            throw new IllegalStateException("Cannot open a selector");
+        }
     }
 
-    @Override
-    public ConnectionAddress getAddress() {
-        return new ConnectionAddress(localAddress);
+    public void connect() throws IOException {
+        server = ServerSocketChannel.open();
+        serverSocket = server.socket();
+        serverSocket.bind(endpoint, options.getBacklog());
+        localAddress = new InetSocketAddress(server.socket().getInetAddress(),
+                                             server.socket().getLocalPort());
+        server.configureBlocking(false);
+        server.register(selector, SelectionKey.OP_ACCEPT);
+        log.fine("Socket is connected");
     }
 
-    public ConnectionSet getConnectionSet() {
-        return connectionSet;
+    public void dispatch(Runnable command) {
+        dispatchExecutor.execute(command);
+    }
+
+    public ExecutorService getCommsExecutor() {
+        return commsExecutor;
+    }
+
+    public ExecutorService getDispatchExecutor() {
+        return dispatchExecutor;
     }
 
     public InetAddress getEndpoint() {
         return endpoint.getAddress();
     }
 
-    public ExecutorService getExecutor() {
-        return executor;
-    }
-
-    public Identity getIdentity() {
-        return identity;
-    }
-
-    public SocketAddress getLocalAddress() {
+    public InetSocketAddress getLocalAddress() {
         return localAddress;
     }
 
@@ -121,69 +121,20 @@ public class ServerChannelHandler implements IOConnectionServer {
         return selectTimeout;
     }
 
-    @Override
-    public String getThreadStatusString() {
-        return "ServerChannelHandler for " + localAddress + " running: "
-               + run.get();
+    public boolean isRunning() {
+        return run.get();
     }
 
-    public WireSecurity getWireSecurity() {
-        return wireSecurity;
+    public void setCommsExecutor(ExecutorService executor) {
+        commsExecutor = executor;
     }
 
-    @Override
-    public void initiateConnection(Identity id, MessageConnection connection,
-                                   HeartbeatMsg heartbeat) {
-        SocketChannel channel = null;
-        InetSocketAddress toAddress = connection.getSenderAddress().asSocketAddress();
-        try {
-            channel = SocketChannel.open();
-            channel.configureBlocking(false);
-            channel.connect(toAddress);
-            while (!channel.finishConnect()) {
-                Thread.sleep(10);
-            }
-        } catch (IOException ex) {
-            log.log(Level.WARNING, "Cannot open connection to: " + toAddress,
-                    ex);
-            try {
-                if (channel != null) {
-                    channel.close();
-                }
-            } catch (Exception ex2) {
-            }
-            return;
-        } catch (InterruptedException e) {
-            return;
-        }
-        MessageHandler handler = new MessageHandler(id, connectionSet,
-                                                    wireSecurity, channel,
-                                                    this, connection);
-        synchronized (openHandlers) {
-            openHandlers.add(handler);
-        }
-        handler.send(heartbeat, true);
-        if (connection.assignImpl(handler)) {
-            handler.handleAccept();
-        } else {
-            handler.terminate();
-        }
-    }
-
-    public void setConnectionSet(ConnectionSet cs) {
-        connectionSet = cs;
+    public void setDispatchExecutor(ExecutorService dispatchExecutor) {
+        this.dispatchExecutor = dispatchExecutor;
     }
 
     public void setEndpoint(InetSocketAddress endpoint) {
         this.endpoint = endpoint;
-    }
-
-    public void setExecutor(ExecutorService executor) {
-        this.executor = executor;
-    }
-
-    public void setIdentity(Identity id) {
-        identity = id;
     }
 
     public void setOptions(SocketOptions options) {
@@ -194,32 +145,37 @@ public class ServerChannelHandler implements IOConnectionServer {
         this.selectTimeout = selectTimeout;
     }
 
-    public void setWireSecurity(WireSecurity wireSecurity) {
-        this.wireSecurity = wireSecurity;
-    }
-
-    @Override
     public void start() {
         if (run.compareAndSet(false, true)) {
             startSelect();
         }
     }
 
-    @Override
     public void terminate() {
         if (!run.compareAndSet(true, false)) {
             return;
         }
         selector.wakeup();
         disconnect();
-        executor.shutdownNow();
-        for (MessageHandler handler : openHandlers) {
+        try {
+            selector.close();
+        } catch (IOException e) {
+        }
+        commsExecutor.shutdownNow();
+        dispatchExecutor.shutdownNow();
+        for (CommunicationsHandler handler : openHandlers) {
             try {
                 handler.getChannel().close();
             } catch (IOException e) {
             }
         }
         openHandlers.clear();
+    }
+
+    protected void addHandler(CommunicationsHandler handler) {
+        synchronized (openHandlers) {
+            openHandlers.add(handler);
+        }
     }
 
     protected void addQueuedSelects() throws ClosedChannelException,
@@ -235,13 +191,13 @@ public class ServerChannelHandler implements IOConnectionServer {
         if (log.isLoggable(Level.FINE)) {
             log.fine("Adding queued read selects");
         }
-        for (MessageHandler context : readQueue[myQueueIndex]) {
+        for (CommunicationsHandler handler : readQueue[myQueueIndex]) {
             try {
-                context.getChannel().register(selector, SelectionKey.OP_READ,
-                                              context);
+                handler.getChannel().register(selector, SelectionKey.OP_READ,
+                                              handler);
             } catch (CancelledKeyException e) {
                 // ignore and queue
-                selectForRead(context);
+                selectForRead(handler);
             } catch (NullPointerException e) {
                 // apparently the file descriptor can be nulled
                 log.log(Level.FINEST, "anamalous null pointer exception", e);
@@ -252,13 +208,13 @@ public class ServerChannelHandler implements IOConnectionServer {
         if (log.isLoggable(Level.FINE)) {
             log.fine("Adding queued write selects");
         }
-        for (MessageHandler context : writeQueue[myQueueIndex]) {
+        for (CommunicationsHandler handler : writeQueue[myQueueIndex]) {
             try {
-                context.getChannel().register(selector, SelectionKey.OP_WRITE,
-                                              context);
+                handler.getChannel().register(selector, SelectionKey.OP_WRITE,
+                                              handler);
             } catch (CancelledKeyException e) {
                 // ignore and queue
-                selectForWrite(context);
+                selectForWrite(handler);
             } catch (NullPointerException e) {
                 // apparently the file descriptor can be nulled
                 log.log(Level.FINE, "anamalous null pointer exception", e);
@@ -267,36 +223,24 @@ public class ServerChannelHandler implements IOConnectionServer {
         writeQueue[myQueueIndex].clear();
     }
 
-    protected void closeHandler(MessageHandler handler) {
+    protected void closeHandler(CommunicationsHandler handler) {
         synchronized (openHandlers) {
             openHandlers.remove(handler);
         }
     }
 
-    protected void connect() throws IOException {
-        server = ServerSocketChannel.open();
-        serverSocket = server.socket();
-        serverSocket.bind(endpoint, options.getBacklog());
-        localAddress = new InetSocketAddress(server.socket().getInetAddress(),
-                                             server.socket().getLocalPort());
-        server.configureBlocking(false);
-        selector = Selector.open();
-        server.register(selector, SelectionKey.OP_ACCEPT);
-        log.fine("Socket is connected");
-    }
+    abstract protected CommunicationsHandler createHandler(SocketChannel accepted);
 
     protected void disconnect() {
-        run.set(false);
+        if (server == null) {
+            return; // not connected
+        }
         try {
             server.close();
         } catch (IOException e) {
         }
         try {
             serverSocket.close();
-        } catch (IOException e) {
-        }
-        try {
-            selector.close();
         } catch (IOException e) {
         }
     }
@@ -316,12 +260,7 @@ public class ServerChannelHandler implements IOConnectionServer {
         SocketChannel accepted = server.accept();
         options.configure(accepted.socket());
         accepted.configureBlocking(false);
-        MessageHandler handler = new MessageHandler(identity, connectionSet,
-                                                    wireSecurity, accepted,
-                                                    this);
-        synchronized (openHandlers) {
-            openHandlers.add(handler);
-        }
+        CommunicationsHandler handler = createHandler(accepted);
         handler.handleAccept();
     }
 
@@ -334,8 +273,8 @@ public class ServerChannelHandler implements IOConnectionServer {
         }
         selected.remove();
         key.cancel();
-        final MessageHandler context = (MessageHandler) key.attachment();
-        executor.execute(new Runnable() {
+        final CommunicationsHandler context = (CommunicationsHandler) key.attachment();
+        commsExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 context.handleRead();
@@ -352,8 +291,8 @@ public class ServerChannelHandler implements IOConnectionServer {
         }
         selected.remove();
         key.cancel();
-        final MessageHandler context = (MessageHandler) key.attachment();
-        executor.execute(new Runnable() {
+        final CommunicationsHandler context = (CommunicationsHandler) key.attachment();
+        commsExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 context.handleWrite();
@@ -392,8 +331,8 @@ public class ServerChannelHandler implements IOConnectionServer {
         }
     }
 
-    protected void selectForRead(MessageHandler handler) {
-        ArrayList<MessageHandler> myReadQueue = readQueue[queueIndex];
+    protected void selectForRead(CommunicationsHandler handler) {
+        ArrayList<CommunicationsHandler> myReadQueue = readQueue[queueIndex];
         synchronized (myReadQueue) {
             myReadQueue.add(handler);
         }
@@ -405,8 +344,8 @@ public class ServerChannelHandler implements IOConnectionServer {
         }
     }
 
-    protected void selectForWrite(MessageHandler handler) {
-        ArrayList<MessageHandler> myWriteQueue = writeQueue[queueIndex];
+    protected void selectForWrite(CommunicationsHandler handler) {
+        ArrayList<CommunicationsHandler> myWriteQueue = writeQueue[queueIndex];
         synchronized (myWriteQueue) {
             myWriteQueue.add(handler);
         }
@@ -418,7 +357,7 @@ public class ServerChannelHandler implements IOConnectionServer {
             log.fine("Handler is not started");
             return;
         }
-        executor.execute(new Runnable() {
+        commsExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 while (run.get()) {
@@ -436,5 +375,11 @@ public class ServerChannelHandler implements IOConnectionServer {
                 }
             }
         });
+    }
+
+    protected Collection<? extends CommunicationsHandler> getOpenHandlers() {
+        synchronized (openHandlers) {
+            return new ArrayList<CommunicationsHandler>(openHandlers);
+        }
     }
 }

@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.partition.test.node.TestMgr;
+import org.smartfrog.services.anubis.partition.diagnostics.Diagnostics;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class IntervalExec extends Thread {
@@ -44,8 +44,7 @@ public class IntervalExec extends Thread {
     private boolean stabalizing = false;
 
     private long stabilityTime = 0;
-    private boolean testable = false;
-    private TestMgr testManager = null;
+    private Diagnostics diagnostics = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
         super("Anubis: Interval Executive (node " + id.id + ")");
@@ -54,40 +53,6 @@ public class IntervalExec extends Thread {
         interval = i;
         setPriority(MAX_PRIORITY);
         random = new Random(System.currentTimeMillis() + 100 * me.id);
-    }
-
-    private void checkSleepDelays(long timenow, long stabilityTime,
-                                  long heartbeatTime) {
-        long earliest;
-        long delay;
-
-        if (timenow < lastCheckTime) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
-            }
-        }
-
-        lastCheckTime = timenow;
-
-        if (!stabalizing || stabilityTime > heartbeatTime) {
-            earliest = heartbeatTime;
-        } else {
-            earliest = stabilityTime;
-        }
-
-        delay = timenow - earliest;
-
-        if (delay > 15000) {
-            log.severe("IntervalExec may have observed a system time adjustment - overslept by "
-                       + delay
-                       + "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
-        } else if (delay > 200) {
-            if (log.isLoggable(Level.INFO)) {
-                log.info("IntervalExec overslept by " + delay
-                         + "ms - this is a scheduling delay or time adjustment");
-            }
-        }
     }
 
     /**
@@ -109,27 +74,8 @@ public class IntervalExec extends Thread {
         return buffer.toString();
     }
 
-    /**
-     * calculates next heartbeatTime. It is likely that the sleep will actually
-     * wake up just after it is supposed to due to scheduling delays. If the
-     * delay is particularly long the node may start to miss the heartbeat
-     * interval all together. Make sure we go to the next appropriate regular
-     * interval boundary, no matter what the delay.
-     * 
-     * @param timenow
-     * @param wakeup
-     * @return
-     */
-    private long nextHeartbeatTime(long timenow, long wakeup) {
-        while (wakeup <= timenow) {
-            wakeup += interval;
-        }
-        return wakeup;
-    }
-
-    public void registerTestMgr(TestMgr testManager) {
-        this.testManager = testManager;
-        testable = true;
+    public void registerTestMgr(Diagnostics diagnostics) {
+        this.diagnostics = diagnostics;
     }
 
     /**
@@ -168,8 +114,8 @@ public class IntervalExec extends Thread {
                     /**
                      * If testing then produce delay info
                      */
-                    if (testable) {
-                        testManager.schedulingInfo(timenow, timenow
+                    if (diagnostics != null) {
+                        diagnostics.schedulingInfo(timenow, timenow
                                                             - heartbeatTime);
                     }
 
@@ -207,8 +153,8 @@ public class IntervalExec extends Thread {
                     /**
                      * If testing then produce delay info
                      */
-                    if (testable) {
-                        testManager.schedulingInfo(timenow, timenow
+                    if (diagnostics != null) {
+                        diagnostics.schedulingInfo(timenow, timenow
                                                             - stabilityTime);
                     }
 
@@ -239,6 +185,69 @@ public class IntervalExec extends Thread {
     }
 
     /**
+     * stops the connection set including shutdown on multicast communication
+     * and ending the current wait period.
+     */
+    public void terminate() {
+        synchronized (connectionSet) {
+            running = false;
+            connectionSet.notify();
+        }
+    }
+
+    private void checkSleepDelays(long timenow, long stabilityTime,
+                                  long heartbeatTime) {
+        long earliest;
+        long delay;
+
+        if (timenow < lastCheckTime) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
+            }
+        }
+
+        lastCheckTime = timenow;
+
+        if (!stabalizing || stabilityTime > heartbeatTime) {
+            earliest = heartbeatTime;
+        } else {
+            earliest = stabilityTime;
+        }
+
+        delay = timenow - earliest;
+
+        if (delay > 15000) {
+            log.severe("IntervalExec may have observed a system time adjustment - overslept by "
+                       + delay
+                       + "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
+        } else if (delay > 200) {
+            if (log.isLoggable(Level.INFO)) {
+                log.info("IntervalExec overslept by " + delay
+                         + "ms - this is a scheduling delay or time adjustment");
+            }
+        }
+    }
+
+    /**
+     * calculates next heartbeatTime. It is likely that the sleep will actually
+     * wake up just after it is supposed to due to scheduling delays. If the
+     * delay is particularly long the node may start to miss the heartbeat
+     * interval all together. Make sure we go to the next appropriate regular
+     * interval boundary, no matter what the delay.
+     * 
+     * @param timenow
+     * @param wakeup
+     * @return
+     */
+    private long nextHeartbeatTime(long timenow, long wakeup) {
+        while (wakeup <= timenow) {
+            wakeup += interval;
+        }
+        return wakeup;
+    }
+
+    /**
      * goes to sleep for a period of time determined by the difference between
      * the timenow and the wakeup time. returns the time that wait returns (due
      * to completing wait timeout, notify on terminate, or interrupt).
@@ -253,17 +262,6 @@ public class IntervalExec extends Thread {
         } catch (InterruptedException ex) {
         }
         return System.currentTimeMillis();
-    }
-
-    /**
-     * stops the connection set including shutdown on multicast communication
-     * and ending the current wait period.
-     */
-    public void terminate() {
-        synchronized (connectionSet) {
-            running = false;
-            connectionSet.notify();
-        }
     }
 
 }

@@ -158,4 +158,16 @@ public class WireMsg implements WireSizes {
         wireForm.putInt(0, getType());
     }
 
+    protected void writeMessage() {
+    }
+
+    protected void writeHeader() {
+    }
+
+    protected void readMessage() {
+    }
+
+    protected void readHeader() {
+    }
+
 }

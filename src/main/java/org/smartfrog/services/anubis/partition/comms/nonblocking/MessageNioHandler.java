@@ -794,4 +794,16 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         return returnedInt;
     }
 
+    protected void writeMessage() {
+    }
+
+    protected void writeHeader() {
+    }
+
+    protected void readMessage() {
+    }
+
+    protected void readHeader() {
+    }
+
 }

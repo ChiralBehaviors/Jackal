@@ -54,8 +54,6 @@ public class Node {
             
             @Override
             public void objectNotification(Object obj, int sender, long time) {
-                // TODO Auto-generated method stub
-                
             }
         });
 

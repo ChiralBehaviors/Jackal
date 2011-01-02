@@ -1,4 +1,4 @@
-/** (C) Copyright 1998-2005 Hewlett-Packard Development Company, LP
+/** (C) Copyright 2010 Hal Hildebrand, all rights reserved.
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -13,19 +13,26 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-For more information: www.smartfrog.org
-
  */
-package org.smartfrog.services.anubis.partition.comms.multicast;
+package com.hellblazer.anubis.basiccomms.nio;
 
-import org.smartfrog.services.anubis.partition.diagnostics.CommsDiagnosticIntf;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import java.nio.channels.SocketChannel;
 
-public interface HeartbeatCommsIntf extends CommsDiagnosticIntf {
-    public void sendHeartbeat(HeartbeatMsg msg);
+/**
+ * 
+ * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
+ * 
+ */
+public interface CommunicationsHandler {
 
-    public void start();
+    public abstract void close();
 
-    public void terminate();
+    public abstract SocketChannel getChannel();
+
+    public abstract void handleAccept();
+
+    public abstract void handleRead();
+
+    public abstract void handleWrite();
+
 }

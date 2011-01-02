@@ -462,4 +462,16 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         bytes.put(storage);
     }
 
+    protected void writeMessage() {
+    }
+
+    protected void writeHeader() {
+    }
+
+    protected void readMessage() {
+    }
+
+    protected void readHeader() {
+    }
+
 }

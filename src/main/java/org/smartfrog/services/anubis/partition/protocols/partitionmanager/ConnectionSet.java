@@ -43,13 +43,13 @@ import org.smartfrog.services.anubis.partition.comms.SelfConnection;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatConnection;
+import org.smartfrog.services.anubis.partition.diagnostics.Diagnostics;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderMgr;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
-import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -81,7 +81,6 @@ import com.hellblazer.anubis.annotations.Deployed;
 public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
     private boolean changeInViews = false;
-
     private ConnectionAddress connectionAddress;
     private Map<Identity, Connection> connections = new HashMap<Identity, Connection>();
     private IOConnectionServer connectionServer = null;
@@ -91,7 +90,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * Status - keep running heartbeat
      */
     private HeartbeatMsg heartbeat = null;
-
     private MulticastAddress heartbeatAddress;
     private HeartbeatCommsIntf heartbeatComms = null;
     private HeartbeatCommsFactory heartbeatCommsFactory;
@@ -106,12 +104,11 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     private Identity identity = null;
     private View ignoring = new BitView();
-
     private IntervalExec intervalExec = null;
     private boolean isPreferredLeaderNode;
     private LeaderMgr leaderMgr = null;
     private LeaderProtocolFactory leaderProtocolFactory = null;
-    private Logger log = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
+    private static Logger log = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
 
     private Set<Connection> msgConDelayedDelete = new HashSet<Connection>();
     private Set<MessageConnection> msgConnections = new HashSet<MessageConnection>();
@@ -124,26 +121,16 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * references to components
      */
     private PartitionProtocol partitionProtocol = null;
-
     private long quiesce = 0;
     /**
      * synchronization of sendHeartbeat() with removeConnection().
      */
     private boolean sendingHeartbeats = false;
-
     private long stability = 0;
-
     private boolean stablizing = false;
-
     private volatile boolean terminated = false;
-
-    /**
-     * Link to test manager
-     */
-    private boolean testable = false;
-
+    private boolean useDiagnostics = false;
     private long timeout = 0;
-
     private long viewNumber = 0;
 
     /**
@@ -325,46 +312,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     /**
-     * The set of views is consistent if all views agree with the local view
-     * (which is the connection set). This method sets the local view timestamp
-     * as a side-effect
-     * 
-     * @return
-     */
-    private boolean consistent(long timenow) {
-        Iterator<Connection> iter = connections.values().iterator();
-        connectionView.setTimeStamp(timenow + stability);
-        while (iter.hasNext()) {
-            Connection con = iter.next();
-
-            /**
-             * if an active connection and it is not self then check it is
-             * consistent with self and check its stability time
-             */
-            if (connectionView.contains(con.getSender())
-                && !con.getSender().equalId(identity)) {
-                /**
-                 * if not equal the not consistent - set the time to undefined
-                 * and return false
-                 */
-                if (!con.equalsView(connectionView)) {
-                    connectionView.setTimeStamp(View.undefinedTimeStamp);
-                    return false;
-                }
-                /**
-                 * The following is an optimisation that can only be applied if
-                 * the heartbeat protocol checks for synchronised clocks.
-                 */
-                if (con.measuresClockSkew()
-                    && isBetterTimeStamp(con.getTimeStamp())) {
-                    connectionView.setTimeStamp(con.getTimeStamp());
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
      * Replace a message connection with a heartbeat connection
      * 
      * @param mcon
@@ -407,7 +354,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
             connections.put(mcon.getSender(), mcon);
             msgConnections.add(mcon);
 
-            if (testable && ignoring.contains(mcon.getSender())) {
+            if (useDiagnostics && ignoring.contains(mcon.getSender())) {
                 if (log.isLoggable(Level.FINEST)) {
                     log.finest("Ignoring connection to " + con.getSender());
                 }
@@ -602,24 +549,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return connectionView;
     }
 
-    /**
-     * returns true if the time stamp given as a parameter is better than the
-     * one currently held by this view (connectionSet).
-     * 
-     * The timeStamp parameter is better then the current time stamp if: 1)
-     * timeStamp is defined and the current time stamp is not 2) both are
-     * defined but timeStamp is less than the current time stamp.
-     * 
-     * Note: a time stamp is undefined if its value is View.undefinedTimeStamp
-     * 
-     * @param timeStamp
-     * @return
-     */
-    private boolean isBetterTimeStamp(long timeStamp) {
-        return timeStamp != View.undefinedTimeStamp
-               && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
-    }
-
     public boolean isPreferredLeaderNode() {
         return isPreferredLeaderNode;
     }
@@ -719,13 +648,18 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         }
         if (connectionView.contains(id)) {
             partitionProtocol.receiveObject(obj, id, time);
+        } else {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("Object received from %s, but dropped as id is not in view: %s",
+                                       id, obj));
+            }
         }
     }
 
-    public synchronized void registerTestManager(TestMgr tm) {
-        heartbeat.setTestInterface(tm.getAddress());
-        intervalExec.registerTestMgr(tm);
-        testable = true;
+    public void registerDiagnostics(Diagnostics diagnostics) {
+        heartbeat.setTestInterface(diagnostics.getAddress());
+        intervalExec.registerTestMgr(diagnostics);
+        useDiagnostics = true;
     }
 
     /**
@@ -836,7 +770,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     public synchronized void setIgnoring(View ignoring) {
-        if (!testable) {
+        if (!useDiagnostics) {
             return;
         }
 
@@ -991,5 +925,63 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     public boolean wantsMsgLinkTo(Identity id) {
         return msgLinks.contains(id.id);
+    }
+
+    /**
+     * The set of views is consistent if all views agree with the local view
+     * (which is the connection set). This method sets the local view timestamp
+     * as a side-effect
+     * 
+     * @return
+     */
+    private boolean consistent(long timenow) {
+        Iterator<Connection> iter = connections.values().iterator();
+        connectionView.setTimeStamp(timenow + stability);
+        while (iter.hasNext()) {
+            Connection con = iter.next();
+
+            /**
+             * if an active connection and it is not self then check it is
+             * consistent with self and check its stability time
+             */
+            if (connectionView.contains(con.getSender())
+                && !con.getSender().equalId(identity)) {
+                /**
+                 * if not equal the not consistent - set the time to undefined
+                 * and return false
+                 */
+                if (!con.equalsView(connectionView)) {
+                    connectionView.setTimeStamp(View.undefinedTimeStamp);
+                    return false;
+                }
+                /**
+                 * The following is an optimisation that can only be applied if
+                 * the heartbeat protocol checks for synchronised clocks.
+                 */
+                if (con.measuresClockSkew()
+                    && isBetterTimeStamp(con.getTimeStamp())) {
+                    connectionView.setTimeStamp(con.getTimeStamp());
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * returns true if the time stamp given as a parameter is better than the
+     * one currently held by this view (connectionSet).
+     * 
+     * The timeStamp parameter is better then the current time stamp if: 1)
+     * timeStamp is defined and the current time stamp is not 2) both are
+     * defined but timeStamp is less than the current time stamp.
+     * 
+     * Note: a time stamp is undefined if its value is View.undefinedTimeStamp
+     * 
+     * @param timeStamp
+     * @return
+     */
+    private boolean isBetterTimeStamp(long timeStamp) {
+        return timeStamp != View.undefinedTimeStamp
+               && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
     }
 }

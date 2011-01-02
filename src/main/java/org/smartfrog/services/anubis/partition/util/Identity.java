@@ -203,4 +203,16 @@ public class Identity implements Serializable, Cloneable, WireSizes {
         bytes.putLong(idx + epochIdx, epoch);
     }
 
+    protected void writeMessage() {
+    }
+
+    protected void writeHeader() {
+    }
+
+    protected void readMessage() {
+    }
+
+    protected void readHeader() {
+    }
+
 }

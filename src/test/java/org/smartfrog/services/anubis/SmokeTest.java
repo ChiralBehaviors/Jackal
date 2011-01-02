@@ -13,57 +13,57 @@ import org.springframework.context.annotation.Configuration;
 
 public class SmokeTest extends TestCase {
     @Configuration
-    static class testA extends BasicConfiguration {
+    static class testA extends DefaultConfiguration {
         @Override
-        public int getNode() throws UnknownHostException {
+        public int node() throws UnknownHostException {
             return 0;
         }
     }
 
     @Configuration
-    static class testB extends BasicConfiguration {
+    static class testB extends DefaultConfiguration {
         @Override
-        public int getNode() throws UnknownHostException {
+        public int node() throws UnknownHostException {
             return 1;
         }
     }
 
     @Configuration
-    static class testC extends BasicConfiguration {
+    static class testC extends DefaultConfiguration {
         @Override
-        public int getNode() throws UnknownHostException {
+        public int node() throws UnknownHostException {
             return 2;
         }
     }
 
     @Configuration
-    static class testD extends BasicConfiguration {
+    static class testD extends DefaultConfiguration {
         @Override
-        public int getNode() throws UnknownHostException {
+        public int node() throws UnknownHostException {
             return 3;
         }
     }
 
     @Configuration
-    static class testE extends BasicConfiguration {
+    static class testE extends DefaultConfiguration {
         @Override
-        public int getNode() throws UnknownHostException {
+        public int node() throws UnknownHostException {
             return 4;
         }
     }
 
     @Configuration
-    static class testF extends BasicConfiguration {
+    static class testF extends DefaultConfiguration {
         @Override
-        public int getNode() throws UnknownHostException {
+        public int node() throws UnknownHostException {
             return 5;
         }
     }
 
     @Configuration
-    static class testG extends BasicConfiguration {
+    static class testG extends DefaultConfiguration {
         @Override
-        public int getNode() throws UnknownHostException {
+        public int node() throws UnknownHostException {
             return 6;
         }
     }

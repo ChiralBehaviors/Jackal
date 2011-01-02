@@ -17,15 +17,24 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 For more information: www.smartfrog.org
 
  */
-package org.smartfrog.services.anubis.partition.comms.multicast;
+package org.smartfrog.services.anubis.partition.diagnostics.msg;
 
-import org.smartfrog.services.anubis.partition.diagnostics.CommsDiagnosticIntf;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import java.io.Serializable;
 
-public interface HeartbeatCommsIntf extends CommsDiagnosticIntf {
-    public void sendHeartbeat(HeartbeatMsg msg);
+public class StatsMsg implements Serializable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    public long schedulingLongest;
+    public long schedulingOneHour;
+    public long schedulingOneMinute;
+    public long schedulingTenMinute;
 
-    public void start();
-
-    public void terminate();
+    public StatsMsg(long sOneM, long sTenM, long sOneH, long longest) {
+        schedulingOneMinute = sOneM;
+        schedulingTenMinute = sTenM;
+        schedulingOneHour = sOneH;
+        schedulingLongest = longest;
+    }
 }

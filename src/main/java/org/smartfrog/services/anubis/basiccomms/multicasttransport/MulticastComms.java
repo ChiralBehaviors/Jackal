@@ -54,7 +54,7 @@ public class MulticastComms extends Thread {
     private byte[] inBytes;
     private DatagramPacket inPacket;
     private MulticastSocket sock;
-    protected Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+    private static  Logger log = Logger.getLogger(MulticastComms.class.getCanonicalName());
     volatile private boolean terminating;
 
     /**
@@ -133,7 +133,7 @@ public class MulticastComms extends Thread {
     @Override
     public void run() {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("Starting receive processing on: " + groupAddress);
+            log.finer("Starting " + getClass().getName() + " receive processing on: " + groupAddress);
         }
         while (!terminating) {
 

@@ -33,7 +33,6 @@ import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
 import org.smartfrog.services.anubis.locator.util.TimeQueueElement;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
-import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
@@ -55,8 +54,6 @@ public class PartitionManager implements Partition {
     View notifiedView = null;
     PartitionProtocol partitionProtocol = null;
     boolean terminated = false;
-    boolean testable = false;
-    TestMgr testManager = null;
     ActiveTimeQueue timer = null;
 
     @Override

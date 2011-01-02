@@ -17,15 +17,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 For more information: www.smartfrog.org
 
  */
-package org.smartfrog.services.anubis.partition.comms.multicast;
+package org.smartfrog.services.anubis.partition.diagnostics;
 
-import org.smartfrog.services.anubis.partition.diagnostics.CommsDiagnosticIntf;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.views.View;
 
-public interface HeartbeatCommsIntf extends CommsDiagnosticIntf {
-    public void sendHeartbeat(HeartbeatMsg msg);
+public interface CommsDiagnosticIntf {
+    public String getThreadStatusString();
 
-    public void start();
+    public boolean isIgnoring(Identity id);
 
-    public void terminate();
+    public void setIgnoring(View ignoringUpdate);
 }

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
@@ -38,7 +39,7 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurityExcepti
 
 public class HeartbeatComms extends MulticastComms implements
         HeartbeatCommsIntf {
-
+    private static Logger log = Logger.getLogger(HeartbeatComms.class.getCanonicalName());
     private HeartbeatReceiver connectionSet = null;
     /**
      * for testing purposes
