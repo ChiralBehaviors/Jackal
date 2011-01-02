@@ -52,6 +52,26 @@ public class DiagnosticsMessageHandler extends AbstractCommunicationsHandler
     }
 
     @Override
+    public void objectNotification(Object obj, int sender, long time) {
+    }
+
+    @Override
+    public void partitionNotification(View view, int leader) {
+        sendObject(new PartitionMsg(view, leader));
+    }
+
+    public void sendObject(Object obj) {
+        try {
+            SerializedMsg msg = new SerializedMsg(obj);
+            super.send(msg.toWire());
+        } catch (Exception ex) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.log(Level.WARNING, "cannot send object " + obj, ex);
+            }
+        }
+    }
+
+    @Override
     protected void closing() {
         diagnostics.closing(this);
     }
@@ -94,25 +114,5 @@ public class DiagnosticsMessageHandler extends AbstractCommunicationsHandler
 
     @Override
     protected void terminate() {
-    }
-
-    public void sendObject(Object obj) {
-        try {
-            SerializedMsg msg = new SerializedMsg(obj);
-            super.send(msg.toWire());
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "cannot send object " + obj, ex);
-            }
-        }
-    }
-
-    @Override
-    public void objectNotification(Object obj, int sender, long time) {
-    }
-
-    @Override
-    public void partitionNotification(View view, int leader) {
-        sendObject(new PartitionMsg(view, leader));
     }
 }

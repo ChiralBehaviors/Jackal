@@ -70,6 +70,10 @@ public class Diagnostics {
         return connectionAddress;
     }
 
+    public DiagnosticsServer getConnectionServer() {
+        return connectionServer;
+    }
+
     public ConnectionSet getConnectionSet() {
         return connectionSet;
     }
@@ -103,6 +107,11 @@ public class Diagnostics {
         this.connectionAddress = connectionAddress;
     }
 
+    public void setConnectionServer(DiagnosticsServer cs) {
+        connectionServer = cs;
+        connectionServer.setDiagnostics(this);
+    }
+
     public void setConnectionSet(ConnectionSet connectionSet) {
         this.connectionSet = connectionSet;
     }
@@ -125,14 +134,14 @@ public class Diagnostics {
         this.partitionManager = partitionManager;
     }
 
-    public void setUseDiagnostics(boolean testable) {
-        this.testable = testable;
-    }
-
     public void setTiming(long interval, long timeout) {
         connectionSet.setTiming(interval, timeout);
         updateTiming();
         statsInterval = STATSRATE * interval;
+    }
+
+    public void setUseDiagnostics(boolean testable) {
+        this.testable = testable;
     }
 
     @PostConstruct
@@ -171,6 +180,10 @@ public class Diagnostics {
         handler.sendObject(new IgnoringMsg(ignoring));
     }
 
+    public void updateStats(DiagnosticsMessageHandler handler) {
+        handler.sendObject(statistics.statsMsg());
+    }
+
     public void updateStats(long timenow) {
         if (lastStats < timenow - statsInterval) {
             for (DiagnosticsMessageHandler handler : connectionServer.getOpenHandlers()) {
@@ -178,10 +191,6 @@ public class Diagnostics {
             }
             lastStats = timenow;
         }
-    }
-
-    public void updateStats(DiagnosticsMessageHandler handler) {
-        handler.sendObject(statistics.statsMsg());
     }
 
     public void updateStatus(DiagnosticsMessageHandler handler) {
@@ -203,14 +212,5 @@ public class Diagnostics {
     public void updateTiming(DiagnosticsMessageHandler handler) {
         handler.sendObject(new TimingMsg(connectionSet.getInterval(),
                                          connectionSet.getTimeout()));
-    }
-
-    public DiagnosticsServer getConnectionServer() {
-        return connectionServer;
-    }
-
-    public void setConnectionServer(DiagnosticsServer cs) {
-        connectionServer = cs;
-        connectionServer.setDiagnostics(this);
     }
 }

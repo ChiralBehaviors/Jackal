@@ -63,7 +63,7 @@ public class MessageConnectionServer extends ConnectionServer implements
         IOConnectionServer, ConnectionFactory {
 
     private ConnectionSet connectionSet = null;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(MessageConnectionServer.class.getCanonicalName());
     private Identity me = null;
     private Set<MessageConnectionImpl> pending = new HashSet<MessageConnectionImpl>();
     private WireSecurity wireSecurity = null;

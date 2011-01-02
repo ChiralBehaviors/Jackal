@@ -153,7 +153,7 @@ public class LocalRegisterImpl {
     private DebugFrame debug = null;
     private LocalListeners listeners = null; // name to Listeners + the provider
     private Locator locator = null;
-    private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+    private static Logger log = Logger.getLogger(LocalRegisterImpl.class.getCanonicalName());
     private Identity me = null;
     private Integer node = null;
     private LocalProviders providers = null; // name to provider + their
@@ -167,6 +167,159 @@ public class LocalRegisterImpl {
         listeners = new LocalListeners(locator, node);
         this.locator = locator;
         timeRef = me.epoch;
+    }
+
+    public void deliverRequest(RegisterMsg msg) {
+
+        requests.put(msg);
+    }
+
+    /**
+     * deregisterListener: deregister locally. deregister with providers local
+     * if appropriate. deregister globally if the listener was pending and there
+     * are no more. The global only has pending listeners registered.
+     * 
+     * @param listener
+     */
+    public void deregisterListener(AnubisListener listener) {
+        requests.put(new UserListenerRequest(UserListenerRequest.Deregister,
+                                             listener));
+    }
+
+    /**
+     * deregisterProvider: deregister with global register. local register is
+     * responsible for informing listeners that have already contacted this
+     * register. deregister with local register.
+     * 
+     * @param provider
+     */
+    public void deregisterProvider(AnubisProvider provider) {
+        requests.put(new UserProviderRequest(UserProviderRequest.Deregister,
+                                             provider, null, 0));
+    }
+
+    /**
+     * deregisterStability: deregister a stability notification object.
+     * 
+     * @param stability
+     *            AnubisStability
+     */
+    public void deregisterStability(AnubisStability stability) {
+        requests.put(new UserStabilityRequest(UserStabilityRequest.Deregister,
+                                              stability));
+    }
+
+    /**
+     * indicates that a provider has been assigned a new value.
+     * 
+     * @param provider
+     */
+    public void newProviderValue(AnubisProvider provider) {
+        requests.put(new UserProviderRequest(UserProviderRequest.NewValue,
+                                             provider, provider.getValueData(),
+                                             provider.getTime()));
+    }
+
+    /**
+     * @param listener
+     */
+    public void registerListener(AnubisListener listener) {
+        requests.put(new UserListenerRequest(UserListenerRequest.Register,
+                                             listener));
+    }
+
+    /**
+     * registerProvider: add provider to global registry and locally. the global
+     * is responsible for telling listeners where the provider is. the listeners
+     * are responsible for contacting this local registry to get provider info.
+     * 
+     * @param provider
+     */
+    public void registerProvider(AnubisProvider provider) {
+        requests.put(new UserProviderRequest(UserProviderRequest.Register,
+                                             provider, provider.getValueData(),
+                                             provider.getTime()));
+    }
+
+    /**
+     * registerStability: register a stability notification object.
+     * 
+     * @param stability
+     *            AnubisStability
+     */
+    public void registerStability(AnubisStability stability) {
+        requests.put(new UserStabilityRequest(UserStabilityRequest.Register,
+                                              stability));
+    }
+
+    public synchronized void removeDebugFrame() {
+        if (debug != null) {
+            debug.remove();
+            debug = null;
+        }
+    }
+
+    public synchronized void showDebugFrame() {
+        if (debug == null) {
+            debug = new DebugFrame("Node " + me + " Local Register Contents:");
+        }
+        debug.makeVisible(this);
+    }
+
+    /**
+     * When stable: 1) find the global 2) start accessing it 3) register all
+     * providers and listeners again Note: we are being dumb and pessimistic
+     * here - always recover all registrations - could be more clever.
+     * 
+     * @param leader
+     * @param timeStamp
+     */
+    public synchronized void stable(int leader, long timeStamp) {
+        stable = true;
+        timeRef = timeStamp;
+        providers.reRegisterAll();
+        listeners.reRegisterAll();
+        notifyStability();
+        updateDebugFrame();
+    }
+
+    /**
+     * Starts the local register server
+     */
+    public void start() {
+        server.setName("Anubis: Local Register Request Server (node " + me.id
+                       + ")");
+        server.start();
+        updateDebugFrame();
+    }
+
+    /**
+     * Stop the threads associated with the local register. Also clears the
+     * queue.
+     */
+    public void terminate() {
+        server.terminate();
+        requests.deactivate();
+    }
+
+    @Override
+    public synchronized String toString() {
+        return providers.toString() + listeners.toString();
+    }
+
+    /**
+     * When unstable: 1) stop accessing the global - it needs time to clear up
+     * 2) check provider and listener dependencies - I could have lost some
+     * 
+     * @param view
+     */
+    public synchronized void unstable(View view) {
+        stable = false;
+        timeRef = -1;
+        providers.checkNodes(view);
+        listeners.checkNodes(view);
+        notifyStability();
+        updateDebugFrame();
     }
 
     private void deliver(RegisterMsg msg) {
@@ -282,57 +435,6 @@ public class LocalRegisterImpl {
         }
     }
 
-    public void deliverRequest(RegisterMsg msg) {
-
-        requests.put(msg);
-    }
-
-    /**
-     * deregisterListener: deregister locally. deregister with providers local
-     * if appropriate. deregister globally if the listener was pending and there
-     * are no more. The global only has pending listeners registered.
-     * 
-     * @param listener
-     */
-    public void deregisterListener(AnubisListener listener) {
-        requests.put(new UserListenerRequest(UserListenerRequest.Deregister,
-                                             listener));
-    }
-
-    /**
-     * deregisterProvider: deregister with global register. local register is
-     * responsible for informing listeners that have already contacted this
-     * register. deregister with local register.
-     * 
-     * @param provider
-     */
-    public void deregisterProvider(AnubisProvider provider) {
-        requests.put(new UserProviderRequest(UserProviderRequest.Deregister,
-                                             provider, null, 0));
-    }
-
-    /**
-     * deregisterStability: deregister a stability notification object.
-     * 
-     * @param stability
-     *            AnubisStability
-     */
-    public void deregisterStability(AnubisStability stability) {
-        requests.put(new UserStabilityRequest(UserStabilityRequest.Deregister,
-                                              stability));
-    }
-
-    /**
-     * indicates that a provider has been assigned a new value.
-     * 
-     * @param provider
-     */
-    public void newProviderValue(AnubisProvider provider) {
-        requests.put(new UserProviderRequest(UserProviderRequest.NewValue,
-                                             provider, provider.getValueData(),
-                                             provider.getTime()));
-    }
-
     /**
      * notify all stability notification objects
      */
@@ -340,108 +442,6 @@ public class LocalRegisterImpl {
         for (AnubisStability notification : stabilityNotifications) {
             notification.notifyStability(stable, timeRef);
         }
-    }
-
-    /**
-     * @param listener
-     */
-    public void registerListener(AnubisListener listener) {
-        requests.put(new UserListenerRequest(UserListenerRequest.Register,
-                                             listener));
-    }
-
-    /**
-     * registerProvider: add provider to global registry and locally. the global
-     * is responsible for telling listeners where the provider is. the listeners
-     * are responsible for contacting this local registry to get provider info.
-     * 
-     * @param provider
-     */
-    public void registerProvider(AnubisProvider provider) {
-        requests.put(new UserProviderRequest(UserProviderRequest.Register,
-                                             provider, provider.getValueData(),
-                                             provider.getTime()));
-    }
-
-    /**
-     * registerStability: register a stability notification object.
-     * 
-     * @param stability
-     *            AnubisStability
-     */
-    public void registerStability(AnubisStability stability) {
-        requests.put(new UserStabilityRequest(UserStabilityRequest.Register,
-                                              stability));
-    }
-
-    public synchronized void removeDebugFrame() {
-        if (debug != null) {
-            debug.remove();
-            debug = null;
-        }
-    }
-
-    public synchronized void showDebugFrame() {
-        if (debug == null) {
-            debug = new DebugFrame("Node " + me + " Local Register Contents:");
-        }
-        debug.makeVisible(this);
-    }
-
-    /**
-     * When stable: 1) find the global 2) start accessing it 3) register all
-     * providers and listeners again Note: we are being dumb and pessimistic
-     * here - always recover all registrations - could be more clever.
-     * 
-     * @param leader
-     * @param timeStamp
-     */
-    public synchronized void stable(int leader, long timeStamp) {
-        stable = true;
-        timeRef = timeStamp;
-        providers.reRegisterAll();
-        listeners.reRegisterAll();
-        notifyStability();
-        updateDebugFrame();
-    }
-
-    /**
-     * Starts the local register server
-     */
-    public void start() {
-        server.setName("Anubis: Local Register Request Server (node " + me.id
-                       + ")");
-        server.start();
-        updateDebugFrame();
-    }
-
-    /**
-     * Stop the threads associated with the local register. Also clears the
-     * queue.
-     */
-    public void terminate() {
-        server.terminate();
-        requests.deactivate();
-    }
-
-    @Override
-    public synchronized String toString() {
-        return providers.toString() + listeners.toString();
-    }
-
-    /**
-     * When unstable: 1) stop accessing the global - it needs time to clear up
-     * 2) check provider and listener dependencies - I could have lost some
-     * 
-     * @param view
-     */
-    public synchronized void unstable(View view) {
-        stable = false;
-        timeRef = -1;
-        providers.checkNodes(view);
-        listeners.checkNodes(view);
-        notifyStability();
-        updateDebugFrame();
     }
 
     private synchronized void updateDebugFrame() {

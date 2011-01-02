@@ -35,7 +35,7 @@ public class BlockingConnectionInitiator extends Thread {
     private MessageConnection connection = null;
     private ConnectionSet connectionSet = null;
     private HeartbeatMsg heartbeat = null;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(BlockingConnectionInitiator.class.getCanonicalName());
     private Identity me = null;
     private WireSecurity wireSecurity = null;
 

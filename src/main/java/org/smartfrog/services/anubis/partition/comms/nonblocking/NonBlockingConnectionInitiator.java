@@ -32,7 +32,7 @@ public class NonBlockingConnectionInitiator {
 
     private MessageConnection connection = null;
     private HeartbeatMsg heartbeat = null;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(NonBlockingConnectionInitiator.class.getCanonicalName());
     private WireSecurity wireSecurity = null;
 
     public NonBlockingConnectionInitiator(MessageConnection con,

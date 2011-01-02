@@ -46,7 +46,7 @@ public class MessageConnectionImpl extends ConnectionComms implements
      * for testing purposes - can set to ignoring incoming messages
      */
     private boolean ignoring = false;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(MessageConnectionImpl.class.getCanonicalName());
     private Identity me = null;
     private MessageConnection messageConnection = null;
     private long receiveCount = INITIAL_MSG_ORDER;
@@ -148,6 +148,72 @@ public class MessageConnectionImpl extends ConnectionComms implements
             receiveCount++;
             messageConnection.deliver(tm);
         }
+    }
+
+    @Override
+    public void logClose(String reason, Throwable throwable) {
+
+        if (ignoring) {
+            return;
+        }
+
+        if (messageConnection == null) {
+
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.FINE,
+                        me
+                                + " shutdown unassigned message connection transport:"
+                                + reason, throwable);
+            }
+
+        } else {
+            messageConnection.logClose(reason, throwable);
+        }
+    }
+
+    @Override
+    public void send(TimedMsg tm) {
+        try {
+            tm.setOrder(sendCount);
+            sendCount++;
+            super.send(wireSecurity.toWireForm(tm));
+        } catch (Exception ex) {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE, me
+                                      + " failed to marshall timed message: "
+                                      + tm + " - shutting down connection", ex);
+            }
+            shutdown();
+        }
+    }
+
+    /**
+     * set ignoring value to determine if connections should be ignored
+     * 
+     * @param ignoring
+     */
+    @Override
+    public void setIgnoring(boolean ignoring) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(this + "set ignoring: " + ignoring);
+        }
+        this.ignoring = ignoring;
+    }
+
+    @Override
+    public void silent() {
+        announceTerm = false;
+    }
+
+    /**
+     * Shut down the connection. Terminate is used to instruct the
+     * implementation to shutdown the connection. announceTerm is set to false
+     * so that the closing() method does not call back to the messageConnection.
+     */
+    @Override
+    public void terminate() {
+        announceTerm = false;
+        shutdown();
     }
 
     private void initialMsg(TimedMsg tm) {
@@ -279,72 +345,6 @@ public class MessageConnectionImpl extends ConnectionComms implements
         }
         setName("Anubis: Connection Comms (node " + me.id + ", remote node "
                 + messageConnection.getSender().id + ")");
-    }
-
-    @Override
-    public void logClose(String reason, Throwable throwable) {
-
-        if (ignoring) {
-            return;
-        }
-
-        if (messageConnection == null) {
-
-            if (log.isLoggable(Level.FINE)) {
-                log.log(Level.FINE,
-                        me
-                                + " shutdown unassigned message connection transport:"
-                                + reason, throwable);
-            }
-
-        } else {
-            messageConnection.logClose(reason, throwable);
-        }
-    }
-
-    @Override
-    public void send(TimedMsg tm) {
-        try {
-            tm.setOrder(sendCount);
-            sendCount++;
-            super.send(wireSecurity.toWireForm(tm));
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE, me
-                                      + " failed to marshall timed message: "
-                                      + tm + " - shutting down connection", ex);
-            }
-            shutdown();
-        }
-    }
-
-    /**
-     * set ignoring value to determine if connections should be ignored
-     * 
-     * @param ignoring
-     */
-    @Override
-    public void setIgnoring(boolean ignoring) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(this + "set ignoring: " + ignoring);
-        }
-        this.ignoring = ignoring;
-    }
-
-    @Override
-    public void silent() {
-        announceTerm = false;
-    }
-
-    /**
-     * Shut down the connection. Terminate is used to instruct the
-     * implementation to shutdown the connection. announceTerm is set to false
-     * so that the closing() method does not call back to the messageConnection.
-     */
-    @Override
-    public void terminate() {
-        announceTerm = false;
-        shutdown();
     }
 
 }

@@ -180,7 +180,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     public boolean receiveHeartbeat(Heartbeat hb) {
 
         if (!(hb instanceof PingHeartbeatMsg)) {
-                log.warning(me + " ping protocol received a non-ping heartbeat");
+            log.warning(me + " ping protocol received a non-ping heartbeat");
             return false;
         }
 

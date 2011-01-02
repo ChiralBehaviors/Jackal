@@ -68,10 +68,6 @@ public class ConnectionAddress implements Cloneable, WireSizes {
     public InetAddress ipaddress;
 
     public int port;
-    
-    public ConnectionAddress(InetSocketAddress address) {
-        this(address.getAddress(), address.getPort());
-    }
 
     /**
      * constructing from given parameters
@@ -80,6 +76,14 @@ public class ConnectionAddress implements Cloneable, WireSizes {
 
         ipaddress = address;
         this.port = port;
+    }
+
+    public ConnectionAddress(InetSocketAddress address) {
+        this(address.getAddress(), address.getPort());
+    }
+
+    public InetSocketAddress asSocketAddress() {
+        return new InetSocketAddress(ipaddress, port);
     }
 
     @Override
@@ -114,9 +118,5 @@ public class ConnectionAddress implements Cloneable, WireSizes {
             bytes.put(idx + addressIdx + i, address[i]);
         }
         bytes.putInt(idx + portIdx, port);
-    }
-    
-    public InetSocketAddress asSocketAddress() {
-        return new InetSocketAddress(ipaddress, port);
     }
 }

@@ -45,6 +45,17 @@ public class MessageHandler extends AbstractCommunicationsHandler {
         this.node = node;
     }
 
+    public void sendObject(Object obj) {
+        SerializedMsg msg = new SerializedMsg(obj);
+        try {
+            super.send(msg.toWire());
+        } catch (Exception ex) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.log(Level.WARNING, "", ex);
+            }
+        }
+    }
+
     @Override
     protected void closing() {
         controller.disconnectNode(node);
@@ -73,17 +84,6 @@ public class MessageHandler extends AbstractCommunicationsHandler {
     @Override
     protected void terminate() {
         close();
-    }
-
-    public void sendObject(Object obj) {
-        SerializedMsg msg = new SerializedMsg(obj);
-        try {
-            super.send(msg.toWire());
-        } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
-            }
-        }
     }
 
 }

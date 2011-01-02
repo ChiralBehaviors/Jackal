@@ -31,28 +31,6 @@ public class PeriodicTimer extends Thread {
         this.period = period;
     }
 
-    /**
-     * @param now
-     */
-    protected void act(long now) {
-        // override this method for action calls
-    }
-
-    private void doSleep() {
-        while (wakeup <= now) {
-            wakeup += period;
-        }
-        try {
-            sleep(wakeup - now);
-        } catch (InterruptedException ex) {
-        }
-        now = System.currentTimeMillis();
-    }
-
-    protected void init() {
-        // override this method for initial actions if any
-    }
-
     @Override
     public void run() {
         running = true;
@@ -69,5 +47,27 @@ public class PeriodicTimer extends Thread {
 
     public void terminate() {
         running = false;
+    }
+
+    /**
+     * @param now
+     */
+    protected void act(long now) {
+        // override this method for action calls
+    }
+
+    protected void init() {
+        // override this method for initial actions if any
+    }
+
+    private void doSleep() {
+        while (wakeup <= now) {
+            wakeup += period;
+        }
+        try {
+            sleep(wakeup - now);
+        } catch (InterruptedException ex) {
+        }
+        now = System.currentTimeMillis();
     }
 }

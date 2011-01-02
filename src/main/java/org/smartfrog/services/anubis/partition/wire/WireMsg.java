@@ -32,13 +32,6 @@ public class WireMsg implements WireSizes {
     protected ByteBuffer wireForm = null;
 
     /**
-     * Default constructor - used when constructing from wire form
-     */
-    protected WireMsg() {
-        super();
-    }
-
-    /**
      * Construct from the wire form. Each substype should implement a similar
      * constructor.
      * 
@@ -55,10 +48,10 @@ public class WireMsg implements WireSizes {
     }
 
     /**
-     * This method should be over-ridden if the subtype has dynamic sized
-     * attributes to determine their size and prepare them for writing.
+     * Default constructor - used when constructing from wire form
      */
-    protected void fixDynamicSizedAttributes() {
+    protected WireMsg() {
+        super();
     }
 
     /**
@@ -70,40 +63,6 @@ public class WireMsg implements WireSizes {
      */
     public int getSize() throws WireFormException {
         return WIRE_SIZE;
-    }
-
-    /**
-     * Each subtype should over-ride getType() to return its own type.
-     * 
-     * @return int
-     */
-    protected int getType() {
-        return WIRE_TYPE;
-    }
-
-    /**
-     * top level readWireForm method. All subtypes should implement this method
-     * to call their super.readWireForm(ByteBuffer) method and then read their
-     * own attributes.
-     * 
-     * @param buf
-     *            ByteBuffer
-     * @throws IOException
-     * @throws WireFormException
-     * @throws ClassNotFoundException
-     */
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-
-        wireForm = buf;
-        bytes = buf.array();
-
-        if (wireForm.getInt(0) != getType()) {
-            throw new WireFormException(
-                                        "Incorrect type in wire form - can not read as "
-                                                + this.getClass());
-        }
     }
 
     /**
@@ -148,6 +107,59 @@ public class WireMsg implements WireSizes {
     }
 
     /**
+     * This method should be over-ridden if the subtype has dynamic sized
+     * attributes to determine their size and prepare them for writing.
+     */
+    protected void fixDynamicSizedAttributes() {
+    }
+
+    /**
+     * Each subtype should over-ride getType() to return its own type.
+     * 
+     * @return int
+     */
+    protected int getType() {
+        return WIRE_TYPE;
+    }
+
+    protected void readHeader() {
+    }
+
+    protected void readMessage() {
+    }
+
+    /**
+     * top level readWireForm method. All subtypes should implement this method
+     * to call their super.readWireForm(ByteBuffer) method and then read their
+     * own attributes.
+     * 
+     * @param buf
+     *            ByteBuffer
+     * @throws IOException
+     * @throws WireFormException
+     * @throws ClassNotFoundException
+     */
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+
+        wireForm = buf;
+        bytes = buf.array();
+
+        if (wireForm.getInt(0) != getType()) {
+            throw new WireFormException(
+                                        "Incorrect type in wire form - can not read as "
+                                                + this.getClass());
+        }
+    }
+
+    protected void writeHeader() {
+    }
+
+    protected void writeMessage() {
+    }
+
+    /**
      * Top level writeWireForm() method. subtypes should implement this method
      * to call their super.writeWireForm and then write their own attributes.
      * 
@@ -156,18 +168,6 @@ public class WireMsg implements WireSizes {
      */
     protected void writeWireForm() throws WireFormException {
         wireForm.putInt(0, getType());
-    }
-
-    protected void writeMessage() {
-    }
-
-    protected void writeHeader() {
-    }
-
-    protected void readMessage() {
-    }
-
-    protected void readHeader() {
     }
 
 }

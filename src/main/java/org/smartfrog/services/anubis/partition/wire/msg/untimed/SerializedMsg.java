@@ -43,10 +43,6 @@ public final class SerializedMsg extends WireMsg {
     private int payloadSz = UNDEFINED_SIZE;
     protected Object msg;
 
-    protected SerializedMsg() {
-        super();
-    }
-
     public SerializedMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                              WireFormException, IOException {
         super();
@@ -58,6 +54,33 @@ public final class SerializedMsg extends WireMsg {
      */
     public SerializedMsg(Object obj) {
         msg = obj;
+    }
+
+    protected SerializedMsg() {
+        super();
+    }
+
+    public Object getObject() {
+        return msg;
+    }
+
+    @Override
+    public int getSize() throws WireFormException {
+        if (payloadSz == UNDEFINED_SIZE) {
+            throw new WireFormException(
+                                        "Attampt to get size of message when it has not been defined");
+        }
+        return payloadIdx + payloadSz;
+    }
+
+    /**
+     * toString method for debugging and logging
+     * 
+     * @return String
+     */
+    @Override
+    public String toString() {
+        return "[" + msg + "]";
     }
 
     @Override
@@ -74,19 +97,6 @@ public final class SerializedMsg extends WireMsg {
             payload = null;
             payloadSz = UNDEFINED_SIZE;
         }
-    }
-
-    public Object getObject() {
-        return msg;
-    }
-
-    @Override
-    public int getSize() throws WireFormException {
-        if (payloadSz == UNDEFINED_SIZE) {
-            throw new WireFormException(
-                                        "Attampt to get size of message when it has not been defined");
-        }
-        return payloadIdx + payloadSz;
     }
 
     @Override
@@ -123,16 +133,6 @@ public final class SerializedMsg extends WireMsg {
 
         //        payload = null;
         //        payloadSz = UNDEFINED_SIZE;
-    }
-
-    /**
-     * toString method for debugging and logging
-     * 
-     * @return String
-     */
-    @Override
-    public String toString() {
-        return "[" + msg + "]";
     }
 
     /**

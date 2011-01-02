@@ -54,7 +54,7 @@ public class MulticastComms extends Thread {
     private byte[] inBytes;
     private DatagramPacket inPacket;
     private MulticastSocket sock;
-    private static  Logger log = Logger.getLogger(MulticastComms.class.getCanonicalName());
+    private static Logger log = Logger.getLogger(MulticastComms.class.getCanonicalName());
     volatile private boolean terminating;
 
     /**
@@ -87,22 +87,6 @@ public class MulticastComms extends Thread {
         terminating = false;
     }
 
-    private DatagramPacket bytesToPacket(byte[] bytes, InetAddress address,
-                                         int port) {
-        return new DatagramPacket(bytes, bytes.length, address, port);
-    }
-
-    /**
-     * deliverObject is the method for delivering received objects. Typically
-     * this method will cast the object and pass it to an appropriate handler.
-     * This may include handing off the delivery to another thread.
-     * 
-     * @param bytes
-     */
-    protected void deliverBytes(byte[] bytes) {
-        // does nothing by default
-    }
-
     /**
      * Get the status of this thread.
      * 
@@ -118,22 +102,13 @@ public class MulticastComms extends Thread {
     }
 
     /**
-     * convert the input buffer to a string - for debug purposes.
-     * 
-     * @return a stringified inBytes
-     */
-    @SuppressWarnings("unused")
-    private String inputToString() {
-        return new String(inBytes);
-    }
-
-    /**
      * the thread performs a blocking receive loop.
      */
     @Override
     public void run() {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("Starting " + getClass().getName() + " receive processing on: " + groupAddress);
+            log.finer("Starting " + getClass().getName()
+                      + " receive processing on: " + groupAddress);
         }
         while (!terminating) {
 
@@ -187,6 +162,32 @@ public class MulticastComms extends Thread {
     @Override
     public void start() {
         super.start();
+    }
+
+    /**
+     * deliverObject is the method for delivering received objects. Typically
+     * this method will cast the object and pass it to an appropriate handler.
+     * This may include handing off the delivery to another thread.
+     * 
+     * @param bytes
+     */
+    protected void deliverBytes(byte[] bytes) {
+        // does nothing by default
+    }
+
+    private DatagramPacket bytesToPacket(byte[] bytes, InetAddress address,
+                                         int port) {
+        return new DatagramPacket(bytes, bytes.length, address, port);
+    }
+
+    /**
+     * convert the input buffer to a string - for debug purposes.
+     * 
+     * @return a stringified inBytes
+     */
+    @SuppressWarnings("unused")
+    private String inputToString() {
+        return new String(inBytes);
     }
 
 }

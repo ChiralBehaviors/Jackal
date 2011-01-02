@@ -41,10 +41,6 @@ public final class MessageMsg extends TimedMsg {
     private byte[] payload = null;
     private int payloadSz = UNDEFINED_SIZE;
 
-    protected MessageMsg() {
-        super();
-    }
-
     public MessageMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                           WireFormException, IOException {
         super();
@@ -54,6 +50,29 @@ public final class MessageMsg extends TimedMsg {
     public MessageMsg(Identity id, Object msg) {
         super(id);
         message = msg;
+    }
+
+    protected MessageMsg() {
+        super();
+    }
+
+    public Object getMessageObject() {
+        return message;
+    }
+
+    @Override
+    public int getSize() throws WireFormException {
+        if (payloadSz == UNDEFINED_SIZE) {
+            throw new WireFormException(
+                                        "Attampt to get size of message when it has not been defined");
+        }
+        return payloadIdx + payloadSz;
+    }
+
+    @Override
+    public String toString() {
+        return "[message " + super.toString()
+               + (message == null ? "null" : message.toString()) + "]";
     }
 
     @Override
@@ -70,19 +89,6 @@ public final class MessageMsg extends TimedMsg {
             payload = null;
             payloadSz = UNDEFINED_SIZE;
         }
-    }
-
-    public Object getMessageObject() {
-        return message;
-    }
-
-    @Override
-    public int getSize() throws WireFormException {
-        if (payloadSz == UNDEFINED_SIZE) {
-            throw new WireFormException(
-                                        "Attampt to get size of message when it has not been defined");
-        }
-        return payloadIdx + payloadSz;
     }
 
     @Override
@@ -118,12 +124,6 @@ public final class MessageMsg extends TimedMsg {
 
         //        payload = null;
         //        payloadSz = UNDEFINED_SIZE;
-    }
-
-    @Override
-    public String toString() {
-        return "[message " + super.toString()
-               + (message == null ? "null" : message.toString()) + "]";
     }
 
     /**

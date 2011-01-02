@@ -29,13 +29,6 @@ public class PingCloseMsg extends PingHeartbeatMsg implements Close {
     public static final int CLOSE_MSG_WIRE_SIZE = HEARTBEAT_MSG_WIRE_SIZE;
     public static final int CLOSE_MSG_WIRE_TYPE = 301;
 
-    /**
-     * Constructor - used internally when reading from wire
-     */
-    protected PingCloseMsg() {
-        super();
-    }
-
     public PingCloseMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                             WireFormException, IOException {
         super();
@@ -50,6 +43,13 @@ public class PingCloseMsg extends PingHeartbeatMsg implements Close {
      */
     public PingCloseMsg(PingHeartbeatMsg hb) {
         super(hb);
+    }
+
+    /**
+     * Constructor - used internally when reading from wire
+     */
+    protected PingCloseMsg() {
+        super();
     }
 
     @Override

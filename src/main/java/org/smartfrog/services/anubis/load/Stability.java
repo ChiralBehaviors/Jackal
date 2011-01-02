@@ -8,8 +8,8 @@ public class Stability extends AnubisStability {
     private final Gate gate;
     private final String instance;
     private final static Logger log = Logger.getLogger(Stability.class.getCanonicalName());
-    
-    public Stability(Gate gate, String instance) { 
+
+    public Stability(Gate gate, String instance) {
         this.gate = gate;
         this.instance = "<" + instance + ">";
     }

@@ -50,18 +50,6 @@ public class ActiveTimeQueue extends Thread {
         }
     }
 
-    /**
-     * Iterate through the set of expired elements and call their expired()
-     * method.
-     * 
-     * @param timeNow
-     */
-    private void doExpirations(Set<TimeQueueElement> expiredElements) {
-        for (TimeQueueElement e : expiredElements) {
-            e.expired();
-        }
-    }
-
     public Set<TimeQueueElement> getExpiredOrBlock() {
 
         /**
@@ -165,6 +153,18 @@ public class ActiveTimeQueue extends Thread {
             running = false;
             queue.clear();
             queue.notifyAll();
+        }
+    }
+
+    /**
+     * Iterate through the set of expired elements and call their expired()
+     * method.
+     * 
+     * @param timeNow
+     */
+    private void doExpirations(Set<TimeQueueElement> expiredElements) {
+        for (TimeQueueElement e : expiredElements) {
+            e.expired();
         }
     }
 }

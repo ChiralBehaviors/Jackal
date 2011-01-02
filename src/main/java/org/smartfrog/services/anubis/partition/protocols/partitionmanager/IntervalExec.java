@@ -33,9 +33,7 @@ public class IntervalExec extends Thread {
 
     private long interval = 0;
     private long lastCheckTime = 0;
-    private Logger log = Logger.getLogger(this.getClass().toString()); // Use
-                                                                       // asynch
-                                                                       // wrapper...
+    private static Logger log = Logger.getLogger(IntervalExec.class.getCanonicalName());
 
     private Identity me = null;
     private Random random = null;

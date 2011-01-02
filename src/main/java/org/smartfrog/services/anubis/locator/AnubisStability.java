@@ -30,7 +30,7 @@ abstract public class AnubisStability {
     private long lastTimeRef = -1;
     private boolean lastWasStable = true;
     private ActiveTimeQueue timers = null;
-    protected Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(AnubisStability.class.getCanonicalName());
 
     public synchronized boolean isStable() {
         return lastWasStable;

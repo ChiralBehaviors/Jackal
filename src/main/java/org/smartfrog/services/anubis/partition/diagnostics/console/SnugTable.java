@@ -47,6 +47,18 @@ public class SnugTable extends JTable {
         resizeColumns();
     }
 
+    @Override
+    public void setModel(TableModel dataModel) {
+        super.setModel(dataModel);
+        resizeColumns();
+    }
+
+    @Override
+    public void setSize(Dimension d) {
+        super.setSize(d);
+        resizeColumns();
+    }
+
     private void resizeColumns() {
         try {
             byte num_cols = (byte) getColumnCount();
@@ -171,17 +183,5 @@ public class SnugTable extends JTable {
             //Trace.log( this, "resizeColumns", t.getMessage() );
             //Trace.exception( this, "resizeColumns", t );
         }
-    }
-
-    @Override
-    public void setModel(TableModel dataModel) {
-        super.setModel(dataModel);
-        resizeColumns();
-    }
-
-    @Override
-    public void setSize(Dimension d) {
-        super.setSize(d);
-        resizeColumns();
     }
 }

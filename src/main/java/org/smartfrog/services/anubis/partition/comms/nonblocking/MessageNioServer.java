@@ -135,15 +135,6 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         connectWorker.start();
     }
 
-    private RxQueue assignRxQueue() {
-        RxQueue retQueue = rxQueue[rxQueueCounter];
-        ++rxQueueCounter;
-        if (rxQueueCounter == RX_WORKERS) {
-            rxQueueCounter = 0;
-        }
-        return retQueue;
-    }
-
     @Override
     public ConnectionAddress getAddress() {
         if (asyncLog.isLoggable(Level.FINER)) {
@@ -208,6 +199,60 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                             thr);
             }
         }
+    }
+
+    public void startConnection(ConnectionAddress conAd, Identity me,
+                                ConnectionSet cs, MessageConnection con,
+                                NonBlockingConnectionInitiator mci) {
+        if (asyncLog.isLoggable(Level.FINER)) {
+            asyncLog.finer("MNS: startConnection is called: "
+                           + conAd.ipaddress.getHostName() + " - " + conAd.port);
+        }
+        MessageNioHandler mnh = null;
+        try {
+            SocketChannel sendingChannel = SocketChannel.open();
+            sendingChannel.configureBlocking(false);
+            mnh = new MessageNioHandler(selector, sendingChannel, deadKeys,
+                                        writePendingKeys, assignRxQueue(),
+                                        wireSecurity);
+            mnh.init(me, cs, con, mci);
+            sendingChannel.connect(new InetSocketAddress(conAd.ipaddress,
+                                                         conAd.port));
+            if (asyncLog.isLoggable(Level.FINER)) {
+                asyncLog.finer("MNS: Trying to register a new channel");
+            }
+            pendingNewChannels.put(sendingChannel, mnh);
+            selector.wakeup();
+        } catch (Exception e) {
+            if (asyncLog.isLoggable(Level.WARNING)) {
+                asyncLog.log(Level.WARNING, "", e);
+            }
+        }
+
+    }
+
+    @Override
+    public void terminate() {
+
+        if (asyncLog.isLoggable(Level.FINER)) {
+            asyncLog.finer("MNS: terminate is called");
+        }
+        // do what shutdown does - i.e. wrap that thread up
+        open = false;
+        selector.wakeup();
+        connectQueue.shutdown();
+        for (int i = 0; i < RX_WORKERS; i++) {
+            rxQueue[i].shutdown();
+        }
+    }
+
+    private RxQueue assignRxQueue() {
+        RxQueue retQueue = rxQueue[rxQueueCounter];
+        ++rxQueueCounter;
+        if (rxQueueCounter == RX_WORKERS) {
+            rxQueueCounter = 0;
+        }
+        return retQueue;
     }
 
     // this is the selector thread - only woken up when there is activity on a
@@ -453,51 +498,6 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             }
         }
 
-    }
-
-    public void startConnection(ConnectionAddress conAd, Identity me,
-                                ConnectionSet cs, MessageConnection con,
-                                NonBlockingConnectionInitiator mci) {
-        if (asyncLog.isLoggable(Level.FINER)) {
-            asyncLog.finer("MNS: startConnection is called: "
-                           + conAd.ipaddress.getHostName() + " - " + conAd.port);
-        }
-        MessageNioHandler mnh = null;
-        try {
-            SocketChannel sendingChannel = SocketChannel.open();
-            sendingChannel.configureBlocking(false);
-            mnh = new MessageNioHandler(selector, sendingChannel, deadKeys,
-                                        writePendingKeys, assignRxQueue(),
-                                        wireSecurity);
-            mnh.init(me, cs, con, mci);
-            sendingChannel.connect(new InetSocketAddress(conAd.ipaddress,
-                                                         conAd.port));
-            if (asyncLog.isLoggable(Level.FINER)) {
-                asyncLog.finer("MNS: Trying to register a new channel");
-            }
-            pendingNewChannels.put(sendingChannel, mnh);
-            selector.wakeup();
-        } catch (Exception e) {
-            if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "", e);
-            }
-        }
-
-    }
-
-    @Override
-    public void terminate() {
-
-        if (asyncLog.isLoggable(Level.FINER)) {
-            asyncLog.finer("MNS: terminate is called");
-        }
-        // do what shutdown does - i.e. wrap that thread up
-        open = false;
-        selector.wakeup();
-        connectQueue.shutdown();
-        for (int i = 0; i < RX_WORKERS; i++) {
-            rxQueue[i].shutdown();
-        }
     }
 
 }

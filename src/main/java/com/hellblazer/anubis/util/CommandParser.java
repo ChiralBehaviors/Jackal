@@ -156,112 +156,8 @@ public class CommandParser {
         opts.put("-@" + name, new Category(name));
     }
 
-    private void checkOption(String invalid, Option option) {
-        if (option != null) {
-            return;
-        }
-
-        System.err.println("Unknown option: " + invalid);
-
-        help();
-
-        System.exit(1);
-    }
-
-    private void checkValue(String optString, String value, Option option) {
-        checkOption(optString, option);
-
-        if (option.getType() == null) {
-            return;
-        }
-
-        if (value == null || value.equals("")) {
-            System.err.println("Missing param " + optString + " <"
-                               + option.getType().getSimpleName() + ">");
-            System.exit(1);
-        }
-    }
-
-    private void help() {
-
-        final Iterator<String> usage = usage().iterator();
-
-        if (usage.hasNext()) {
-            System.out.println("Usage: " + usage.next());
-        }
-
-        while (usage.hasNext()) {
-            System.out.println("  or   " + usage.next());
-        }
-
-        List<Option> seen = new ArrayList<Option>();
-
-        for (Option option : opts.values()) {
-            if (seen.contains(option)) {
-                continue;
-            }
-            seen.add(option);
-
-            if (option instanceof Category) {
-                System.out.println("");
-                System.out.println(option.getName() + ":");
-                continue;
-            }
-
-            StringBuilder s = new StringBuilder();
-            if (option.getMini() != null) {
-                s.append(" -");
-                s.append(option.getMini());
-                s.append(",  ");
-            } else {
-                s.append("      ");
-            }
-
-            s.append("--");
-            s.append(option.getName());
-            if (option.getType() != null) {
-                s.append("=");
-                s.append(option.getType().getSimpleName());
-            }
-
-            if (option.getDescription() != null || option.getValue() != null) {
-                for (int i = s.length(); i < 29; i++) {
-                    s.append(' ');
-                }
-
-                s.append(' ');
-                s.append(' ');
-
-                if (option.getDescription() != null) {
-                    s.append(option.getDescription());
-                }
-
-                if (option.getValue() != null) {
-                    if (option.getDescription() != null) {
-                        s.append(" ");
-                    }
-                    s.append("Default is ");
-                    s.append(option.getValue());
-                }
-            }
-
-            System.out.println(s.toString());
-        }
-    }
-
-    protected void init() {
-    }
-
     public Option opt(char _short, String _long) {
         return opt(new Option(_short, _long));
-    }
-
-    private Option opt(Option o) {
-        opts.put(o.getName(), o);
-        if (o.getMini() != null) {
-            opts.put(o.getMini(), o);
-        }
-        return o;
     }
 
     public Option opt(String _long) {
@@ -364,12 +260,116 @@ public class CommandParser {
         return arguments;
     }
 
+    protected void init() {
+    }
+
     protected List<String> usage() {
         return new ArrayList<String>();
     }
 
     protected List<String> validate(Arguments arguments) {
         return new ArrayList<String>();
+    }
+
+    private void checkOption(String invalid, Option option) {
+        if (option != null) {
+            return;
+        }
+
+        System.err.println("Unknown option: " + invalid);
+
+        help();
+
+        System.exit(1);
+    }
+
+    private void checkValue(String optString, String value, Option option) {
+        checkOption(optString, option);
+
+        if (option.getType() == null) {
+            return;
+        }
+
+        if (value == null || value.equals("")) {
+            System.err.println("Missing param " + optString + " <"
+                               + option.getType().getSimpleName() + ">");
+            System.exit(1);
+        }
+    }
+
+    private void help() {
+
+        final Iterator<String> usage = usage().iterator();
+
+        if (usage.hasNext()) {
+            System.out.println("Usage: " + usage.next());
+        }
+
+        while (usage.hasNext()) {
+            System.out.println("  or   " + usage.next());
+        }
+
+        List<Option> seen = new ArrayList<Option>();
+
+        for (Option option : opts.values()) {
+            if (seen.contains(option)) {
+                continue;
+            }
+            seen.add(option);
+
+            if (option instanceof Category) {
+                System.out.println("");
+                System.out.println(option.getName() + ":");
+                continue;
+            }
+
+            StringBuilder s = new StringBuilder();
+            if (option.getMini() != null) {
+                s.append(" -");
+                s.append(option.getMini());
+                s.append(",  ");
+            } else {
+                s.append("      ");
+            }
+
+            s.append("--");
+            s.append(option.getName());
+            if (option.getType() != null) {
+                s.append("=");
+                s.append(option.getType().getSimpleName());
+            }
+
+            if (option.getDescription() != null || option.getValue() != null) {
+                for (int i = s.length(); i < 29; i++) {
+                    s.append(' ');
+                }
+
+                s.append(' ');
+                s.append(' ');
+
+                if (option.getDescription() != null) {
+                    s.append(option.getDescription());
+                }
+
+                if (option.getValue() != null) {
+                    if (option.getDescription() != null) {
+                        s.append(" ");
+                    }
+                    s.append("Default is ");
+                    s.append(option.getValue());
+                }
+            }
+
+            System.out.println(s.toString());
+        }
+    }
+
+    private Option opt(Option o) {
+        opts.put(o.getName(), o);
+        if (o.getMini() != null) {
+            opts.put(o.getMini(), o);
+        }
+        return o;
     }
 
     private String value(ListIterator<String> items, Option option) {

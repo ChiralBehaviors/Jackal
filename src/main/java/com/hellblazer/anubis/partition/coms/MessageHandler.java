@@ -44,7 +44,7 @@ import com.hellblazer.anubis.basiccomms.nio.ServerChannelHandler;
  */
 public class MessageHandler extends AbstractCommunicationsHandler implements
         WireSizes, IOConnection {
-    private static Logger log = Logger.getLogger(MessageHandler.class.toString());
+    private static Logger log = Logger.getLogger(MessageHandler.class.getCanonicalName());
     private boolean announceTerm = true;
     private final ConnectionSet connectionSet;
     private boolean ignoring = false;

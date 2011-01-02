@@ -71,10 +71,6 @@ public class NodeFrame extends JFrame {
         }
     }
 
-    void clear() {
-        jTextArea1.setText("");
-    }
-
     /**
      * create a close window action listener
      */
@@ -84,6 +80,109 @@ public class NodeFrame extends JFrame {
 
     public void inputError(String errorStr) {
         jTextField1.setText("[" + errorStr + "]" + jTextField1.getText());
+    }
+
+    public String stripErrorPart(String inputStr) {
+        String input = inputStr.trim();
+        if (input.indexOf('[') == 0 && input.indexOf(']') != -1) {
+            input = input.substring(input.indexOf(']') + 1);
+        }
+        return input;
+    }
+
+    public void update(View partition, View view, int leader, View ignoring,
+                       long interval, long timeout, StatsMsg stats,
+                       ThreadsMsg threads) {
+        clear();
+        if (partition.isStable()) {
+            println("PARTITION -- stable -- timestamp: "
+                    + partition.getTimeStamp() + ", leader: " + leader);
+        } else {
+            println("PARTITION -- UNstable -- timestamp: "
+                    + partition.getTimeStamp() + ", leader: " + leader);
+        }
+        println("    " + viewMembersToString(partition));
+        println("");
+
+        if (view.isStable()) {
+            println("VIEW -- stable -- timestamp: " + view.getTimeStamp());
+        } else {
+            println("VIEW -- UNstable -- timestamp: " + view.getTimeStamp());
+        }
+        println("    " + viewMembersToString(view));
+        println("");
+
+        if (ignoring.isEmpty()) {
+            println("accepting all nodes");
+        } else {
+            println("IGNORING: \n" + viewMembersToString(ignoring));
+        }
+        println("");
+        println("heartbeat interval = " + interval + ", timeout = " + timeout);
+        if (stats != null) {
+            println("Scheduling delay min: " + stats.schedulingOneMinute
+                    + ", 10min: " + stats.schedulingTenMinute + ", hour: "
+                    + stats.schedulingOneHour + ", longest delay: "
+                    + stats.schedulingLongest);
+        }
+        println("");
+        if (threads != null) {
+            println(threads.threadsStatusString);
+        }
+        println("");
+
+    }
+
+    public String viewMembersToString(View view) {
+        String str = "";
+        for (int i = 0; i < view.size(); i++) {
+            if (view.contains(i)) {
+                str += i + " ";
+            }
+        }
+        return str;
+    }
+
+    void clear() {
+        jTextArea1.setText("");
+    }
+
+    /**
+     * @param e
+     */
+    void jButton1_actionPerformed(ActionEvent e) {
+        String text = stripErrorPart(jTextField1.getText());
+        jTextField1.setText(text);
+        nodeData.setIgnoring(text);
+    }
+
+    /**
+     * @param e
+     */
+    void jButton2_actionPerformed(ActionEvent e) {
+    }
+
+    void jButton3_actionPerformed(ActionEvent e) {
+    }
+
+    void jButton4_actionPerformed(ActionEvent e) {
+        nodeData.getThreads();
+    }
+
+    void jButton7_actionPerformed(ActionEvent e) {
+    }
+
+    void jButton8_actionPerformed(ActionEvent e) {
+        nodeData.getStats();
+    }
+
+    void print(String str) {
+        jTextArea1.append(str);
+    }
+
+    void println(String str) {
+        jTextArea1.append(str);
+        jTextArea1.append("\n");
     }
 
     private void jbInit() throws Exception {
@@ -160,105 +259,6 @@ public class NodeFrame extends JFrame {
                 closeEvent();
             }
         });
-    }
-
-    /**
-     * @param e
-     */
-    void jButton1_actionPerformed(ActionEvent e) {
-        String text = stripErrorPart(jTextField1.getText());
-        jTextField1.setText(text);
-        nodeData.setIgnoring(text);
-    }
-
-    /**
-     * @param e
-     */
-    void jButton2_actionPerformed(ActionEvent e) {
-    }
-
-    void jButton3_actionPerformed(ActionEvent e) {
-    }
-
-    void jButton4_actionPerformed(ActionEvent e) {
-        nodeData.getThreads();
-    }
-
-    void jButton7_actionPerformed(ActionEvent e) {
-    }
-
-    void jButton8_actionPerformed(ActionEvent e) {
-        nodeData.getStats();
-    }
-
-    void print(String str) {
-        jTextArea1.append(str);
-    }
-
-    void println(String str) {
-        jTextArea1.append(str);
-        jTextArea1.append("\n");
-    }
-
-    public String stripErrorPart(String inputStr) {
-        String input = inputStr.trim();
-        if (input.indexOf('[') == 0 && input.indexOf(']') != -1) {
-            input = input.substring(input.indexOf(']') + 1);
-        }
-        return input;
-    }
-
-    public void update(View partition, View view, int leader, View ignoring,
-                       long interval, long timeout, StatsMsg stats,
-                       ThreadsMsg threads) {
-        clear();
-        if (partition.isStable()) {
-            println("PARTITION -- stable -- timestamp: "
-                    + partition.getTimeStamp() + ", leader: " + leader);
-        } else {
-            println("PARTITION -- UNstable -- timestamp: "
-                    + partition.getTimeStamp() + ", leader: " + leader);
-        }
-        println("    " + viewMembersToString(partition));
-        println("");
-
-        if (view.isStable()) {
-            println("VIEW -- stable -- timestamp: " + view.getTimeStamp());
-        } else {
-            println("VIEW -- UNstable -- timestamp: " + view.getTimeStamp());
-        }
-        println("    " + viewMembersToString(view));
-        println("");
-
-        if (ignoring.isEmpty()) {
-            println("accepting all nodes");
-        } else {
-            println("IGNORING: \n" + viewMembersToString(ignoring));
-        }
-        println("");
-        println("heartbeat interval = " + interval + ", timeout = " + timeout);
-        if (stats != null) {
-            println("Scheduling delay min: " + stats.schedulingOneMinute
-                    + ", 10min: " + stats.schedulingTenMinute + ", hour: "
-                    + stats.schedulingOneHour + ", longest delay: "
-                    + stats.schedulingLongest);
-        }
-        println("");
-        if (threads != null) {
-            println(threads.threadsStatusString);
-        }
-        println("");
-
-    }
-
-    public String viewMembersToString(View view) {
-        String str = "";
-        for (int i = 0; i < view.size(); i++) {
-            if (view.contains(i)) {
-                str += i + " ";
-            }
-        }
-        return str;
     }
 
 }

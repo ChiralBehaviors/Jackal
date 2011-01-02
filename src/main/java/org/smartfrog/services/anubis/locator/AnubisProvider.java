@@ -117,6 +117,33 @@ public class AnubisProvider {
         setInstance(instance);
     }
 
+    /**
+     * set the value supplied by the provider.
+     */
+    public synchronized void setValue(Object value) {
+        if (AnubisProvider.marshallValues) {
+            setValueObj(ValueData.newMarshalledValue(value));
+        } else {
+            setValueObj(ValueData.newValue(value));
+        }
+        setTime(System.currentTimeMillis());
+        update();
+    }
+
+    /**
+     * abstract method to be defined by the user. This method may be called by
+     * the locator periodically to pro-activly check the status of the provider.
+     * 
+     * @return true if the provider is ok, false if not.
+     */
+    // abstract public boolean anubisLivenessPoll();
+
+    @Override
+    public synchronized String toString() {
+        return "Provider " + getName() + "=[" + getValue() + ", " + getTime()
+               + "]";
+    }
+
     protected void setInstance(String instance) {
         this.instance = instance;
     }
@@ -132,19 +159,6 @@ public class AnubisProvider {
     }
 
     /**
-     * set the value supplied by the provider.
-     */
-    public synchronized void setValue(Object value) {
-        if (AnubisProvider.marshallValues) {
-            setValueObj(ValueData.newMarshalledValue(value));
-        } else {
-            setValueObj(ValueData.newValue(value));
-        }
-        setTime(System.currentTimeMillis());
-        update();
-    }
-
-    /**
      * setTime is introduced to allow for the SubProcess interface. Remote
      * interfaces need to be re-done - this is a temporary fix.
      * 
@@ -152,20 +166,6 @@ public class AnubisProvider {
      */
     protected void setValueObj(ValueData value) {
         this.value = value;
-    }
-
-    /**
-     * abstract method to be defined by the user. This method may be called by
-     * the locator periodically to pro-activly check the status of the provider.
-     * 
-     * @return true if the provider is ok, false if not.
-     */
-    // abstract public boolean anubisLivenessPoll();
-
-    @Override
-    public synchronized String toString() {
-        return "Provider " + getName() + "=[" + getValue() + ", " + getTime()
-               + "]";
     }
 
     protected void update() {

@@ -70,7 +70,7 @@ import java.util.Set;
  * 
  * @version $Rev$ $Date$
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class Options {
 
     public static interface Log {
@@ -179,6 +179,27 @@ public class Options {
         }
 
         @Override
+        public <T extends Enum<T>> Set<T> getAll(String property,
+                                                 T... defaultValue) {
+            return EnumSet.copyOf(Arrays.asList(defaultValue));
+        }
+
+        @Override
+        public Log getLogger() {
+            return logger;
+        }
+
+        @Override
+        public boolean has(String property) {
+            return false;
+        }
+
+        @Override
+        public void setLogger(Log logger) {
+            this.logger = logger;
+        }
+
+        @Override
         protected <T extends Enum<T>> Set<T> getAll(String property,
                                                     Set<T> defaults,
                                                     Class<T> enumType) {
@@ -206,22 +227,6 @@ public class Options {
             return defaults;
         }
 
-        @Override
-        public <T extends Enum<T>> Set<T> getAll(String property,
-                                                 T... defaultValue) {
-            return EnumSet.copyOf(Arrays.asList(defaultValue));
-        }
-
-        @Override
-        public Log getLogger() {
-            return logger;
-        }
-
-        @Override
-        public boolean has(String property) {
-            return false;
-        }
-
         private <V> V log(String property, V value) {
             if (getLogger().isDebugEnabled()) {
                 if (value instanceof Enum) {
@@ -241,11 +246,6 @@ public class Options {
             }
             return value;
         }
-
-        @Override
-        public void setLogger(Log logger) {
-            this.logger = logger;
-        }
     }
 
     public static String join(String delimiter, Object... collection) {
@@ -257,6 +257,31 @@ public class Options {
             sb.delete(sb.length() - delimiter.length(), sb.length());
         }
         return sb.toString();
+    }
+
+    /**
+     * Use this instead of Enum.valueOf() when you want to ensure that the the
+     * enum values are case insensitive.
+     * 
+     * @param enumType
+     * @param name
+     * @param <T>
+     * @return
+     */
+    public static <T extends Enum<T>> T valueOf(Class<T> enumType, String name) {
+        Map<String, T> map = new HashMap<String, T>();
+        for (T t : enumType.getEnumConstants()) {
+            map.put(t.name().toUpperCase(), t);
+        }
+
+        T value = map.get(name.toUpperCase());
+
+        // Call Enum.valueOf for the clean exception
+        if (value == null || value.equals("")) {
+            Enum.valueOf(enumType, name);
+        }
+
+        return value;
     }
 
     protected static <T extends Enum<T>> String[] lowercase(Collection<T> items) {
@@ -283,31 +308,6 @@ public class Options {
     protected static <V extends Enum<V>> String possibleValues(V v) {
         Class<? extends Enum> enumType = v.getClass();
         return possibleValues(enumType);
-    }
-
-    /**
-     * Use this instead of Enum.valueOf() when you want to ensure that the the
-     * enum values are case insensitive.
-     * 
-     * @param enumType
-     * @param name
-     * @param <T>
-     * @return
-     */
-    public static <T extends Enum<T>> T valueOf(Class<T> enumType, String name) {
-        Map<String, T> map = new HashMap<String, T>();
-        for (T t : enumType.getEnumConstants()) {
-            map.put(t.name().toUpperCase(), t);
-        }
-
-        T value = map.get(name.toUpperCase());
-
-        // Call Enum.valueOf for the clean exception
-        if (value == null || value.equals("")) {
-            Enum.valueOf(enumType, name);
-        }
-
-        return value;
     }
 
     private final Options parent;
@@ -457,6 +457,39 @@ public class Options {
         return getAll(property, defaultValue, enumType);
     }
 
+    public <T extends Enum<T>> Set<T> getAll(String property, T... defaultValue) {
+        EnumSet<T> defaults = EnumSet.copyOf(Arrays.asList(defaultValue));
+        return getAll(property, defaults);
+    }
+
+    public Log getLogger() {
+        return parent.getLogger();
+    }
+
+    public Properties getProperties() {
+        return properties;
+    }
+
+    public boolean has(String property) {
+        return properties.containsKey(property) || parent.has(property);
+    }
+
+    public <T extends Enum<T>> Set<T> logAll(String property, Set<T> value) {
+        if (!getLogger().isInfoEnabled()) {
+            return value;
+        }
+
+        getLogger().info("Using \'" + property + "="
+                                 + join(", ", (Object[]) lowercase(value))
+                                 + "\'");
+
+        return value;
+    }
+
+    public void setLogger(Log logger) {
+        parent.setLogger(logger);
+    }
+
     protected <T extends Enum<T>> Set<T> getAll(String property,
                                                 Set<T> defaultValue,
                                                 Class<T> enumType) {
@@ -492,23 +525,6 @@ public class Options {
         }
     }
 
-    public <T extends Enum<T>> Set<T> getAll(String property, T... defaultValue) {
-        EnumSet<T> defaults = EnumSet.copyOf(Arrays.asList(defaultValue));
-        return getAll(property, defaults);
-    }
-
-    public Log getLogger() {
-        return parent.getLogger();
-    }
-
-    public Properties getProperties() {
-        return properties;
-    }
-
-    public boolean has(String property) {
-        return properties.containsKey(property) || parent.has(property);
-    }
-
     private <V> V log(String property, V value) {
         if (!getLogger().isInfoEnabled()) {
             return value;
@@ -522,21 +538,6 @@ public class Options {
             getLogger().info("Using \'" + property + "=" + value + "\'");
         }
         return value;
-    }
-
-    public <T extends Enum<T>> Set<T> logAll(String property, Set<T> value) {
-        if (!getLogger().isInfoEnabled()) {
-            return value;
-        }
-
-        getLogger().info("Using \'" + property + "="
-                                 + join(", ", (Object[]) lowercase(value)) + "\'");
-
-        return value;
-    }
-
-    public void setLogger(Log logger) {
-        parent.setLogger(logger);
     }
 
     private void warn(String property, String value) {

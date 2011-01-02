@@ -8,7 +8,7 @@ import org.smartfrog.services.anubis.locator.AnubisValue;
 public class Receiver extends AnubisListener {
     private static Logger log = Logger.getLogger(Receiver.class.getCanonicalName());
     private String instance;
-    
+
     public Receiver(String n, String instance) {
         super(n);
         this.instance = "<" + instance + ">";

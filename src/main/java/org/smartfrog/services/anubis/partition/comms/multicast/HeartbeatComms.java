@@ -104,84 +104,8 @@ public class HeartbeatComms extends MulticastComms implements
         setPriority(Thread.MAX_PRIORITY);
     }
 
-    @Override
-    protected void deliverBytes(byte[] bytes) {
-        Object obj = null;
-        try {
-
-            obj = wireSecurity.fromWireForm(bytes);
-
-        } catch (WireSecurityException ex) {
-
-            log.severe(me
-                       + "multicast transport encountered security violation receiving message - ignoring the message "); // +
-                                                                                                                          // this.getSender()
-
-            return;
-
-        } catch (Exception ex) {
-            log.log(Level.SEVERE,
-                    me + "Error reading wire form message - ignoring", ex);
-            return;
-        }
-
-        if (obj instanceof Heartbeat) {
-            handleHeartbeat((Heartbeat) obj);
-        } else {
-            handleNonHeartbeat(obj);
-        }
-    }
-
     public void deregisterMessageHandler(Class<?> type) {
         messageHandlers.remove(type);
-    }
-
-    private void handleHeartbeat(Heartbeat hb) {
-        /**
-         * if not right magic discard it
-         */
-        if (!hb.getSender().equalMagic(me)) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("heartbeat discarded due to invalid magic number: "
-                           + hb);
-            }
-            return;
-        }
-
-        /**
-         * for testing purposes - can ignore messages from specified senders
-         */
-        if (isIgnoring(hb.getSender())) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Ignoring heart beat sender: " + hb);
-            }
-            return;
-        }
-
-        /**
-         * Deliver new heartbeat message - this needs to be synchronized on the
-         * connection set so that nothing changes in the process.
-         * 
-         * The connection returned by getConnection may or may not be active
-         * (i.e. it may be quiescing) if it is not active it is up to the
-         * connection itself to deal with the heartbeat.
-         */
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Delivering heart beat: " + hb);
-        }
-        connectionSet.receiveHeartbeat(hb);
-    }
-
-    private void handleNonHeartbeat(Object msg) {
-        MessageHandler handler = messageHandlers.get(msg.getClass());
-        if (handler != null) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Delivering message: " + msg);
-            }
-            handler.deliverObject(msg);
-        } else if (log.isLoggable(Level.SEVERE)) {
-            log.severe(me + " No handler found for message: " + msg);
-        }
     }
 
     @Override
@@ -238,6 +162,82 @@ public class HeartbeatComms extends MulticastComms implements
     @Override
     public void terminate() {
         shutdown();
+    }
+
+    @Override
+    protected void deliverBytes(byte[] bytes) {
+        Object obj = null;
+        try {
+
+            obj = wireSecurity.fromWireForm(bytes);
+
+        } catch (WireSecurityException ex) {
+
+            log.severe(me
+                       + "multicast transport encountered security violation receiving message - ignoring the message "); // +
+                                                                                                                          // this.getSender()
+
+            return;
+
+        } catch (Exception ex) {
+            log.log(Level.SEVERE,
+                    me + "Error reading wire form message - ignoring", ex);
+            return;
+        }
+
+        if (obj instanceof Heartbeat) {
+            handleHeartbeat((Heartbeat) obj);
+        } else {
+            handleNonHeartbeat(obj);
+        }
+    }
+
+    private void handleHeartbeat(Heartbeat hb) {
+        /**
+         * if not right magic discard it
+         */
+        if (!hb.getSender().equalMagic(me)) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("heartbeat discarded due to invalid magic number: "
+                           + hb);
+            }
+            return;
+        }
+
+        /**
+         * for testing purposes - can ignore messages from specified senders
+         */
+        if (isIgnoring(hb.getSender())) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("Ignoring heart beat sender: " + hb);
+            }
+            return;
+        }
+
+        /**
+         * Deliver new heartbeat message - this needs to be synchronized on the
+         * connection set so that nothing changes in the process.
+         * 
+         * The connection returned by getConnection may or may not be active
+         * (i.e. it may be quiescing) if it is not active it is up to the
+         * connection itself to deal with the heartbeat.
+         */
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Delivering heart beat: " + hb);
+        }
+        connectionSet.receiveHeartbeat(hb);
+    }
+
+    private void handleNonHeartbeat(Object msg) {
+        MessageHandler handler = messageHandlers.get(msg.getClass());
+        if (handler != null) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("Delivering message: " + msg);
+            }
+            handler.deliverObject(msg);
+        } else if (log.isLoggable(Level.SEVERE)) {
+            log.severe(me + " No handler found for message: " + msg);
+        }
     }
 
 }

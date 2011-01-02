@@ -239,7 +239,7 @@ public class Controller {
         timer.schedule(getTask(), checkPeriod, checkPeriod);
 
         /** set node's timers **/
-        for (NodeData node: nodes.values()) { 
+        for (NodeData node : nodes.values()) {
             node.setTiming(interval, timeout);
         }
     }

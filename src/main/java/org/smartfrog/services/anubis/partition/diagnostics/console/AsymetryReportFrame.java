@@ -61,6 +61,13 @@ public class AsymetryReportFrame extends JFrame {
         }
     }
 
+    public void recalculate(Map<?, ?> nodes) {
+        jPanel1.remove(asymetryTable);
+        asymetryTable = getTable(nodes);
+        jPanel1.add(asymetryTable);
+        jPanel1.updateUI();
+    }
+
     private int getHighestNodeId(Map<?, ?> nodes) {
         int highestSoFar = -1;
         int highest;
@@ -164,12 +171,5 @@ public class AsymetryReportFrame extends JFrame {
         // asymetryTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         jPanel1.add(asymetryTable);
         setVisible(true);
-    }
-
-    public void recalculate(Map<?, ?> nodes) {
-        jPanel1.remove(asymetryTable);
-        asymetryTable = getTable(nodes);
-        jPanel1.add(asymetryTable);
-        jPanel1.updateUI();
     }
 }

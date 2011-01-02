@@ -50,7 +50,7 @@ abstract public class AnubisListener {
      */
     private String name;
     private Map<String, AnubisValue> values = new HashMap<String, AnubisValue>();
-    protected Logger log = Logger.getLogger(this.getClass().toString());;
+    private static Logger log = Logger.getLogger(AnubisListener.class.getCanonicalName());;
     protected ActiveTimeQueue timers;
 
     public AnubisListener(String n) {
@@ -115,6 +115,29 @@ abstract public class AnubisListener {
         }
     }
 
+    public void setTimerQueue(ActiveTimeQueue queue) {
+        timers = queue;
+    }
+
+    public synchronized int size() {
+        return values.size();
+    }
+
+    @Override
+    public String toString() {
+        String ret = "Listener " + getName() + "=[size=" + size()
+                     + ", mostRecentUpdate=" + getUpdateTime() + ", values=[";
+        for (AnubisValue value : values.values()) {
+            ret += value.toString();
+        }
+        ret += "]";
+        return ret;
+    }
+
+    public synchronized Collection<AnubisValue> values() {
+        return values.values();
+    }
+
     /**
      * This method will invoke user code in the listener. It is timed, logs
      * timeliness errors and catches Throwables.
@@ -129,7 +152,7 @@ abstract public class AnubisListener {
             @Override
             public void expired() {
                 log.severe("User API Upcall took >200ms in newValue(p) where p="
-                    + v);
+                           + v);
             }
 
         };
@@ -188,29 +211,6 @@ abstract public class AnubisListener {
         if (mostRecentChange < t) {
             mostRecentChange = t;
         }
-    }
-
-    public void setTimerQueue(ActiveTimeQueue queue) {
-        timers = queue;
-    }
-
-    public synchronized int size() {
-        return values.size();
-    }
-
-    @Override
-    public String toString() {
-        String ret = "Listener " + getName() + "=[size=" + size()
-                     + ", mostRecentUpdate=" + getUpdateTime() + ", values=[";
-        for (AnubisValue value : values.values()) {
-            ret += value.toString();
-        }
-        ret += "]";
-        return ret;
-    }
-
-    public synchronized Collection<AnubisValue> values() {
-        return values.values();
     }
 
 }

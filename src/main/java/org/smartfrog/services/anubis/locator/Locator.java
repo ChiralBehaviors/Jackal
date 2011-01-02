@@ -61,7 +61,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     private InstanceGenerator instanceGenerator = new InstanceGenerator();
     private Integer leader = null;
     private Map<Integer, MessageConnection> links = new HashMap<Integer, MessageConnection>();
-    private Logger log = Logger.getLogger(Locator.class.getCanonicalName());
+    private static Logger log = Logger.getLogger(Locator.class.getCanonicalName());
     private long maxTransDelay;
     private Identity identity = null;
     private Partition partition = null;
@@ -75,19 +75,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
     };
     private boolean stable = false;
     private ActiveTimeQueue timers = null; // public for debug
-
-    /**
-     * Deliver a request to the locator.
-     * 
-     * @param msg
-     */
-    private void deliverRequest(RegisterMsg msg) {
-        if (msg.register == RegisterMsg.GlobalRegister) {
-            global.deliverRequest(msg);
-        } else {
-            local.deliverRequest(msg);
-        }
-    }
 
     @Deployed
     public void deployed() {
@@ -122,24 +109,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
     @Override
     public void deregisterStability(AnubisStability stability) {
         local.deregisterStability(stability);
-    }
-
-    /**
-     * Drop connections to nodes that are not in the view - they will be broken.
-     * 
-     * @param v
-     */
-    private void dropBrokenConnections(View v) {
-        synchronized (links) {
-            Iterator<Map.Entry<Integer, MessageConnection>> iter = links.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, MessageConnection> entry = iter.next();
-                if (!v.contains(entry.getKey().intValue())) {
-                    entry.getValue().disconnect();
-                    iter.remove();
-                }
-            }
-        }
     }
 
     public long getHeartbeatInterval() {
@@ -309,29 +278,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
     }
 
     /**
-     * The locator manages connections between nodes. Connections are created on
-     * demand in the send method. If the recipient drops out of the partition
-     * during the connect() call we will get a null connection - in that case
-     * just do nothing.
-     * 
-     * @param obj
-     * @param node
-     */
-    private void send(Object obj, Integer node) {
-        synchronized (links) {
-            MessageConnection con = links.get(node);
-            if (con == null) {
-                con = partition.connect(node.intValue());
-                if (con == null) {
-                    return;
-                }
-                links.put(node, con);
-            }
-            con.sendObject(obj);
-        }
-    }
-
-    /**
      * Handle deliver of messages to the global register. If the partition is
      * not stable the message will be dropped. Access to the global register is
      * suspended during periods of instability because it may move. This
@@ -409,6 +355,60 @@ public class Locator implements PartitionNotification, AnubisLocator {
         local.terminate();
         timers.terminate();
         log = null;
+    }
+
+    /**
+     * Deliver a request to the locator.
+     * 
+     * @param msg
+     */
+    private void deliverRequest(RegisterMsg msg) {
+        if (msg.register == RegisterMsg.GlobalRegister) {
+            global.deliverRequest(msg);
+        } else {
+            local.deliverRequest(msg);
+        }
+    }
+
+    /**
+     * Drop connections to nodes that are not in the view - they will be broken.
+     * 
+     * @param v
+     */
+    private void dropBrokenConnections(View v) {
+        synchronized (links) {
+            Iterator<Map.Entry<Integer, MessageConnection>> iter = links.entrySet().iterator();
+            while (iter.hasNext()) {
+                Map.Entry<Integer, MessageConnection> entry = iter.next();
+                if (!v.contains(entry.getKey().intValue())) {
+                    entry.getValue().disconnect();
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * The locator manages connections between nodes. Connections are created on
+     * demand in the send method. If the recipient drops out of the partition
+     * during the connect() call we will get a null connection - in that case
+     * just do nothing.
+     * 
+     * @param obj
+     * @param node
+     */
+    private void send(Object obj, Integer node) {
+        synchronized (links) {
+            MessageConnection con = links.get(node);
+            if (con == null) {
+                con = partition.connect(node.intValue());
+                if (con == null) {
+                    return;
+                }
+                links.put(node, con);
+            }
+            con.sendObject(obj);
+        }
     }
 
 }

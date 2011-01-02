@@ -38,13 +38,6 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
 
     private NodeIdSet pings;
 
-    /**
-     * Constructor - used internally when reading from wire
-     */
-    protected PingHeartbeatMsg() {
-        super();
-    }
-
     public PingHeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                                 WireFormException, IOException {
         super();
@@ -67,6 +60,13 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
         pings = pinghb.pings;
     }
 
+    /**
+     * Constructor - used internally when reading from wire
+     */
+    protected PingHeartbeatMsg() {
+        super();
+    }
+
     public synchronized void clearPingBit(Identity id) {
         pings.remove(id.id);
     }
@@ -82,25 +82,6 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
     @Override
     public int getSize() {
         return PING_HEARTBEAT_MSG_WIRE_SIZE;
-    }
-
-    @Override
-    protected int getType() {
-        return PING_HEARTBEAT_MSG_WIRE_TYPE;
-    }
-
-    /**
-     * Read the attributes from the wire format.
-     * 
-     * @param buf
-     *            byte[]
-     */
-    @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-        super.readWireForm(buf);
-        pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
     }
 
     /**
@@ -124,6 +105,25 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
     @Override
     public String toString() {
         return "[" + super.toString() + ", pings=" + pings.toString() + "]";
+    }
+
+    @Override
+    protected int getType() {
+        return PING_HEARTBEAT_MSG_WIRE_TYPE;
+    }
+
+    /**
+     * Read the attributes from the wire format.
+     * 
+     * @param buf
+     *            byte[]
+     */
+    @Override
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+        super.readWireForm(buf);
+        pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
     }
 
     /**

@@ -38,6 +38,44 @@ public class LeaderMgr {
     }
 
     /**
+     * electLeader(v) performs an election amoung the members of the view v and
+     * sets the local candidate's vote to that member. The election uses one of
+     * two selection criteria depending on the stability of the view.
+     * 
+     * @param v
+     * @return Identity
+     */
+    public synchronized Identity electLeader(View v) {
+        return v.isStable() ? stableElection(v) : unstableElection(v);
+    }
+
+    /**
+     * Returns the current leader - assumes there has been an election. The
+     * local candidate always votes for the winner of the local election. So
+     * return the local candidates vote
+     * 
+     * @return Identity
+     */
+    public Identity getLeader() {
+        return localCandidate.getVote();
+    }
+
+    /**
+     * predictLeader(v) performs an election amoung the members of the view v
+     * but does not set the local candidate's vote.
+     * 
+     * This method can be used to predict which candidate would win the election
+     * at stability if the votes remain unchanged. There is no guarantee on
+     * accuracy, but it can be used as a guide.
+     * 
+     * @param v
+     * @return Identity
+     */
+    public synchronized Identity predictLeader(View v) {
+        return election(v).getId();
+    }
+
+    /**
      * The election is based on the criteria for picking a leader set in
      * CandidateInfo. The election has two passes - the first just initialises
      * the candidates, the second pass counts votes and keeps a running note on
@@ -112,44 +150,6 @@ public class LeaderMgr {
          * return the winner
          */
         return bestSoFar;
-    }
-
-    /**
-     * electLeader(v) performs an election amoung the members of the view v and
-     * sets the local candidate's vote to that member. The election uses one of
-     * two selection criteria depending on the stability of the view.
-     * 
-     * @param v
-     * @return Identity
-     */
-    public synchronized Identity electLeader(View v) {
-        return v.isStable() ? stableElection(v) : unstableElection(v);
-    }
-
-    /**
-     * Returns the current leader - assumes there has been an election. The
-     * local candidate always votes for the winner of the local election. So
-     * return the local candidates vote
-     * 
-     * @return Identity
-     */
-    public Identity getLeader() {
-        return localCandidate.getVote();
-    }
-
-    /**
-     * predictLeader(v) performs an election amoung the members of the view v
-     * but does not set the local candidate's vote.
-     * 
-     * This method can be used to predict which candidate would win the election
-     * at stability if the votes remain unchanged. There is no guarantee on
-     * accuracy, but it can be used as a guide.
-     * 
-     * @param v
-     * @return Identity
-     */
-    public synchronized Identity predictLeader(View v) {
-        return election(v).getId();
     }
 
     /**

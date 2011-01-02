@@ -26,7 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ValueData implements Serializable {
-    static private Logger log = Logger.getLogger(ValueData.class.getClass().toString()); // TODO use asynch wrapper
+    static private Logger log = Logger.getLogger(ValueData.class.getCanonicalName()); // TODO use asynch wrapper
     static private Object noMarshall = "state could not be marshalled";
     static private Object noUnmarshall = "state could not be unmarshalled";
     /**

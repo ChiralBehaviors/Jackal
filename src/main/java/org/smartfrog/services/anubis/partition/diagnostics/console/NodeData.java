@@ -51,7 +51,7 @@ public class NodeData {
     private long lastHB = 0;
     private long lastReceive = 0;
     private int leader = -1;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(NodeData.class.getCanonicalName());
     private Identity nodeId = null;
     private View partition = new BitView();
     private Color partitionColor = Color.lightGray;
@@ -87,27 +87,6 @@ public class NodeData {
             window.setVisible(false);
             window.dispose();
             window = null;
-        }
-    }
-
-    private void connectIfAvailable(ConnectionAddress address) {
-        if (address == null) {
-            return;
-        }
-        if (connection != null && connection.connected()) {
-            return;
-        }
-
-        try {
-            connection = server.connectTo(address, this, nodeId, controller);
-        } catch (InterruptedException e) {
-            return;
-        }
-        if (connection != null && connection.connected()) {
-            connection.sendObject(new SetTimingMsg(consoleFrame.getInterval(),
-                                                   consoleFrame.getTimeout()));
-        } else {
-            connection = null;
         }
     }
 
@@ -198,11 +177,6 @@ public class NodeData {
         }
     }
 
-    private void ignoring(IgnoringMsg ignoringMsg) {
-        ignoring = ignoringMsg.ignoring;
-        update();
-    }
-
     public boolean olderThan(long oldTime) {
         return lastReceive < oldTime;
     }
@@ -214,31 +188,6 @@ public class NodeData {
             update();
             window.setVisible(true);
         }
-    }
-
-    private View partCompOrIgnoring(View globalView, View partition,
-                                    View ignoring) {
-        View complement = new BitView().copyView(globalView).subtract(partition);
-        return new BitView().copyView(complement).merge(ignoring);
-    }
-
-    private void partitionNotification(View partition, int leader) {
-
-        /**
-         * if partition has changed membership deallocate current color and then
-         * reallocate new color
-         */
-        if (!this.partition.toBitSet().equals(partition.toBitSet())) {
-            colorAllocator.deallocate(this.partition, this);
-            partitionColor = colorAllocator.allocate(partition, this);
-        }
-        this.partition = partition;
-        this.leader = leader;
-        update();
-    }
-
-    private View partOrIgnoring(View partition, View ignoring) {
-        return new BitView().copyView(partition).merge(ignoring);
     }
 
     public void removeNode() {
@@ -316,6 +265,57 @@ public class NodeData {
             return;
         }
         connection.sendObject(new SetTimingMsg(interval, timeout));
+    }
+
+    private void connectIfAvailable(ConnectionAddress address) {
+        if (address == null) {
+            return;
+        }
+        if (connection != null && connection.connected()) {
+            return;
+        }
+
+        try {
+            connection = server.connectTo(address, this, nodeId, controller);
+        } catch (InterruptedException e) {
+            return;
+        }
+        if (connection != null && connection.connected()) {
+            connection.sendObject(new SetTimingMsg(consoleFrame.getInterval(),
+                                                   consoleFrame.getTimeout()));
+        } else {
+            connection = null;
+        }
+    }
+
+    private void ignoring(IgnoringMsg ignoringMsg) {
+        ignoring = ignoringMsg.ignoring;
+        update();
+    }
+
+    private View partCompOrIgnoring(View globalView, View partition,
+                                    View ignoring) {
+        View complement = new BitView().copyView(globalView).subtract(partition);
+        return new BitView().copyView(complement).merge(ignoring);
+    }
+
+    private void partitionNotification(View partition, int leader) {
+
+        /**
+         * if partition has changed membership deallocate current color and then
+         * reallocate new color
+         */
+        if (!this.partition.toBitSet().equals(partition.toBitSet())) {
+            colorAllocator.deallocate(this.partition, this);
+            partitionColor = colorAllocator.allocate(partition, this);
+        }
+        this.partition = partition;
+        this.leader = leader;
+        update();
+    }
+
+    private View partOrIgnoring(View partition, View ignoring) {
+        return new BitView().copyView(partition).merge(ignoring);
     }
 
     private void stats(StatsMsg stats) {

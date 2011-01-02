@@ -125,6 +125,51 @@ public class MainConsoleFrame extends JFrame {
         jTextField2.setText("[" + errorStr + "]" + jTextField2.getText());
     }
 
+    public void removeNode(NodeData nodeData) {
+        jPanel2.remove(nodeData.getButton());
+        jPanel2.updateUI();
+    }
+
+    public String stripErrorPart(String inputStr) {
+        String input = inputStr.trim();
+        if (input.indexOf('[') == 0 && input.indexOf(']') != -1) {
+            input = input.substring(input.indexOf(']') + 1);
+        }
+        return input;
+    }
+
+    /**
+     * @param e
+     */
+    void jButton1_actionPerformed(ActionEvent e) {
+        controller.clearPartitions();
+    }
+
+    /**
+     * @param e
+     */
+    void jButton2_actionPerformed(ActionEvent e) {
+        String input = stripErrorPart(jTextField2.getText());
+        jTextField2.setText(input);
+        controller.symPartition(input);
+    }
+
+    /**
+     * @param e
+     */
+    void jButton3_actionPerformed(ActionEvent e) {
+        String input = stripErrorPart(jTextField2.getText());
+        jTextField2.setText(input);
+        controller.asymPartition(input);
+    }
+
+    /**
+     * @param e
+     */
+    void jButton4_actionPerformed(ActionEvent e) {
+        controller.showAsymetryReport();
+    }
+
     private void jbInit() throws Exception {
         titledBorder1 = new TitledBorder("");
         jPanel1.setBorder(BorderFactory.createLoweredBevelBorder());
@@ -195,56 +240,11 @@ public class MainConsoleFrame extends JFrame {
         });
     }
 
-    /**
-     * @param e
-     */
-    void jButton1_actionPerformed(ActionEvent e) {
-        controller.clearPartitions();
-    }
-
-    /**
-     * @param e
-     */
-    void jButton2_actionPerformed(ActionEvent e) {
-        String input = stripErrorPart(jTextField2.getText());
-        jTextField2.setText(input);
-        controller.symPartition(input);
-    }
-
-    /**
-     * @param e
-     */
-    void jButton3_actionPerformed(ActionEvent e) {
-        String input = stripErrorPart(jTextField2.getText());
-        jTextField2.setText(input);
-        controller.asymPartition(input);
-    }
-
-    /**
-     * @param e
-     */
-    void jButton4_actionPerformed(ActionEvent e) {
-        controller.showAsymetryReport();
-    }
-
-    public void removeNode(NodeData nodeData) {
-        jPanel2.remove(nodeData.getButton());
-        jPanel2.updateUI();
-    }
-
     private void setInterval(int interval) {
         controller.setTiming(interval, getTimeout());
     }
 
     private void setTimeout(int timeout) {
         controller.setTiming(getInterval(), timeout);
-    }
-
-    public String stripErrorPart(String inputStr) {
-        String input = inputStr.trim();
-        if (input.indexOf('[') == 0 && input.indexOf(']') != -1) {
-            input = input.substring(input.indexOf(']') + 1);
-        }
-        return input;
     }
 }

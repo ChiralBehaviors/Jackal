@@ -46,7 +46,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     private ConnectionSet connectionSet = null;
     private boolean disconnectPending = false;
     private boolean ignoring = false;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(MessageConnection.class.getCanonicalName());
     private Identity me = null;
 
     private LinkedList<TimedMsg> msgQ = new LinkedList<TimedMsg>();
@@ -117,124 +117,6 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         }
 
         return true;
-    }
-
-    private void checkInitiatingClose(HeartbeatMsg msg) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(me + " initiator close check on link to " + getSender());
-        }
-        /**
-         * If the connection is already closing check for the returned close
-         * heartbeat - note that normal messages and heartbeats are accepted up
-         * to the actual return close message.
-         */
-        if (closingImpl != null) {
-            if (msg instanceof Close) {
-                closingImpl.terminate();
-                closingImpl = null;
-
-                /**
-                 * if we have new messages or either end wants the connection
-                 * back - reinitiate the connection by re-creating the
-                 * implementation.
-                 */
-                if (!msgQ.isEmpty() || msg.getMsgLinks().contains(me.id)
-                    || connectionSet.wantsMsgLinkTo(getSender())) {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(me + " connection closed but re-opening ");
-                        if (!msgQ.isEmpty()) {
-                            log.finest(me
-                                       + "  -- the message queue is not empty");
-                        }
-                        if (msg.getMsgLinks().contains(me.id)) {
-                            log.finest(me
-                                       + "  -- the other end appears to want the connection");
-                        }
-                        if (connectionSet.wantsMsgLinkTo(getSender())) {
-                            log.finest(me
-                                       + "  -- this end appears to want the connection");
-                        }
-                    }
-
-                    connectionSet.getConnectionServer().initiateConnection(me,
-                                                                           this,
-                                                                           connectionSet.getHeartbeatMsg());
-                }
-
-                /**
-                 * If the connection is to stay closed replace it with a
-                 * heartbeat connection in the connection set.
-                 */
-                else {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(me
-                                   + " connection fully closed - converting back to heartbeat connection");
-                    }
-                    connectionSet.convertToHeartbeatConnection(this);
-                }
-            } else {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(me
-                               + " connection closing but not a CloseMsg heartbeat");
-                }
-            }
-        }
-
-        /**
-         * If the connection is not already closing but it is time to close
-         * (i.e. neither end wants the connection) initiate a close - but not if
-         * we have some messages to send!!!! (if there are messages hang around
-         * until they are sent - clears up case of rapid connect, send,
-         * disconnect)
-         */
-        else if (!msg.getMsgLinks().contains(me.id)
-                 && !connectionSet.wantsMsgLinkTo(getSender())
-                 && msgQ.isEmpty()) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(me + " entering close on connection to "
-                           + getSender());
-            }
-            closingImpl = connectionImpl;
-            connectionImpl = null;
-            try {
-
-                closingImpl.send(connectionSet.getHeartbeatMsg().toClose());
-
-            } catch (Exception ex) {
-                log.log(Level.SEVERE,
-                        me + "failed to marshall close message - not sent to "
-                                + getSender(), ex);
-            }
-        }
-    }
-
-    private void checkRespondingClose(HeartbeatMsg msg) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(me + " responder close check on link to " + getSender());
-        }
-        /**
-         * If we have a close message then immediately drop the connection. We
-         * need to tell the connection impl to be silent - this means don't tell
-         * me when you terminate. This is because the initiating end will
-         * eventually shutdown the link and the impl will close - when that
-         * happens we don't want it cause this messageConnection to terminate
-         * too!
-         */
-        if (msg instanceof Close) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(me + " received CloseMsg - closing connection to "
-                           + getSender());
-            }
-            sendMsg(connectionSet.getHeartbeatMsg().toClose());
-            connectionImpl.silent();
-            connectionImpl = null;
-            if (!connectionSet.wantsMsgLinkTo(getSender())) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(me + " converting back to heartbeat connection");
-                }
-                connectionSet.convertToHeartbeatConnection(this);
-            }
-        }
     }
 
     /**
@@ -438,6 +320,124 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         }
         msgQ.clear();
         terminated = true;
+    }
+
+    private void checkInitiatingClose(HeartbeatMsg msg) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(me + " initiator close check on link to " + getSender());
+        }
+        /**
+         * If the connection is already closing check for the returned close
+         * heartbeat - note that normal messages and heartbeats are accepted up
+         * to the actual return close message.
+         */
+        if (closingImpl != null) {
+            if (msg instanceof Close) {
+                closingImpl.terminate();
+                closingImpl = null;
+
+                /**
+                 * if we have new messages or either end wants the connection
+                 * back - reinitiate the connection by re-creating the
+                 * implementation.
+                 */
+                if (!msgQ.isEmpty() || msg.getMsgLinks().contains(me.id)
+                    || connectionSet.wantsMsgLinkTo(getSender())) {
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest(me + " connection closed but re-opening ");
+                        if (!msgQ.isEmpty()) {
+                            log.finest(me
+                                       + "  -- the message queue is not empty");
+                        }
+                        if (msg.getMsgLinks().contains(me.id)) {
+                            log.finest(me
+                                       + "  -- the other end appears to want the connection");
+                        }
+                        if (connectionSet.wantsMsgLinkTo(getSender())) {
+                            log.finest(me
+                                       + "  -- this end appears to want the connection");
+                        }
+                    }
+
+                    connectionSet.getConnectionServer().initiateConnection(me,
+                                                                           this,
+                                                                           connectionSet.getHeartbeatMsg());
+                }
+
+                /**
+                 * If the connection is to stay closed replace it with a
+                 * heartbeat connection in the connection set.
+                 */
+                else {
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest(me
+                                   + " connection fully closed - converting back to heartbeat connection");
+                    }
+                    connectionSet.convertToHeartbeatConnection(this);
+                }
+            } else {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(me
+                               + " connection closing but not a CloseMsg heartbeat");
+                }
+            }
+        }
+
+        /**
+         * If the connection is not already closing but it is time to close
+         * (i.e. neither end wants the connection) initiate a close - but not if
+         * we have some messages to send!!!! (if there are messages hang around
+         * until they are sent - clears up case of rapid connect, send,
+         * disconnect)
+         */
+        else if (!msg.getMsgLinks().contains(me.id)
+                 && !connectionSet.wantsMsgLinkTo(getSender())
+                 && msgQ.isEmpty()) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(me + " entering close on connection to "
+                           + getSender());
+            }
+            closingImpl = connectionImpl;
+            connectionImpl = null;
+            try {
+
+                closingImpl.send(connectionSet.getHeartbeatMsg().toClose());
+
+            } catch (Exception ex) {
+                log.log(Level.SEVERE,
+                        me + "failed to marshall close message - not sent to "
+                                + getSender(), ex);
+            }
+        }
+    }
+
+    private void checkRespondingClose(HeartbeatMsg msg) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(me + " responder close check on link to " + getSender());
+        }
+        /**
+         * If we have a close message then immediately drop the connection. We
+         * need to tell the connection impl to be silent - this means don't tell
+         * me when you terminate. This is because the initiating end will
+         * eventually shutdown the link and the impl will close - when that
+         * happens we don't want it cause this messageConnection to terminate
+         * too!
+         */
+        if (msg instanceof Close) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(me + " received CloseMsg - closing connection to "
+                           + getSender());
+            }
+            sendMsg(connectionSet.getHeartbeatMsg().toClose());
+            connectionImpl.silent();
+            connectionImpl = null;
+            if (!connectionSet.wantsMsgLinkTo(getSender())) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(me + " converting back to heartbeat connection");
+                }
+                connectionSet.convertToHeartbeatConnection(this);
+            }
+        }
     }
 
 }

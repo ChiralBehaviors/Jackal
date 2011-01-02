@@ -49,10 +49,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     protected Identity sender;
     protected long time;
 
-    protected TimedMsg() {
-        super();
-    }
-
     /**
      * Constructor - Construct a timed message without setting attributes. used
      * to construct when reading from wire. Construct in the fromWire(wire)
@@ -89,9 +85,8 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
         addressUnmarshalled = true;
     }
 
-    private void addressFromWire() {
-        addressUnmarshalled = true;
-        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
+    protected TimedMsg() {
+        super();
     }
 
     /**
@@ -136,30 +131,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
         return time;
     }
 
-    @Override
-    protected int getType() {
-        return TIMED_MSG_WIRE_TYPE;
-    }
-
-    /**
-     * Sets the timed message attributes to the wire form held in a byte array
-     * 
-     * @param buf
-     * @throws IOException
-     * @throws WireFormException
-     * @throws ClassNotFoundException
-     */
-    @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-        super.readWireForm(buf);
-        time = wireForm.getLong(timeIdx);
-        order = wireForm.getLong(orderIdx);
-        sender = Identity.readWireForm(wireForm, identityIdx);
-        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
-    }
-
     public void setOrder(long o) {
         order = o;
     }
@@ -186,6 +157,30 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
                + address + "]";
     }
 
+    @Override
+    protected int getType() {
+        return TIMED_MSG_WIRE_TYPE;
+    }
+
+    /**
+     * Sets the timed message attributes to the wire form held in a byte array
+     * 
+     * @param buf
+     * @throws IOException
+     * @throws WireFormException
+     * @throws ClassNotFoundException
+     */
+    @Override
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+        super.readWireForm(buf);
+        time = wireForm.getLong(timeIdx);
+        order = wireForm.getLong(orderIdx);
+        sender = Identity.readWireForm(wireForm, identityIdx);
+        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
+    }
+
     /**
      * Writes the timed message attributes to wire form in the given byte array
      * 
@@ -201,6 +196,11 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
         } else {
             ConnectionAddress.writeNullWireForm(wireForm, addressIdx);
         }
+    }
+
+    private void addressFromWire() {
+        addressUnmarshalled = true;
+        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
     }
 
 }

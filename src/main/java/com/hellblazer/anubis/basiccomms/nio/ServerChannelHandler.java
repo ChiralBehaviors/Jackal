@@ -245,6 +245,12 @@ public abstract class ServerChannelHandler {
         }
     }
 
+    protected Collection<? extends CommunicationsHandler> getOpenHandlers() {
+        synchronized (openHandlers) {
+            return new ArrayList<CommunicationsHandler>(openHandlers);
+        }
+    }
+
     protected void handleAccept(SelectionKey key,
                                 Iterator<SelectionKey> selected)
                                                                 throws IOException {
@@ -375,11 +381,5 @@ public abstract class ServerChannelHandler {
                 }
             }
         });
-    }
-
-    protected Collection<? extends CommunicationsHandler> getOpenHandlers() {
-        synchronized (openHandlers) {
-            return new ArrayList<CommunicationsHandler>(openHandlers);
-        }
     }
 }

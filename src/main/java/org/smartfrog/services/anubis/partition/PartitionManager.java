@@ -43,18 +43,14 @@ public class PartitionManager implements Partition {
 
     static final int UNDEFINED_LEADER = -1;
 
-    Identity identity = null;
-    Logger log = Logger.getLogger(PartitionManager.class.getCanonicalName()); // TODO
-                                                                              // Need
-                                                                              // to
-                                                                              // wrap
-                                                                              // Async
-    Set<PartitionNotification> notificationSet = new CopyOnWriteArraySet<PartitionNotification>();
-    int notifiedLeader = UNDEFINED_LEADER;
-    View notifiedView = null;
-    PartitionProtocol partitionProtocol = null;
-    boolean terminated = false;
-    ActiveTimeQueue timer = null;
+    private Identity identity = null;
+    private static Logger log = Logger.getLogger(PartitionManager.class.getCanonicalName());
+    private Set<PartitionNotification> notificationSet = new CopyOnWriteArraySet<PartitionNotification>();
+    private int notifiedLeader = UNDEFINED_LEADER;
+    private View notifiedView = null;
+    private PartitionProtocol partitionProtocol = null;
+    private boolean terminated = false;
+    private ActiveTimeQueue timer = null;
 
     @Override
     public MessageConnection connect(int node) {
@@ -126,6 +122,33 @@ public class PartitionManager implements Partition {
     @Override
     public synchronized void register(PartitionNotification pn) {
         notificationSet.add(pn);
+    }
+
+    public void setIdentity(Identity identity) {
+        this.identity = identity;
+    }
+
+    public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
+        this.partitionProtocol = partitionProtocol;
+    }
+
+    @PostConstruct
+    public synchronized void start() {
+        timer.start();
+
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Started partition manager at " + identity + " "
+                     + Anubis.version);
+        }
+    }
+
+    @PreDestroy
+    public synchronized void terminate() {
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Terminating partition manager at " + identity);
+        }
+        timer.terminate();
+        terminated = true;
     }
 
     /**
@@ -233,33 +256,6 @@ public class PartitionManager implements Partition {
                       + "ms in partitionNotification(view, leader) where view="
                       + view + ", leader=" + leader);
         }
-    }
-
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
-    }
-
-    public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
-        this.partitionProtocol = partitionProtocol;
-    }
-
-    @PostConstruct
-    public synchronized void start() {
-        timer.start();
-
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Started partition manager at " + identity + " "
-                     + Anubis.version);
-        }
-    }
-
-    @PreDestroy
-    public synchronized void terminate() {
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Terminating partition manager at " + identity);
-        }
-        timer.terminate();
-        terminated = true;
     }
 
 }

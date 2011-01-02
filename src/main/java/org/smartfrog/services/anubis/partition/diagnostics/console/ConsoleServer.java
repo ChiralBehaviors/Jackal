@@ -36,11 +36,6 @@ import com.hellblazer.anubis.basiccomms.nio.ServerChannelHandler;
 public class ConsoleServer extends ServerChannelHandler {
     private static final Logger log = Logger.getLogger(ConsoleServer.class.getCanonicalName());
 
-    @Override
-    protected CommunicationsHandler createHandler(SocketChannel accepted) {
-        throw new UnsupportedOperationException();
-    }
-
     public MessageHandler connectTo(ConnectionAddress address, NodeData node,
                                     Identity nodeId, Controller controller)
                                                                            throws InterruptedException {
@@ -69,5 +64,10 @@ public class ConsoleServer extends ServerChannelHandler {
         addHandler(handler);
         handler.handleAccept();
         return handler;
+    }
+
+    @Override
+    protected CommunicationsHandler createHandler(SocketChannel accepted) {
+        throw new UnsupportedOperationException();
     }
 }

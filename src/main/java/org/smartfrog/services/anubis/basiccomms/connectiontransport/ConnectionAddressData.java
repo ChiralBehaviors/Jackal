@@ -26,13 +26,6 @@ public class ConnectionAddressData {
     private String hostName;
     private int port = 0;
 
-    protected InetAddress getAddress() throws Exception {
-        if (hostName.equals(LOCALHOST)) {
-            return InetAddress.getLocalHost();
-        }
-        return InetAddress.getByName(hostName);
-    }
-
     public ConnectionAddress getConnectionAddress() throws Exception {
         return new ConnectionAddress(getAddress(), getPort());
     }
@@ -51,6 +44,13 @@ public class ConnectionAddressData {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    protected InetAddress getAddress() throws Exception {
+        if (hostName.equals(LOCALHOST)) {
+            return InetAddress.getLocalHost();
+        }
+        return InetAddress.getByName(hostName);
     }
 
 }

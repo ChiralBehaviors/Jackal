@@ -56,6 +56,12 @@ public class AnubisValue {
         setValue(v);
     }
 
+    @Override
+    public String toString() {
+        return "Value [name=" + getName() + ", instance=" + getInstance()
+               + ", time=" + getTime() + ", value=" + getValue() + "]";
+    }
+
     private void setInstance(String instance) {
         this.instance = instance;
     }
@@ -70,12 +76,6 @@ public class AnubisValue {
 
     private void setValue(ValueData value) {
         this.value = value.getValue();
-    }
-
-    @Override
-    public String toString() {
-        return "Value [name=" + getName() + ", instance=" + getInstance()
-               + ", time=" + getTime() + ", value=" + getValue() + "]";
     }
 
 }

@@ -78,10 +78,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     private long viewTimeStamp = View.undefinedTimeStamp;
     private boolean viewUnmarshalled;
 
-    protected HeartbeatMsg() {
-        super();
-    }
-
     /**
      * Constructor - Creates a heartbeat message from the wire formatted byte
      * array. This constructor does not use the usual pattern of simply
@@ -122,9 +118,8 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         testInterfaceUnmarshalled = true;
     }
 
-    private void candidateFromWire() {
-        candidateUnmarshalled = true;
-        candidate = Identity.readWireForm(wireForm, candidateIdx);
+    protected HeartbeatMsg() {
+        super();
     }
 
     /**
@@ -170,11 +165,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         return testInterface;
     }
 
-    @Override
-    protected int getType() {
-        return HEARTBEAT_MSG_WIRE_TYPE;
-    }
-
     /**
      * NumberedView interface implementation
      * 
@@ -191,44 +181,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     @Override
     public long getViewNumber() {
         return viewNumber;
-    }
-
-    private void msgLinksFromWire() {
-        msgLinksUnmarshalled = true;
-        msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
-    }
-
-    /**
-     * Read the attributes from the wire format. Note that some of the
-     * attributes (views, msgLinks and test interface) are not read here. These
-     * are read on demand. These attributes are not likely to be needed often -
-     * so we only unmarshall them when we have to.
-     * 
-     * @param buf
-     *            byte[]
-     */
-    @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-        super.readWireForm(buf);
-
-        /**
-         * view number, view time stamp and msgLinksNumber
-         */
-        viewNumber = wireForm.getLong(viewNumberIdx);
-        viewTimeStamp = wireForm.getLong(viewTimeStampIdx);
-        msgLinksNumber = wireForm.getLong(msgLinksNumberIdx);
-        preferred = wireForm.getInt(isPreferredIdx) == 1;
-
-        /**
-         * Do not unmarshall candidate, msgLinks, view or test interface These
-         * are done on demand only
-         */
-        candidateUnmarshalled = false;
-        msgLinksUnmarshalled = false;
-        viewUnmarshalled = false;
-        testInterfaceUnmarshalled = false;
     }
 
     @Override
@@ -266,12 +218,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         viewNumber = n;
     }
 
-    private void testInterfaceFromWire() {
-        testInterfaceUnmarshalled = true;
-        testInterface = ConnectionAddress.readWireForm(wireForm,
-                                                       testInterfaceIdx);
-    }
-
     /**
      * generate close message from this heartbeat
      */
@@ -296,10 +242,42 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         return str;
     }
 
-    private void viewFromWire() {
-        viewUnmarshalled = true;
-        stable = wireForm.getInt(stableIdx) == booleanTrueValue;
-        view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
+    @Override
+    protected int getType() {
+        return HEARTBEAT_MSG_WIRE_TYPE;
+    }
+
+    /**
+     * Read the attributes from the wire format. Note that some of the
+     * attributes (views, msgLinks and test interface) are not read here. These
+     * are read on demand. These attributes are not likely to be needed often -
+     * so we only unmarshall them when we have to.
+     * 
+     * @param buf
+     *            byte[]
+     */
+    @Override
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+        super.readWireForm(buf);
+
+        /**
+         * view number, view time stamp and msgLinksNumber
+         */
+        viewNumber = wireForm.getLong(viewNumberIdx);
+        viewTimeStamp = wireForm.getLong(viewTimeStampIdx);
+        msgLinksNumber = wireForm.getLong(msgLinksNumberIdx);
+        preferred = wireForm.getInt(isPreferredIdx) == 1;
+
+        /**
+         * Do not unmarshall candidate, msgLinks, view or test interface These
+         * are done on demand only
+         */
+        candidateUnmarshalled = false;
+        msgLinksUnmarshalled = false;
+        viewUnmarshalled = false;
+        testInterfaceUnmarshalled = false;
     }
 
     /**
@@ -342,6 +320,28 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         } else {
             testInterface.writeWireForm(wireForm, testInterfaceIdx);
         }
+    }
+
+    private void candidateFromWire() {
+        candidateUnmarshalled = true;
+        candidate = Identity.readWireForm(wireForm, candidateIdx);
+    }
+
+    private void msgLinksFromWire() {
+        msgLinksUnmarshalled = true;
+        msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
+    }
+
+    private void testInterfaceFromWire() {
+        testInterfaceUnmarshalled = true;
+        testInterface = ConnectionAddress.readWireForm(wireForm,
+                                                       testInterfaceIdx);
+    }
+
+    private void viewFromWire() {
+        viewUnmarshalled = true;
+        stable = wireForm.getInt(stableIdx) == booleanTrueValue;
+        view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
     }
 
 }

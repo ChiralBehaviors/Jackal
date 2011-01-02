@@ -76,7 +76,7 @@ public class GlobalRegisterImpl {
     private SetMap<String, ListenerProxy> listenersByName = new SetMap<String, ListenerProxy>();
     private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
     private Locator locator = null;
-    private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+    private static Logger log = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
     private int me = -1;
     private SetMap<String, ProviderProxy> providersByName = new SetMap<String, ProviderProxy>();
     private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
@@ -227,107 +227,6 @@ public class GlobalRegisterImpl {
         requests.put(request);
     }
 
-    /**
-     * deregisterListener: just remove the entry. No action with providers, the
-     * listener is responsible for informing them.
-     * 
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void deregisterListener(ListenerProxy listener) {
-
-        /**
-         * Remove from listener info
-         */
-        listenersByNode.remove(listener.node, listener);
-        listenersByName.remove(listener.name, listener);
-
-    }
-
-    /**
-     * deregisterProvider: just remove the entry. No action with listeners, the
-     * provider is responsible for informing them.
-     * 
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void deregisterProvider(ProviderProxy provider) {
-
-        /**
-         * Remove from provider info
-         */
-        providersByNode.remove(provider.node, provider);
-        providersByName.remove(provider.name, provider);
-    }
-
-    /**
-     * registerListener: if there is no provider then add to the pending
-     * listeners. If there is a provider simply return its location and do not
-     * add to pending listeners (as its not pending!!)
-     * 
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void registerListener(ListenerProxy listener) {
-
-        /**
-         * Add to listener info
-         */
-        listenersByNode.put(listener.node, listener);
-        listenersByName.put(listener.name, listener);
-
-        /**
-         * Check for existing providers and inform them of the new listener
-         */
-        Set<ProviderProxy> providers = providersByName.getSet(listener.name);
-        if (providers == null) {
-            return;
-        }
-
-        for (ProviderProxy provider : providers) {
-            RegisterMsg msg = RegisterMsg.addListener(listener);
-            locator.sendToLocal(msg, provider.node);
-        }
-    }
-
-    /**
-     * registerProvider: Add the new provider to the provider list. Inform
-     * pending listeners of the location.
-     * 
-     * @param local
-     * @param name
-     * @return
-     * @throws RemoteException
-     */
-    private void registerProvider(ProviderProxy provider) {
-
-        /**
-         * Add to provider info
-         */
-        providersByNode.put(provider.node, provider);
-        providersByName.put(provider.name, provider);
-
-        /**
-         * Check for existing listeners and inform the provider of their
-         * existance
-         */
-        Set<ListenerProxy> listeners = listenersByName.getSet(provider.name);
-        if (listeners == null) {
-            return;
-        }
-
-        for (ListenerProxy listener : listeners) {
-            RegisterMsg msg = RegisterMsg.addListener(listener);
-            locator.sendToLocal(msg, provider.node);
-        }
-    }
-
     public synchronized void removeDebugFrame() {
         if (debug != null) {
             debug.remove();
@@ -428,6 +327,107 @@ public class GlobalRegisterImpl {
             activate();
         } else if (!active && leader != me) {
             // do nothing
+        }
+    }
+
+    /**
+     * deregisterListener: just remove the entry. No action with providers, the
+     * listener is responsible for informing them.
+     * 
+     * @param local
+     * @param name
+     * @return
+     * @throws RemoteException
+     */
+    private void deregisterListener(ListenerProxy listener) {
+
+        /**
+         * Remove from listener info
+         */
+        listenersByNode.remove(listener.node, listener);
+        listenersByName.remove(listener.name, listener);
+
+    }
+
+    /**
+     * deregisterProvider: just remove the entry. No action with listeners, the
+     * provider is responsible for informing them.
+     * 
+     * @param local
+     * @param name
+     * @return
+     * @throws RemoteException
+     */
+    private void deregisterProvider(ProviderProxy provider) {
+
+        /**
+         * Remove from provider info
+         */
+        providersByNode.remove(provider.node, provider);
+        providersByName.remove(provider.name, provider);
+    }
+
+    /**
+     * registerListener: if there is no provider then add to the pending
+     * listeners. If there is a provider simply return its location and do not
+     * add to pending listeners (as its not pending!!)
+     * 
+     * @param local
+     * @param name
+     * @return
+     * @throws RemoteException
+     */
+    private void registerListener(ListenerProxy listener) {
+
+        /**
+         * Add to listener info
+         */
+        listenersByNode.put(listener.node, listener);
+        listenersByName.put(listener.name, listener);
+
+        /**
+         * Check for existing providers and inform them of the new listener
+         */
+        Set<ProviderProxy> providers = providersByName.getSet(listener.name);
+        if (providers == null) {
+            return;
+        }
+
+        for (ProviderProxy provider : providers) {
+            RegisterMsg msg = RegisterMsg.addListener(listener);
+            locator.sendToLocal(msg, provider.node);
+        }
+    }
+
+    /**
+     * registerProvider: Add the new provider to the provider list. Inform
+     * pending listeners of the location.
+     * 
+     * @param local
+     * @param name
+     * @return
+     * @throws RemoteException
+     */
+    private void registerProvider(ProviderProxy provider) {
+
+        /**
+         * Add to provider info
+         */
+        providersByNode.put(provider.node, provider);
+        providersByName.put(provider.name, provider);
+
+        /**
+         * Check for existing listeners and inform the provider of their
+         * existance
+         */
+        Set<ListenerProxy> listeners = listenersByName.getSet(provider.name);
+        if (listeners == null) {
+            return;
+        }
+
+        for (ListenerProxy listener : listeners) {
+            RegisterMsg msg = RegisterMsg.addListener(listener);
+            locator.sendToLocal(msg, provider.node);
         }
     }
 

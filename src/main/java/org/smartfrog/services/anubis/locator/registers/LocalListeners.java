@@ -50,8 +50,8 @@ public class LocalListeners {
 
         public Set<AnubisListener> listeners = new HashSet<AnubisListener>();
         public Map<ProviderProxy, ProviderInstance> providers = new HashMap<ProviderProxy, ProviderInstance>(); // instance
-                                                                                                                      // -->
-                                                                                                                      // name
+                                                                                                                // -->
+                                                                                                                // name
         public ListenerProxy proxy = null;
 
         public ListenerInfo(String name, AnubisListener l) {
@@ -77,7 +77,7 @@ public class LocalListeners {
     private Map<String, ListenerInfo> listeners = new HashMap<String, ListenerInfo>();
     private Locator locator = null;
 
-    private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+    private static Logger log = Logger.getLogger(LocalListeners.class.getCanonicalName());
 
     private Integer me = null;
     /**

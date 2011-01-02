@@ -64,10 +64,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         this(DEFAULT_SIZE);
     }
 
-    private NodeIdSet(byte[] storage) {
-        this.storage = storage;
-    }
-
     /**
      * create a bitset with a size large enough to contain at least i bits
      * 
@@ -76,6 +72,10 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      */
     public NodeIdSet(int i) {
         storage = createByteArray(i, null);
+    }
+
+    private NodeIdSet(byte[] storage) {
+        this.storage = storage;
     }
 
     /**
@@ -133,29 +133,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         return cloneBS;
     }
 
-    private boolean compare(byte[] base, byte[] test) {
-        boolean compareOk = true;
-        int minLength = base.length < test.length ? base.length : test.length;
-        for (int i = 0; i < minLength; ++i) {
-            if (test[i] != (base[i] & test[i])) {
-                compareOk = false;
-                break;
-            }
-        }
-        if (compareOk && base.length < test.length) {
-            int bc = 0;
-            for (int i = minLength; i < test.length; ++i) {
-                for (int j = 0; j < 8; ++j) {
-                    bc += test[i] >> j & 1;
-                }
-            }
-            if (bc != 0) {
-                compareOk = false;
-            }
-        }
-        return compareOk;
-    }
-
     /**
      * are all the bits in this contained in s?
      * 
@@ -194,21 +171,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      */
     public boolean contains(NodeIdSet s) {
         return compare(storage, s.getBytes());
-    }
-
-    private byte[] createByteArray(int index, byte[] seed) {
-        byte[] retBa = null;
-        int byteNbr = index / 8;
-        if (index % 8 != 0) {
-            ++byteNbr;
-        }
-        retBa = new byte[byteNbr];
-        if (seed != null && seed.length <= retBa.length) {
-            for (int i = 0; i < seed.length; ++i) {
-                retBa[i] = seed[i];
-            }
-        }
-        return retBa;
     }
 
     /**
@@ -462,16 +424,54 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         bytes.put(storage);
     }
 
-    protected void writeMessage() {
-    }
-
-    protected void writeHeader() {
+    protected void readHeader() {
     }
 
     protected void readMessage() {
     }
 
-    protected void readHeader() {
+    protected void writeHeader() {
+    }
+
+    protected void writeMessage() {
+    }
+
+    private boolean compare(byte[] base, byte[] test) {
+        boolean compareOk = true;
+        int minLength = base.length < test.length ? base.length : test.length;
+        for (int i = 0; i < minLength; ++i) {
+            if (test[i] != (base[i] & test[i])) {
+                compareOk = false;
+                break;
+            }
+        }
+        if (compareOk && base.length < test.length) {
+            int bc = 0;
+            for (int i = minLength; i < test.length; ++i) {
+                for (int j = 0; j < 8; ++j) {
+                    bc += test[i] >> j & 1;
+                }
+            }
+            if (bc != 0) {
+                compareOk = false;
+            }
+        }
+        return compareOk;
+    }
+
+    private byte[] createByteArray(int index, byte[] seed) {
+        byte[] retBa = null;
+        int byteNbr = index / 8;
+        if (index % 8 != 0) {
+            ++byteNbr;
+        }
+        retBa = new byte[byteNbr];
+        if (seed != null && seed.length <= retBa.length) {
+            for (int i = 0; i < seed.length; ++i) {
+                retBa[i] = seed[i];
+            }
+        }
+        return retBa;
     }
 
 }

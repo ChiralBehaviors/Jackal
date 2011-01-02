@@ -39,7 +39,7 @@ public class ConnectionServer extends Thread {
 
     private ConnectionFactory connectionFactory;
     private ServerSocketChannel listenSocket;
-    private Logger log = Logger.getLogger(this.getClass().toString());
+    private static Logger log = Logger.getLogger(ConnectionServer.class.getCanonicalName());
     volatile private boolean open;
 
     /**
@@ -87,49 +87,6 @@ public class ConnectionServer extends Thread {
                                                                          throws IOException {
         super(threadName);
         constructServer(hostName, port);
-    }
-
-    /**
-     * Constructor helper - creates a listening socket on the default ip address
-     * returned for the given InetAddress (should be this host), using the given
-     * port. Initially the default connection factory is assumed.
-     */
-
-    private void constructServer(InetAddress inetAddress, int port)
-                                                                   throws IOException {
-
-        connectionFactory = new DefaultConnectionFactory();
-
-        try {
-
-            if (log.isLoggable(Level.INFO)) {
-                log.info("Binding blocking connection server to port: " + port);
-            }
-
-            listenSocket = ServerSocketChannel.open();
-            listenSocket.configureBlocking(true);
-            listenSocket.socket().bind(new InetSocketAddress(inetAddress, port));
-
-        } catch (IOException ioex) {
-            log.log(Level.SEVERE, "Failed to create server socket: ", ioex);
-
-            listenSocket = null;
-            open = false;
-            throw ioex;
-
-        }
-
-        open = true;
-
-    }
-
-    /**
-     * Constructor helper - creates a listening socket on the default ip address
-     * returned for the given host name (should be this host), using the given
-     * port. Initially the default connection factory is assumed.
-     */
-    private void constructServer(String hostName, int port) throws IOException {
-        constructServer(InetAddress.getByName(hostName), port);
     }
 
     /**
@@ -201,5 +158,48 @@ public class ConnectionServer extends Thread {
             listenSocket.close();
         } catch (IOException ioex) {
         }
+    }
+
+    /**
+     * Constructor helper - creates a listening socket on the default ip address
+     * returned for the given InetAddress (should be this host), using the given
+     * port. Initially the default connection factory is assumed.
+     */
+
+    private void constructServer(InetAddress inetAddress, int port)
+                                                                   throws IOException {
+
+        connectionFactory = new DefaultConnectionFactory();
+
+        try {
+
+            if (log.isLoggable(Level.INFO)) {
+                log.info("Binding blocking connection server to port: " + port);
+            }
+
+            listenSocket = ServerSocketChannel.open();
+            listenSocket.configureBlocking(true);
+            listenSocket.socket().bind(new InetSocketAddress(inetAddress, port));
+
+        } catch (IOException ioex) {
+            log.log(Level.SEVERE, "Failed to create server socket: ", ioex);
+
+            listenSocket = null;
+            open = false;
+            throw ioex;
+
+        }
+
+        open = true;
+
+    }
+
+    /**
+     * Constructor helper - creates a listening socket on the default ip address
+     * returned for the given host name (should be this host), using the given
+     * port. Initially the default connection factory is assumed.
+     */
+    private void constructServer(String hostName, int port) throws IOException {
+        constructServer(InetAddress.getByName(hostName), port);
     }
 }

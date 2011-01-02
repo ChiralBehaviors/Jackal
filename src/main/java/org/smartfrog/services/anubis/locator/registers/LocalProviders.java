@@ -65,7 +65,7 @@ public class LocalProviders {
                                                                                                    // listeners
 
     private Locator locator = null;
-    private Logger log = Logger.getLogger(this.getClass().getCanonicalName());
+    private static Logger log = Logger.getLogger(LocalProviders.class.getCanonicalName());
 
     private Integer me = null;
     private Map<String, ProviderInfo> providers = new HashMap<String, ProviderInfo>(); // name-->record
@@ -277,9 +277,6 @@ public class LocalProviders {
         }
     }
 
-    private void jbInit() throws Exception {
-    }
-
     public synchronized void newValue(AnubisProvider provider, ValueData value,
                                       long time) {
         /**
@@ -453,6 +450,9 @@ public class LocalProviders {
         }
         str += "\n";
         return str;
+    }
+
+    private void jbInit() throws Exception {
     }
 
 }

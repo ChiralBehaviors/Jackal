@@ -64,6 +64,48 @@ public class Driver extends JFrame {
         }
     }
 
+    void jButton1_actionPerformed(ActionEvent e) {
+        test.addProvider(jTextField1.getText());
+        jTextField1.setText("");
+    }
+
+    void jButton2_actionPerformed(ActionEvent e) {
+        test.removeProvider(jTextField1.getText());
+        jTextField1.setText("");
+    }
+
+    void jButton3_actionPerformed(ActionEvent e) {
+        test.rapidStates(jTextField1.getText());
+        jTextField1.setText("");
+    }
+
+    void jButton4_actionPerformed(ActionEvent e) {
+        test.removeListener(jTextField1.getText());
+        jTextField1.setText("");
+    }
+
+    void jButton5_actionPerformed(ActionEvent e) {
+        test.showLocal();
+    }
+
+    void jButton6_actionPerformed(ActionEvent e) {
+        test.showGlobal();
+    }
+
+    void jButton7_actionPerformed(ActionEvent e) {
+        test.nonBlockAddListener(jTextField1.getText());
+        jTextField1.setText("");
+    }
+
+    void print(String str) {
+        jTextArea1.append(str);
+    }
+
+    void println(String str) {
+        jTextArea1.append(str);
+        jTextArea1.append("\n");
+    }
+
     private void jbInit() throws Exception {
         jButton2.setText("- Prov");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
@@ -151,48 +193,6 @@ public class Driver extends JFrame {
                 test.terminate();
             }
         });
-    }
-
-    void jButton1_actionPerformed(ActionEvent e) {
-        test.addProvider(jTextField1.getText());
-        jTextField1.setText("");
-    }
-
-    void jButton2_actionPerformed(ActionEvent e) {
-        test.removeProvider(jTextField1.getText());
-        jTextField1.setText("");
-    }
-
-    void jButton3_actionPerformed(ActionEvent e) {
-        test.rapidStates(jTextField1.getText());
-        jTextField1.setText("");
-    }
-
-    void jButton4_actionPerformed(ActionEvent e) {
-        test.removeListener(jTextField1.getText());
-        jTextField1.setText("");
-    }
-
-    void jButton5_actionPerformed(ActionEvent e) {
-        test.showLocal();
-    }
-
-    void jButton6_actionPerformed(ActionEvent e) {
-        test.showGlobal();
-    }
-
-    void jButton7_actionPerformed(ActionEvent e) {
-        test.nonBlockAddListener(jTextField1.getText());
-        jTextField1.setText("");
-    }
-
-    void print(String str) {
-        jTextArea1.append(str);
-    }
-
-    void println(String str) {
-        jTextArea1.append(str);
-        jTextArea1.append("\n");
     }
 
 }

@@ -110,18 +110,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
 
     }
 
-    // cleanup is called if remote end goes away
-    private void cleanup(SelectionKey key) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("MNH: cleanup is being called");
-        }
-        writingOK = false;
-        deadKeys.add(key);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("MNH: Cleanup is called - socket has gone away");
-        }
-    }
-
     /*
      * close() is called when local end goes away
      */
@@ -263,141 +251,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         this.mci = mci;
     }
 
-    private void initialMsg(TimedMsg tm) {
-
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("MNH: initialMsg is being called");
-        }
-
-        Object obj = tm;
-        TimedMsg bytes = tm;
-
-        /**
-         * must be a heartbeat message
-         */
-        if (!(obj instanceof HeartbeatMsg)) {
-            log.severe(me
-                       + " did not receive a heartbeat message first - shutdown");
-            shutdown();
-            return;
-        }
-
-        HeartbeatMsg hbmsg = (HeartbeatMsg) obj;
-
-        /**
-         * There must be a valid connection (heartbeat connection)
-         */
-        if (!connectionSet.getView().contains(hbmsg.getSender())) {
-            log.severe(me
-                       + " did not have incoming connection in the connection set");
-            shutdown();
-            return;
-        }
-
-        Connection con = connectionSet.getConnection(hbmsg.getSender());
-
-        /**
-         * If it is a message connection then attempt to assign this impl to
-         * that connection. If successful then record the message connection so
-         * all further messages go directly to it. If not successful then
-         * shutdown the this implementation object and abort.
-         */
-        if (con instanceof MessageConnection) {
-            if (((MessageConnection) con).assignImpl(this)) {
-                messageConnection = (MessageConnection) con;
-                // commented out by ed@hplb since this is not a thread anymore
-                // setName("Anubis: node " + con.getSender().id +
-                // " Connection Comms");
-                messageConnection.deliver(bytes);
-            } else {
-                log.severe(me + " failed to assign incoming connection");
-                shutdown();
-            }
-            return;
-        }
-
-        /**
-         * By now we should be left with a heartbeat connection - sanity check
-         */
-        if (!(con instanceof HeartbeatConnection)) {
-            log.severe(me
-                       + " ?!? incoming connection is in connection set, but not heartbeat or message type");
-            shutdown();
-            return;
-        }
-        HeartbeatConnection hbcon = (HeartbeatConnection) con;
-
-        /**
-         * If the connection is a heartbeat connection then the other end must
-         * be setting up the connection without this end having requested it.
-         * That means the other end must want it, so check the msgLink field for
-         * this end is set - this is a sanity check.
-         * 
-         * *********************************************************************
-         * 
-         * The case can happen, so the above comment is incorrect. If the user
-         * does a connect and then disconnect without sending a message, then
-         * the other end could initiate a connection neither end needs in
-         * response to the initial connect. Do not count this as an error, but
-         * do log its occurance.
-         */
-        if (!hbmsg.getMsgLinks().contains(me.id)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.severe(me + " incoming connection from "
-                           + con.getSender().toString()
-                           + " when neither end wants the connection");
-                // next two lines removed to allow this case
-                // shutdown();
-                // return;
-            }
-        }
-
-        /**
-         * Now we are left with a valid heartbeat connection and the other end
-         * is initiating a message connection, so create this end.
-         * 
-         * Note that the connection set only finds out about the newly created
-         * message connection when it is informed by the call to
-         * connectionSet.useNewMessageConnection(), so it can not terminate the
-         * connection before the call to messageConnection.assignImpl(). Also,
-         * we created the message connection, so we know it does not yet have an
-         * impl. Hence we can assume it will succeed in assigning the impl.
-         */
-        messageConnection = new MessageConnection(me, connectionSet,
-                                                  hbcon.getProtocol(),
-                                                  hbcon.getCandidate());
-        messageConnection.assignImpl(this);
-        messageConnection.deliver(bytes);
-
-        /**
-         * if the call to connectionSet.useNewMessageConnection() then a
-         * connection has been created since we checked for it above with
-         * connectionSet.getConnection(). The other end will not make two
-         * connection attempts at the same time, but if this thread is delayed
-         * during the last 20 lines of code for long enough for the following to
-         * happen: 1. other end time out connection + 2. quiesence period + 3.
-         * this end rediscover other end in multicast heartbeats + 4. other end
-         * initiates new connection attempt + 5. new connection attempt gets
-         * accepted (new thread created for it) + 6. read first heartbeat and
-         * get through this code in the new thread. Then it could beat this
-         * thread to it. If all this happens (and based on the premise
-         * "if it can happen it will happen") then this thread should rightly
-         * comit suicide in disgust!!!!
-         */
-        if (!connectionSet.useNewMessageConnection(messageConnection)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.severe(me
-                           + "Concurrent creation of message connections from "
-                           + messageConnection.getSender());
-            }
-            shutdown();
-            return;
-        }
-        // commented out by ed@hplb since this is nto a thread anymore
-        // setName("Anubis: node " + messageConnection.getSender().id +
-        // " Connection Comms");
-    }
-
     public boolean isReadyForWriting() {
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: IsReadyForWriting being called");
@@ -530,20 +383,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         synchronized (this) {
             writingOK = true;
         }
-    }
-
-    private void resetReadingVars() {
-        rxHeaderAlreadyRead = false;
-        objectSize = -1;
-        rxHeader.clear();
-    }
-
-    private void resetWriteVars() {
-        // reset to possition after magic number
-        fullObject[0].position(magicSz);
-        fullObject[1] = null;
-        dataToWrite = null;
-        readyForWriting();
     }
 
     // only called directly from NonBlockingConnectionInitiator
@@ -697,9 +536,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         }
     }
 
-    // private methods
-    // lifted from MessageConnectionImpl: I do not intend to modify it...
-
     @Override
     public void silent() {
         if (log.isLoggable(Level.FINER)) {
@@ -722,14 +558,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         }
         announceTerm = false;
         shutdown();
-    }
-
-    private ByteBuffer[] toByteBuffer(byte[] bytesToSend) {
-        // magic number has already been entered.
-        fullObject[0].putInt(bytesToSend.length);
-        fullObject[0].flip();
-        fullObject[1] = ByteBuffer.wrap(bytesToSend);
-        return fullObject;
     }
 
     /**
@@ -794,16 +622,188 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         return returnedInt;
     }
 
-    protected void writeMessage() {
-    }
+    // private methods
+    // lifted from MessageConnectionImpl: I do not intend to modify it...
 
-    protected void writeHeader() {
+    protected void readHeader() {
     }
 
     protected void readMessage() {
     }
 
-    protected void readHeader() {
+    protected void writeHeader() {
+    }
+
+    protected void writeMessage() {
+    }
+
+    // cleanup is called if remote end goes away
+    private void cleanup(SelectionKey key) {
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("MNH: cleanup is being called");
+        }
+        writingOK = false;
+        deadKeys.add(key);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("MNH: Cleanup is called - socket has gone away");
+        }
+    }
+
+    private void initialMsg(TimedMsg tm) {
+
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("MNH: initialMsg is being called");
+        }
+
+        Object obj = tm;
+        TimedMsg bytes = tm;
+
+        /**
+         * must be a heartbeat message
+         */
+        if (!(obj instanceof HeartbeatMsg)) {
+            log.severe(me
+                       + " did not receive a heartbeat message first - shutdown");
+            shutdown();
+            return;
+        }
+
+        HeartbeatMsg hbmsg = (HeartbeatMsg) obj;
+
+        /**
+         * There must be a valid connection (heartbeat connection)
+         */
+        if (!connectionSet.getView().contains(hbmsg.getSender())) {
+            log.severe(me
+                       + " did not have incoming connection in the connection set");
+            shutdown();
+            return;
+        }
+
+        Connection con = connectionSet.getConnection(hbmsg.getSender());
+
+        /**
+         * If it is a message connection then attempt to assign this impl to
+         * that connection. If successful then record the message connection so
+         * all further messages go directly to it. If not successful then
+         * shutdown the this implementation object and abort.
+         */
+        if (con instanceof MessageConnection) {
+            if (((MessageConnection) con).assignImpl(this)) {
+                messageConnection = (MessageConnection) con;
+                // commented out by ed@hplb since this is not a thread anymore
+                // setName("Anubis: node " + con.getSender().id +
+                // " Connection Comms");
+                messageConnection.deliver(bytes);
+            } else {
+                log.severe(me + " failed to assign incoming connection");
+                shutdown();
+            }
+            return;
+        }
+
+        /**
+         * By now we should be left with a heartbeat connection - sanity check
+         */
+        if (!(con instanceof HeartbeatConnection)) {
+            log.severe(me
+                       + " ?!? incoming connection is in connection set, but not heartbeat or message type");
+            shutdown();
+            return;
+        }
+        HeartbeatConnection hbcon = (HeartbeatConnection) con;
+
+        /**
+         * If the connection is a heartbeat connection then the other end must
+         * be setting up the connection without this end having requested it.
+         * That means the other end must want it, so check the msgLink field for
+         * this end is set - this is a sanity check.
+         * 
+         * *********************************************************************
+         * 
+         * The case can happen, so the above comment is incorrect. If the user
+         * does a connect and then disconnect without sending a message, then
+         * the other end could initiate a connection neither end needs in
+         * response to the initial connect. Do not count this as an error, but
+         * do log its occurance.
+         */
+        if (!hbmsg.getMsgLinks().contains(me.id)) {
+            if (log.isLoggable(Level.FINER)) {
+                log.severe(me + " incoming connection from "
+                           + con.getSender().toString()
+                           + " when neither end wants the connection");
+                // next two lines removed to allow this case
+                // shutdown();
+                // return;
+            }
+        }
+
+        /**
+         * Now we are left with a valid heartbeat connection and the other end
+         * is initiating a message connection, so create this end.
+         * 
+         * Note that the connection set only finds out about the newly created
+         * message connection when it is informed by the call to
+         * connectionSet.useNewMessageConnection(), so it can not terminate the
+         * connection before the call to messageConnection.assignImpl(). Also,
+         * we created the message connection, so we know it does not yet have an
+         * impl. Hence we can assume it will succeed in assigning the impl.
+         */
+        messageConnection = new MessageConnection(me, connectionSet,
+                                                  hbcon.getProtocol(),
+                                                  hbcon.getCandidate());
+        messageConnection.assignImpl(this);
+        messageConnection.deliver(bytes);
+
+        /**
+         * if the call to connectionSet.useNewMessageConnection() then a
+         * connection has been created since we checked for it above with
+         * connectionSet.getConnection(). The other end will not make two
+         * connection attempts at the same time, but if this thread is delayed
+         * during the last 20 lines of code for long enough for the following to
+         * happen: 1. other end time out connection + 2. quiesence period + 3.
+         * this end rediscover other end in multicast heartbeats + 4. other end
+         * initiates new connection attempt + 5. new connection attempt gets
+         * accepted (new thread created for it) + 6. read first heartbeat and
+         * get through this code in the new thread. Then it could beat this
+         * thread to it. If all this happens (and based on the premise
+         * "if it can happen it will happen") then this thread should rightly
+         * comit suicide in disgust!!!!
+         */
+        if (!connectionSet.useNewMessageConnection(messageConnection)) {
+            if (log.isLoggable(Level.FINER)) {
+                log.severe(me
+                           + "Concurrent creation of message connections from "
+                           + messageConnection.getSender());
+            }
+            shutdown();
+            return;
+        }
+        // commented out by ed@hplb since this is nto a thread anymore
+        // setName("Anubis: node " + messageConnection.getSender().id +
+        // " Connection Comms");
+    }
+
+    private void resetReadingVars() {
+        rxHeaderAlreadyRead = false;
+        objectSize = -1;
+        rxHeader.clear();
+    }
+
+    private void resetWriteVars() {
+        // reset to possition after magic number
+        fullObject[0].position(magicSz);
+        fullObject[1] = null;
+        dataToWrite = null;
+        readyForWriting();
+    }
+
+    private ByteBuffer[] toByteBuffer(byte[] bytesToSend) {
+        // magic number has already been entered.
+        fullObject[0].putInt(bytesToSend.length);
+        fullObject[0].flip();
+        fullObject[1] = ByteBuffer.wrap(bytesToSend);
+        return fullObject;
     }
 
 }
