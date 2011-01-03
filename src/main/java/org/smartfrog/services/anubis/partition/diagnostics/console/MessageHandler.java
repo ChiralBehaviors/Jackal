@@ -51,7 +51,8 @@ public class MessageHandler extends AbstractCommunicationsHandler {
             super.send(msg.toWire());
         } catch (Exception ex) {
             if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
+                log.log(Level.WARNING, "Cannot sent diagnostics object " + obj,
+                        ex);
             }
         }
     }
@@ -71,14 +72,15 @@ public class MessageHandler extends AbstractCommunicationsHandler {
             controller.deliverObject(obj, node);
         } catch (Exception ex) {
             if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
+                log.log(Level.WARNING,
+                        "Cannot deliver diagnostics message bytes", ex);
             }
         }
     }
 
     @Override
     protected void logClose(String string, IOException e) {
-        log.log(Level.WARNING, "closing message handler - " + string, e);
+        log.log(Level.FINE, "closing message handler - " + string, e);
     }
 
     @Override

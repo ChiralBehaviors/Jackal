@@ -21,7 +21,6 @@ package org.smartfrog.services.anubis.locator.registers;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
@@ -83,11 +82,9 @@ public class LocalRegisterImpl {
                 } else if (obj == null) {
                     continue;
                 } else {
-                    if (log.isLoggable(Level.SEVERE)) {
-                        log.severe(me
-                                   + " *** Local register encountered unknown request or message type: "
-                                   + obj);
-                    }
+                    log.severe(me
+                               + " *** Local register encountered unknown request or message type: "
+                               + obj);
                 }
             }
         }
@@ -351,10 +348,7 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me + " *** Local received unexpected message "
-                               + msg);
-                }
+                log.severe(me + " *** Local received unexpected message " + msg);
         }
     }
 
@@ -373,11 +367,9 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " *** Local register encountered unknown user stability request type: "
-                               + request.type);
-                }
+                log.severe(me
+                           + " *** Local register encountered unknown user stability request type: "
+                           + request.type);
         }
     }
 
@@ -405,11 +397,9 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " *** Local register encountered unknown user provider request type: "
-                               + request.type);
-                }
+                log.severe(me
+                           + " *** Local register encountered unknown user provider request type: "
+                           + request.type);
         }
     }
 
@@ -427,11 +417,9 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " *** Local register encountered unknown user stability request type: "
-                               + request.type);
-                }
+                log.severe(me
+                           + " *** Local register encountered unknown user stability request type: "
+                           + request.type);
         }
     }
 

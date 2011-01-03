@@ -254,8 +254,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * deal with too many messages!
              */
             if (connectionImpl == null) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("buffering message as connection implementation has not been constructed");
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine("buffering message as connection implementation has not been constructed");
                 }
                 msgQ.addLast(msg);
                 return;

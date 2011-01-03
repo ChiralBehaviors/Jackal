@@ -179,7 +179,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         try {
             numBytesRead = channel.read(headerIn);
         } catch (ClosedChannelException e) {
-            writeState = State.CLOSE; 
+            writeState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
@@ -214,7 +214,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         try {
             numBytesRead = channel.read(msgIn);
         } catch (ClosedChannelException e) {
-            writeState = State.CLOSE; 
+            writeState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
@@ -242,7 +242,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         try {
             bytesWritten = channel.write(headerOut);
         } catch (ClosedChannelException e) {
-            writeState = State.CLOSE; 
+            writeState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
@@ -268,7 +268,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         try {
             bytesWritten = channel.write(msgOut);
         } catch (ClosedChannelException e) {
-            writeState = State.CLOSE; 
+            writeState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {

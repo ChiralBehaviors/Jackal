@@ -167,9 +167,9 @@ abstract public class AnubisListener {
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
-                      + "ms in newValue(p) where p=" + v);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("User API Upcall took " + (timeout - timein)
+                       + "ms in newValue(p) where p=" + v);
         }
     }
 
@@ -201,9 +201,9 @@ abstract public class AnubisListener {
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
-                      + "ms in removeValue(p) where p=" + v);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("User API Upcall took " + (timeout - timein)
+                       + "ms in removeValue(p) where p=" + v);
         }
     }
 

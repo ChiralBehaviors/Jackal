@@ -89,8 +89,8 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
              * connection should be converted to a messaging connection
              */
             if (hb.getMsgLinks().contains(me.id)) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("converting heart beat connection to message connection");
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine("converting heart beat connection to message connection");
                 }
                 connectionSet.convertToMessageConnection(this);
             } else {
@@ -102,8 +102,8 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
             return true;
         }
 
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("heartbeat rejected");
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("heartbeat rejected");
         }
         return false;
     }

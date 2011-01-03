@@ -68,19 +68,6 @@ public class SmokeTest extends TestCase {
         }
     }
 
-    Node getNode(Class<?> config, String stateName, int messageCount,
-                 int maxSleep, CyclicBarrier startBarrier,
-                 CyclicBarrier endBarrier) throws Exception {
-        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
-                                                                                        config);
-        Node node = new Node(ctx, stateName);
-        node.setStartBarrier(startBarrier);
-        node.setEndBarrier(endBarrier);
-        node.setMaxSleep(maxSleep);
-        node.setMessagesToSend(messageCount);
-        return node;
-    }
-
     public void testInProcess() throws Exception {
         String stateName = "Whip It";
         int maxSleep = 500;
@@ -89,7 +76,7 @@ public class SmokeTest extends TestCase {
         Class<?>[] configurations = new Class[] { testA.class, testB.class,
                                                  testC.class, testD.class,
                                                  testE.class, testF.class,
-                                                 testG.class};
+                                                 testG.class };
         CyclicBarrier startBarrier = new CyclicBarrier(configurations.length);
         CyclicBarrier endBarrier = new CyclicBarrier(configurations.length + 1);
         for (Class<?> config : configurations) {
@@ -107,7 +94,8 @@ public class SmokeTest extends TestCase {
             List<SendHistory> sent = sender.getSendHistory();
             for (Node receiver : nodes) {
                 List<ValueHistory> received = receiver.getValueHistory(sender.getInstance());
-                assertNotNull("Received no history from " + sender.getInstance(), received);
+                assertNotNull("Received no history from "
+                                      + sender.getInstance(), received);
                 int lastCounter = -1;
                 boolean first = true;
                 boolean second = false;
@@ -136,5 +124,18 @@ public class SmokeTest extends TestCase {
                 }
             }
         }
+    }
+
+    Node getNode(Class<?> config, String stateName, int messageCount,
+                 int maxSleep, CyclicBarrier startBarrier,
+                 CyclicBarrier endBarrier) throws Exception {
+        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
+                                                                                        config);
+        Node node = new Node(ctx, stateName);
+        node.setStartBarrier(startBarrier);
+        node.setEndBarrier(endBarrier);
+        node.setMaxSleep(maxSleep);
+        node.setMessagesToSend(messageCount);
+        return node;
     }
 }

@@ -174,11 +174,9 @@ public class PartitionManager implements Partition {
 
             @Override
             public void expired() {
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe("User API Upcall took >200ms in "
-                               + "objectNotification(obj, sender, time) where obj="
-                               + obj + ", sender=" + sender + ", time=" + time);
-                }
+                log.severe("User API Upcall took >200ms in "
+                           + "objectNotification(obj, sender, time) where obj="
+                           + obj + ", sender=" + sender + ", time=" + time);
             }
         }
         TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(obj,
@@ -189,21 +187,18 @@ public class PartitionManager implements Partition {
         try {
             pn.objectNotification(obj, sender, time);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in "
-                                + "objectNotification(obj, sender, time) where obj="
-                                + obj + ", sender=" + sender + ", time=" + time,
-                        ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in "
+                            + "objectNotification(obj, sender, time) where obj="
+                            + obj + ", sender=" + sender + ", time=" + time, ex);
         }
         timeout = System.currentTimeMillis();
         timer.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took "
-                      + (timeout - timein)
-                      + "ms in objectNotification(obj, sender, time) where obj="
-                      + obj + ", sender=" + sender + ", time=" + time);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("User API Upcall took "
+                       + (timeout - timein)
+                       + "ms in objectNotification(obj, sender, time) where obj="
+                       + obj + ", sender=" + sender + ", time=" + time);
         }
     }
 
@@ -228,11 +223,9 @@ public class PartitionManager implements Partition {
 
             @Override
             public void expired() {
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe("User API Upcall took >200ms in "
-                               + "partitionNotification(view, leader) where view="
-                               + view + ", leader=" + leader);
-                }
+                log.severe("User API Upcall took >200ms in "
+                           + "partitionNotification(view, leader) where view="
+                           + view + ", leader=" + leader);
             }
         }
         TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(view,
@@ -249,10 +242,11 @@ public class PartitionManager implements Partition {
         }
         timeout = System.currentTimeMillis();
         timer.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
-                      + "ms in partitionNotification(view, leader) where view="
-                      + view + ", leader=" + leader);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("User API Upcall took "
+                       + (timeout - timein)
+                       + "ms in partitionNotification(view, leader) where view="
+                       + view + ", leader=" + leader);
         }
     }
 

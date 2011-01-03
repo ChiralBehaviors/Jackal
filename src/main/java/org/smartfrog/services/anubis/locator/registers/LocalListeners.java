@@ -281,10 +281,10 @@ public class LocalListeners {
          * contains a record for the source node.
          */
         if (info.providers.put(provider.proxy(), provider) == null) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me
-                          + ": listeners received state of previously unknown "
-                          + provider);
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(me
+                           + ": listeners received state of previously unknown "
+                           + provider);
             }
             providersByNode.put(provider.node, provider.proxy());
         }

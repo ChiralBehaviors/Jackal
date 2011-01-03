@@ -199,10 +199,8 @@ public class IntervalExec extends Thread {
         long delay;
 
         if (timenow < lastCheckTime) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
-            }
+            log.log(Level.SEVERE,
+                    "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
         }
 
         lastCheckTime = timenow;

@@ -85,7 +85,7 @@ public abstract class ServerChannelHandler {
                                              server.socket().getLocalPort());
         server.configureBlocking(false);
         server.register(selector, SelectionKey.OP_ACCEPT);
-        log.fine("Socket is connected");
+        log.finest("Socket is connected");
     }
 
     public void dispatch(Runnable command) {
@@ -175,8 +175,8 @@ public abstract class ServerChannelHandler {
 
     protected void addQueuedSelects() throws ClosedChannelException,
                                      IOException {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Adding queued read selects");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Adding queued read selects");
         }
         ArrayList<CommunicationsHandler> selectors = new ArrayList<CommunicationsHandler>(
                                                                                           100);
@@ -194,8 +194,8 @@ public abstract class ServerChannelHandler {
             }
         }
 
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Adding queued write selects");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Adding queued write selects");
         }
         selectors = new ArrayList<CommunicationsHandler>(100);
         writeQueue.drainTo(selectors);
@@ -208,7 +208,7 @@ public abstract class ServerChannelHandler {
                 selectForWrite(handler);
             } catch (NullPointerException e) {
                 // apparently the file descriptor can be nulled
-                log.log(Level.FINE, "anamalous null pointer exception", e);
+                log.log(Level.FINEST, "anamalous null pointer exception", e);
             }
         }
     }
@@ -245,11 +245,11 @@ public abstract class ServerChannelHandler {
                                 Iterator<SelectionKey> selected)
                                                                 throws IOException {
         if (!run.get()) {
-            log.fine("Ignoring accept as handler is not started");
+            log.info("Ignoring accept as handler is not started");
             return;
         }
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Handling accept");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Handling accept");
         }
         selected.remove();
         ServerSocketChannel server = (ServerSocketChannel) key.channel();
@@ -263,10 +263,10 @@ public abstract class ServerChannelHandler {
 
     protected void handleRead(SelectionKey key, Iterator<SelectionKey> selected) {
         if (!run.get()) {
-            log.fine("Ignoring read ready as handler is not started");
+            log.info("Ignoring read ready as handler is not started");
         }
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Handling read");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Handling read");
         }
         selected.remove();
         key.cancel();
@@ -281,10 +281,10 @@ public abstract class ServerChannelHandler {
 
     protected void handleWrite(SelectionKey key, Iterator<SelectionKey> selected) {
         if (!run.get()) {
-            log.fine("Ignoring write ready as handler is not started");
+            log.info("Ignoring write ready as handler is not started");
         }
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Handling write");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Handling write");
         }
         selected.remove();
         key.cancel();
@@ -301,8 +301,8 @@ public abstract class ServerChannelHandler {
         selector.selectNow();
         addQueuedSelects();
 
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Selecting");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Selecting");
         }
         selector.select(selectTimeout);
 
@@ -334,7 +334,7 @@ public abstract class ServerChannelHandler {
             selector.wakeup();
         } catch (NullPointerException e) {
             // Bug in JRE
-            log.log(Level.FINE, "Caught null pointer in selector wakeup", e);
+            log.log(Level.FINEST, "Caught null pointer in selector wakeup", e);
         }
     }
 
@@ -345,7 +345,7 @@ public abstract class ServerChannelHandler {
 
     protected void startSelect() {
         if (!run.get()) {
-            log.fine("Handler is not started");
+            log.info("Handler is not started");
             return;
         }
         selectHandler = new Thread(new Runnable() {
@@ -355,7 +355,7 @@ public abstract class ServerChannelHandler {
                     try {
                         select();
                     } catch (ClosedSelectorException e) {
-                        log.log(Level.FINE, "Channel closed", e);
+                        log.log(Level.FINER, "Channel closed", e);
                     } catch (IOException e) {
                         log.log(Level.FINE, "IOException when selecting: "
                                             + server, e);

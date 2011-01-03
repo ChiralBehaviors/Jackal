@@ -70,7 +70,7 @@ public class NodeIdSetTest extends TestCase {
         large.add(Identity.MAX_ID);
 
         assertTrue(small.size() < large.size());
-        
+
         large.merge(small);
     }
 
@@ -84,7 +84,7 @@ public class NodeIdSetTest extends TestCase {
         large.add(Identity.MAX_ID);
 
         assertTrue(small.size() < large.size());
-        
+
         large.overlap(small);
     }
 }

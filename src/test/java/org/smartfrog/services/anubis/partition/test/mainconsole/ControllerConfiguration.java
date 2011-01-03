@@ -9,7 +9,8 @@ public class ControllerConfiguration extends DiagnosticConsoleConfiguration {
 
     public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(ControllerConfiguration.class);
-    } 
+    }
+
     @Override
     public int node() {
         return 3;

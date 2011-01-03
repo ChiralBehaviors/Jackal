@@ -109,7 +109,7 @@ public class DiagnosticsMessageHandler extends AbstractCommunicationsHandler
 
     @Override
     protected void logClose(String string, IOException e) {
-        log.log(Level.WARNING, "Closing diagnostic channel: " + string, e);
+        log.log(Level.FINE, "Closing diagnostic channel: " + string, e);
     }
 
     @Override

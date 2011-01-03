@@ -135,7 +135,9 @@ public class Controller {
     }
 
     @Deployed
-    public void deploy() throws IOException, UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+    public void deploy() throws IOException, UnsupportedLookAndFeelException,
+                        ClassNotFoundException, InstantiationException,
+                        IllegalAccessException {
         UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         server.connect();
         timer.schedule(getTask(), checkPeriod, checkPeriod);

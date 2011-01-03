@@ -81,7 +81,7 @@ import com.hellblazer.anubis.annotations.Deployed;
 public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
     private static Logger log = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
-    
+
     private boolean changeInViews = false;
     private ConnectionAddress connectionAddress;
     private Map<Identity, Connection> connections = new HashMap<Identity, Connection>();
@@ -155,8 +155,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     public synchronized void checkStability(long timenow) {
         if (!stablizing) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Stablilizing @ " + timenow);
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Not stablilizing view @ " + timenow);
             }
             return;
         }
@@ -166,8 +166,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * and clear the stability period from interval executive
          */
         if (timenow >= connectionView.getTimeStamp()) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Stablizing view @ " + timenow);
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Stablizing view @ " + timenow);
             }
             connectionView.stablize();
             stablizing = false;
@@ -233,8 +233,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * required id then return null to indicate failure.
          */
         if (!connectionView.contains(id)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("No valid connection for id: " + id);
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("No valid connection for id: " + id);
             }
             return null;
         }
@@ -341,9 +341,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * connection that has not quiesced yet.)
          */
         if (!connectionView.contains(con.getSender())) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Cannot convert connection to " + con.getSender()
-                           + " as it is not in the view");
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Cannot convert connection to " + con.getSender()
+                         + " as it is not in the view");
             }
             return;
         }
@@ -626,9 +626,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                                                                             this,
                                                                             heartbeat);
             con = new HeartbeatConnection(identity, this, hbp, can);
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Adding new heart beat connection to: "
-                           + hb.getSender());
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Adding new heart beat connection to: "
+                         + hb.getSender());
             }
             addConnection(con);
             // should this return true?
@@ -781,7 +781,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
             }
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("%s is now ignoring: %s", identity, ignoring));
+            log.finest(String.format("%s is now ignoring: %s", identity,
+                                     ignoring));
         }
     }
 
@@ -934,9 +935,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * 
      * @return
      */
-    private boolean consistent(long timenow) { 
+    private boolean consistent(long timenow) {
         connectionView.setTimeStamp(timenow + stability);
-        for (Connection con: connections.values()) { 
+        for (Connection con : connections.values()) {
             /**
              * if an active connection and it is not self then check it is
              * consistent with self and check its stability time

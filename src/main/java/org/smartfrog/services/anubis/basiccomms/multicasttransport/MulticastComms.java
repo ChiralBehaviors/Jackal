@@ -106,9 +106,9 @@ public class MulticastComms extends Thread {
      */
     @Override
     public void run() {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("Starting " + getClass().getName()
-                      + " receive processing on: " + groupAddress);
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Starting " + getClass().getName()
+                     + " receive processing on: " + groupAddress);
         }
         while (!terminating) {
 

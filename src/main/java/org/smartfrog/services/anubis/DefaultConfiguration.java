@@ -244,6 +244,11 @@ public class DefaultConfiguration {
         };
     }
 
+    protected InetSocketAddress diagnosticsEndpoint()
+                                                     throws UnknownHostException {
+        return new InetSocketAddress(contactHost(), 0);
+    }
+
     protected ExecutorService diagnosticsExecutor() {
         return Executors.newFixedThreadPool(diagnosticsPoolSize(),
                                             diagnosticsTheadFactory());
@@ -251,6 +256,14 @@ public class DefaultConfiguration {
 
     protected int diagnosticsPoolSize() {
         return 1;
+    }
+
+    protected DiagnosticsServer diagnosticsServer() throws UnknownHostException {
+        DiagnosticsServer server = new DiagnosticsServer();
+        server.setCommsExecutor(diagnosticsExecutor());
+        server.setDispatchExecutor(diagnosticsExecutor());
+        server.setEndpoint(diagnosticsEndpoint());
+        return server;
     }
 
     protected ThreadFactory diagnosticsTheadFactory() {
@@ -268,19 +281,6 @@ public class DefaultConfiguration {
                 return thread;
             }
         };
-    }
-
-    protected InetSocketAddress diagnosticsEndpoint()
-                                                     throws UnknownHostException {
-        return new InetSocketAddress(contactHost(), 0);
-    }
-
-    protected DiagnosticsServer diagnosticsServer() throws UnknownHostException {
-        DiagnosticsServer server = new DiagnosticsServer();
-        server.setCommsExecutor(diagnosticsExecutor());
-        server.setDispatchExecutor(diagnosticsExecutor());
-        server.setEndpoint(diagnosticsEndpoint());
-        return server;
     }
 
     protected Epoch epoch() {

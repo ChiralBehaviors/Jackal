@@ -23,7 +23,6 @@ import java.rmi.RemoteException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.Locator;
@@ -71,16 +70,16 @@ public class GlobalRegisterImpl {
         }
     }
 
+    private static Logger log = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
+
     private boolean active = true;
     private DebugFrame debug = null;
     private SetMap<String, ListenerProxy> listenersByName = new SetMap<String, ListenerProxy>();
     private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
     private Locator locator = null;
-    private static Logger log = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
     private int me = -1;
     private SetMap<String, ProviderProxy> providersByName = new SetMap<String, ProviderProxy>();
     private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
-
     private BlockingQueue<RegisterMsg> requests = new BlockingQueue<RegisterMsg>();
     private RequestServer server = new RequestServer();
 
@@ -101,9 +100,7 @@ public class GlobalRegisterImpl {
      */
     public void activate() {
         if (active) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me + " *** Global.activate called when active!!!");
-            }
+            log.severe(me + " *** Global.activate called when active!!!");
         } else {
             active = true;
             updateDebugFrame();
@@ -177,12 +174,9 @@ public class GlobalRegisterImpl {
 
         switch (request.type) {
             case RegisterMsg.Undefined:
-
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " Global received request explicitly declared as type Undefined "
-                               + request + " ?!?!?");
-                }
+                log.severe(me
+                           + " Global received request explicitly declared as type Undefined "
+                           + request + " ?!?!?");
                 break;
 
             case RegisterMsg.RegisterProvider:
@@ -210,10 +204,8 @@ public class GlobalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me + " Global received unexpected message "
-                               + request + " ?!?!?");
-                }
+                log.severe(me + " Global received unexpected message "
+                           + request + " ?!?!?");
         }
     }
 

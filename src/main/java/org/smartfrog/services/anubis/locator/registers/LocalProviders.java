@@ -117,14 +117,11 @@ public class LocalProviders {
          * If there is no existing registration for this listener then add it.
          */
         if (existingReg == null) {
-
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me + ": new registration " + listener);
             }
-
             info.listeners.put(listener, listener);
             listenersByNode.put(listener.node, listener);
-
         }
 
         /**

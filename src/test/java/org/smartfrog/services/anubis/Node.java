@@ -27,7 +27,7 @@ public class Node {
     private AnubisProvider provider;
     private int messagesToSend;
     private CyclicBarrier barrier;
-    private String instance; 
+    private String instance;
     private CountDownLatch latch = new CountDownLatch(1);
 
     private ArrayList<SendHistory> sendHistory = new ArrayList<SendHistory>();
@@ -38,22 +38,22 @@ public class Node {
     Node(AnnotationConfigApplicationContext context, String stateName)
                                                                       throws Exception {
         this.context = context;
-        
+
         PartitionManager pm = context.getBean(PartitionManager.class);
         pm.register(new PartitionNotification() {
-            
+
+            @Override
+            public void objectNotification(Object obj, int sender, long time) {
+            }
+
             @Override
             public void partitionNotification(View view, int leader) {
                 if (view.isStable() && view.cardinality() == 7) {
                     System.out.println("Launching");
                     latch.countDown();
-                } else { 
+                } else {
                     System.out.println("Not launching: " + view);
                 }
-            }
-            
-            @Override
-            public void objectNotification(Object obj, int sender, long time) {
             }
         });
 
@@ -91,7 +91,7 @@ public class Node {
         AnubisLocator locator = context.getBean(AnubisLocator.class);
         locator.registerStability(stability);
         locator.registerListener(listener);
-        locator.registerProvider(provider); 
+        locator.registerProvider(provider);
         instance = provider.getInstance();
     }
 

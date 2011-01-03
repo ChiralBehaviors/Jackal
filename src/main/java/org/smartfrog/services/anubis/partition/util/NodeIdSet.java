@@ -173,6 +173,10 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         return compare(storage, s.getBytes());
     }
 
+    public boolean equals(NodeIdSet objBS) {
+        return this.contains(objBS) && cardinality() == objBS.cardinality();
+    }
+
     /**
      * equal if obj is a bitset and contains the same bits as this
      * 
@@ -181,16 +185,11 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      * @return boolean
      */
     @Override
-    public boolean equals(Object obj) { 
+    public boolean equals(Object obj) {
         if (obj != null && obj instanceof NodeIdSet) {
             return equals((NodeIdSet) obj);
         }
         return false;
-    }
-
-    public boolean equals(NodeIdSet objBS) {
-        return this.contains(objBS)
-                  && cardinality() == objBS.cardinality();
     }
 
     /**

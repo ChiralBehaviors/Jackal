@@ -91,10 +91,10 @@ abstract public class AnubisStability {
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
-                      + "ms in stability(s,t) where s=" + isStable + ", t="
-                      + timeRef);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("User API Upcall took " + (timeout - timein)
+                       + "ms in stability(s,t) where s=" + isStable + ", t="
+                       + timeRef);
         }
 
     }

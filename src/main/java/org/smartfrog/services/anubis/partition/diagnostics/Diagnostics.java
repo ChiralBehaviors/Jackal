@@ -130,8 +130,8 @@ public class Diagnostics {
      * @param ignoring
      */
     public void setIgnoring(View ignoring) {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine(String.format("now ignoring: %s", ignoring));
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("now ignoring: %s", ignoring));
         }
         connectionSet.setIgnoring(ignoring);
         updateIgnoring(ignoring);
@@ -142,9 +142,9 @@ public class Diagnostics {
     }
 
     public void setTiming(long interval, long timeout) {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine(String.format("setting interval: %s, timeout: %s",
-                                   interval, timeout));
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("setting interval: %s, timeout: %s",
+                                     interval, timeout));
         }
         connectionSet.setTiming(interval, timeout);
         updateTiming();
