@@ -181,14 +181,16 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      * @return boolean
      */
     @Override
-    public boolean equals(Object obj) {
-        boolean equalOk = false;
+    public boolean equals(Object obj) { 
         if (obj != null && obj instanceof NodeIdSet) {
-            NodeIdSet objBS = (NodeIdSet) obj;
-            equalOk = this.contains(objBS)
-                      && cardinality() == objBS.cardinality();
+            return equals((NodeIdSet) obj);
         }
-        return equalOk;
+        return false;
+    }
+
+    public boolean equals(NodeIdSet objBS) {
+        return this.contains(objBS)
+                  && cardinality() == objBS.cardinality();
     }
 
     /**

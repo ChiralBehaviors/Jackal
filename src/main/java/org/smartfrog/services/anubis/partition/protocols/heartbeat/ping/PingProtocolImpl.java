@@ -170,7 +170,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     /**
      * receives a heartbeat message and deals with it according to the heartbeat
      * protocol. This is protocol uses straight-forward timing of messages -
-     * only he most recent message time and its information counts.
+     * only the most recent message time and its information counts.
      * 
      * @param hb
      *            - heartbeat message

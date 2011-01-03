@@ -127,7 +127,7 @@ public class DiagnosticConsoleConfiguration {
     }
 
     protected int serverDispatchPoolSize() {
-        return 2;
+        return 3;
     }
 
     protected ThreadFactory serverDispatchTheadFactory() {
@@ -156,7 +156,7 @@ public class DiagnosticConsoleConfiguration {
     }
 
     protected int serverPoolSize() {
-        return 5;
+        return 3;
     }
 
     protected ThreadFactory serverTheadFactory() {

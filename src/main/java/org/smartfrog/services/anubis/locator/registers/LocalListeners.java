@@ -227,7 +227,7 @@ public class LocalListeners {
          * Get the info, if it does not contain this instance just return now.
          */
         ListenerInfo info = listeners.get(provider.name);
-        if (info.providers.remove(provider) == null) {
+        if (info.providers.remove(provider.proxy()) == null) {
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me + ": listeners did not know removed " + provider);
             }

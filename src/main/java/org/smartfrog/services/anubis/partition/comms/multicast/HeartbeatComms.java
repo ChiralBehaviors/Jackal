@@ -146,6 +146,9 @@ public class HeartbeatComms extends MulticastComms implements
     public void setIgnoring(View ignoringUpdate) {
         synchronized (ingnoringMonitor) {
             ignoring = ignoringUpdate.isEmpty() ? null : ignoringUpdate;
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("%s is now ignoring: %s", me, ignoring));
+            }
         }
     }
 

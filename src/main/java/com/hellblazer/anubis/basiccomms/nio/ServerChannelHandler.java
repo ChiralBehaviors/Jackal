@@ -32,7 +32,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,8 +54,7 @@ public abstract class ServerChannelHandler {
 
     private InetSocketAddress endpoint;
     private SocketOptions options = new SocketOptions();
-    private volatile int queueIndex = 0;
-    private final ArrayList<CommunicationsHandler>[] readQueue;
+    private final BlockingDeque<CommunicationsHandler> readQueue;
     private ExecutorService commsExecutor;
     private ExecutorService dispatchExecutor;
     private Selector selector;
@@ -61,20 +62,14 @@ public abstract class ServerChannelHandler {
     private ServerSocketChannel server;
     private ServerSocket serverSocket;
     private AtomicBoolean run = new AtomicBoolean();
-    private final ArrayList<CommunicationsHandler>[] writeQueue;
+    private final BlockingDeque<CommunicationsHandler> writeQueue;
     private final Set<CommunicationsHandler> openHandlers = new HashSet<CommunicationsHandler>();
     private InetSocketAddress localAddress;
+    private Thread selectHandler;
 
-    @SuppressWarnings("unchecked")
     public ServerChannelHandler() {
-        ArrayList<CommunicationsHandler> proto = new ArrayList<CommunicationsHandler>();
-        readQueue = newArray(proto.getClass());
-        readQueue[0] = new ArrayList<CommunicationsHandler>();
-        readQueue[1] = new ArrayList<CommunicationsHandler>();
-
-        writeQueue = newArray(proto.getClass());
-        writeQueue[0] = new ArrayList<CommunicationsHandler>();
-        writeQueue[1] = new ArrayList<CommunicationsHandler>();
+        readQueue = new LinkedBlockingDeque<CommunicationsHandler>();
+        writeQueue = new LinkedBlockingDeque<CommunicationsHandler>();
         try {
             selector = Selector.open();
         } catch (IOException e) {
@@ -180,18 +175,13 @@ public abstract class ServerChannelHandler {
 
     protected void addQueuedSelects() throws ClosedChannelException,
                                      IOException {
-        int myQueueIndex = queueIndex;
-
-        if (queueIndex == 0) {
-            queueIndex = 1;
-        } else {
-            queueIndex = 0;
-        }
-
         if (log.isLoggable(Level.FINE)) {
             log.fine("Adding queued read selects");
         }
-        for (CommunicationsHandler handler : readQueue[myQueueIndex]) {
+        ArrayList<CommunicationsHandler> selectors = new ArrayList<CommunicationsHandler>(
+                                                                                          100);
+        readQueue.drainTo(selectors);
+        for (CommunicationsHandler handler : selectors) {
             try {
                 handler.getChannel().register(selector, SelectionKey.OP_READ,
                                               handler);
@@ -203,12 +193,13 @@ public abstract class ServerChannelHandler {
                 log.log(Level.FINEST, "anamalous null pointer exception", e);
             }
         }
-        readQueue[myQueueIndex].clear();
 
         if (log.isLoggable(Level.FINE)) {
             log.fine("Adding queued write selects");
         }
-        for (CommunicationsHandler handler : writeQueue[myQueueIndex]) {
+        selectors = new ArrayList<CommunicationsHandler>(100);
+        writeQueue.drainTo(selectors);
+        for (CommunicationsHandler handler : selectors) {
             try {
                 handler.getChannel().register(selector, SelectionKey.OP_WRITE,
                                               handler);
@@ -220,7 +211,6 @@ public abstract class ServerChannelHandler {
                 log.log(Level.FINE, "anamalous null pointer exception", e);
             }
         }
-        writeQueue[myQueueIndex].clear();
     }
 
     protected void closeHandler(CommunicationsHandler handler) {
@@ -267,6 +257,7 @@ public abstract class ServerChannelHandler {
         options.configure(accepted.socket());
         accepted.configureBlocking(false);
         CommunicationsHandler handler = createHandler(accepted);
+        addHandler(handler);
         handler.handleAccept();
     }
 
@@ -338,10 +329,7 @@ public abstract class ServerChannelHandler {
     }
 
     protected void selectForRead(CommunicationsHandler handler) {
-        ArrayList<CommunicationsHandler> myReadQueue = readQueue[queueIndex];
-        synchronized (myReadQueue) {
-            myReadQueue.add(handler);
-        }
+        readQueue.add(handler);
         try {
             selector.wakeup();
         } catch (NullPointerException e) {
@@ -351,10 +339,7 @@ public abstract class ServerChannelHandler {
     }
 
     protected void selectForWrite(CommunicationsHandler handler) {
-        ArrayList<CommunicationsHandler> myWriteQueue = writeQueue[queueIndex];
-        synchronized (myWriteQueue) {
-            myWriteQueue.add(handler);
-        }
+        writeQueue.add(handler);
         selector.wakeup();
     }
 
@@ -363,7 +348,7 @@ public abstract class ServerChannelHandler {
             log.fine("Handler is not started");
             return;
         }
-        commsExecutor.execute(new Runnable() {
+        selectHandler = new Thread(new Runnable() {
             @Override
             public void run() {
                 while (run.get()) {
@@ -380,6 +365,15 @@ public abstract class ServerChannelHandler {
                     }
                 }
             }
+        }, "Anubis: Select handler");
+        selectHandler.setDaemon(true);
+        selectHandler.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception on select handler",
+                        e);
+            }
         });
+        selectHandler.start();
     }
 }

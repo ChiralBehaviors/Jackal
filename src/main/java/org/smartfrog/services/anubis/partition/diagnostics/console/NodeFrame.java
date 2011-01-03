@@ -120,10 +120,10 @@ public class NodeFrame extends JFrame {
         println("");
         println("heartbeat interval = " + interval + ", timeout = " + timeout);
         if (stats != null) {
-            println("Scheduling delay min: " + stats.schedulingOneMinute
-                    + ", 10min: " + stats.schedulingTenMinute + ", hour: "
-                    + stats.schedulingOneHour + ", longest delay: "
-                    + stats.schedulingLongest);
+            println("Scheduling delay(ms) [1 min: " + stats.schedulingOneMinute
+                    + "], [10 min: " + stats.schedulingTenMinute
+                    + "], [1 hour: " + stats.schedulingOneHour
+                    + "], [longest delay: " + stats.schedulingLongest + "]");
         }
         println("");
         if (threads != null) {

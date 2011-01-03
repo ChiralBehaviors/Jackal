@@ -41,6 +41,8 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class NodeData {
+    private static Logger log = Logger.getLogger(NodeData.class.getCanonicalName());
+
     private NodeButton button;
     private ColorAllocator colorAllocator;
     private MessageHandler connection = null;
@@ -51,7 +53,6 @@ public class NodeData {
     private long lastHB = 0;
     private long lastReceive = 0;
     private int leader = -1;
-    private static Logger log = Logger.getLogger(NodeData.class.getCanonicalName());
     private Identity nodeId = null;
     private View partition = new BitView();
     private Color partitionColor = Color.lightGray;
@@ -75,6 +76,7 @@ public class NodeData {
         nodeId = hb.getSender();
         ConnectionAddress address = hb.getTestInterface();
         button = new NodeButton(nodeId, this);
+        button.setOpaque(true);
         button.setBackground(Color.lightGray);
         button.setForeground(Color.black);
         this.consoleFrame = consoleFrame;
@@ -228,6 +230,13 @@ public class NodeData {
     }
 
     public void setIgnoring(View ignoring) {
+        if (connection == null) {
+            return;
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Sending node %s its ignoring view: %s",
+                                     nodeId, ignoring));
+        }
         connection.sendObject(new SetIgnoringMsg(ignoring));
     }
 
@@ -237,6 +246,10 @@ public class NodeData {
         }
 
         if (partition.contains(getIdentity())) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("Sending node %s ignoring asym partition global: %s, partition: %s",
+                                         nodeId, globalView, partition));
+            }
             connection.sendObject(new SetIgnoringMsg(
                                                      partCompOrIgnoring(globalView,
                                                                         partition,
@@ -247,6 +260,10 @@ public class NodeData {
     public void setIgnoringSymPartition(View globalView, View partition) {
         if (connection == null) {
             return;
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Sending node %s ignoring sym partition global: %s, partition: %s",
+                                     nodeId, globalView, partition));
         }
 
         if (partition.contains(getIdentity())) {
@@ -289,6 +306,9 @@ public class NodeData {
     }
 
     private void ignoring(IgnoringMsg ignoringMsg) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Updating node view %s ignoring view", nodeId));
+        }
         ignoring = ignoringMsg.ignoring;
         update();
     }
@@ -300,6 +320,10 @@ public class NodeData {
     }
 
     private void partitionNotification(View partition, int leader) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Updating node view %s with partition view %s, leader %s",
+                                     nodeId, partition, leader));
+        }
 
         /**
          * if partition has changed membership deallocate current color and then
@@ -319,17 +343,27 @@ public class NodeData {
     }
 
     private void stats(StatsMsg stats) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Updating node view %s statistics", nodeId));
+        }
         this.stats = stats;
         update();
     }
 
     private void threads(ThreadsMsg threads) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Updating node view %s thread stats", nodeId));
+        }
         threadsInfoExpire = System.currentTimeMillis() + 10000;
         threadsInfo = threads;
         update();
     }
 
     private void timing(long interval, long timeout) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Updating node view %s with heartbeat interval %s, timeout %s",
+                                     nodeId, interval, timeout));
+        }
         heartbeatInterval = interval;
         this.timeout = timeout;
         update();
@@ -342,6 +376,11 @@ public class NodeData {
         if (window != null) {
             window.update(partition, view, leader, ignoring, heartbeatInterval,
                           timeout, stats, threadsInfo);
+        } else {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("Not updating node display %s, as window is null",
+                                         nodeId));
+            }
         }
         button.setBackground(partitionColor);
         if (partition.isStable()) {

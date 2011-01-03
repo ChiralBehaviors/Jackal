@@ -17,6 +17,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 package org.smartfrog.services.anubis.partition.diagnostics;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -41,6 +43,8 @@ import org.smartfrog.services.anubis.partition.views.View;
 public class Diagnostics {
 
     private static final long STATSRATE = 5;
+    private static final Logger log = Logger.getLogger(Diagnostics.class.getCanonicalName());
+
     private ConnectionAddress connectionAddress;
     private DiagnosticsServer connectionServer = null;
     private ConnectionSet connectionSet = null;
@@ -50,7 +54,7 @@ public class Diagnostics {
     private StatsManager statistics = new StatsManager();
     private long statsInterval = STATSRATE * 1000; // adjusts with heartbeat
                                                    // timing
-    private boolean testable = true;
+    private boolean active = true;
 
     public Diagnostics(PartitionManager partitionManager, int id)
                                                                  throws IOException,
@@ -87,7 +91,7 @@ public class Diagnostics {
     }
 
     public boolean isTestable() {
-        return testable;
+        return active;
     }
 
     public void newHandler(DiagnosticsMessageHandler connection) {
@@ -126,6 +130,9 @@ public class Diagnostics {
      * @param ignoring
      */
     public void setIgnoring(View ignoring) {
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("now ignoring: %s", ignoring));
+        }
         connectionSet.setIgnoring(ignoring);
         updateIgnoring(ignoring);
     }
@@ -135,23 +142,27 @@ public class Diagnostics {
     }
 
     public void setTiming(long interval, long timeout) {
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("setting interval: %s, timeout: %s",
+                                   interval, timeout));
+        }
         connectionSet.setTiming(interval, timeout);
         updateTiming();
         statsInterval = STATSRATE * interval;
     }
 
-    public void setUseDiagnostics(boolean testable) {
-        this.testable = testable;
+    public void setUseDiagnostics(boolean useDiagnostics) {
+        active = useDiagnostics;
     }
 
     @PostConstruct
     public void start() throws IOException {
 
-        if (!testable) {
+        if (!active) {
             return;
         }
 
-        if (!testable) {
+        if (!active) {
             terminate();
             return;
         }
@@ -162,7 +173,7 @@ public class Diagnostics {
 
     @PreDestroy
     public void terminate() {
-        if (testable) {
+        if (active) {
             connectionServer.terminate();
             for (DiagnosticsMessageHandler handler : connectionServer.getOpenHandlers()) {
                 handler.shutdown();
@@ -171,6 +182,9 @@ public class Diagnostics {
     }
 
     public void updateIgnoring(View ignoring) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("updating console with my ignoring view");
+        }
         for (DiagnosticsMessageHandler handler : connectionServer.getOpenHandlers()) {
             updateIgnoring(ignoring, handler);
         }
@@ -186,6 +200,9 @@ public class Diagnostics {
 
     public void updateStats(long timenow) {
         if (lastStats < timenow - statsInterval) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("updating console with my stats");
+            }
             for (DiagnosticsMessageHandler handler : connectionServer.getOpenHandlers()) {
                 updateStats(handler);
             }
@@ -194,16 +211,25 @@ public class Diagnostics {
     }
 
     public void updateStatus(DiagnosticsMessageHandler handler) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("updating console with my partition status");
+        }
         Status status = partitionManager.getStatus();
         handler.sendObject(new PartitionMsg(status.view, status.leader));
     }
 
     public void updateThreads(DiagnosticsMessageHandler handler) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("updating console with my thead statuses");
+        }
         String status = connectionSet.getThreadStatusString();
         handler.sendObject(new ThreadsMsg(status));
     }
 
     public void updateTiming() {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("updating console with my timing settings");
+        }
         for (DiagnosticsMessageHandler handler : connectionServer.getOpenHandlers()) {
             updateTiming(handler);
         }

@@ -18,6 +18,7 @@ package com.hellblazer.anubis.basiccomms.nio;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -177,6 +178,10 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         int numBytesRead;
         try {
             numBytesRead = channel.read(headerIn);
+        } catch (ClosedChannelException e) {
+            writeState = State.CLOSE; 
+            shutdown();
+            return;
         } catch (IOException e) {
             logClose("Errror reading header", e);
             shutdown();
@@ -185,7 +190,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
 
         if (numBytesRead == -1) {
             readState = State.CLOSE;
-            close();
+            shutdown();
         } else if (!headerIn.hasRemaining()) {
             headerIn.flip();
             if (headerIn.getInt(0) != MAGIC_NUMBER) {
@@ -208,6 +213,10 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         int numBytesRead;
         try {
             numBytesRead = channel.read(msgIn);
+        } catch (ClosedChannelException e) {
+            writeState = State.CLOSE; 
+            shutdown();
+            return;
         } catch (IOException e) {
             readState = State.ERROR;
             logClose("Error reading message body", e);
@@ -216,7 +225,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         }
         if (numBytesRead == -1) {
             readState = State.CLOSE;
-            close();
+            shutdown();
         } else if (msgIn.hasRemaining()) {
             handler.selectForRead(this);
         } else {
@@ -232,6 +241,10 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         int bytesWritten;
         try {
             bytesWritten = channel.write(headerOut);
+        } catch (ClosedChannelException e) {
+            writeState = State.CLOSE; 
+            shutdown();
+            return;
         } catch (IOException e) {
             writeState = State.ERROR;
             logClose("Unable to send message header", e);
@@ -240,8 +253,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         }
         if (bytesWritten == -1) {
             writeState = State.CLOSE;
-            close();
-            return;
+            shutdown();
         } else if (headerOut.hasRemaining()) {
             writeState = State.HEADER;
             handler.selectForWrite(this);
@@ -255,6 +267,10 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         int bytesWritten;
         try {
             bytesWritten = channel.write(msgOut);
+        } catch (ClosedChannelException e) {
+            writeState = State.CLOSE; 
+            shutdown();
+            return;
         } catch (IOException e) {
             writeState = State.ERROR;
             logClose("Unable to send message body", e);
@@ -263,7 +279,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         }
         if (bytesWritten == -1) {
             writeState = State.CLOSE;
-            close();
+            shutdown();
         } else if (headerOut.hasRemaining()) {
             handler.selectForWrite(this);
         } else {

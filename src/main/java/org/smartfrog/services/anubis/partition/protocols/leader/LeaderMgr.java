@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.leader;
 
-import java.util.Iterator;
 import java.util.Map;
 
 import org.smartfrog.services.anubis.partition.comms.Connection;
@@ -29,7 +28,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 public class LeaderMgr {
 
     protected Map<Identity, Connection> candidates = null;
-    protected Candidate localCandidate = null;
+    protected final Candidate localCandidate;
 
     public LeaderMgr(Map<Identity, Connection> candidateMap, Candidate local) {
         candidates = candidateMap;
@@ -90,15 +89,11 @@ public class LeaderMgr {
      * @return Candidate
      */
     private synchronized Candidate election(View v) {
-
-        Iterator<Connection> iter;
-
         /**
          * reset the candidates (clear the votes)
          */
-        iter = candidates.values().iterator();
-        while (iter.hasNext()) {
-            iter.next().clearReceivedVotes();
+        for (Connection candidate : candidates.values()) {
+            candidate.clearReceivedVotes();
         }
 
         /**
@@ -110,10 +105,7 @@ public class LeaderMgr {
             localCandidate.setVote(localCandidate.getId());
         }
 
-        iter = candidates.values().iterator();
-        while (iter.hasNext()) {
-            Candidate voter = iter.next();
-
+        for (Connection voter : candidates.values()) {
             /**
              * If the voter is in the view then the voter is valid.
              */

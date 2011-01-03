@@ -58,7 +58,7 @@ public class PartitionManager implements Partition {
     }
 
     @Deployed
-    public synchronized void deployed() {
+    public void deployed() {
         timer = new ActiveTimeQueue("Anubis: Partition Manager timers (node "
                                     + identity.id + ")");
         notifiedView = BitView.create(identity, identity.epoch);
@@ -66,7 +66,7 @@ public class PartitionManager implements Partition {
     }
 
     @Override
-    public synchronized void deregister(PartitionNotification pn) {
+    public void deregister(PartitionNotification pn) {
         notificationSet.remove(pn);
     }
 
@@ -110,7 +110,7 @@ public class PartitionManager implements Partition {
         }
     }
 
-    public synchronized void receiveObject(Object obj, int sender, long time) {
+    public void receiveObject(Object obj, int sender, long time) {
         if (terminated) {
             return;
         }
@@ -120,7 +120,7 @@ public class PartitionManager implements Partition {
     }
 
     @Override
-    public synchronized void register(PartitionNotification pn) {
+    public void register(PartitionNotification pn) {
         notificationSet.add(pn);
     }
 
@@ -133,7 +133,7 @@ public class PartitionManager implements Partition {
     }
 
     @PostConstruct
-    public synchronized void start() {
+    public void start() {
         timer.start();
 
         if (log.isLoggable(Level.INFO)) {
@@ -143,7 +143,7 @@ public class PartitionManager implements Partition {
     }
 
     @PreDestroy
-    public synchronized void terminate() {
+    public void terminate() {
         if (log.isLoggable(Level.INFO)) {
             log.info("Terminating partition manager at " + identity);
         }
@@ -242,12 +242,10 @@ public class PartitionManager implements Partition {
         try {
             pn.partitionNotification(view, leader);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in "
-                                + "partitionNotification(view, leader) where view="
-                                + view + ", leader=" + leader, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in "
+                            + "partitionNotification(view, leader) where view="
+                            + view + ", leader=" + leader, ex);
         }
         timeout = System.currentTimeMillis();
         timer.remove(timeoutErrorLogger);

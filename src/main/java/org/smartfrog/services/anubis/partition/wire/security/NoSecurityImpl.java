@@ -14,7 +14,7 @@ public class NoSecurityImpl implements WireSecurity {
         try {
             return Wire.fromWire(wireFrom);
         } catch (Exception e) {
-            throw new WireFormException("Unable to unmarshall message");
+            throw new WireFormException("Unable to unmarshall message", e);
         }
     }
 
@@ -23,7 +23,7 @@ public class NoSecurityImpl implements WireSecurity {
         try {
             return msg.toWire();
         } catch (IOException e) {
-            throw new WireFormException("Unable to marshall message");
+            throw new WireFormException("Unable to marshall message", e);
         }
     }
 

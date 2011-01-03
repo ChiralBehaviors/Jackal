@@ -29,6 +29,8 @@ import java.util.TimerTask;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import org.smartfrog.services.anubis.Anubis;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
@@ -133,7 +135,8 @@ public class Controller {
     }
 
     @Deployed
-    public synchronized void deploy() throws IOException {
+    public void deploy() throws IOException, UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         server.connect();
         timer.schedule(getTask(), checkPeriod, checkPeriod);
         snoop = new Snoop(
@@ -174,10 +177,6 @@ public class Controller {
         return identity;
     }
 
-    public ConsoleServer getServer() {
-        return server;
-    }
-
     public Timer getTimer() {
         return timer;
     }
@@ -204,7 +203,7 @@ public class Controller {
         this.checkPeriod = checkPeriod;
     }
 
-    public synchronized void setExpirePeriod(long expirePeriod) {
+    public void setExpirePeriod(long expirePeriod) {
         this.expirePeriod = expirePeriod;
     }
 

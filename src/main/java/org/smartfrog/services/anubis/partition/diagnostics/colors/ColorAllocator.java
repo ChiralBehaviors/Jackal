@@ -66,10 +66,11 @@ public class ColorAllocator {
 
     public synchronized void deallocate(View view, NodeData node) {
 
-        nodes.remove(view.toBitSet(), node);
-        if (nodes.getSet(view.toBitSet()) == null) {
-            Color c = colorMap.deallocate(view.toBitSet());
-            allocations.remove(c);
+        NodeIdSet bitSet = view.toBitSet();
+        nodes.remove(bitSet, node);
+        if (nodes.getSet(bitSet) == null) {
+            colorMap.deallocate(bitSet);
+            allocations.remove(bitSet);
         }
     }
 

@@ -203,10 +203,6 @@ public class MACData {
         throw new SecurityException("MAC not valid");
     }
 
-    public Key getKey() {
-        return key;
-    }
-
     /**
      * Return the size, in bytes, of the MAC
      * 

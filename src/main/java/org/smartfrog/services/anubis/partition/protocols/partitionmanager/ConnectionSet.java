@@ -80,6 +80,8 @@ import com.hellblazer.anubis.annotations.Deployed;
  */
 public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
+    private static Logger log = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
+    
     private boolean changeInViews = false;
     private ConnectionAddress connectionAddress;
     private Map<Identity, Connection> connections = new HashMap<Identity, Connection>();
@@ -108,7 +110,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     private boolean isPreferredLeaderNode;
     private LeaderMgr leaderMgr = null;
     private LeaderProtocolFactory leaderProtocolFactory = null;
-    private static Logger log = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
 
     private Set<Connection> msgConDelayedDelete = new HashSet<Connection>();
     private Set<MessageConnection> msgConnections = new HashSet<MessageConnection>();
@@ -366,7 +367,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     @Deployed
-    public synchronized void deploy() throws IOException {
+    public void deploy() throws IOException {
         connectionServer = factory.create(connectionAddress, identity, this);
 
         heartbeatComms = heartbeatCommsFactory.create(heartbeatAddress,
@@ -383,9 +384,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * Heartbeat and leader protocols
          */
         leaderMgr = leaderProtocolFactory.createMgr(connections, self);
-
-        stability = heartbeatInterval + timeout;
-        quiesce = heartbeatInterval + stability;
 
         /**
          * Protocol timing driver thread
@@ -658,7 +656,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
     public void registerDiagnostics(Diagnostics diagnostics) {
         heartbeat.setTestInterface(diagnostics.getAddress());
-        intervalExec.registerTestMgr(diagnostics);
+        intervalExec.registerDiagnostics(diagnostics);
         useDiagnostics = true;
     }
 
@@ -773,7 +771,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         if (!useDiagnostics) {
             return;
         }
-
         heartbeatComms.setIgnoring(ignoring);
 
         for (MessageConnection mcon : msgConnections) {
@@ -783,13 +780,16 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                 mcon.setIgnoring(false);
             }
         }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("%s is now ignoring: %s", identity, ignoring));
+        }
     }
 
     public void setLeaderProtocolFactory(LeaderProtocolFactory leaderProtocolFactory) {
         this.leaderProtocolFactory = leaderProtocolFactory;
     }
 
-    public synchronized void setPartitionProtocol(PartitionProtocol partitionProtocol) {
+    public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
         this.partitionProtocol = partitionProtocol;
         this.partitionProtocol.setConnectionSet(this);
     }
@@ -809,7 +809,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     @PostConstruct
-    public synchronized void start() throws Exception {
+    public void start() throws Exception {
         if (log.isLoggable(Level.INFO)) {
             log.info(identity + " connection address is "
                      + connectionServer.getAddress().toString());
@@ -934,12 +934,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * 
      * @return
      */
-    private boolean consistent(long timenow) {
-        Iterator<Connection> iter = connections.values().iterator();
+    private boolean consistent(long timenow) { 
         connectionView.setTimeStamp(timenow + stability);
-        while (iter.hasNext()) {
-            Connection con = iter.next();
-
+        for (Connection con: connections.values()) { 
             /**
              * if an active connection and it is not self then check it is
              * consistent with self and check its stability time

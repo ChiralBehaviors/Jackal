@@ -32,7 +32,6 @@ import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
-import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.diagnostics.Diagnostics;
 import org.smartfrog.services.anubis.partition.diagnostics.DiagnosticsServer;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
@@ -129,7 +128,7 @@ public class DefaultConfiguration {
 
     @Bean
     public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        if (useTimed()) {
+        if (useTimedProtocol()) {
             return new TimedProtocolFactory();
         }
         return new PingProtocolFactory();
@@ -142,11 +141,11 @@ public class DefaultConfiguration {
     @Bean
     public IOConnectionServerFactory ioConnectionServerFactory()
                                                                 throws Exception {
-        if (useNewNioServer()) {
-            return newNioServer();
-        } else {
-            return oldNioServer();
-        }
+        MessageConnectionServerFactory factory = new MessageConnectionServerFactory();
+        factory.setWireSecurity(wireSecurity());
+        factory.setCommsExecutor(commsExecutor());
+        factory.setDispatchExecutor(commsDispatchExecutor());
+        return factory;
     }
 
     @Bean
@@ -200,7 +199,7 @@ public class DefaultConfiguration {
     }
 
     protected int commsDispatchPoolSize() {
-        return 2;
+        return 3;
     }
 
     protected ThreadFactory commsDispatchTheadFactory() {
@@ -221,15 +220,12 @@ public class DefaultConfiguration {
     }
 
     protected ExecutorService commsExecutor() {
-        int poolSize = commsPoolSize();
-        if (poolSize < 3) {
-            throw new IllegalArgumentException("Pool size must be >= 3");
-        }
-        return Executors.newFixedThreadPool(poolSize, commsTheadFactory());
+        return Executors.newFixedThreadPool(commsPoolSize(),
+                                            commsTheadFactory());
     }
 
     protected int commsPoolSize() {
-        return 5;
+        return 2;
     }
 
     protected ThreadFactory commsTheadFactory() {
@@ -248,25 +244,16 @@ public class DefaultConfiguration {
         };
     }
 
-    protected ExecutorService diagnosticDispatchExecutor() {
-        return Executors.newFixedThreadPool(diagnosticsDispatchPoolSize(),
-                                            diagnosticsDispatchTheadFactory());
+    protected ExecutorService diagnosticsExecutor() {
+        return Executors.newFixedThreadPool(diagnosticsPoolSize(),
+                                            diagnosticsTheadFactory());
     }
 
-    protected ExecutorService diagnosticsCommExecutor() {
-        int poolSize = diagnosticsCommPoolSize();
-        if (poolSize < 3) {
-            throw new IllegalArgumentException("Pool size must be >= 3");
-        }
-        return Executors.newFixedThreadPool(poolSize,
-                                            diagnosticsCommTheadFactory());
+    protected int diagnosticsPoolSize() {
+        return 1;
     }
 
-    protected int diagnosticsCommPoolSize() {
-        return 3;
-    }
-
-    protected ThreadFactory diagnosticsCommTheadFactory() {
+    protected ThreadFactory diagnosticsTheadFactory() {
         return new ThreadFactory() {
             int counter = 0;
 
@@ -283,27 +270,6 @@ public class DefaultConfiguration {
         };
     }
 
-    protected int diagnosticsDispatchPoolSize() {
-        return 2;
-    }
-
-    protected ThreadFactory diagnosticsDispatchTheadFactory() {
-        return new ThreadFactory() {
-            int counter = 0;
-
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r,
-                                           "Anubis: Diagnostics dispatch thread "
-                                                   + counter++);
-                thread.setDaemon(true);
-                thread.setPriority(Thread.MAX_PRIORITY);
-                thread.setUncaughtExceptionHandler(uncaughtExceptionHandler());
-                return thread;
-            }
-        };
-    }
-
     protected InetSocketAddress diagnosticsEndpoint()
                                                      throws UnknownHostException {
         return new InetSocketAddress(contactHost(), 0);
@@ -311,8 +277,8 @@ public class DefaultConfiguration {
 
     protected DiagnosticsServer diagnosticsServer() throws UnknownHostException {
         DiagnosticsServer server = new DiagnosticsServer();
-        server.setCommsExecutor(diagnosticsCommExecutor());
-        server.setDispatchExecutor(diagnosticDispatchExecutor());
+        server.setCommsExecutor(diagnosticsExecutor());
+        server.setDispatchExecutor(diagnosticsExecutor());
         server.setEndpoint(diagnosticsEndpoint());
         return server;
     }
@@ -325,22 +291,8 @@ public class DefaultConfiguration {
         return 12345;
     }
 
-    protected IOConnectionServerFactory newNioServer() throws Exception {
-        MessageConnectionServerFactory factory = new MessageConnectionServerFactory();
-        factory.setWireSecurity(wireSecurity());
-        factory.setCommsExecutor(commsExecutor());
-        factory.setDispatchExecutor(commsDispatchExecutor());
-        return factory;
-    }
-
     protected int node() throws UnknownHostException {
         return Identity.getProcessUniqueId();
-    }
-
-    protected IOConnectionServerFactory oldNioServer() throws Exception {
-        MessageNioServerFactory factory = new MessageNioServerFactory();
-        factory.setWireSecurity(wireSecurity());
-        return factory;
     }
 
     protected UncaughtExceptionHandler uncaughtExceptionHandler() {
@@ -357,11 +309,7 @@ public class DefaultConfiguration {
         return true;
     }
 
-    protected boolean useNewNioServer() {
-        return true;
-    }
-
-    protected boolean useTimed() {
+    protected boolean useTimedProtocol() {
         return false;
     }
 }

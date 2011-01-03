@@ -39,7 +39,7 @@ public class IntervalExec extends Thread {
     private Random random = null;
 
     private boolean running = false;
-    private boolean stabalizing = false;
+    private boolean stabilizing = false;
 
     private long stabilityTime = 0;
     private Diagnostics diagnostics = null;
@@ -57,7 +57,7 @@ public class IntervalExec extends Thread {
      * prevent the interval executive from checking for stability times
      */
     public void clearStability() {
-        stabalizing = false;
+        stabilizing = false;
         stabilityTime = 0;
     }
 
@@ -72,7 +72,7 @@ public class IntervalExec extends Thread {
         return buffer.toString();
     }
 
-    public void registerTestMgr(Diagnostics diagnostics) {
+    public void registerDiagnostics(Diagnostics diagnostics) {
         this.diagnostics = diagnostics;
     }
 
@@ -97,7 +97,7 @@ public class IntervalExec extends Thread {
                  * interval then wake up at the stability interval end as
                  * defined by stabilityTime.
                  */
-                timenow = stabalizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
+                timenow = stabilizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
                                                                                        stabilityTime)
                                                                       : sleepInterval(timenow,
                                                                                       heartbeatTime);
@@ -146,7 +146,7 @@ public class IntervalExec extends Thread {
                 /**
                  * check for stability - only done on a stability boundary
                  */
-                if (stabalizing && timenow >= stabilityTime) {
+                if (stabilizing && timenow >= stabilityTime) {
 
                     /**
                      * If testing then produce delay info
@@ -178,7 +178,7 @@ public class IntervalExec extends Thread {
      *            - the time that stability is expected.
      */
     public void setStability(long s) {
-        stabalizing = true;
+        stabilizing = true;
         stabilityTime = s;
     }
 
@@ -207,7 +207,7 @@ public class IntervalExec extends Thread {
 
         lastCheckTime = timenow;
 
-        if (!stabalizing || stabilityTime > heartbeatTime) {
+        if (!stabilizing || stabilityTime > heartbeatTime) {
             earliest = heartbeatTime;
         } else {
             earliest = stabilityTime;
