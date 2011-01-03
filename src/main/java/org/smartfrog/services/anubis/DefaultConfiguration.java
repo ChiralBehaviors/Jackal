@@ -255,7 +255,7 @@ public class DefaultConfiguration {
     }
 
     protected int diagnosticsPoolSize() {
-        return 1;
+        return 3;
     }
 
     protected DiagnosticsServer diagnosticsServer() throws UnknownHostException {

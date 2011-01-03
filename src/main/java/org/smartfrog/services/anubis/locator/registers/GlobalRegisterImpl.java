@@ -23,6 +23,7 @@ import java.rmi.RemoteException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.Locator;
@@ -52,6 +53,13 @@ public class GlobalRegisterImpl {
 
         public RequestServer() {
             super();
+            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    log.log(Level.WARNING, "Uncaught exception", e);
+                }
+            });
         }
 
         @Override

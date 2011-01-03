@@ -21,6 +21,7 @@ package org.smartfrog.services.anubis.locator.registers;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
@@ -53,6 +54,13 @@ public class LocalRegisterImpl {
 
         public RequestServer() {
             super();
+            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    log.log(Level.WARNING, "Uncaught exception", e);
+                }
+            });
         }
 
         @Override

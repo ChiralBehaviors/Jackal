@@ -20,6 +20,8 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
 import java.net.InetAddress;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -33,14 +35,14 @@ import org.smartfrog.services.anubis.partition.views.View;
 import com.hellblazer.anubis.annotations.Deployed;
 
 public class PartitionProtocol {
-
+    private static final Logger log = Logger.getLogger(PartitionProtocol.class.getCanonicalName());
     private boolean changed = false;
     private ConnectionSet connectionSet = null;
     private Identity identity = null;
     private Identity leader = null;
     private PartitionManager partitionMgr = null;
     private boolean terminated = false;
-    private BitView view = new BitView();
+    private BitView view = new BitView(); 
 
     /**
      * Changed view is called during regular connection set checks if the
@@ -54,6 +56,9 @@ public class PartitionProtocol {
     public void changedView() {
         if (view.removeComplement(connectionSet.getView()) || view.isStable()) {
             changed = true;
+        }
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("Destabilizing partition protocol view @ %s : %s", System.currentTimeMillis(),view));
         }
         view.setTimeStamp(View.undefinedTimeStamp);
         view.destablize();
@@ -118,6 +123,9 @@ public class PartitionProtocol {
     public void remove(Identity id) {
         if (view.remove(id.id)) {
             changed = true;
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("Destabilizing partition protocol view @ %s : %s", System.currentTimeMillis(),view));
+            }
             view.setTimeStamp(View.undefinedTimeStamp);
             view.destablize();
             leader = connectionSet.electLeader(view);

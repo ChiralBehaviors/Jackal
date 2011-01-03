@@ -83,7 +83,8 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
             return false;
         }
 
-        if (super.receiveHeartbeat(hb)) {
+        boolean accepted = super.receiveHeartbeat(hb);
+        if (accepted) {
             /**
              * Extract piggy-backed messaging information to see if this
              * connection should be converted to a messaging connection

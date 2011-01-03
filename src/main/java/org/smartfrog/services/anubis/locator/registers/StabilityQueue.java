@@ -19,10 +19,15 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.locator.registers;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.smartfrog.services.anubis.locator.util.BlockingQueue;
 import org.smartfrog.services.anubis.partition.views.View;
 
 abstract public class StabilityQueue {
+    
+    private static Logger log = Logger.getLogger(StabilityQueue.class.getCanonicalName());
 
     private static class Notification {
         int leader;
@@ -39,6 +44,13 @@ abstract public class StabilityQueue {
 
         public RequestServer() {
             super("Anubis: Locator Stability Queue Server");
+            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    log.log(Level.WARNING, "Uncaught exception", e);
+                }
+            });
         }
 
         @Override

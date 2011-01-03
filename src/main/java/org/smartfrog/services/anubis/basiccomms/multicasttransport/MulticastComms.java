@@ -69,6 +69,13 @@ public class MulticastComms extends Thread {
         sock.joinGroup(address.ipaddress);
         sock.setTimeToLive(address.timeToLive);
         terminating = false;
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**

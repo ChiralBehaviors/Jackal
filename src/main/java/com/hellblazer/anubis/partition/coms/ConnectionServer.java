@@ -97,8 +97,8 @@ public class ConnectionServer extends ServerChannelHandler implements
                                                     wireSecurity, channel,
                                                     this, connection);
         addHandler(handler);
-        handler.send(heartbeat, true);
         if (connection.assignImpl(handler)) {
+            handler.send(heartbeat, true);
             handler.handleAccept();
         } else {
             handler.terminate();

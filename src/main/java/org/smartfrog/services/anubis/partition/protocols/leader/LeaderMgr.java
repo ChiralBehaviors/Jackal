@@ -20,12 +20,15 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.protocols.leader;
 
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class LeaderMgr {
+    private static final Logger log = Logger.getLogger(LeaderMgr.class.getCanonicalName());
 
     protected Map<Identity, Connection> candidates = null;
     protected final Candidate localCandidate;
@@ -71,7 +74,12 @@ public class LeaderMgr {
      * @return Identity
      */
     public synchronized Identity predictLeader(View v) {
-        return election(v).getId();
+        Identity prediction = election(v).getId();
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("Predicting election win for: %s",
+                                   prediction));
+        }
+        return prediction;
     }
 
     /**
@@ -152,6 +160,10 @@ public class LeaderMgr {
      */
     private Identity stableElection(View v) {
         localCandidate.setVote(election(v));
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("Stable election, voting for: %s",
+                                   localCandidate.getVote()));
+        }
         return localCandidate.getVote();
     }
 
@@ -164,7 +176,15 @@ public class LeaderMgr {
      */
     private Identity unstableElection(View v) {
         if (!v.contains(localCandidate.getVote())) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("Local candidate is still in view: %s",
+                                       localCandidate.getVote()));
+            }
             localCandidate.setVote(localCandidate);
+        }
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("Unstable election, voting for %s",
+                                   localCandidate.getVote()));
         }
         return localCandidate.getVote();
     }

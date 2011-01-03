@@ -256,6 +256,9 @@ public abstract class ServerChannelHandler {
         SocketChannel accepted = server.accept();
         options.configure(accepted.socket());
         accepted.configureBlocking(false);
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("Connection accepted: %s", accepted));
+        }
         CommunicationsHandler handler = createHandler(accepted);
         addHandler(handler);
         handler.handleAccept();

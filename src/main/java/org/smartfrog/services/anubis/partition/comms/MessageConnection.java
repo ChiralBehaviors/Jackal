@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms;
 
 import java.util.LinkedList;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,21 +38,21 @@ import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 public class MessageConnection extends HeartbeatProtocolAdapter implements
         Connection, HeartbeatProtocol {
 
+    private static Logger log = Logger.getLogger(MessageConnection.class.getCanonicalName());
+
     private IOConnection closingImpl = null;
     /**
      * Implementations
      */
     private IOConnection connectionImpl = null;
-
-    private ConnectionSet connectionSet = null;
+    private final ConnectionSet connectionSet;
     private boolean disconnectPending = false;
     private boolean ignoring = false;
-    private static Logger log = Logger.getLogger(MessageConnection.class.getCanonicalName());
-    private Identity me = null;
-
-    private LinkedList<TimedMsg> msgQ = new LinkedList<TimedMsg>();
-
+    private final Identity me;
     private boolean terminated = false;
+    private final CountDownLatch connected = new CountDownLatch(1);
+    private volatile int pendingSends = 0;
+    private volatile HeartbeatMsg missedHeartbeat;
 
     /**
      * Constructor used to create a MessageConnection when the implementation is
@@ -87,35 +88,32 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * @return boolean
      */
     public boolean assignImpl(IOConnection impl) {
-
-        synchronized (msgQ) {
-            if (terminated) {
-                return false;
-            }
-
-            if (connectionImpl != null) {
-                Exception e = new Exception();
-                e.fillInStackTrace();
-                log.log(Level.SEVERE,
-                        me
-                                + " attempt to assign a new implementation when one exists",
-                        e);
-                return false;
-            }
-
-            connectionImpl = impl;
-            connectionImpl.setIgnoring(ignoring); // indicate if it should
-                                                  // ignore messages
-
-            while (!msgQ.isEmpty()) {
-                connectionImpl.send(msgQ.removeFirst());
-            }
-
-            if (disconnectPending) {
-                connectionSet.disconnect(getSender());
-            }
+        if (terminated) {
+            return false;
         }
 
+        if (connectionImpl != null) {
+            Exception e = new Exception();
+            e.fillInStackTrace();
+            log.log(Level.SEVERE,
+                    me
+                            + " attempt to assign a new implementation when one exists",
+                    e);
+            return false;
+        }
+
+        connectionImpl = impl;
+        connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages 
+
+        if (disconnectPending) {
+            connectionSet.disconnect(getSender());
+        }
+        synchronized (connected) {
+            if (missedHeartbeat != null) {
+                sendMsg(missedHeartbeat);
+            }
+            connected.countDown();
+        }
         return true;
     }
 
@@ -127,7 +125,6 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     public void closing() {
         super.terminate();
         connectionSet.removeConnection(this);
-        msgQ.clear();
     }
 
     /**
@@ -202,12 +199,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * tell the connectionSet to disconnect yet.
      */
     public void disconnect() {
-        synchronized (msgQ) {
-            disconnectPending = true;
-
-            if (msgQ.isEmpty()) {
-                connectionSet.disconnect(getSender());
-            }
+        disconnectPending = true;
+        if (pendingSends == 0) {
+            connectionSet.disconnect(getSender());
         }
     }
 
@@ -237,45 +231,14 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         return false;
     }
 
-    public void sendMsg(TimedMsg msg) {
-
-        if (msg == null) {
-            Exception e = new Exception();
-            e.fillInStackTrace();
-            log.log(Level.SEVERE,
-                    me + " sendBytes(WireMsg) called with null parameter ", e);
-            return;
-        }
-
-        synchronized (msgQ) {
-            /**
-             * If the connection has not been constructed, buffer the message.
-             * FIX ME: This is a hack for the moment there is no flow control to
-             * deal with too many messages!
-             */
-            if (connectionImpl == null) {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("buffering message as connection implementation has not been constructed");
-                }
-                msgQ.addLast(msg);
+    public void sendHeartbeat(HeartbeatMsg hb) {
+        synchronized (connected) {
+            if (connected.getCount() > 0) {
+                missedHeartbeat = hb;
                 return;
             }
-
-            /**
-             * If the connection has been terminated then just return. In time
-             * the User will be notified that the connection, and therefore the
-             * remote node, has terminated.
-             */
-            if (!connectionImpl.connected()) {
-                return;
-            }
-
-            /**
-             * If the connectionImpl exists and it is connected then just send
-             * on it.
-             */
-            connectionImpl.send(msg);
         }
+        sendMsg(hb);
     }
 
     /**
@@ -287,6 +250,14 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      *            - the object to transport
      */
     public void sendObject(Object obj) {
+        pendingSends++;
+        try {
+            connected.await();
+        } catch (InterruptedException e) {
+            pendingSends--;
+            return;
+        }
+        pendingSends--;
         MessageMsg msg = new MessageMsg(me, obj);
         msg.setTime(System.currentTimeMillis());
         sendMsg(msg);
@@ -299,11 +270,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * @param ignoring
      */
     public void setIgnoring(boolean ignoring) {
-        synchronized (msgQ) {
-            this.ignoring = ignoring;
-            if (connectionImpl != null) {
-                connectionImpl.setIgnoring(ignoring);
-            }
+        this.ignoring = ignoring;
+        if (connectionImpl != null) {
+            connectionImpl.setIgnoring(ignoring);
         }
     }
 
@@ -318,8 +287,38 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         if (connectionImpl != null) {
             connectionImpl.terminate();
         }
-        msgQ.clear();
         terminated = true;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Message connection from %s to %s", me,
+                             getSender());
+    }
+
+    protected void sendMsg(TimedMsg msg) {
+
+        if (msg == null) {
+            Exception e = new Exception();
+            e.fillInStackTrace();
+            log.log(Level.SEVERE,
+                    me + " sendBytes(WireMsg) called with null parameter ", e);
+            return;
+        }
+        /**
+         * If the connection has been terminated then just return. In time the
+         * User will be notified that the connection, and therefore the remote
+         * node, has terminated.
+         */
+        if (!connectionImpl.connected()) {
+            return;
+        }
+
+        /**
+         * If the connectionImpl exists and it is connected then just send on
+         * it.
+         */
+        connectionImpl.send(msg);
     }
 
     private void checkInitiatingClose(HeartbeatMsg msg) {
@@ -341,24 +340,19 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                  * back - reinitiate the connection by re-creating the
                  * implementation.
                  */
-                if (!msgQ.isEmpty() || msg.getMsgLinks().contains(me.id)
+                if (msg.getMsgLinks().contains(me.id)
                     || connectionSet.wantsMsgLinkTo(getSender())) {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(me + " connection closed but re-opening ");
-                        if (!msgQ.isEmpty()) {
-                            log.finest(me
-                                       + "  -- the message queue is not empty");
-                        }
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(me + " connection closed but re-opening ");
                         if (msg.getMsgLinks().contains(me.id)) {
-                            log.finest(me
-                                       + "  -- the other end appears to want the connection");
+                            log.fine(me
+                                     + "  -- the other end appears to want the connection");
                         }
                         if (connectionSet.wantsMsgLinkTo(getSender())) {
-                            log.finest(me
-                                       + "  -- this end appears to want the connection");
+                            log.fine(me
+                                     + "  -- this end appears to want the connection");
                         }
                     }
-
                     connectionSet.getConnectionServer().initiateConnection(me,
                                                                            this,
                                                                            connectionSet.getHeartbeatMsg());
@@ -369,9 +363,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                  * heartbeat connection in the connection set.
                  */
                 else {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(me
-                                   + " connection fully closed - converting back to heartbeat connection");
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(me
+                                 + " connection fully closed - converting back to heartbeat connection");
                     }
                     connectionSet.convertToHeartbeatConnection(this);
                 }
@@ -392,17 +386,14 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
          */
         else if (!msg.getMsgLinks().contains(me.id)
                  && !connectionSet.wantsMsgLinkTo(getSender())
-                 && msgQ.isEmpty()) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(me + " entering close on connection to "
-                           + getSender());
+                 && missedHeartbeat == null) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(me + " entering close on connection to " + getSender());
             }
             closingImpl = connectionImpl;
             connectionImpl = null;
             try {
-
                 closingImpl.send(connectionSet.getHeartbeatMsg().toClose());
-
             } catch (Exception ex) {
                 log.log(Level.SEVERE,
                         me + "failed to marshall close message - not sent to "
@@ -412,7 +403,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     }
 
     private void checkRespondingClose(HeartbeatMsg msg) {
-        if (log.isLoggable(Level.FINEST)) {
+        if (log.isLoggable(Level.FINE)) {
             log.finest(me + " responder close check on link to " + getSender());
         }
         /**
@@ -424,20 +415,19 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
          * too!
          */
         if (msg instanceof Close) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(me + " received CloseMsg - closing connection to "
-                           + getSender());
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(me + " received CloseMsg - closing connection to "
+                         + getSender());
             }
             sendMsg(connectionSet.getHeartbeatMsg().toClose());
             connectionImpl.silent();
             connectionImpl = null;
             if (!connectionSet.wantsMsgLinkTo(getSender())) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(me + " converting back to heartbeat connection");
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(me + " converting back to heartbeat connection");
                 }
                 connectionSet.convertToHeartbeatConnection(this);
             }
         }
     }
-
 }

@@ -51,6 +51,13 @@ public class IntervalExec extends Thread {
         interval = i;
         setPriority(MAX_PRIORITY);
         random = new Random(System.currentTimeMillis() + 100 * me.id);
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**

@@ -115,7 +115,11 @@ class ColorMatrix {
     }
 
     Color getColor(Integer idx) {
-        return color[idx.intValue()];
+        try {
+            return color[idx.intValue()];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            return null;
+        }
     }
 
     Integer getIndex(int hash) {

@@ -44,6 +44,7 @@ import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFac
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatConnection;
 import org.smartfrog.services.anubis.partition.diagnostics.Diagnostics;
+import org.smartfrog.services.anubis.partition.diagnostics.msg.ConnectionStateMsg;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
@@ -126,9 +127,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     /**
      * synchronization of sendHeartbeat() with removeConnection().
      */
-    private boolean sendingHeartbeats = false;
+    private volatile boolean sendingHeartbeats = false;
     private long stability = 0;
-    private boolean stablizing = false;
+    private volatile boolean stablizing = false;
     private volatile boolean terminated = false;
     private boolean useDiagnostics = false;
     private long timeout = 0;
@@ -201,6 +202,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                  * If the connection is in the connection set then terminate it.
                  */
                 if (connectionView.contains(con.getSender())) {
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(String.format("Terminating connection %s, as it is not timely and not in view", con));
+                    }
                     con.terminate();
                     removeConnection(con);
                 }
@@ -349,6 +353,10 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         }
 
         if (thisEndInitiatesConnectionsTo(con.getSender())) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("Converting to message connection from %s to %s",
+                                       identity, con.getSender()));
+            }
             MessageConnection mcon = new MessageConnection(identity, this,
                                                            con.getProtocol(),
                                                            con.getCandidate());
@@ -363,6 +371,11 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
             }
 
             getConnectionServer().initiateConnection(identity, mcon, heartbeat);
+        } else {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("Not converting to message connection to %s as this end %s does not initiate contact",
+                                       con.getSender(), identity));
+            }
         }
     }
 
@@ -569,6 +582,10 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     public synchronized void newView(Identity id, View v) {
 
         changeInViews = true;
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(String.format("Destabilizing connection view @ %s : %s",
+                                   System.currentTimeMillis(), connectionView));
+        }
         connectionView.destablize();
         stablizing = false;
         intervalExec.clearStability();
@@ -726,7 +743,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * send the heartbeat on message connections.
          */
         for (MessageConnection mcon : msgConnections) {
-            mcon.sendMsg(heartbeat);
+            mcon.sendHeartbeat(heartbeat);
         }
 
         /**
@@ -981,5 +998,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     private boolean isBetterTimeStamp(long timeStamp) {
         return timeStamp != View.undefinedTimeStamp
                && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
+    }
+    
+    public synchronized ConnectionStateMsg getConnectionStateMsg() {
+        return null;
     }
 }

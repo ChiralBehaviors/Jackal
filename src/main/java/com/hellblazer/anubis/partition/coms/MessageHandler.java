@@ -106,7 +106,6 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
 
     @Override
     public void terminate() {
-        announceTerm = false;
         shutdown();
     }
 
@@ -118,6 +117,7 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
     @Override
     protected void closing() {
         if (announceTerm && messageConnection != null) {
+            announceTerm = false;
             messageConnection.closing();
         }
     }
@@ -151,10 +151,9 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
         final TimedMsg tm = (TimedMsg) msg;
 
         if (tm.getOrder() != receiveCount) {
-            log.severe(me
-                       + "connection transport has delivered a message out of order.  Expected: "
-                       + receiveCount + " actual: " + tm.getOrder()
-                       + " - shutting down");
+            log.severe(String.format("%s connection transport from %s has delivered a message out of order.  Expected: %s  actual: %s - shutting down",
+                                     me, tm.getSender(), receiveCount,
+                                     tm.getOrder()));
             shutdown();
             return;
         }
@@ -167,12 +166,7 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
             initialMsg(tm);
         } else {
             receiveCount++;
-            handler.dispatch(new Runnable() {
-                @Override
-                public void run() {
-                    messageConnection.deliver(tm);
-                }
-            });
+            messageConnection.deliver(tm);
         }
     }
 
@@ -194,6 +188,13 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
     }
 
     protected void send(TimedMsg timedMessage, boolean initial) {
+        if (!initial && log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("Sending message %s to %s", timedMessage,
+                                     messageConnection.getSender()));
+        } else if (initial && log.isLoggable(Level.FINE)) {
+            log.fine(String.format("Sending initial message %s to %s",
+                                   timedMessage, messageConnection.getSender()));
+        }
         try {
             timedMessage.setOrder(sendCount);
             if (!initial) {
@@ -248,12 +249,7 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
                 messageConnection = (MessageConnection) con;
                 toString = "Anubis: Message Handler (node " + me.id
                            + ", remote node " + con.getSender().id + ")";
-                handler.dispatch(new Runnable() {
-                    @Override
-                    public void run() {
-                        messageConnection.deliver(tm);
-                    }
-                });
+                messageConnection.deliver(tm);
             } else {
                 log.severe(me + " failed to assign incoming connection from "
                            + con.getSender().toString());
@@ -314,12 +310,7 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
                                                   hbcon.getProtocol(),
                                                   hbcon.getCandidate());
         messageConnection.assignImpl(this);
-        handler.dispatch(new Runnable() {
-            @Override
-            public void run() {
-                messageConnection.deliver(tm);
-            }
-        });
+        messageConnection.deliver(tm);
 
         /**
          * if the call to connectionSet.useNewMessageConnection() then a

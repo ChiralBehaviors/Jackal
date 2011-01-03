@@ -20,15 +20,23 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.locator.util;
 
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ActiveTimeQueue extends Thread {
-
+    private final static Logger log = Logger.getLogger(ActiveTimeQueue.class.getCanonicalName());
     private boolean running = false;
-
-    TimeQueue queue = new TimeQueue();
+    private final TimeQueue queue = new TimeQueue();
 
     public ActiveTimeQueue(String threadName) {
         super(threadName);
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**

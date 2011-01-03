@@ -48,16 +48,22 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
     protected final ServerChannelHandler handler;
     private volatile State readState = State.INITIAL;
     private volatile State writeState = State.INITIAL;
-    private final Semaphore writeGate = new Semaphore(1);
+    private final Semaphore writeGate;
 
     public AbstractCommunicationsHandler(ServerChannelHandler handler,
                                          SocketChannel channel) {
         this.handler = handler;
         this.channel = channel;
+        writeGate = new Semaphore(1, true);
     }
 
     @Override
     public void close() {
+        if (log.isLoggable(Level.FINE)) {
+            Exception e = new Exception("Socket close trace");
+            log.log(Level.FINE,
+                    String.format("Closing connection to %s", channel), e);
+        }
         readState = writeState = State.CLOSE;
         open = false;
         try {
@@ -220,7 +226,7 @@ abstract public class AbstractCommunicationsHandler implements WireSizes,
         } catch (IOException e) {
             readState = State.ERROR;
             logClose("Error reading message body", e);
-            terminate();
+            shutdown();
             return;
         }
         if (numBytesRead == -1) {

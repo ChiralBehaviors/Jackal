@@ -57,7 +57,7 @@ public class ColorAllocator {
         nodes.put(view.toBitSet(), node);
         Color c = colorMap.allocate(view.toBitSet());
 
-        if (!c.equals(ColorMap.defaultColor)) {
+        if (c != null && !c.equals(ColorMap.defaultColor)) {
             allocations.put(view.toBitSet(), c);
         }
 
@@ -68,7 +68,7 @@ public class ColorAllocator {
 
         NodeIdSet bitSet = view.toBitSet();
         nodes.remove(bitSet, node);
-        if (nodes.getSet(bitSet) == null) {
+        if (nodes.getSet(bitSet) == null) { 
             colorMap.deallocate(bitSet);
             allocations.remove(bitSet);
         }
