@@ -54,12 +54,11 @@ import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
  * 
  */
 public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
-
+    private static Logger log = Logger.getLogger(PingProtocolImpl.class.getCanonicalName());
     private static final long serialVersionUID = 1L;
     private transient ConnectionAddress address = null;
     private boolean expected = true;
     private transient ViewListener listener = null;
-    private static Logger log = Logger.getLogger(PingProtocolImpl.class.toString());
     private Identity me = null;
     private long pingTime = 0;
     private Identity sender = null;
@@ -221,14 +220,14 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
                 listener.newView(sender, this);
             }
 
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Accepting heart beat: " + hb);
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("Accepting hb:%s links=%s, view=%s", hb.getSender(), hb.getMsgLinks(), view));
             }
             return true;
 
         }
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Rejecting heart beat: " + hb);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Rejecting heart beat: " + hb);
         }
         return false;
     }

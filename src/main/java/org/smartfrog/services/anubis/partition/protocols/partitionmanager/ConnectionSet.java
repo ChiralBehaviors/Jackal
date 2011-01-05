@@ -141,7 +141,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * 
      * @param con
      */
-    public synchronized void addConnection(Connection con) {
+     synchronized void addConnection(Connection con) {
         connections.put(con.getSender(), con);
         connectionView.add(con.getSender());
         changeInViews = true;
@@ -154,7 +154,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * 
      * @param timenow
      */
-    public synchronized void checkStability(long timenow) {
+    synchronized void checkStability(long timenow) {
         if (!stablizing) {
             if (log.isLoggable(Level.FINE)) {
                 log.fine("Not stablilizing view @ " + timenow);
@@ -203,7 +203,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                  */
                 if (connectionView.contains(con.getSender())) {
                     if (log.isLoggable(Level.FINE)) {
-                        log.fine(String.format("Terminating connection %s, as it is not timely and not in view", con));
+                        log.fine(String.format("Terminating connection %s, as it is not timely and not in view",
+                                               con));
                     }
                     con.terminate();
                     removeConnection(con);
@@ -304,9 +305,10 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * created.
          */
         if (thisEndInitiatesConnectionsTo(hbcon.getSender())) {
-            getConnectionServer().initiateConnection(identity, mcon, heartbeat);
+            getConnectionServer().initiateConnection(identity, mcon,
+                                                     heartbeat.clone());
         } else {
-            heartbeatComms.sendHeartbeat(heartbeat);
+            heartbeatComms.sendHeartbeat(heartbeat.clone());
         }
 
         /**
@@ -370,7 +372,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                 mcon.setIgnoring(true);
             }
 
-            getConnectionServer().initiateConnection(identity, mcon, heartbeat);
+            getConnectionServer().initiateConnection(identity, mcon,
+                                                     heartbeat.clone());
         } else {
             if (log.isLoggable(Level.FINE)) {
                 log.fine(String.format("Not converting to message connection to %s as this end %s does not initiate contact",
@@ -490,18 +493,14 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * @return - the heartbeat message
      */
     public HeartbeatMsg getHeartbeatMsg() {
-        return heartbeat;
+        return heartbeat.clone();
     }
 
     public HeartbeatProtocolFactory getHeartbeatProtocolFactory() {
         return heartbeatProtocolFactory;
     }
 
-    public synchronized Identity getIdentity() {
-        return identity;
-    }
-
-    public synchronized long getInterval() {
+    public long getInterval() {
         return heartbeatInterval;
     }
 
@@ -737,13 +736,13 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         /**
          * send the heartbeat using multicast for heartbeat connections
          */
-        heartbeatComms.sendHeartbeat(heartbeat);
+        heartbeatComms.sendHeartbeat(heartbeat.clone());
 
         /**
          * send the heartbeat on message connections.
          */
         for (MessageConnection mcon : msgConnections) {
-            mcon.sendHeartbeat(heartbeat);
+            mcon.sendHeartbeat(heartbeat.clone());
         }
 
         /**
@@ -999,7 +998,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return timeStamp != View.undefinedTimeStamp
                && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
     }
-    
+
     public synchronized ConnectionStateMsg getConnectionStateMsg() {
         return null;
     }

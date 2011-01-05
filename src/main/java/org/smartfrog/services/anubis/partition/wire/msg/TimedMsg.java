@@ -41,8 +41,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     static final private int addressSz = ConnectionAddress.connectionAddressWireSz;
     public static final int TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
     public static final int TIMED_MSG_WIRE_TYPE = 200;
-
-    private boolean addressUnmarshalled = false;
     protected ConnectionAddress address = null;
     protected long order = -1;
 
@@ -70,7 +68,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
      */
     public TimedMsg(Identity id) {
         sender = id;
-        addressUnmarshalled = true;
     }
 
     /**
@@ -82,7 +79,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     public TimedMsg(Identity id, ConnectionAddress addr) {
         sender = id;
         address = addr;
-        addressUnmarshalled = true;
     }
 
     protected TimedMsg() {
@@ -110,9 +106,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     @Override
     public ConnectionAddress getSenderAddress() {
-        if (!addressUnmarshalled) {
-            addressFromWire();
-        }
         return address;
     }
 
@@ -147,13 +140,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
      */
     @Override
     public String toString() {
-        return "["
-               + time
-               + ", "
-               + order
-               + ", "
-               + (addressUnmarshalled ? sender.toString()
-                                     : "SENDER_ADDRESS_MARSHALLED") + ", "
+        return "[" + time + ", " + order + ", " + sender.toString() + ", "
                + address + "]";
     }
 
@@ -165,16 +152,16 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     /**
      * Sets the timed message attributes to the wire form held in a byte array
      * 
-     * @param buf
+     * @param wireForm
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
     @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-        super.readWireForm(buf);
+    protected void readWireForm(ByteBuffer wireForm) throws IOException,
+                                                    WireFormException,
+                                                    ClassNotFoundException {
+        super.readWireForm(wireForm);
         time = wireForm.getLong(timeIdx);
         order = wireForm.getLong(orderIdx);
         sender = Identity.readWireForm(wireForm, identityIdx);
@@ -186,8 +173,8 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
      * 
      */
     @Override
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
+    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
+        super.writeWireForm(wireForm);
         wireForm.putLong(timeIdx, time);
         wireForm.putLong(orderIdx, order);
         sender.writeWireForm(wireForm, identityIdx);
@@ -197,10 +184,4 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
             ConnectionAddress.writeNullWireForm(wireForm, addressIdx);
         }
     }
-
-    private void addressFromWire() {
-        addressUnmarshalled = true;
-        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
-    }
-
 }

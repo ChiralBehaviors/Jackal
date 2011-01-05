@@ -96,7 +96,7 @@ public class IntervalExec extends Thread {
         synchronized (connectionSet) {
 
             while (running) {
-
+                log.fine("looping");
                 /**
                  * enter a sleep interval. Normally this is the regular
                  * heartbeat interval as defined by wakeup. If we are stablizing
@@ -127,6 +127,7 @@ public class IntervalExec extends Thread {
                     /**
                      * check the timeouts and cleanup
                      */
+                    log.fine("checking timeout");
                     connectionSet.checkTimeouts(timenow);
 
                     /**
@@ -135,12 +136,14 @@ public class IntervalExec extends Thread {
                      * report check (i.e. convergence time for the partition)
                      * can be sent out on the heartbeat
                      */
+                    log.fine("checking view change");
                     connectionSet.viewChangeCheck(timenow);
 
                     /**
                      * send a new heartbeat from this node - note comments about
                      * doing the viewChangeCheck first (above).
                      */
+                    log.fine("sending heartbeat");
                     connectionSet.sendHeartbeat(timenow);
 
                     /**
@@ -148,6 +151,8 @@ public class IntervalExec extends Thread {
                      */
                     heartbeatTime = nextHeartbeatTime(timenow, heartbeatTime);
 
+                } else { 
+                    log.fine("Not heartbeat time");
                 }
 
                 /**
@@ -164,6 +169,8 @@ public class IntervalExec extends Thread {
                     }
 
                     connectionSet.checkStability(timenow);
+                } else {
+                    log.fine("Not checking stability");
                 }
 
             }
@@ -261,6 +268,7 @@ public class IntervalExec extends Thread {
      */
     private long sleepInterval(long timenow, long wakeup) {
         try {
+            log.fine(" sleeping: " + (wakeup - timenow));
             connectionSet.wait(wakeup - timenow);
         } catch (InterruptedException ex) {
         }

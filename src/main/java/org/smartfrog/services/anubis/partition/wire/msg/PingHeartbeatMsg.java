@@ -115,14 +115,14 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
     /**
      * Read the attributes from the wire format.
      * 
-     * @param buf
+     * @param wireForm
      *            byte[]
      */
     @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
+    protected void readWireForm(ByteBuffer wireForm) throws IOException,
                                                WireFormException,
                                                ClassNotFoundException {
-        super.readWireForm(buf);
+        super.readWireForm(wireForm);
         pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
     }
 
@@ -130,9 +130,16 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
      * Write the message attributes to the
      */
     @Override
-    protected synchronized void writeWireForm() throws WireFormException {
-        super.writeWireForm();
+    protected synchronized void writeWireForm(ByteBuffer wireForm) throws WireFormException {
+        super.writeWireForm(wireForm);
         pings.writeWireForm(wireForm, pingBitIdx, pingBitSz);
+    }
+
+    @Override
+    public PingHeartbeatMsg clone() { 
+        PingHeartbeatMsg clone = (PingHeartbeatMsg) super.clone();
+        clone.pings = pings.clone();
+        return clone;
     }
 
 }

@@ -64,19 +64,16 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     private NodeIdSet msgLinks = null;
 
     private long msgLinksNumber = 0;
-    private boolean msgLinksUnmarshalled;
 
     private boolean preferred = false;
     private boolean stable = true;
 
     private ConnectionAddress testInterface = null;
-    private boolean testInterfaceUnmarshalled;
 
     private NodeIdSet view = null;
     private long viewNumber = -1;
 
     private long viewTimeStamp = View.undefinedTimeStamp;
-    private boolean viewUnmarshalled;
 
     /**
      * Constructor - Creates a heartbeat message from the wire formatted byte
@@ -112,10 +109,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     public HeartbeatMsg(Identity identity, ConnectionAddress address) {
         super(identity, address);
-        candidateUnmarshalled = true;
-        viewUnmarshalled = true;
-        msgLinksUnmarshalled = true;
-        testInterfaceUnmarshalled = true;
     }
 
     protected HeartbeatMsg() {
@@ -129,9 +122,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     @Override
     public Identity getCandidate() {
-        if (!candidateUnmarshalled) {
-            candidateFromWire();
-        }
         return candidate;
     }
 
@@ -147,9 +137,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     @Override
     public NodeIdSet getMsgLinks() {
-        if (!msgLinksUnmarshalled) {
-            msgLinksFromWire();
-        }
         return msgLinks;
     }
 
@@ -159,9 +146,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     public ConnectionAddress getTestInterface() {
-        if (!testInterfaceUnmarshalled) {
-            testInterfaceFromWire();
-        }
         return testInterface;
     }
 
@@ -172,9 +156,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     @Override
     public View getView() {
-        if (!viewUnmarshalled) {
-            viewFromWire();
-        }
         return new BitView(stable, view, viewTimeStamp);
     }
 
@@ -233,11 +214,9 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         str += (candidateUnmarshalled ? "cand=" + candidate
                                      : "CANDIDATE_MARSHALLED") + ", ";
         str += "links#=" + msgLinksNumber + ", ";
-        str += (msgLinksUnmarshalled ? "links=" + msgLinks : "LINKS_MARSHALLED")
-               + ", ";
-        str += (viewUnmarshalled ? "view=" + view : "VIEW_MARSHALLED") + ", ";
-        str += testInterfaceUnmarshalled ? "testIF=" + testInterface
-                                        : "TEST_IF_MARSHALLED";
+        str += "links=" + msgLinks + ", ";
+        str += "view=" + view + ", ";
+        str += "testIF=" + testInterface;
         str += "]";
         return str;
     }
@@ -253,14 +232,14 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      * are read on demand. These attributes are not likely to be needed often -
      * so we only unmarshall them when we have to.
      * 
-     * @param buf
+     * @param wireForm
      *            byte[]
      */
     @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-        super.readWireForm(buf);
+    protected void readWireForm(ByteBuffer wireForm) throws IOException,
+                                                    WireFormException,
+                                                    ClassNotFoundException {
+        super.readWireForm(wireForm);
 
         /**
          * view number, view time stamp and msgLinksNumber
@@ -269,23 +248,18 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         viewTimeStamp = wireForm.getLong(viewTimeStampIdx);
         msgLinksNumber = wireForm.getLong(msgLinksNumberIdx);
         preferred = wireForm.getInt(isPreferredIdx) == 1;
-
-        /**
-         * Do not unmarshall candidate, msgLinks, view or test interface These
-         * are done on demand only
-         */
-        candidateUnmarshalled = false;
-        msgLinksUnmarshalled = false;
-        viewUnmarshalled = false;
-        testInterfaceUnmarshalled = false;
+        candidateFromWire(wireForm);
+        msgLinksFromWire(wireForm);
+        viewFromWire(wireForm);
+        testInterfaceFromWire(wireForm);
     }
 
     /**
      * Write the message attributes to the
      */
     @Override
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
+    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
+        super.writeWireForm(wireForm);
 
         /**
          * view number, view time stamp, isPreferred, candidate, msgLinksNumber
@@ -322,26 +296,30 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         }
     }
 
-    private void candidateFromWire() {
+    private void candidateFromWire(ByteBuffer wireForm) {
         candidateUnmarshalled = true;
         candidate = Identity.readWireForm(wireForm, candidateIdx);
     }
 
-    private void msgLinksFromWire() {
-        msgLinksUnmarshalled = true;
+    private void msgLinksFromWire(ByteBuffer wireForm) {
         msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
     }
 
-    private void testInterfaceFromWire() {
-        testInterfaceUnmarshalled = true;
+    private void testInterfaceFromWire(ByteBuffer wireForm) {
         testInterface = ConnectionAddress.readWireForm(wireForm,
                                                        testInterfaceIdx);
     }
 
-    private void viewFromWire() {
-        viewUnmarshalled = true;
+    private void viewFromWire(ByteBuffer wireForm) {
         stable = wireForm.getInt(stableIdx) == booleanTrueValue;
         view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
+    }
+
+    @Override
+    public HeartbeatMsg clone() { 
+        HeartbeatMsg clone = (HeartbeatMsg) super.clone();
+        clone.view = view.clone();
+        return clone;
     }
 
 }

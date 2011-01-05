@@ -25,14 +25,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
 public final class SerializedMsg extends WireMsg {
-
+    private static Logger log = Logger.getLogger(SerializedMsg.class.getCanonicalName());
     public static final int MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
-
     public static final int MESSAGE_MSG_WIRE_TYPE = 500;
     public static final int SERIALIZED_MSG_WIRE_TYPE = 999;
     private static final int payloadLengthIdx = WIRE_SIZE;
@@ -92,10 +93,13 @@ public final class SerializedMsg extends WireMsg {
             objectOS.flush();
             payload = byteArrayOS.toByteArray();
             payloadSz = payload.length;
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        } catch (IOException e) {
+            String errorString = String.format("Unable to serialize message %s",
+                                               msg);
+            log.log(Level.WARNING, errorString, e);
             payload = null;
             payloadSz = UNDEFINED_SIZE;
+            throw new IllegalStateException(errorString, e);
         }
     }
 
@@ -107,18 +111,18 @@ public final class SerializedMsg extends WireMsg {
     /**
      * read wire message format
      * 
-     * @param buf
+     * @param wireForm
      *            byte[]
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
     @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
+    protected void readWireForm(ByteBuffer wireForm) throws IOException,
+                                                    WireFormException,
+                                                    ClassNotFoundException {
 
-        super.readWireForm(buf);
+        super.readWireForm(wireForm);
 
         payloadSz = wireForm.getInt(payloadLengthIdx);
         payload = new byte[payloadSz];
@@ -140,8 +144,8 @@ public final class SerializedMsg extends WireMsg {
      * 
      */
     @Override
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
+    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
+        super.writeWireForm(wireForm);
 
         wireForm.putInt(payloadLengthIdx, payloadSz);
         for (int i = 0, j = payloadIdx; i < payloadSz; i++, j++) {

@@ -166,7 +166,12 @@ public class MessageHandler extends AbstractCommunicationsHandler implements
             initialMsg(tm);
         } else {
             receiveCount++;
-            messageConnection.deliver(tm);
+            handler.dispatch(new Runnable() {
+                @Override
+                public void run() {
+                    messageConnection.deliver(tm);
+                }
+            });
         }
     }
 

@@ -61,7 +61,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     private InstanceGenerator instanceGenerator = new InstanceGenerator();
     private Integer leader = null;
     private Map<Integer, MessageConnection> links = new HashMap<Integer, MessageConnection>();
-    private static Logger log = Logger.getLogger(Locator.class.getCanonicalName());
+    private final static Logger log = Logger.getLogger(Locator.class.getCanonicalName());
     private long maxTransDelay;
     private Identity identity = null;
     private Partition partition = null;
@@ -354,7 +354,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
         global.terminate();
         local.terminate();
         timers.terminate();
-        log = null;
     }
 
     /**

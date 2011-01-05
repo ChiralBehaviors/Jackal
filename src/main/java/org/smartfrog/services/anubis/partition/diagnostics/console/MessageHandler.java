@@ -33,7 +33,7 @@ import com.hellblazer.anubis.basiccomms.nio.ServerChannelHandler;
  * 
  */
 public class MessageHandler extends AbstractCommunicationsHandler {
-    private static Logger log = Logger.getLogger(MessageHandler.class.toString());
+    private static Logger log = Logger.getLogger(MessageHandler.class.getCanonicalName());
 
     private final Controller controller;
     private final NodeData node;

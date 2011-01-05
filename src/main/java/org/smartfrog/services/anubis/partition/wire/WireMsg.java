@@ -22,14 +22,12 @@ package org.smartfrog.services.anubis.partition.wire;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class WireMsg implements WireSizes {
+public class WireMsg implements WireSizes, Cloneable {
 
     public static final int WIRE_TYPE = 100;
     protected static final int WIRE_SIZE = intSz;
-    protected byte[] bytes = null;
 
     protected int trailerSize = 0;
-    protected ByteBuffer wireForm = null;
 
     /**
      * Construct from the wire form. Each substype should implement a similar
@@ -52,6 +50,17 @@ public class WireMsg implements WireSizes {
      */
     protected WireMsg() {
         super();
+    }
+
+    @Override
+    public WireMsg clone() {
+        WireMsg msg;
+        try {
+            msg = (WireMsg) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException("Unable to clone, e");
+        }
+        return msg;
     }
 
     /**
@@ -98,12 +107,12 @@ public class WireMsg implements WireSizes {
 
         fixDynamicSizedAttributes();
 
-        bytes = new byte[getSize() + trailerSize];
-        wireForm = ByteBuffer.wrap(bytes);
+        ByteBuffer wireForm = ByteBuffer.wrap(new byte[getSize() + trailerSize]);
 
-        writeWireForm();
+        writeWireForm(wireForm);
+        wireForm.flip();
 
-        return bytes;
+        return wireForm.array();
     }
 
     /**
@@ -133,19 +142,15 @@ public class WireMsg implements WireSizes {
      * to call their super.readWireForm(ByteBuffer) method and then read their
      * own attributes.
      * 
-     * @param buf
+     * @param wireForm
      *            ByteBuffer
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-
-        wireForm = buf;
-        bytes = buf.array();
-
+    protected void readWireForm(ByteBuffer wireForm) throws IOException,
+                                                    WireFormException,
+                                                    ClassNotFoundException {
         if (wireForm.getInt(0) != getType()) {
             throw new WireFormException(
                                         "Incorrect type in wire form - can not read as "
@@ -163,11 +168,13 @@ public class WireMsg implements WireSizes {
      * Top level writeWireForm() method. subtypes should implement this method
      * to call their super.writeWireForm and then write their own attributes.
      * 
+     * @param wireForm
+     *            TODO
+     * 
      * @throws WireFormException
      *             on trouble
      */
-    protected void writeWireForm() throws WireFormException {
+    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
         wireForm.putInt(0, getType());
     }
-
 }
