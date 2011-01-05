@@ -16,31 +16,33 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.wire;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class WireMsg implements WireSizes, Cloneable {
+public class WireMsg implements WireSizes {
 
     public static final int WIRE_TYPE = 100;
     protected static final int WIRE_SIZE = intSz;
+    protected byte[] bytes = null;
 
     protected int trailerSize = 0;
+    protected ByteBuffer wireForm = null;
 
     /**
      * Construct from the wire form. Each substype should implement a similar
      * constructor.
-     * 
-     * @param wireForm
-     *            ByteBuffer
+     *
+     * @param wireForm ByteBuffer
      * @throws ClassNotFoundException
      * @throws WireFormException
      * @throws IOException
      */
     public WireMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-                                       WireFormException, IOException {
+            WireFormException,
+            IOException {
         super();
         readWireForm(wireForm);
     }
@@ -52,21 +54,10 @@ public class WireMsg implements WireSizes, Cloneable {
         super();
     }
 
-    @Override
-    public WireMsg clone() {
-        WireMsg msg;
-        try {
-            msg = (WireMsg) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException("Unable to clone, e");
-        }
-        return msg;
-    }
-
     /**
-     * Each subtype should over-ride getSize() to return its own calculation of
-     * size.
-     * 
+     * Each subtype should over-ride getSize() to return its own
+     * calculation of size.
+     *
      * @return int
      * @throws WireFormException
      */
@@ -75,10 +66,10 @@ public class WireMsg implements WireSizes, Cloneable {
     }
 
     /**
-     * Set the size of the trailer. When the message is converted to its wire
-     * form, the byte array will include a sequence of unused bytes equal to the
-     * trailer size at the end. The byte array length will be getSize() +
-     * trailerSize.
+     * Set the size of the trailer. When the message is converted to its
+     * wire form, the byte array will include a sequence of unused 
+     * bytes equal to the trailer size at the end. The byte array length will
+     * be getSize() + trailerSize.
      * 
      * @param n
      * @throws WireFormException
@@ -86,19 +77,19 @@ public class WireMsg implements WireSizes, Cloneable {
     public void setTrailerSize(int n) throws WireFormException {
         if (n < 0) {
             throw new WireFormException("Negative trailer size specified: " + n);
+        } else {
+            trailerSize = n;
         }
-        trailerSize = n;
     }
 
     /**
-     * toWire() generates a byte array from this message. Messages that have an
-     * attribute with dynamic size should implement the
-     * fixDynamicSizeAttributes() method to prepare these attributes and so that
-     * their getSize() method can return the actual desired size. Otherwise this
-     * method should be over-ridden completely.
-     * 
+     * toWire() generates a byte array from this message. Messages that have
+     * an attribute with dynamic size should implement the
+     * fixDynamicSizeAttributes() method to prepare these attributes and so
+     * that their getSize() method can return the actual desired size. Otherwise
+     * this method should be over-ridden completely.
+     *
      * their size in
-     * 
      * @return byte[]
      * @throws WireFormException
      * @throws IOException
@@ -107,12 +98,12 @@ public class WireMsg implements WireSizes, Cloneable {
 
         fixDynamicSizedAttributes();
 
-        ByteBuffer wireForm = ByteBuffer.wrap(new byte[getSize() + trailerSize]);
+        bytes = new byte[getSize() + trailerSize];
+        wireForm = ByteBuffer.wrap(bytes);
 
-        writeWireForm(wireForm);
-        wireForm.flip();
+        writeWireForm();
 
-        return wireForm.array();
+        return bytes;
     }
 
     /**
@@ -124,33 +115,29 @@ public class WireMsg implements WireSizes, Cloneable {
 
     /**
      * Each subtype should over-ride getType() to return its own type.
-     * 
      * @return int
      */
     protected int getType() {
         return WIRE_TYPE;
     }
 
-    protected void readHeader() {
-    }
-
-    protected void readMessage() {
-    }
-
     /**
      * top level readWireForm method. All subtypes should implement this method
      * to call their super.readWireForm(ByteBuffer) method and then read their
      * own attributes.
-     * 
-     * @param wireForm
-     *            ByteBuffer
+     *
+     * @param buf ByteBuffer
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
-    protected void readWireForm(ByteBuffer wireForm) throws IOException,
-                                                    WireFormException,
-                                                    ClassNotFoundException {
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+
+        wireForm = buf;
+        bytes = buf.array();
+
         if (wireForm.getInt(0) != getType()) {
             throw new WireFormException(
                                         "Incorrect type in wire form - can not read as "
@@ -158,23 +145,15 @@ public class WireMsg implements WireSizes, Cloneable {
         }
     }
 
-    protected void writeHeader() {
-    }
-
-    protected void writeMessage() {
-    }
-
     /**
-     * Top level writeWireForm() method. subtypes should implement this method
+     * Top level writeWireForm() method.
+     * subtypes should implement this method
      * to call their super.writeWireForm and then write their own attributes.
-     * 
-     * @param wireForm
-     *            TODO
-     * 
-     * @throws WireFormException
-     *             on trouble
+     *
+     * @throws WireFormException on trouble
      */
-    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
+    protected void writeWireForm() throws WireFormException {
         wireForm.putInt(0, getType());
     }
+
 }

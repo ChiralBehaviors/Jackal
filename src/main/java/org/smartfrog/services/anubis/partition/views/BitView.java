@@ -16,10 +16,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.views;
 
 import java.io.Serializable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
@@ -27,6 +29,7 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 public class BitView implements View, Cloneable, Serializable {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger log = Logger.getLogger(BitView.class.getCanonicalName());
 
     public static BitView create(Identity id, long t) {
         if (id == null) {
@@ -87,27 +90,22 @@ public class BitView implements View, Cloneable, Serializable {
         return false;
     }
 
-    @Override
     public int cardinality() {
         return view.cardinality();
     }
 
-    @Override
     public boolean containedIn(View v) {
         return v.contains(this);
     }
 
-    @Override
     public boolean contains(Identity id) {
         return contains(id.id);
     }
 
-    @Override
     public boolean contains(int i) {
         return view.contains(i);
     }
 
-    @Override
     public boolean contains(View v) {
         if (view.size() < v.size()) {
             return false;
@@ -122,7 +120,7 @@ public class BitView implements View, Cloneable, Serializable {
 
     public BitView copyView(View v) {
         stable = v.isStable();
-        view = v.toBitSet().clone();
+        view = (NodeIdSet) v.toBitSet().clone();
         timeStamp = v.getTimeStamp();
         return this;
     }
@@ -135,26 +133,23 @@ public class BitView implements View, Cloneable, Serializable {
     public boolean equals(Object obj) {
         if (obj instanceof View) {
             return equalsView((View) obj);
+        } else {
+            return false;
         }
-        return false;
     }
 
-    @Override
     public boolean equalsView(View v) {
         return view.equals(v.toBitSet());
     }
 
-    @Override
     public long getTimeStamp() {
         return timeStamp;
     }
 
-    @Override
     public boolean isEmpty() {
         return view.isEmpty();
     }
 
-    @Override
     public boolean isStable() {
         return stable;
     }
@@ -164,7 +159,6 @@ public class BitView implements View, Cloneable, Serializable {
         return this;
     }
 
-    @Override
     public boolean overlap(View v) {
         return view.overlap(v.toBitSet());
     }
@@ -197,7 +191,6 @@ public class BitView implements View, Cloneable, Serializable {
         timeStamp = t;
     }
 
-    @Override
     public int size() {
         return view.size();
     }
@@ -211,7 +204,6 @@ public class BitView implements View, Cloneable, Serializable {
         return this;
     }
 
-    @Override
     public NodeIdSet toBitSet() {
         return view;
     }

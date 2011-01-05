@@ -16,21 +16,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
-import org.smartfrog.services.anubis.locator.util.TimeQueueElement;
+import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
 
 abstract public class AnubisStability {
 
     private long lastTimeRef = -1;
     private boolean lastWasStable = true;
     private ActiveTimeQueue timers = null;
-    private static Logger log = Logger.getLogger(AnubisStability.class.getCanonicalName());
+    private static final Logger log = Logger.getLogger(AnubisStability.class.getCanonicalName());
 
     public synchronized boolean isStable() {
         return lastWasStable;
@@ -49,16 +49,16 @@ abstract public class AnubisStability {
         }
 
         /**
-         * if the stability has not changed and is unstable there is nothing new
-         * to tell the user
+         * if the stability has not changed and is unstable there
+         * is nothing new to tell the user
          */
         if (!isStable) {
             return;
         }
 
         /**
-         * if the stability has not changed but is stable and the time reference
-         * has changed, tell the user
+         * if the stability has not changed but is stable and the time
+         * reference has changed, tell the user
          */
         if (lastTimeRef != timeRef) {
             lastWasStable = isStable;
@@ -68,33 +68,33 @@ abstract public class AnubisStability {
         }
     }
 
-    public void safeStability(final boolean isStable, final long timeRef) {
+    public void safeStability(boolean isStable, long timeRef) {
 
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        TimeQueueElement timeoutErrorLogger = new TimeQueueElement() {
-            @Override
-            public void expired() {
-                log.severe("User API Upcall took >200ms in stability(s,t) where s="
-                           + isStable + ", t=" + timeRef);
-            }
-
-        };
+        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
+                                                                       log,
+                                                                       "User API Upcall took >200ms in stability(s,t) where s="
+                                                                               + isStable
+                                                                               + ", t="
+                                                                               + timeRef);
         timers.add(timeoutErrorLogger, (timein + 200));
         try {
             stability(isStable, timeRef);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in stability(s,t) where s="
-                            + isStable + ", t=" + timeRef, ex);
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "User API Upcall threw Throwable in stability(s,t) where s="
+                                + isStable + ", t=" + timeRef, ex);
+            }
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("User API Upcall took " + (timeout - timein)
-                       + "ms in stability(s,t) where s=" + isStable + ", t="
-                       + timeRef);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("User API Upcall took " + (timeout - timein)
+                      + "ms in stability(s,t) where s=" + isStable + ", t="
+                      + timeRef);
         }
 
     }
@@ -103,7 +103,7 @@ abstract public class AnubisStability {
         timers = t;
     }
 
-    abstract public void stability(boolean isStable, long timeRef);
+    abstract public void stability(boolean isStabile, long timeRef);
 
     public synchronized long timeReference() {
         return lastTimeRef;

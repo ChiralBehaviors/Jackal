@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator.names;
 
 /**
@@ -35,7 +35,7 @@ import java.io.Serializable;
 
 public class ListenerProxy extends NameData implements Serializable {
 
-    public static final long undefinedRegId = -1;
+    public static final long undefinedRegId = -1; 
     private static final long serialVersionUID = 1L;
     private long uniqueRegId;
 
@@ -52,12 +52,11 @@ public class ListenerProxy extends NameData implements Serializable {
 
     /**
      * returns true if this class has a uniqueRegId that equals that of the
-     * paramter. Returns false otherwise. Note that the equals() method for this
-     * class does not refer to the uniqueRegId attribute - two listener proxies
-     * with different ids are considered the same.
-     * 
-     * @param lp
-     *            ListenerProxy
+     * paramter. Returns false otherwise. Note that the equals() method for
+     * this class does not refer to the uniqueRegId attribute - two listener
+     * proxies with different ids are considered the same.
+     *
+     * @param lp ListenerProxy
      * @return boolean
      */
     public boolean uridEquals(ListenerProxy lp) {
@@ -66,12 +65,11 @@ public class ListenerProxy extends NameData implements Serializable {
 
     /**
      * returns true if this class has a uniqueRegId that preceeds that of the
-     * paramter. Returns false otherwise. Note that the equals() method for this
-     * class does not refer to the uniqueRegId attribute - two listener proxies
-     * with different ids are considered the same.
-     * 
-     * @param lp
-     *            ListenerProxy
+     * paramter. Returns false otherwise. Note that the equals() method for
+     * this class does not refer to the uniqueRegId attribute - two listener
+     * proxies with different ids are considered the same.
+     *
+     * @param lp ListenerProxy
      * @return boolean
      */
     public boolean uridPreceeds(ListenerProxy lp) {

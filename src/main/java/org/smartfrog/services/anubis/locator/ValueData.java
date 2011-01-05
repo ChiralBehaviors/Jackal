@@ -16,17 +16,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.rmi.MarshalledObject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ValueData implements Serializable {
-    static private Logger log = Logger.getLogger(ValueData.class.getCanonicalName()); // TODO use asynch wrapper
+    static private final Logger log = Logger.getLogger(ValueData.class.getClass().toString()); // TODO use asynch wrapper
     static private Object noMarshall = "state could not be marshalled";
     static private Object noUnmarshall = "state could not be unmarshalled";
     /**
@@ -36,7 +35,7 @@ public class ValueData implements Serializable {
 
     static public ValueData newMarshalledValue(Object value) {
         try {
-            return new ValueData(true, new MarshalledObject<Object>(value));
+            return new ValueData(true, new java.rmi.MarshalledObject(value));
         } catch (IOException ex) {
             if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING,
@@ -64,14 +63,14 @@ public class ValueData implements Serializable {
         this.value = value;
     }
 
-    @SuppressWarnings("unchecked")
     public Object getValue() {
         if (marshalled) {
             try {
-                return ((MarshalledObject<Object>) value).get();
+                return ((java.rmi.MarshalledObject) value).get();
             } catch (ClassNotFoundException ex) {
                 if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING,
+                    log.log(
+                            Level.WARNING,
                             "Attempt to unmarshall a DataValue value in a JVM that does not have access to that class",
                             ex);
                 }
@@ -83,23 +82,24 @@ public class ValueData implements Serializable {
                 }
                 return noUnmarshall;
             }
+        } else {
+            return value;
         }
-        return value;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public String toString() {
         if (marshalled) {
             try {
                 return "Marshalled[ "
-                       + ((MarshalledObject<Object>) value).get() + " ]";
+                       + ((java.rmi.MarshalledObject) value).get() + " ]";
             } catch (ClassNotFoundException ex) {
                 return "Marshalled[ class not known here ]";
             } catch (IOException ex) {
                 return "Marshalled[ IOException when unmarshalling ]";
             }
+        } else {
+            return getValue().toString();
         }
-        return "" + getValue();
     }
 }

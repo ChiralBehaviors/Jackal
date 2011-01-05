@@ -16,15 +16,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.basiccomms.multicasttransport;
 
 import java.net.InetAddress;
 
 /**
  * MulticastAddress is a representation of a multicast address used for
- * convienience. The representation includes the multicast ip address and port
- * and a time to live.
+ * convienience. The representation includes the multicast ip address
+ * and port and a time to live.
  */
 public class MulticastAddress {
 
@@ -52,9 +52,9 @@ public class MulticastAddress {
         this.timeToLive = timeToLive;
     }
 
-    @Override
-    public String toString() {
-        return "MulticastAddress [ipaddress=" + ipaddress + ", port=" + port
-               + "]";
-    }
+	@Override
+	public String toString() {
+		return "MulticastAddress [ipaddress=" + ipaddress + ", port=" + port
+				+ "]";
+	}
 }

@@ -1,0 +1,116 @@
+/** (C) Copyright 1998-2005 Hewlett-Packard Development Company, LP
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+For more information: www.smartfrog.org
+
+*/
+#include "org/smartfrog/components.sf"
+#include "/org/smartfrog/services/anubis/basiccomms/components.sf"
+
+NoSecurity extends Prim {
+    sfExport     false;
+    sfClass      "org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl";
+}
+
+MACSecurity extends Prim {
+    sfExport     false;
+    sfClass      "org.smartfrog.services.anubis.partition.wire.security.MACSecurityImpl";
+}
+
+TestMgr extends Compound {
+    sfExport           false;
+    sfClass            "org.smartfrog.services.anubis.partition.test.node.TestMgr";
+    contactAddress     ATTRIB anubisParameters:contactAddress;
+    partitionManager   TBD;
+    identity           ATTRIB anubisParameters:identity;
+}
+
+AnubisPartitionTestConsole extends {
+    sfClass        "org.smartfrog.services.anubis.partition.test.mainconsole.Controller";
+
+    anubisParameters TBD;
+
+    expirePeriod   10000;
+    checkPeriod    1000;
+
+    identity          ATTRIB anubisParameters:identity;
+    heartbeatGroup    ATTRIB anubisParameters:heartbeatGroup;
+    heartbeatInterval ATTRIB anubisParameters:heartbeatInterval;
+    heartbeatTimeout  ATTRIB anubisParameters:heartbeatTimeout;
+}
+
+PartitionManager extends Compound {
+    sfExport false;
+    sfClass "org.smartfrog.services.anubis.partition.PartitionManager";
+    partitionProtocol TBD;
+    identity          LAZY ATTRIB anubisParameters:identity;
+}
+
+
+PartitionProtocol extends Compound {
+    sfExport false;
+    sfClass "org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol";
+    partitionManager TBD;
+    connectionSet    TBD;
+    identity         LAZY ATTRIB anubisParameters:identity;
+}
+
+
+ConnectionSet extends Compound {
+    sfExport false;
+    sfClass "org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet";
+    partitionProtocol        TBD;
+    identity                 LAZY ATTRIB anubisParameters:identity;
+    connectionServerFactory  LAZY ATTRIB anubisParameters:connectionTransport;
+    heartbeatCommsAddress         ATTRIB anubisParameters:heartbeatGroup;
+    heartbeatCommsFactory    LAZY ATTRIB anubisParameters:heartbeatTransport;
+    contactAddress                ATTRIB anubisParameters:contactAddress;
+    heartbeatProtocolFactory LAZY ATTRIB anubisParameters:heartbeatProtocolFactory;
+    leaderProtocolFactory    LAZY ATTRIB anubisParameters:leaderProtocolFactory;
+    preferred                     ATTRIB anubisParameters:preferred;
+    heartbeatInterval             ATTRIB anubisParameters:heartbeatInterval;
+    heartbeatTimeout              ATTRIB anubisParameters:heartbeatTimeout;
+}
+
+TestMgr extends Compound {
+    sfExport           false;
+    sfClass            "org.smartfrog.services.anubis.partition.test.node.TestMgr";
+    contactAddress     TBD;
+    partitionManager   TBD;
+    testable           ATTRIB anubisParameters:testable;
+}
+
+
+/**
+ * AnubisPartitionManager implements the partition membership protocol.
+ */
+AnubisPartitionManager extends PartitionManager {
+
+    partitionProtocol extends PartitionProtocol {
+        partitionManager    LAZY PARENT:ATTRIB partitionManager;
+        connectionSet       LAZY PARENT:ATTRIB connectionSet;
+    }
+
+    connectionSet extends ConnectionSet {
+        partitionProtocol   LAZY PARENT:ATTRIB partitionProtocol;
+    }
+
+    testMgr extends TestMgr {
+        contactAddress            PARENT:ATTRIB anubisParameters:testAddress;
+        partitionManager     LAZY PARENT:ATTRIB partitionManager;
+    }
+}
+

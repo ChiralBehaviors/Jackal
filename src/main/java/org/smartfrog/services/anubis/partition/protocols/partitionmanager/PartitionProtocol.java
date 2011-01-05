@@ -16,12 +16,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
 import java.net.InetAddress;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -35,30 +34,28 @@ import org.smartfrog.services.anubis.partition.views.View;
 import com.hellblazer.anubis.annotations.Deployed;
 
 public class PartitionProtocol {
-    private static final Logger log = Logger.getLogger(PartitionProtocol.class.getCanonicalName());
+
     private boolean changed = false;
     private ConnectionSet connectionSet = null;
     private Identity identity = null;
     private Identity leader = null;
     private PartitionManager partitionMgr = null;
     private boolean terminated = false;
-    private BitView view = new BitView(); 
+    private BitView view = new BitView();
 
     /**
      * Changed view is called during regular connection set checks if the
      * connection set has changed.
-     * 
-     * removeCompletement() will remove nodes from the partition if they are not
-     * in the connection set. If this happens then we note that there have been
-     * changes and elect a new leader. The result is that the partition can only
-     * contract when it is unstable (i.e. when there is a view change).
+     *
+     * removeCompletement() will remove nodes from the partition if
+     * they are not in the connection set. If this happens then we
+     * note that there have been changes and elect a new leader. The result
+     * is that the partition can only contract when it is unstable (i.e. when
+     * there is a view change).
      */
     public void changedView() {
         if (view.removeComplement(connectionSet.getView()) || view.isStable()) {
             changed = true;
-        }
-        if (log.isLoggable(Level.FINE)) {
-            log.fine(String.format("Destabilizing partition protocol view @ %s : %s", System.currentTimeMillis(),view));
         }
         view.setTimeStamp(View.undefinedTimeStamp);
         view.destablize();
@@ -67,18 +64,11 @@ public class PartitionProtocol {
 
     /**
      * Establish a connection to the remote node
-     * 
-     * @param id
-     *            - id of remote node
+     * @param id - id of remote node
      * @return - the message connection
      */
     public MessageConnection connect(int id) {
         return connectionSet.connect(id);
-    }
-
-    @Deployed
-    public void deploy() {
-        leader = identity;
     }
 
     public ConnectionSet getConnectionSet() {
@@ -115,17 +105,13 @@ public class PartitionProtocol {
     }
 
     /**
-     * remove a node from the partition - if it is there. If it was there then
-     * destablise and elect a new leader.
-     * 
+     * remove a node from the partition - if it is there. If it was there
+     * then destablise and elect a new leader.
      * @param id
      */
     public void remove(Identity id) {
         if (view.remove(id.id)) {
             changed = true;
-            if (log.isLoggable(Level.FINE)) {
-                log.fine(String.format("Destabilizing partition protocol view @ %s : %s", System.currentTimeMillis(),view));
-            }
             view.setTimeStamp(View.undefinedTimeStamp);
             view.destablize();
             leader = connectionSet.electLeader(view);
@@ -146,17 +132,23 @@ public class PartitionProtocol {
     }
 
     /**
-     * copy the stable view from the connection set - includes the time stamp in
-     * the copy. Note that a partition can expand when it is stable (the
-     * connectionSet may be bigger than the partition).
-     * 
-     * Note that the node that wins the leader election at stability believed it
-     * was leader prior to stability.
+     * copy the stable view from the connection set - includes the
+     * time stamp in the copy. Note that a partition can expand
+     * when it is stable (the connectionSet may be bigger than the
+     * partition).
+     *
+     * Note that the node that wins the leader election at stability
+     * believed it was leader prior to stability.
      */
     public void stableView() {
         changed = true;
         view.copyView(connectionSet.getView());
         leader = connectionSet.electLeader(view);
+    }
+
+    @Deployed
+    public void deploy() {
+        leader = identity;
     }
 
     @PostConstruct

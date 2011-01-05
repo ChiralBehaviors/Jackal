@@ -28,6 +28,7 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
 
 /**
@@ -54,193 +55,189 @@ import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
  * 
  */
 public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
-    private static Logger log = Logger.getLogger(PingProtocolImpl.class.getCanonicalName());
-    private static final long serialVersionUID = 1L;
-    private transient ConnectionAddress address = null;
-    private boolean expected = true;
-    private transient ViewListener listener = null;
-    private Identity me = null;
-    private long pingTime = 0;
-    private Identity sender = null;
-    private transient PingHeartbeatMsg sharedData = null;
-    private boolean terminated = false;
-    private long time = 0;
-    private long viewNumber = 0;
 
-    /**
-     * Constructor - create a heartbeat protocol implementation using the
-     * information provided in a heartbeat message
+	/**
      * 
-     * @param hb
-     * @param vl
      */
-    public PingProtocolImpl(Heartbeat hb, ViewListener vl,
-                            PingHeartbeatMsg sharedHeartbeat) {
-        super(hb.getView());
-        time = hb.getTime();
-        viewNumber = hb.getViewNumber();
-        listener = vl;
-        sender = hb.getSender();
-        address = hb.getSenderAddress();
-        sharedData = sharedHeartbeat;
-        me = sharedData.getSender();
-        pingTime = System.currentTimeMillis();
-        if (me.id < sender.id) {
-            sharedData.setPingBit(sender);
-            expected = true;
-        } else {
-            sharedData.clearPingBit(sender);
-            expected = true;
-        }
-    }
+	private static final long serialVersionUID = 1L;
+	private ConnectionAddress address = null;
+	private boolean expected = true;
+	private ViewListener listener = null;
+	private static final Logger log = Logger.getLogger(PingProtocolImpl.class.getCanonicalName());
+	private Identity me = null;
+	private long pingTime = 0;
+	private Identity sender = null;
+	private PingHeartbeatMsg sharedData = null;
+	private boolean terminated = false;
+	private long time = 0;
+	private long viewNumber = 0;
 
-    /**
-     * Sender interface
-     * 
-     * @return identity
-     */
-    @Override
-    public Identity getSender() {
-        return sender;
-    }
+	/**
+	 * Constructor - create a heartbeat protocol implementation using the
+	 * information provided in a heartbeat message
+	 * 
+	 * @param hb
+	 * @param vl
+	 */
+	public PingProtocolImpl(Heartbeat hb, ViewListener vl,
+			HeartbeatMsg sharedHeartbeat) {
+		super(hb.getView());
+		time = hb.getTime();
+		viewNumber = hb.getViewNumber();
+		listener = vl;
+		sender = hb.getSender();
+		address = hb.getSenderAddress();
+		sharedData = (PingHeartbeatMsg) sharedHeartbeat;
+		me = sharedData.getSender();
+		pingTime = System.currentTimeMillis();
+		if (me.id < sender.id) {
+			sharedData.setPingBit(sender);
+			expected = true;
+		} else {
+			sharedData.clearPingBit(sender);
+			expected = true;
+		}
+	}
 
-    @Override
-    public ConnectionAddress getSenderAddress() {
-        return address;
-    }
+	/**
+	 * Sender interface
+	 * 
+	 * @return identity
+	 */
+	public Identity getSender() {
+		return sender;
+	}
 
-    /**
-     * Timed interface
-     * 
-     * @return long
-     */
-    @Override
-    public long getTime() {
-        return time;
-    }
+	public ConnectionAddress getSenderAddress() {
+		return address;
+	}
 
-    /**
-     * indicates if the heartbeat protocol is timely. This method is called
-     * periodically by the connectionSet as part of a connection cleanup action.
-     * "Timelyness" is relative to the current time (timenow) and the timebound.
-     * 
-     * @param timenow
-     *            current time
-     * @param timebound
-     *            expiration period
-     * @return true if expried, false if not
-     */
-    @Override
-    public boolean isNotTimely(long timenow, long timebound) {
-        return timenow - pingTime > timebound;
-    }
+	/**
+	 * Timed interface
+	 * 
+	 * @return long
+	 */
+	public long getTime() {
+		return time;
+	}
 
-    /**
-     * indicates if the heartbeat protocol has quiesced. When the protocol has
-     * expired it will be inactive for a period before it can be removed. This
-     * is used to avoid another instance of the protocol being created as soon
-     * as this one expires (the partition protocol requires that connections
-     * remain inactive for a period after they expire). The quiescence is
-     * relative to the current time and the quiesce timeout.
-     * 
-     * @param timenow
-     *            current time
-     * @param quiesce
-     *            quesce timeout - must be greater than expire timeout*2
-     * @return true if expired, false if not
-     */
-    @Override
-    public boolean isQuiesced(long timenow, long quiesce) {
-        return timenow - pingTime > quiesce;
-    }
+	/**
+	 * indicates if the heartbeat protocol is timely. This method is called
+	 * periodically by the connectionSet as part of a connection cleanup action.
+	 * "Timelyness" is relative to the current time (timenow) and the timebound.
+	 * 
+	 * @param timenow
+	 *            current time
+	 * @param timebound
+	 *            expiration period
+	 * @return true if expried, false if not
+	 */
+	public boolean isNotTimely(long timenow, long timebound) {
+		return timenow - pingTime > timebound;
+	}
 
-    /**
-     * This protocol does not measure clock skew. It is in fact independent of
-     * clock skew because it uses only the local clock times to determine
-     * timeliness.
-     * 
-     * @return boolean
-     */
-    @Override
-    public boolean measuresClockSkew() {
-        return false;
-    }
+	/**
+	 * indicates if the heartbeat protocol has quiesced. When the protocol has
+	 * expired it will be inactive for a period before it can be removed. This
+	 * is used to avoid another instance of the protocol being created as soon
+	 * as this one expires (the partition protocol requires that connections
+	 * remain inactive for a period after they expire). The quiescence is
+	 * relative to the current time and the quiesce timeout.
+	 * 
+	 * @param timenow
+	 *            current time
+	 * @param quiesce
+	 *            quesce timeout - must be greater than expire timeout*2
+	 * @return true if expired, false if not
+	 */
+	public boolean isQuiesced(long timenow, long quiesce) {
+		return timenow - pingTime > quiesce;
+	}
 
-    /**
-     * receives a heartbeat message and deals with it according to the heartbeat
-     * protocol. This is protocol uses straight-forward timing of messages -
-     * only the most recent message time and its information counts.
-     * 
-     * @param hb
-     *            - heartbeat message
-     * @return boolean
-     */
-    @Override
-    public boolean receiveHeartbeat(Heartbeat hb) {
+	/**
+	 * This protocol does not measure clock skew. It is in fact independent of
+	 * clock skew because it uses only the local clock times to determine
+	 * timeliness.
+	 * 
+	 * @return boolean
+	 */
+	public boolean measuresClockSkew() {
+		return false;
+	}
 
-        if (!(hb instanceof PingHeartbeatMsg)) {
-            log.warning(me + " ping protocol received a non-ping heartbeat");
-            return false;
-        }
+	/**
+	 * receives a heartbeat message and deals with it according to the heartbeat
+	 * protocol. This is protocol uses straight-forward timing of messages -
+	 * only he most recent message time and its information counts.
+	 * 
+	 * @param hb
+	 *            - heartbeat message
+	 * @return boolean
+	 */
+	public boolean receiveHeartbeat(Heartbeat hb) {
 
-        if (terminated) {
-            return false;
-        }
+		if (!(hb instanceof PingHeartbeatMsg)) {
+			log.severe(me + " ping protocol received a non-ping heartbeat");
+			return false;
+		}
 
-        PingHeartbeatMsg pinghb = (PingHeartbeatMsg) hb;
+		if (terminated) {
+			return false;
+		}
 
-        /**
-         * Only bother with a heartbeat if it superceeds the last one (ordered
-         * delivery is not guaranteed!)
-         */
-        if (pinghb.getTime() > time) {
+		PingHeartbeatMsg pinghb = (PingHeartbeatMsg) hb;
 
-            time = pinghb.getTime();
+		/**
+		 * Only bother with a heartbeat if it superceeds the last one (ordered
+		 * delivery is not guaranteed!)
+		 */
+		if (pinghb.getTime() > time) {
 
-            /**
-             * if the expected ping has been received record the time and
-             * change;
-             */
-            if (expected == pinghb.getPingBit(me)) {
-                pingTime = System.currentTimeMillis();
-                expected = !expected;
-                sharedData.flipPingBit(sender);
-            }
+			time = pinghb.getTime();
 
-            /**
-             * check for a new view (view number) if the view numbers are
-             * different but the views are the same then the view has changed
-             * and chaged back without us noticing! We need to pick this up as a
-             * real change.
-             */
-            if (hb.getViewNumber() != viewNumber) {
-                viewNumber = hb.getViewNumber();
-                view = hb.getView().toBitSet();
-                stable = hb.getView().isStable();
-                listener.newView(sender, this);
-            }
+			/**
+			 * if the expected ping has been received record the time and
+			 * change;
+			 */
+			if (expected == pinghb.getPingBit(me)) {
+				pingTime = System.currentTimeMillis();
+				expected = !expected;
+				sharedData.flipPingBit(sender);
+			}
 
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Accepting hb:%s links=%s, view=%s", hb.getSender(), hb.getMsgLinks(), view));
-            }
-            return true;
+			/**
+			 * check for a new view (view number) if the view numbers are
+			 * different but the views are the same then the view has changed
+			 * and chaged back without us noticing! We need to pick this up as a
+			 * real change.
+			 */
+			if (hb.getViewNumber() != viewNumber) {
+				viewNumber = hb.getViewNumber();
+				view = hb.getView().toBitSet();
+				stable = hb.getView().isStable();
+				listener.newView(sender, this);
+			}
 
-        }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Rejecting heart beat: " + hb);
-        }
-        return false;
-    }
+	    	if (log.isLoggable(Level.FINEST)) {
+	    		log.finest("Accepting heart beat: " + hb);
+	    	}
+			return true;
 
-    @Override
-    public void setTime(long t) {
-        time = t;
-    }
+		} else {
+	    	if (log.isLoggable(Level.FINEST)) {
+	    		log.finest("Rejecting heart beat: " + hb);
+	    	}
+			return false;
+		}
+	}
 
-    @Override
-    public void terminate() {
-        terminated = true;
-        sharedData.clearPingBit(me);
-    }
+	public void setTime(long t) {
+		time = t;
+	}
+
+	public void terminate() {
+		terminated = true;
+		sharedData.clearPingBit(me);
+	}
 
 }

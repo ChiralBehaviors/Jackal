@@ -1,6 +1,5 @@
 package org.smartfrog.services.anubis;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
@@ -12,58 +11,67 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Configuration;
 
 public class SmokeTest extends TestCase {
-    @Configuration
-    static class testA extends DefaultConfiguration {
+    static class noTestCfg extends BasicConfiguration {
+
         @Override
-        public int node() throws UnknownHostException {
+        public boolean getTestable() {
+            return false;
+        }
+
+    }
+
+    @Configuration
+    static class testA extends noTestCfg {
+        @Override
+        public int node() {
             return 0;
         }
     }
 
     @Configuration
-    static class testB extends DefaultConfiguration {
+    static class testB extends noTestCfg {
         @Override
-        public int node() throws UnknownHostException {
+        public int node() {
             return 1;
         }
     }
 
     @Configuration
-    static class testC extends DefaultConfiguration {
+    static class testC extends noTestCfg {
         @Override
-        public int node() throws UnknownHostException {
+        public int node() {
             return 2;
         }
     }
 
     @Configuration
-    static class testD extends DefaultConfiguration {
+    static class testD extends noTestCfg {
         @Override
-        public int node() throws UnknownHostException {
+        public int node() {
             return 3;
         }
     }
 
     @Configuration
-    static class testE extends DefaultConfiguration {
+    static class testE extends noTestCfg {
         @Override
-        public int node() throws UnknownHostException {
+        public int node() {
             return 4;
         }
     }
 
     @Configuration
-    static class testF extends DefaultConfiguration {
+    static class testF extends noTestCfg {
         @Override
-        public int node() throws UnknownHostException {
+        public int node() {
             return 5;
         }
     }
 
     @Configuration
-    static class testG extends DefaultConfiguration {
+    static class testG extends noTestCfg {
         @Override
-        public int node() throws UnknownHostException {
+        public int node() {
             return 6;
         }
     }

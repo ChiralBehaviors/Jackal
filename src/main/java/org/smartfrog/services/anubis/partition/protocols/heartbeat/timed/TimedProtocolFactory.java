@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.timed;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
@@ -28,12 +28,10 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class TimedProtocolFactory implements HeartbeatProtocolFactory {
-    @Override
     public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address) {
         return new HeartbeatMsg(identity, address);
     }
 
-    @Override
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
                                             HeartbeatMsg sharedHeartbeat) {
         return new TimedProtocolImpl(hb, vl, sharedHeartbeat);

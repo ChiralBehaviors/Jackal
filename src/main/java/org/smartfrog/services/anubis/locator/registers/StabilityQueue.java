@@ -16,20 +16,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator.registers;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.util.BlockingQueue;
 import org.smartfrog.services.anubis.partition.views.View;
 
 abstract public class StabilityQueue {
-    
-    private static Logger log = Logger.getLogger(StabilityQueue.class.getCanonicalName());
 
-    private static class Notification {
+    private class Notification {
         int leader;
         View view;
 
@@ -44,20 +39,13 @@ abstract public class StabilityQueue {
 
         public RequestServer() {
             super("Anubis: Locator Stability Queue Server");
-            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                
-                @Override
-                public void uncaughtException(Thread t, Throwable e) {
-                    log.log(Level.WARNING, "Uncaught exception", e);
-                }
-            });
         }
 
         @Override
         public void run() {
             running = true;
             while (running) {
-                Notification notification = requests.get();
+                Notification notification = (Notification) requests.get();
                 if (notification != null) {
                     doit(notification.view, notification.leader);
                 }
@@ -69,7 +57,7 @@ abstract public class StabilityQueue {
         }
     }
 
-    private BlockingQueue<Notification> requests = new BlockingQueue<Notification>();
+    private BlockingQueue requests = new BlockingQueue();
     private RequestServer server = new RequestServer();
 
     public StabilityQueue() {

@@ -16,34 +16,28 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator.util;
 
+import java.util.Iterator;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ActiveTimeQueue extends Thread {
-    private final static Logger log = Logger.getLogger(ActiveTimeQueue.class.getCanonicalName());
+
     private boolean running = false;
-    private final TimeQueue queue = new TimeQueue();
+
+    private long wakeup = 0;
+    TimeQueue queue = new TimeQueue();
 
     public ActiveTimeQueue(String threadName) {
         super(threadName);
-        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-            
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING, "Uncaught exception", e);
-            }
-        });
     }
 
     /**
      * Add an element to the queue. Notify the worker thread in case this
-     * element has been added to the top of the queue and the worker has to wake
-     * up earlier.
-     * 
+     * element has been added to the top of the queue and the worker has to
+     * wake up earlier.
+     *
      * @param element
      * @param time
      * @return boolean
@@ -53,12 +47,13 @@ public class ActiveTimeQueue extends Thread {
             if (queue.add(element, time)) {
                 queue.notify();
                 return true;
+            } else {
+                return false;
             }
-            return false;
         }
     }
 
-    public Set<TimeQueueElement> getExpiredOrBlock() {
+    public Set getExpiredOrBlock() {
 
         /**
          * synchronized on the queue.
@@ -88,12 +83,12 @@ public class ActiveTimeQueue extends Thread {
              * get timing information.
              */
             long timeNow = System.currentTimeMillis();
-            Long key = queue.firstKey();
+            Long key = (Long) queue.firstKey();
             long nextTime = key.longValue();
 
             /**
-             * If no items to expire then sleep until the top one expires or we
-             * get woken up.
+             * If no items to expire then sleep until the top one expires or
+             * we get woken up.
              */
             if (nextTime > timeNow) {
                 try {
@@ -104,8 +99,8 @@ public class ActiveTimeQueue extends Thread {
             }
 
             /**
-             * If there are items to expire then remove them from the queue and
-             * return them.
+             * If there are items to expire then remove them from the queue
+             * and return them.
              */
             return queue.remove(key);
         }
@@ -115,7 +110,7 @@ public class ActiveTimeQueue extends Thread {
      * Remove an element from the queue - don't notify, the worst that can
      * happen is the worker thread can wake with nothing to do, so why wake it
      * now?
-     * 
+     *
      * @param element
      * @return boolean
      */
@@ -126,26 +121,26 @@ public class ActiveTimeQueue extends Thread {
     }
 
     /**
-     * The worker thread. This thread is the timer that wakes up to expire items
-     * on the queue as they reach their queued time.
-     * 
+     * The worker thread. This thread is the timer that wakes up to
+     * expire items on the queue as they reach their queued time.
+     *
      * The getExpiredOrBlock() method synchronizes on the queue and removes
      * items to be expired before releasing the monitor. So doExpirations()
-     * operates on a different data structure. This gives two benefits: 1) the
-     * add() and remove() methods are guaranteed to progress, because
-     * getExpiredOrBlock() will not block them for long. Therefore calling the
-     * expired() method on the dequeued elements will not deadlock if those
-     * elements happen to have another thread calling add() or remove(). 2) An
-     * element can call add() or remove() in the implementation of its expired()
-     * method without causing a ConcurrentModificationException to be thrown on
-     * the queue data structure.
+     * operates on a different data structure. This gives two benefits:
+     * 1) the add() and remove() methods are guaranteed to progress, because
+     *    getExpiredOrBlock() will not block them for long. Therefore calling
+     *    the expired() method on the dequeued elements will not deadlock if
+     *    those elements happen to have another thread calling add() or remove().
+     * 2) An element can call add() or remove() in the implementation of its
+     *    expired() method without causing a ConcurrentModificationException
+     *    to be thrown on the queue data structure.
      */
     @Override
     public void run() {
         running = true;
         while (running) {
 
-            Set<TimeQueueElement> expiredElements = getExpiredOrBlock();
+            Set expiredElements = getExpiredOrBlock();
             if (expiredElements != null) {
                 doExpirations(expiredElements);
             }
@@ -165,14 +160,15 @@ public class ActiveTimeQueue extends Thread {
     }
 
     /**
-     * Iterate through the set of expired elements and call their expired()
-     * method.
-     * 
+     * Iterate through the set of expired elements and call their
+     * expired() method.
+     *
      * @param timeNow
      */
-    private void doExpirations(Set<TimeQueueElement> expiredElements) {
-        for (TimeQueueElement e : expiredElements) {
-            e.expired();
+    private void doExpirations(Set expiredElements) {
+        Iterator iter = expiredElements.iterator();
+        while (iter.hasNext()) {
+            ((TimeQueueElement) iter.next()).expired();
         }
     }
 }

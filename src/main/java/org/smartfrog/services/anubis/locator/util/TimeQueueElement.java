@@ -16,12 +16,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator.util;
 
 abstract public class TimeQueueElement {
 
-    private Long timeQueueQueuedTime = Long.valueOf(0);
+    private Long timeQueueQueuedTime = new Long(0);
 
     /**
      * Default constructor
@@ -30,16 +30,15 @@ abstract public class TimeQueueElement {
     }
 
     /**
-     * An abstract method used to indicate that this element has expired. For
-     * example, this method is called by an ActiveTimeQueue on elements that
-     * have time-stamps that have expired (i.e. are in the past according to the
-     * system time).
+     * An abstract method used to indicate that this element has
+     * expired. For example, this method is called by an ActiveTimeQueue on
+     * elements that have time-stamps that have expired (i.e. are in the past
+     * according to the system time).
      */
     abstract public void expired();
 
     /**
      * get operation to retrieve the time stamp for this element
-     * 
      * @return the time-stamp as a Long
      */
     public Long getQueuedTime() {
@@ -48,9 +47,7 @@ abstract public class TimeQueueElement {
 
     /**
      * the set operation to time-stamp the element.
-     * 
-     * @param time
-     *            the time-stamp for this element.
+     * @param time the time-stamp for this element.
      */
     public void setQueuedTime(Long time) {
         timeQueueQueuedTime = time;

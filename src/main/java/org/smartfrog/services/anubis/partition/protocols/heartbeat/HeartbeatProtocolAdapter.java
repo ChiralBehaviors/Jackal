@@ -23,245 +23,225 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatConnection;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-public class HeartbeatProtocolAdapter implements HeartbeatProtocol {
+public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
 
-    private Candidate candidate = null;
-    /**
-     * Implementation of the HeartbeatProtocol
-     */
-    private HeartbeatProtocol heartbeatProtocol = null;
+	private Candidate candidate = null;
+	/**
+	 * Implementation of the HeartbeatProtocol
+	 */
+	private HeartbeatProtocol heartbeatProtocol = null;
 
-    private static Logger log = Logger.getLogger(HeartbeatProtocolAdapter.class.getCanonicalName());
+	protected static final Logger log = Logger.getLogger(HeartbeatProtocolAdapter.class.getCanonicalName());
 
-    /**
-     * Constructor - creates a HeartbeatProtocolAdapter pointing to the given
-     * protocol and the candidate via super class
-     * 
-     * @param hbp
-     *            - the protocol
-     */
-    public HeartbeatProtocolAdapter(HeartbeatProtocol hbp, Candidate can) {
-        setProtocol(hbp);
-        setCandidate(can);
-    }
+	/**
+	 * Constructor - creates a HeartbeatProtocolAdapter pointing to the given
+	 * protocol and the candidate via super class
+	 * 
+	 * @param hbp
+	 *            - the protocol
+	 */
+	public HeartbeatProtocolAdapter(HeartbeatProtocol hbp, Candidate can) {
+		setProtocol(hbp);
+		setCandidate(can);
+	}
 
-    @Override
-    public int cardinality() {
-        return heartbeatProtocol.cardinality();
-    }
+	public int cardinality() {
+		return heartbeatProtocol.cardinality();
+	}
 
-    public void clearReceivedVotes() {
-        candidate.clearReceivedVotes();
-    }
+	public void clearReceivedVotes() {
+		candidate.clearReceivedVotes();
+	}
 
-    @Override
-    public boolean containedIn(View v) {
-        return heartbeatProtocol.containedIn(v);
-    }
+	public boolean containedIn(View v) {
+		return heartbeatProtocol.containedIn(v);
+	}
 
-    @Override
-    public boolean contains(Identity id) {
-        return heartbeatProtocol.contains(id);
-    }
+	public boolean contains(Identity id) {
+		return heartbeatProtocol.contains(id);
+	}
 
-    @Override
-    public boolean contains(int id) {
-        return heartbeatProtocol.contains(id);
-    }
+	public boolean contains(int id) {
+		return heartbeatProtocol.contains(id);
+	}
 
-    @Override
-    public boolean contains(View v) {
-        return heartbeatProtocol.contains(v);
-    }
+	public boolean contains(View v) {
+		return heartbeatProtocol.contains(v);
+	}
 
-    public int countReceivedVotes() {
-        return candidate.countReceivedVotes();
-    }
+	public int countReceivedVotes() {
+		return candidate.countReceivedVotes();
+	}
 
-    @Override
-    public boolean equalsView(View v) {
-        return heartbeatProtocol.equalsView(v);
-    }
+	public boolean equalsView(View v) {
+		return heartbeatProtocol.equalsView(v);
+	}
 
-    public Candidate getCandidate() {
-        return candidate;
-    }
+	public Candidate getCandidate() {
+		return candidate;
+	}
 
-    /**
-     * Candidate interface
-     * 
-     * @return Identity
-     */
-    public Identity getId() {
-        return candidate.getId();
-    }
+	/**
+	 * Candidate interface
+	 * 
+	 * @return Identity
+	 */
+	public Identity getId() {
+		return candidate.getId();
+	}
 
-    /**
-     * Get the protocol instance
-     * 
-     * @return - the protocol instance
-     */
-    public HeartbeatProtocol getProtocol() {
-        return heartbeatProtocol;
-    }
+	/**
+	 * Get the protocol instance
+	 * 
+	 * @return - the protocol instance
+	 */
+	public HeartbeatProtocol getProtocol() {
+		return heartbeatProtocol;
+	}
 
-    /**
-     * HeartbeatProtocol interface 3) Timed interface part
-     */
-    @Override
-    public Identity getSender() {
-        return heartbeatProtocol.getSender();
-    }
+	/**
+	 * HeartbeatProtocol interface 3) Timed interface part
+	 */
+	public Identity getSender() {
+		return heartbeatProtocol.getSender();
+	}
 
-    @Override
-    public ConnectionAddress getSenderAddress() {
-        return heartbeatProtocol.getSenderAddress();
-    }
+	public ConnectionAddress getSenderAddress() {
+		return heartbeatProtocol.getSenderAddress();
+	}
 
-    /**
-     * HeartbeatProtocol interface 2) Timed interface part
-     */
-    @Override
-    public long getTime() {
-        return heartbeatProtocol.getTime();
-    }
+	/**
+	 * HeartbeatProtocol interface 2) Timed interface part
+	 */
+	public long getTime() {
+		return heartbeatProtocol.getTime();
+	}
 
-    @Override
-    public long getTimeStamp() {
-        return heartbeatProtocol.getTimeStamp();
-    }
+	public long getTimeStamp() {
+		return heartbeatProtocol.getTimeStamp();
+	}
 
-    public Identity getVote() {
-        return candidate.getVote();
-    }
+	public Identity getVote() {
+		return candidate.getVote();
+	}
 
-    @Override
-    public boolean isEmpty() {
-        return heartbeatProtocol.isEmpty();
-    }
+	public boolean isEmpty() {
+		return heartbeatProtocol.isEmpty();
+	}
 
-    /**
-     * HeartbeatProtocol interface
-     */
-    @Override
-    public boolean isNotTimely(long timenow, long timebound) {
-        return heartbeatProtocol.isNotTimely(timenow, timebound);
-    }
+	/**
+	 * HeartbeatProtocol interface
+	 */
+	public boolean isNotTimely(long timenow, long timebound) {
+		return heartbeatProtocol.isNotTimely(timenow, timebound);
+	}
 
-    public boolean isPreferred() {
-        return candidate.isPreferred();
-    }
+	public boolean isPreferred() {
+		return candidate.isPreferred();
+	}
 
-    @Override
-    public boolean isQuiesced(long timenow, long quiesce) {
-        return heartbeatProtocol.isQuiesced(timenow, quiesce);
-    }
+	public boolean isQuiesced(long timenow, long quiesce) {
+		return heartbeatProtocol.isQuiesced(timenow, quiesce);
+	}
 
-    @Override
-    public boolean isStable() {
-        return heartbeatProtocol.isStable();
-    }
+	public boolean isStable() {
+		return heartbeatProtocol.isStable();
+	}
 
-    @Override
-    public boolean measuresClockSkew() {
-        return heartbeatProtocol.measuresClockSkew();
-    }
+	public boolean measuresClockSkew() {
+		return heartbeatProtocol.measuresClockSkew();
+	}
 
-    @Override
-    public boolean overlap(View v) {
-        return heartbeatProtocol.overlap(v);
-    }
+	public boolean overlap(View v) {
+		return heartbeatProtocol.overlap(v);
+	}
 
-    /**
-     * HeartbeatProtocol interface 1) HeartbeatReceive interface part Modifies
-     * behaviour to deliver a heartbeat to both the heartbeat protocol and the
-     * candidate.
-     */
-    @Override
-    public boolean receiveHeartbeat(Heartbeat hb) {
+	/**
+	 * HeartbeatProtocol interface 1) HeartbeatReceive interface part Modifies
+	 * behaviour to deliver a heartbeat to both the heartbeat protocol and the
+	 * candidate.
+	 */
+	public boolean receiveHeartbeat(Heartbeat hb) {
 
-        /**
-         * pass the heartbeat to the heartbeat protocol
-         */
-        boolean accepted = heartbeatProtocol.receiveHeartbeat(hb);
-        if (log.isLoggable(Level.FINEST)) {
-            if (accepted) {
-                log.finest("Heart beat accepted: " + hb);
-            } else {
-                log.finest("Heart beat rejected: " + hb);
-            }
-        }
+		/**
+		 * pass the heartbeat to the heartbeat protocol
+		 */
+		boolean accepted = heartbeatProtocol.receiveHeartbeat(hb);
+		if (log.isLoggable(Level.FINEST)) {
+			if (accepted) {
+				log.finest("Heart beat accepted: " + hb);
+			} else {
+				log.finest("Heart beat rejected: " + hb);
+			}
+		}
 
-        /**
-         * If the heartbeat is accepted ok by the heartbeat protocol then get
-         * the piggy-backed vote and pass it to the candidate impl
-         */
-        if (accepted) {
-            setVote(hb.getCandidate());
-        }
+		/**
+		 * If the heartbeat is accepted ok by the heartbeat protocol then get
+		 * the piggy-backed vote and pass it to the candidate impl
+		 */
+		if (accepted) {
+			setVote(hb.getCandidate());
+		}
 
-        return accepted;
-    }
+		return accepted;
+	}
 
-    public void receiveVote(Candidate c) {
-        candidate.receiveVote(c);
-    }
+	public void receiveVote(Candidate c) {
+		candidate.receiveVote(c);
+	}
 
-    public void setCandidate(Candidate can) {
-        candidate = can;
-    }
+	public void setCandidate(Candidate can) {
+		candidate = can;
+	}
 
-    /**
-     * Set the adapter to point to the given protocol
-     * 
-     * @param hbp
-     *            - a protocol instance
-     */
-    public void setProtocol(HeartbeatProtocol hbp) {
-        heartbeatProtocol = hbp;
-    }
+	/**
+	 * Set the adapter to point to the given protocol
+	 * 
+	 * @param hbp
+	 *            - a protocol instance
+	 */
+	public void setProtocol(HeartbeatProtocol hbp) {
+		heartbeatProtocol = hbp;
+	}
 
-    @Override
-    public void setTime(long t) {
-        heartbeatProtocol.setTime(t);
-    }
+	public void setTime(long t) {
+		heartbeatProtocol.setTime(t);
+	}
 
-    public void setVote(Candidate c) {
-        candidate.setVote(c);
-    }
+	public void setVote(Candidate c) {
+		candidate.setVote(c);
+	}
 
-    public void setVote(Identity v) {
-        candidate.setVote(v);
-    }
+	public void setVote(Identity v) {
+		candidate.setVote(v);
+	}
 
-    /**
-     * HeartbeatProtocol interface 4) View interface part
-     */
-    @Override
-    public int size() {
-        return heartbeatProtocol.size();
-    }
+	/**
+	 * HeartbeatProtocol interface 4) View interface part
+	 */
+	public int size() {
+		return heartbeatProtocol.size();
+	}
 
-    @Override
-    public void terminate() {
-        heartbeatProtocol.terminate();
-        if (log.isLoggable(Level.FINEST)) {
-            log.log(Level.FINEST, "terminating connection: " + this);
-        }
-    }
+	public void terminate() {
+		heartbeatProtocol.terminate();
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "terminating connection: " + this);
+		}
+	}
 
-    @Override
-    public NodeIdSet toBitSet() {
-        return heartbeatProtocol.toBitSet();
-    }
+	public NodeIdSet toBitSet() {
+		return heartbeatProtocol.toBitSet();
+	}
 
-    public boolean winsAgainst(Candidate c) {
-        return candidate.winsAgainst(c);
-    }
+	public boolean winsAgainst(Candidate c) {
+		return candidate.winsAgainst(c);
+	}
 }

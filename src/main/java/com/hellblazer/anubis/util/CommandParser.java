@@ -25,126 +25,11 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 
+
 /**
- * @version $Rev$ $Date$
- */
+* @version $Rev$ $Date$
+*/
 public class CommandParser {
-
-    public static final class Arguments {
-        private final Options options;
-        private final List<String> args;
-
-        public Arguments(Options options, List<String> args) {
-            this.options = options;
-            this.args = args;
-        }
-
-        public List<String> get() {
-            return args;
-        }
-
-        public Options options() {
-            return options;
-        }
-    }
-
-    public static class Category extends Option {
-        public Category(String name) {
-            super(name);
-        }
-    }
-
-    public static class HelpException extends Exception {
-
-        /**
-		 * 
-		 */
-        private static final long serialVersionUID = 1L;
-
-    }
-
-    public static class InvalidOptionsException extends Exception {
-
-        /**
-		 * 
-		 */
-        private static final long serialVersionUID = 1L;
-
-    }
-
-    public static class Option {
-        private final String mini;
-        private final String name;
-        private String description;
-        private Class<? extends Object> type;
-        private Object value;
-
-        Option(char mini, String name) {
-            this(mini + "", name);
-        }
-
-        Option(String name) {
-            this(null, name);
-        }
-
-        Option(String mini, String name) {
-            this.mini = mini;
-            this.name = name;
-        }
-
-        public Option description(String description) {
-            if (!description.endsWith(".")) {
-                description += ".";
-            }
-            setDescription(description);
-            return this;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public String getMini() {
-            return mini;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Class<? extends Object> getType() {
-            return type;
-        }
-
-        public Object getValue() {
-            return value;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
-
-        public void setType(Class<? extends Object> type) {
-            this.type = type;
-        }
-
-        public void setValue(Object value) {
-            this.value = value;
-        }
-
-        public Option type(Class<? extends Object> type) {
-            setType(type);
-            return this;
-        }
-
-        public Option value(Object value) {
-            setValue(value);
-            if (getType() == null) {
-                setType(value.getClass());
-            }
-            return this;
-        }
-    }
 
     private final Map<String, Option> opts = new LinkedHashMap<String, Option>();
 
@@ -152,20 +37,98 @@ public class CommandParser {
         init();
     }
 
-    public void category(String name) {
-        opts.put("-@" + name, new Category(name));
+    protected void init(){}
+
+    protected List<String> validate(Arguments arguments) {
+        return new ArrayList<String>();
     }
 
-    public Option opt(char _short, String _long) {
-        return opt(new Option(_short, _long));
+    protected List<String> usage() {
+        return new ArrayList<String>();
+    }
+
+    public void category(String name) {
+        opts.put("-@" + name, new Category(name));
     }
 
     public Option opt(String _long) {
         return opt(new Option(_long));
     }
 
-    public Arguments parse(String[] args) throws HelpException,
-                                         InvalidOptionsException {
+    public Option opt(char _short, String _long) {
+        return opt(new Option(_short, _long));
+    }
+
+    private Option opt(Option o) {
+        opts.put(o.getName(), o);
+        if (o.getMini() != null) opts.put(o.getMini(), o);
+        return o;
+    }
+
+    private void help() {
+
+        final Iterator<String> usage = usage().iterator();
+
+        if (usage.hasNext()) {
+            System.out.println("Usage: " + usage.next());
+        }
+
+        while (usage.hasNext()) {
+            System.out.println("  or   " + usage.next());
+        }
+
+        List<Option> seen = new ArrayList<Option>();
+
+        for (Option option : opts.values()) {
+            if (seen.contains(option)) continue;
+            seen.add(option);
+
+            if (option instanceof Category) {
+                System.out.println("");
+                System.out.println(option.getName() + ":");
+                continue;
+            }
+
+            StringBuilder s = new StringBuilder();
+            if (option.getMini() != null) {
+                s.append(" -");
+                s.append(option.getMini());
+                s.append(",  ");
+            } else {
+                s.append("      ");
+            }
+
+            s.append("--");
+            s.append(option.getName());
+            if (option.getType() != null) {
+                s.append("=");
+                s.append(option.getType().getSimpleName());
+            }
+
+            if (option.getDescription() != null || option.getValue() != null) {
+                for (int i = s.length(); i < 29; i++) {
+                    s.append(' ');
+                }
+
+                s.append(' ');
+                s.append(' ');
+
+                if (option.getDescription() != null) {
+                    s.append(option.getDescription());
+                }
+
+                if (option.getValue() != null) {
+                    if (option.getDescription() != null) s.append(" ");
+                    s.append("Default is ");
+                    s.append(option.getValue());
+                }
+            }
+
+            System.out.println(s.toString());
+        }
+    }
+
+    public Arguments parse(String[] args) throws HelpException, InvalidOptionsException {
         List<String> list = new ArrayList<String>(Arrays.asList(args));
 
         ListIterator<String> items = list.listIterator();
@@ -175,9 +138,7 @@ public class CommandParser {
         while (items.hasNext()) {
             String arg = items.next();
 
-            if (!arg.startsWith("-")) {
-                break;
-            }
+            if (!arg.startsWith("-")) break;
 
             items.remove();
 
@@ -251,125 +212,34 @@ public class CommandParser {
             }
 
             System.err.println();
-
+            
             help();
 
             throw new InvalidOptionsException();
         }
-
+        
         return arguments;
     }
 
-    protected void init() {
-    }
+    private void checkValue(String optString, String value, Option option) {
+        checkOption(optString, option);
 
-    protected List<String> usage() {
-        return new ArrayList<String>();
-    }
+        if (option.getType() == null) return;
 
-    protected List<String> validate(Arguments arguments) {
-        return new ArrayList<String>();
+        if (value == null || value.equals("")) {
+            System.err.println("Missing param " + optString + " <" + option.getType().getSimpleName() + ">");
+            System.exit(1);
+        }
     }
 
     private void checkOption(String invalid, Option option) {
-        if (option != null) {
-            return;
-        }
+        if (option != null) return;
 
         System.err.println("Unknown option: " + invalid);
 
         help();
 
         System.exit(1);
-    }
-
-    private void checkValue(String optString, String value, Option option) {
-        checkOption(optString, option);
-
-        if (option.getType() == null) {
-            return;
-        }
-
-        if (value == null || value.equals("")) {
-            System.err.println("Missing param " + optString + " <"
-                               + option.getType().getSimpleName() + ">");
-            System.exit(1);
-        }
-    }
-
-    private void help() {
-
-        final Iterator<String> usage = usage().iterator();
-
-        if (usage.hasNext()) {
-            System.out.println("Usage: " + usage.next());
-        }
-
-        while (usage.hasNext()) {
-            System.out.println("  or   " + usage.next());
-        }
-
-        List<Option> seen = new ArrayList<Option>();
-
-        for (Option option : opts.values()) {
-            if (seen.contains(option)) {
-                continue;
-            }
-            seen.add(option);
-
-            if (option instanceof Category) {
-                System.out.println("");
-                System.out.println(option.getName() + ":");
-                continue;
-            }
-
-            StringBuilder s = new StringBuilder();
-            if (option.getMini() != null) {
-                s.append(" -");
-                s.append(option.getMini());
-                s.append(",  ");
-            } else {
-                s.append("      ");
-            }
-
-            s.append("--");
-            s.append(option.getName());
-            if (option.getType() != null) {
-                s.append("=");
-                s.append(option.getType().getSimpleName());
-            }
-
-            if (option.getDescription() != null || option.getValue() != null) {
-                for (int i = s.length(); i < 29; i++) {
-                    s.append(' ');
-                }
-
-                s.append(' ');
-                s.append(' ');
-
-                if (option.getDescription() != null) {
-                    s.append(option.getDescription());
-                }
-
-                if (option.getValue() != null) {
-                    if (option.getDescription() != null) {
-                        s.append(" ");
-                    }
-                    s.append("Default is ");
-                    s.append(option.getValue());
-                }
-            }
-
-            System.out.println(s.toString());
-        }
-    }
-
-    private Option opt(Option o) {
-        opts.put(o.getName(), o);
-        if (o.getMini() != null) {
-            opts.put(o.getMini(), o);
-        }
-        return o;
     }
 
     private String value(ListIterator<String> items, Option option) {
@@ -381,10 +251,124 @@ public class CommandParser {
                 items.remove();
                 // next item is the value
                 return possibleValue;
+            } else {
+                // next item is an option
+                items.previous();
             }
-            // next item is an option
-            items.previous();
         }
         return "";
+    }
+
+    public static final class Arguments {
+        private final Options options;
+        private final List<String> args;
+
+        public Arguments(Options options, List<String> args) {
+            this.options = options;
+            this.args = args;
+        }
+
+        public Options options() {
+            return options;
+        }
+
+        public List<String> get() {
+            return args;
+        }
+    }
+
+    public static class Category extends Option {
+        public Category(String name) {
+            super(name);
+        }
+    }
+
+    public static class Option {
+        private final String mini;
+        private final String name;
+        private String description;
+        private Class<? extends Object> type;
+        private Object value;
+
+        Option(char mini, String name) {
+            this(mini + "", name);
+        }
+
+        Option(String name) {
+            this(null, name);
+        }
+
+        Option(String mini, String name) {
+            this.mini = mini;
+            this.name = name;
+        }
+
+        public Option description(String description) {
+            if (!description.endsWith(".")) description += ".";
+            this.setDescription(description);
+            return this;
+        }
+
+        public Option type(Class<? extends Object> type) {
+            this.setType(type);
+            return this;
+        }
+
+        public Option value(Object value) {
+            this.setValue(value);
+            if (getType() == null) this.setType(value.getClass());
+            return this;
+        }
+
+        public String getMini() {
+            return mini;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public Class<? extends Object> getType() {
+            return type;
+        }
+
+        public void setType(Class<? extends Object> type) {
+            this.type = type;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public void setValue(Object value) {
+            this.value = value;
+        }
+    }
+
+    
+    public static class HelpException extends Exception {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+    }
+
+    public static class InvalidOptionsException extends Exception {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+        
     }
 }

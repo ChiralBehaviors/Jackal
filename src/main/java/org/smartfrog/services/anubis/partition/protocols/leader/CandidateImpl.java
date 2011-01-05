@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.protocols.leader;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -33,13 +33,10 @@ public class CandidateImpl implements Candidate {
 
     /**
      * Constructor - set to vote for given candidate
-     * 
-     * @param id
-     *            - own id
-     * @param v
-     *            - voting for candidate v
-     * @param preferred
-     *            - is this a preferred node
+     *
+     * @param id - own id
+     * @param v  - voting for candidate v
+     * @param preferred - is this a preferred node
      */
     public CandidateImpl(Identity id, Identity v, boolean preferred) {
         me = id;
@@ -47,52 +44,42 @@ public class CandidateImpl implements Candidate {
         this.preferred = preferred;
     }
 
-    @Override
     public void clearReceivedVotes() {
         count = -1;
     }
 
-    @Override
     public int countReceivedVotes() {
         return count;
     }
 
     /**
      * Candidate interface
-     * 
-     * @return Identity
+     * @return  Identity
      */
-    @Override
     public Identity getId() {
         return me;
     }
 
-    @Override
     public Identity getVote() {
         return vote;
     }
 
-    @Override
     public boolean isPreferred() {
         return preferred;
     }
 
-    @Override
     public void receiveVote(Candidate c) {
         count++;
     }
 
-    @Override
     public void setVote(Candidate c) {
         vote = c.getId();
     }
 
-    @Override
     public void setVote(Identity v) {
         vote = v;
     }
 
-    @Override
     public boolean winsAgainst(Candidate c) {
         /*
          * preferred always win against non-preferred.

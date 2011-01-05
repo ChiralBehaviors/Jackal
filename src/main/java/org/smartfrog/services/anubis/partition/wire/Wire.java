@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.wire;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 
 /**
  * Static class with wire form message utilities
- * 
+ *
  * @author not attributable
  * @version 1.0
  */
@@ -39,9 +39,8 @@ public class Wire {
 
     /**
      * fromWire(byte[]) constructs a message from its wire form
-     * 
-     * @param wire
-     *            byte[]
+     *
+     * @param wire byte[]
      * @return Object
      * @throws IOException
      * @throws WireFormException
@@ -60,9 +59,8 @@ public class Wire {
 
     /**
      * fromWire(ByteBuffer) constructs a message from its wire form
-     * 
-     * @param wireForm
-     *            ByteBuffer
+     *
+     * @param wireForm ByteBuffer
      * @return Object
      * @throws IOException
      * @throws WireFormException
@@ -104,9 +102,8 @@ public class Wire {
 
     /**
      * Gets the type of a message from its wire form
-     * 
-     * @param wire
-     *            byte[]
+     *
+     * @param wire byte[]
      * @return int
      */
     public static int getWireType(byte[] wire) {
@@ -115,9 +112,8 @@ public class Wire {
 
     /**
      * Gets the type of a message from its wire form
-     * 
-     * @param wireForm
-     *            ByteBuffer
+     *
+     * @param wireForm ByteBuffer
      * @return int
      */
     public static int getWireType(ByteBuffer wireForm) {

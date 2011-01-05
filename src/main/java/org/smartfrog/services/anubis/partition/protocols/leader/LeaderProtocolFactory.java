@@ -16,12 +16,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.protocols.leader;
 
 import java.util.Map;
 
-import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
@@ -36,8 +35,7 @@ public class LeaderProtocolFactory {
         return new CandidateImpl(id, vote, preferred);
     }
 
-    public LeaderMgr createMgr(Map<Identity, Connection> candidates,
-                               Candidate localCandidate) {
+    public LeaderMgr createMgr(Map candidates, Candidate localCandidate) {
         return new LeaderMgr(candidates, localCandidate);
     }
 }

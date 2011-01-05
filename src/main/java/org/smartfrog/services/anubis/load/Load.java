@@ -1,6 +1,6 @@
 package org.smartfrog.services.anubis.load;
 
-import org.smartfrog.services.anubis.DefaultConfiguration;
+import org.smartfrog.services.anubis.BasicConfiguration;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -17,7 +17,7 @@ public class Load {
         gate.close();
 
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
-                                                                                        DefaultConfiguration.class);
+                                                                                        BasicConfiguration.class);
         AnubisLocator locator = ctx.getBean(AnubisLocator.class);
 
         AnubisProvider provider = new AnubisProvider(stateName);

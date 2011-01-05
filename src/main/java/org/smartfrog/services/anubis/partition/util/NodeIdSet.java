@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.util;
 
 import java.io.Serializable;
@@ -41,10 +41,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      */
     private static final long serialVersionUID = 1L;
 
-    /**
-     * @param len
-     */
-    public static NodeIdSet readWireForm(ByteBuffer bytes, int idx, int len) {
+    public static NodeIdSet readWireForm(ByteBuffer bytes, int idx, int len) throws WireFormException {
 
         bytes.position(idx);
         byte[] storage = new byte[bytes.getInt()];
@@ -65,10 +62,9 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
     }
 
     /**
-     * create a bitset with a size large enough to contain at least i bits
-     * 
-     * @param i
-     *            int
+     * create a bitset with a size large enough to contain at least
+     * i bits
+     * @param i int
      */
     public NodeIdSet(int i) {
         storage = createByteArray(i, null);
@@ -80,9 +76,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * add bit at index i
-     * 
-     * @param i
-     *            int
+     * @param i int
      * @return boolean
      */
     public boolean add(int i) {
@@ -100,7 +94,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * number of bits in the set
-     * 
      * @return int
      */
     public int cardinality() {
@@ -115,18 +108,12 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * Return a new identical copy
-     * 
      * @return BitSet
      */
     @Override
-    public NodeIdSet clone() {
-        NodeIdSet cloneBS;
-        try {
-            cloneBS = (NodeIdSet) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException("Unable to clone", e);
-        }
-        byte[] cloneStorage = createByteArray(size(), null);
+    public Object clone() {
+        NodeIdSet cloneBS = new NodeIdSet(size());
+        byte[] cloneStorage = cloneBS.getBytes();
         for (int i = 0; i < storage.length; ++i) {
             cloneStorage[i] = storage[i];
         }
@@ -135,9 +122,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * are all the bits in this contained in s?
-     * 
-     * @param s
-     *            BitSet
+     * @param s BitSet
      * @return boolean
      */
     public boolean containedIn(NodeIdSet s) {
@@ -146,9 +131,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * is there a bit with index i?
-     * 
-     * @param i
-     *            int
+     * @param i int
      * @return boolean
      */
     public boolean contains(int i) {
@@ -164,39 +147,32 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * Are all the bits in s contained in this?
-     * 
-     * @param s
-     *            BitSet
+     * @param s BitSet
      * @return boolean
      */
     public boolean contains(NodeIdSet s) {
         return compare(storage, s.getBytes());
     }
 
-    public boolean equals(NodeIdSet objBS) {
-        return this.contains(objBS) && cardinality() == objBS.cardinality();
-    }
-
     /**
      * equal if obj is a bitset and contains the same bits as this
-     * 
-     * @param obj
-     *            Object
+     * @param obj Object
      * @return boolean
      */
     @Override
     public boolean equals(Object obj) {
+        boolean equalOk = false;
         if (obj != null && obj instanceof NodeIdSet) {
-            return equals((NodeIdSet) obj);
+            NodeIdSet objBS = (NodeIdSet) obj;
+            equalOk = this.contains(objBS)
+                      && cardinality() == objBS.cardinality();
         }
-        return false;
+        return equalOk;
     }
 
     /**
      * flip bit at index i (if present remove it, if absent add it)
-     * 
-     * @param i
-     *            int
+     * @param i int
      * @return boolean
      */
     public boolean flip(int i) {
@@ -220,7 +196,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * gives the index of the highest set bit
-     * 
      * @return int
      */
     public int getMaxBitPos() {
@@ -241,7 +216,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * a decent hash function
-     * 
      * @return int
      */
     @Override
@@ -264,7 +238,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * contains no bits?
-     * 
      * @return boolean
      */
     public boolean isEmpty() {
@@ -272,12 +245,10 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
     }
 
     /**
-     * modify this bitset by adding all the bits that are in s (logically
-     * bitwise: this = this OR s) return true if any modification, otherwise
-     * false
-     * 
-     * @param s
-     *            BitSet
+     * modify this bitset by adding all the bits that are in s
+     * (logically bitwise: this = this OR s)
+     * return true if any modification, otherwise false
+     * @param s BitSet
      * @return BitSet
      */
     public boolean merge(NodeIdSet s) {
@@ -288,8 +259,9 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         }
         byte[] test = s.getBytes();
         byte oldValue = 0;
-        int bytes = Math.min(storage.length, test.length);
-        for (int i = 0; i < bytes; ++i) {
+        int minLength = storage.length < test.length ? storage.length
+                                                    : test.length;
+        for (int i = 0; i < minLength; ++i) {
             oldValue = storage[i];
             storage[i] |= test[i];
             if (storage[i] != oldValue) {
@@ -301,9 +273,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * are there any bits in both this and s?
-     * 
-     * @param s
-     *            BitSet
+     * @param s BitSet
      * @return boolean
      */
     public boolean overlap(NodeIdSet s) {
@@ -322,9 +292,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
     /**
      * remove bit at index i
-     * 
-     * @param i
-     *            int
+     * @param i int
      * @return boolean
      */
     public boolean remove(int i) {
@@ -339,12 +307,10 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
     }
 
     /**
-     * modify this bitset by removing anything that is NOT also in s (logically
-     * bitwise: this = this AND s) return true if any modification, otherwise
-     * false
-     * 
-     * @param s
-     *            BitSet
+     * modify this bitset by removing anything that is NOT also in s
+     * (logically bitwise: this = this AND s)
+     * return true if any modification, otherwise false
+     * @param s BitSet
      * @return boolean
      */
     public boolean removeComplement(NodeIdSet s) {
@@ -364,9 +330,8 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
     }
 
     /**
-     * maximum bit index in the current storage array - i.e. storage.length *
-     * bits_per_byte.
-     * 
+     * maximum bit index in the current storage array - i.e.
+     * storage.length * bits_per_byte.
      * @return int
      */
     public int size() {
@@ -374,12 +339,10 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
     }
 
     /**
-     * modify this bitset by removing anything that is in s (logically bitwise:
-     * this = this AND ( NOT s)) return true if any modification, otherwise
-     * false
-     * 
-     * @param s
-     *            BitSet
+     * modify this bitset by removing anything that is in s
+     * (logically bitwise: this = this AND ( NOT s))
+     * return true if any modification, otherwise false
+     * @param s BitSet
      * @return BitSet
      */
     public boolean subtract(NodeIdSet s) {
@@ -412,8 +375,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         return stBuf.toString();
     }
 
-    public void writeWireForm(ByteBuffer bytes, int idx, int len)
-                                                                 throws WireFormException {
+    public void writeWireForm(ByteBuffer bytes, int idx, int len) throws WireFormException {
 
         if (storage.length + intSz > len) {
             throw new WireFormException("BitSet to large for allowed length ("
@@ -423,18 +385,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         bytes.position(idx);
         bytes.putInt(storage.length);
         bytes.put(storage);
-    }
-
-    protected void readHeader() {
-    }
-
-    protected void readMessage() {
-    }
-
-    protected void writeHeader() {
-    }
-
-    protected void writeMessage() {
     }
 
     private boolean compare(byte[] base, byte[] test) {

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
@@ -41,6 +41,9 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     static final private int addressSz = ConnectionAddress.connectionAddressWireSz;
     public static final int TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
     public static final int TIMED_MSG_WIRE_TYPE = 200;
+
+
+    private boolean addressUnmarshalled = false;
     protected ConnectionAddress address = null;
     protected long order = -1;
 
@@ -48,37 +51,37 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     protected long time;
 
     /**
-     * Constructor - Construct a timed message without setting attributes. used
-     * to construct when reading from wire. Construct in the fromWire(wire)
-     * method, read attributes in the readWireForm(wire) method.
-     * 
+     * Constructor - Construct a timed message without setting attributes.
+     *               used to construct when reading from wire. Construct in
+     *               the fromWire(wire) method, read attributes in the
+     *               readWireForm(wire) method.
+     *
      */
     public TimedMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-                                        WireFormException, IOException {
+            WireFormException,
+            IOException {
         super();
         readWireForm(wireForm);
     }
 
     /**
-     * Constructor - A timed message may or may not have and address, all have a
-     * time and a sender id.
-     * 
-     * @param id
-     *            - the sender id
+     * Constructor - A timed message may or may not have and address, all
+     *               have a time and a sender id.
+     * @param id - the sender id
      */
     public TimedMsg(Identity id) {
         sender = id;
+        addressUnmarshalled = true;
     }
 
     /**
-     * @param id
-     *            - sender id
-     * @param addr
-     *            - sender address
+     * @param id - sender id
+     * @param addr - sender address
      */
     public TimedMsg(Identity id, ConnectionAddress addr) {
         sender = id;
         address = addr;
+        addressUnmarshalled = true;
     }
 
     protected TimedMsg() {
@@ -87,7 +90,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     /**
      * Msg order (only used in ordered connections)
-     * 
      * @return the order (-1 if not set)
      */
     public long getOrder() {
@@ -96,16 +98,16 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     /**
      * Sender interface implemenation
-     * 
-     * @return identity
+     * @return  identity
      */
-    @Override
     public Identity getSender() {
         return sender;
     }
 
-    @Override
     public ConnectionAddress getSenderAddress() {
+        if (!addressUnmarshalled) {
+            addressFromWire();
+        }
         return address;
     }
 
@@ -116,10 +118,8 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     /**
      * Timed interface
-     * 
-     * @return long time
+     * @return  long time
      */
-    @Override
     public long getTime() {
         return time;
     }
@@ -128,20 +128,30 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
         order = o;
     }
 
-    @Override
     public void setTime(long t) {
         time = t;
     }
 
     /**
      * toString method for debugging and logging
-     * 
+     *
      * @return String
      */
     @Override
     public String toString() {
-        return "[" + time + ", " + order + ", " + sender.toString() + ", "
+        return "["
+               + time
+               + ", "
+               + order
+               + ", "
+               + (addressUnmarshalled ? sender.toString()
+                                     : "SENDER_ADDRESS_MARSHALLED") + ", "
                + address + "]";
+    }
+
+    private void addressFromWire() {
+        addressUnmarshalled = true;
+        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
     }
 
     @Override
@@ -150,18 +160,18 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     }
 
     /**
-     * Sets the timed message attributes to the wire form held in a byte array
-     * 
-     * @param wireForm
+     * Sets the timed message attributes to the wire form held in a
+     * byte array
+     * @param buf
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
     @Override
-    protected void readWireForm(ByteBuffer wireForm) throws IOException,
-                                                    WireFormException,
-                                                    ClassNotFoundException {
-        super.readWireForm(wireForm);
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+        super.readWireForm(buf);
         time = wireForm.getLong(timeIdx);
         order = wireForm.getLong(orderIdx);
         sender = Identity.readWireForm(wireForm, identityIdx);
@@ -169,12 +179,13 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     }
 
     /**
-     * Writes the timed message attributes to wire form in the given byte array
-     * 
+     * Writes the timed message attributes to wire form in the given byte
+     * array
+     *
      */
     @Override
-    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
-        super.writeWireForm(wireForm);
+    protected void writeWireForm() throws WireFormException {
+        super.writeWireForm();
         wireForm.putLong(timeIdx, time);
         wireForm.putLong(orderIdx, order);
         sender.writeWireForm(wireForm, identityIdx);
@@ -184,4 +195,5 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
             ConnectionAddress.writeNullWireForm(wireForm, addressIdx);
         }
     }
+
 }

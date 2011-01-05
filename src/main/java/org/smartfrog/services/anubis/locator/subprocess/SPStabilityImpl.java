@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator.subprocess;
 
 import java.rmi.RemoteException;
@@ -26,16 +26,17 @@ import org.smartfrog.services.anubis.locator.AnubisStability;
 
 public class SPStabilityImpl extends UnicastRemoteObject implements SPStability {
 
+    /**
+     * 
+     */
     private static final long serialVersionUID = 1L;
-    private transient AnubisStability stability;
+    private AnubisStability stability;
 
     public SPStabilityImpl(AnubisStability stability) throws RemoteException {
         this.stability = stability;
     }
 
-    @Override
-    public void stability(boolean isStable, long timeRef)
-                                                         throws RemoteException {
+    public void stability(boolean isStable, long timeRef) throws RemoteException {
         stability.notifyStability(isStable, timeRef);
     }
 }

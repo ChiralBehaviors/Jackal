@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.util.logging.Level;
@@ -30,10 +30,12 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Connec
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
-        Connection, HeartbeatProtocol {
+public class HeartbeatConnection extends HeartbeatProtocolAdapter
+                                                                 implements
+                                                                 Connection,
+                                                                 HeartbeatProtocol,
+                                                                 Candidate {
 
-    private static Logger log = Logger.getLogger(HeartbeatConnection.class.getCanonicalName());
     /**
      * Others for this implementation
      */
@@ -48,15 +50,11 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
     /**
      * Constructor - creates and instance of a HeartbeatConnection using an
      * existing heartbeat protocol and candidate.
-     * 
-     * @param id
-     *            - local id
-     * @param cs
-     *            - connection set
-     * @param hbp
-     *            - existing heartbeat protocol
-     * @param can
-     *            - existing candidate
+     *
+     * @param id - local id
+     * @param cs - connection set
+     * @param hbp - existing heartbeat protocol
+     * @param can - existing candidate
      */
     public HeartbeatConnection(Identity id, ConnectionSet cs,
                                HeartbeatProtocol hbp, Candidate can) {
@@ -66,47 +64,46 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
     }
 
     /**
-     * HeartbeatProtocol interface 1) extend receiveHeartbeat call by
-     * over-riding it, and calling the super.receiveHeartbeat(). Adds functions
-     * specific to the HeartbeatConnection - i.e. checking to convert to a
-     * MessagingConnection.
+     * HeartbeatProtocol interface
+     * 1) extend receiveHeartbeat call by over-riding it, and calling the
+     *    super.receiveHeartbeat(). Adds functions specific to the
+     *    HeartbeatConnection - i.e. checking to convert to a
+     *    MessagingConnection.
      */
     @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
+
         /**
          * ignore if the epoch is wrong or if this connection has terminated
          */
         if (!getSender().equalEpoch(hb.getSender()) || terminated) {
-            if (!terminated && log.isLoggable(Level.FINEST)) {
-                log.finest("Ignoring heart beat from wrong epoch: " + hb);
-            }
+        	if (!terminated && log.isLoggable(Level.FINEST)) {
+        		log.finest("Ignoring heart beat from wrong epoch: " + hb);
+        	}
             return false;
         }
 
+        /**
+         * pass to heartbeat protocol implementation
+         */
         boolean accepted = super.receiveHeartbeat(hb);
+
         if (accepted) {
+
             /**
              * Extract piggy-backed messaging information to see if this
              * connection should be converted to a messaging connection
              */
             if (hb.getMsgLinks().contains(me.id)) {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("converting heart beat connection to message connection");
-                }
+            	if (log.isLoggable(Level.FINEST)) {
+            		log.finest("converting heart beat connection to message connection");
+            	}
                 connectionSet.convertToMessageConnection(this);
-            } else {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("not converting heart beat connection to message connection as connection does not contain my identity: "
-                               + me.id);
-                }
+                return true;
             }
-            return true;
         }
 
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("heartbeat rejected");
-        }
-        return false;
+        return accepted;
     }
 
     /**
@@ -118,9 +115,10 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
         terminated = true;
     }
 
-    @Override
-    public String toString() {
-        return "HeartbeatConnection [from: " + me + " to:" + getId() + "]";
-    }
+	@Override
+	public String toString() {
+		return "HeartbeatConnection [from: " + me + " to:"
+				+ getId() + "]";
+	}
 
 }

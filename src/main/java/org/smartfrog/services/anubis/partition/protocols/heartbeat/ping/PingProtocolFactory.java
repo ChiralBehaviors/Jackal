@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.ping;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
@@ -29,18 +29,12 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
 
 public class PingProtocolFactory implements HeartbeatProtocolFactory {
-    @Override
     public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address) {
         return new PingHeartbeatMsg(identity, address);
     }
 
-    @Override
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
                                             HeartbeatMsg sharedHeartbeat) {
-        if (!(sharedHeartbeat instanceof PingHeartbeatMsg)) {
-            throw new IllegalArgumentException(
-                                               "shared heart beat must be instanceof PingHeartbeatMsg");
-        }
-        return new PingProtocolImpl(hb, vl, (PingHeartbeatMsg) sharedHeartbeat);
+        return new PingProtocolImpl(hb, vl, sharedHeartbeat);
     }
 }

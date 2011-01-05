@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
@@ -58,34 +58,39 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
                                                       + testInterfaceSz;
     public static final int HEARTBEAT_MSG_WIRE_TYPE = 300;
 
+
     private Identity candidate = null;
 
     private boolean candidateUnmarshalled;
     private NodeIdSet msgLinks = null;
 
     private long msgLinksNumber = 0;
+    private boolean msgLinksUnmarshalled;
 
     private boolean preferred = false;
     private boolean stable = true;
 
     private ConnectionAddress testInterface = null;
+    private boolean testInterfaceUnmarshalled;
 
     private NodeIdSet view = null;
     private long viewNumber = -1;
 
     private long viewTimeStamp = View.undefinedTimeStamp;
+    private boolean viewUnmarshalled;
 
     /**
-     * Constructor - Creates a heartbeat message from the wire formatted byte
-     * array. This constructor does not use the usual pattern of simply
-     * extending the super(byte[]) sonstructor because it wants to retain the
-     * wire and byte buffer for lazy unmarshalling later.
-     * 
+     * Constructor - Creates a heartbeat message from the wire formatted
+     *               byte array. This constructor does not use the usual
+     *               pattern of simply extending the super(byte[])
+     *               sonstructor because it wants to retain the wire and
+     *               byte buffer for lazy unmarshalling later.
      * @param wireForm
-     * 
+     *
      */
     public HeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-                                            WireFormException, IOException {
+            WireFormException,
+            IOException {
         super();
         readWireForm(wireForm);
     }
@@ -101,14 +106,18 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     /**
-     * Constructor - a heartbeat message is provided with the sender and the
-     * sender's address
-     * 
+     * Constructor - a heartbeat message is provided with the sender and
+     *               the sender's address
+     *
      * @param identity
      * @param address
      */
     public HeartbeatMsg(Identity identity, ConnectionAddress address) {
         super(identity, address);
+        candidateUnmarshalled = true;
+        viewUnmarshalled = true;
+        msgLinksUnmarshalled = true;
+        testInterfaceUnmarshalled = true;
     }
 
     protected HeartbeatMsg() {
@@ -117,26 +126,27 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
     /**
      * Candidate interface
-     * 
-     * @return identity
+     * @return  identity
      */
-    @Override
     public Identity getCandidate() {
+        if (!candidateUnmarshalled) {
+            candidateFromWire();
+        }
         return candidate;
     }
 
-    @Override
     public boolean getIsPreferred() {
         return preferred;
     }
 
     /**
      * Message link requirements data field
-     * 
      * @return NodeIdSet
      */
-    @Override
     public NodeIdSet getMsgLinks() {
+        if (!msgLinksUnmarshalled) {
+            msgLinksFromWire();
+        }
         return msgLinks;
     }
 
@@ -146,25 +156,27 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     public ConnectionAddress getTestInterface() {
+        if (!testInterfaceUnmarshalled) {
+            testInterfaceFromWire();
+        }
         return testInterface;
     }
 
     /**
      * NumberedView interface implementation
-     * 
      * @return view
      */
-    @Override
     public View getView() {
+        if (!viewUnmarshalled) {
+            viewFromWire();
+        }
         return new BitView(stable, view, viewTimeStamp);
     }
 
-    @Override
     public long getViewNumber() {
         return viewNumber;
     }
 
-    @Override
     public void setCandidate(Identity id) {
         candidate = id;
     }
@@ -173,28 +185,24 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         this.preferred = preferred;
     }
 
-    @Override
     public void setMsgLinks(NodeIdSet l) {
         msgLinks = l;
     }
 
     /**
      * testInterface get and set
-     * 
      * @param address
      */
     public void setTestInterface(ConnectionAddress address) {
         testInterface = address;
     }
 
-    @Override
     public void setView(View v) {
         view = v.toBitSet();
         stable = v.isStable();
         viewTimeStamp = v.getTimeStamp();
     }
 
-    @Override
     public void setViewNumber(long n) {
         viewNumber = n;
     }
@@ -212,13 +220,48 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         str += "view#=" + viewNumber + ", viewTS=" + viewTimeStamp + ", ";
         str += "isPreferred#=" + preferred + ", ";
         str += (candidateUnmarshalled ? "cand=" + candidate
-                                     : "CANDIDATE_MARSHALLED") + ", ";
+                                     : "CANDIDATE_MARSHALLED")
+               + ", ";
         str += "links#=" + msgLinksNumber + ", ";
-        str += "links=" + msgLinks + ", ";
-        str += "view=" + view + ", ";
-        str += "testIF=" + testInterface;
+        str += (msgLinksUnmarshalled ? "links=" + msgLinks : "LINKS_MARSHALLED")
+               + ", ";
+        str += (viewUnmarshalled ? "view=" + view : "VIEW_MARSHALLED") + ", ";
+        str += testInterfaceUnmarshalled ? "testIF=" + testInterface
+                                        : "TEST_IF_MARSHALLED";
         str += "]";
         return str;
+    }
+
+    private void candidateFromWire() {
+        candidateUnmarshalled = true;
+        candidate = Identity.readWireForm(wireForm, candidateIdx);
+    }
+
+    private void msgLinksFromWire() {
+        msgLinksUnmarshalled = true;
+        try {
+            msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
+        } catch (WireFormException ex) {
+            ex.printStackTrace();
+            msgLinks = new NodeIdSet();
+        }
+    }
+
+    private void testInterfaceFromWire() {
+        testInterfaceUnmarshalled = true;
+        testInterface = ConnectionAddress.readWireForm(wireForm,
+                                                       testInterfaceIdx);
+    }
+
+    private void viewFromWire() {
+        viewUnmarshalled = true;
+        stable = wireForm.getInt(stableIdx) == booleanTrueValue;
+        try {
+            view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
+        } catch (WireFormException ex) {
+            ex.printStackTrace();
+            view = new NodeIdSet();
+        }
     }
 
     @Override
@@ -227,19 +270,18 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     /**
-     * Read the attributes from the wire format. Note that some of the
-     * attributes (views, msgLinks and test interface) are not read here. These
-     * are read on demand. These attributes are not likely to be needed often -
-     * so we only unmarshall them when we have to.
-     * 
-     * @param wireForm
-     *            byte[]
+     * Read the attributes from the wire format. Note that some of the attributes
+     * (views, msgLinks and test interface) are not read here. These are read
+     * on demand. These attributes are not likely to be needed often - so we
+     * only unmarshall them when we have to.
+     *
+     * @param buf byte[]
      */
     @Override
-    protected void readWireForm(ByteBuffer wireForm) throws IOException,
-                                                    WireFormException,
-                                                    ClassNotFoundException {
-        super.readWireForm(wireForm);
+    protected void readWireForm(ByteBuffer buf) throws IOException,
+                                               WireFormException,
+                                               ClassNotFoundException {
+        super.readWireForm(buf);
 
         /**
          * view number, view time stamp and msgLinksNumber
@@ -248,18 +290,23 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         viewTimeStamp = wireForm.getLong(viewTimeStampIdx);
         msgLinksNumber = wireForm.getLong(msgLinksNumberIdx);
         preferred = wireForm.getInt(isPreferredIdx) == 1;
-        candidateFromWire(wireForm);
-        msgLinksFromWire(wireForm);
-        viewFromWire(wireForm);
-        testInterfaceFromWire(wireForm);
+
+        /**
+         * Do not unmarshall candidate, msgLinks, view or test interface
+         * These are done on demand only
+         */
+        candidateUnmarshalled = false;
+        msgLinksUnmarshalled = false;
+        viewUnmarshalled = false;
+        testInterfaceUnmarshalled = false;
     }
 
     /**
      * Write the message attributes to the
      */
     @Override
-    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
-        super.writeWireForm(wireForm);
+    protected void writeWireForm() throws WireFormException {
+        super.writeWireForm();
 
         /**
          * view number, view time stamp, isPreferred, candidate, msgLinksNumber
@@ -294,32 +341,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         } else {
             testInterface.writeWireForm(wireForm, testInterfaceIdx);
         }
-    }
-
-    private void candidateFromWire(ByteBuffer wireForm) {
-        candidateUnmarshalled = true;
-        candidate = Identity.readWireForm(wireForm, candidateIdx);
-    }
-
-    private void msgLinksFromWire(ByteBuffer wireForm) {
-        msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
-    }
-
-    private void testInterfaceFromWire(ByteBuffer wireForm) {
-        testInterface = ConnectionAddress.readWireForm(wireForm,
-                                                       testInterfaceIdx);
-    }
-
-    private void viewFromWire(ByteBuffer wireForm) {
-        stable = wireForm.getInt(stableIdx) == booleanTrueValue;
-        view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
-    }
-
-    @Override
-    public HeartbeatMsg clone() { 
-        HeartbeatMsg clone = (HeartbeatMsg) super.clone();
-        clone.view = view.clone();
-        return clone;
     }
 
 }

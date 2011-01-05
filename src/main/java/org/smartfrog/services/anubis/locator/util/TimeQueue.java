@@ -16,12 +16,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator.util;
 
 import java.util.Comparator;
 
-public class TimeQueue extends SortedSetMap<Long, TimeQueueElement> {
+public class TimeQueue extends SortedSetMap {
 
     /**
      * Construct the super class using the given comparator. The keys of the
@@ -29,27 +29,30 @@ public class TimeQueue extends SortedSetMap<Long, TimeQueueElement> {
      * orders these keys by value.
      */
     public TimeQueue() {
-        super(new Comparator<Long>() {
-            @Override
-            public int compare(Long obj1, Long obj2) {
-                return obj1.compareTo(obj2);
+        super(new Comparator() {
+            public int compare(Object obj1, Object obj2) {
+                Comparable c = (Comparable) obj1;
+                return c.compareTo(obj2);
+            }
+
+            @SuppressWarnings("unused")
+            public boolean equals(Object obj1, Object obj2) {
+                return obj1.equals(obj2);
             }
         });
     }
 
     /**
-     * Add an element to the queue. The element is inserted into the queue in
-     * the order defined by the time paramter. The element is also stamped with
-     * that time.
-     * 
-     * @param element
-     *            the element
-     * @param time
-     *            the time
+     * Add an element to the queue. The element is inserted into the queue
+     * in the order defined by the time paramter. The element is also stamped
+     * with that time.
+     *
+     * @param element the element
+     * @param time the time
      * @return true
      */
     public boolean add(TimeQueueElement element, long time) {
-        Long queuedTime = Long.valueOf(time);
+        Long queuedTime = new Long(time);
         put(queuedTime, element);
         element.setQueuedTime(queuedTime);
         return true;
@@ -58,7 +61,7 @@ public class TimeQueue extends SortedSetMap<Long, TimeQueueElement> {
     /**
      * Removes an element from the queue. If the element is not queued at the
      * time recorded in its time-stamp the operation will fail.
-     * 
+     *
      * @param element
      * @return true if the element is removed successfully, false if not.
      */

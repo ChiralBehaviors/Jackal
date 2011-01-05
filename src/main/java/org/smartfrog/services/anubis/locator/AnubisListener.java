@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator;
 
 /**
@@ -35,13 +35,14 @@ package org.smartfrog.services.anubis.locator;
  */
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
-import org.smartfrog.services.anubis.locator.util.TimeQueueElement;
+import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
 
 abstract public class AnubisListener {
     private long mostRecentChange = -1;
@@ -49,8 +50,8 @@ abstract public class AnubisListener {
      * The name of the provider that this listener listens for.
      */
     private String name;
-    private Map<String, AnubisValue> values = new HashMap<String, AnubisValue>();
-    private static Logger log = Logger.getLogger(AnubisListener.class.getCanonicalName());;
+    private Map values = new HashMap();
+    private static final Logger log = Logger.getLogger(AnubisListener.class.getCanonicalName());;
     protected ActiveTimeQueue timers;
 
     public AnubisListener(String n) {
@@ -58,13 +59,13 @@ abstract public class AnubisListener {
     }
 
     /**
-     * This is a factory method for creating AnubisValue objects. An AnubisValue
-     * object is an object held by the user that the Anubis locator uses to
-     * indicate changes in values.
-     * 
+     * This is a factory method for creating AnubisValue objects. An
+     * AnubisValue object is an object held by the user that the Anubis locator
+     * uses to indicate changes in values.
+     *
      * The user should over-ride this method to create the users own sub-class
      * of the AnubisValue class.
-     * 
+     *
      * @param i
      * @return AnubisValue
      */
@@ -85,7 +86,7 @@ abstract public class AnubisListener {
     public synchronized void newValue(ProviderInstance i) {
         AnubisValue v;
         if (values.containsKey(i.instance)) {
-            v = values.get(i.instance);
+            v = (AnubisValue) values.get(i.instance);
             v.set(i.time, i.value);
         } else {
             v = createValue(i);
@@ -98,7 +99,7 @@ abstract public class AnubisListener {
     abstract public void removeValue(AnubisValue value);
 
     public synchronized void removeValue(ProviderInstance i) {
-        AnubisValue v = values.remove(i.instance);
+        AnubisValue v = (AnubisValue) values.remove(i.instance);
         if (v != null) {
             setTime(i.time);
             v.set(i.time, ValueData.nullValue());
@@ -107,7 +108,7 @@ abstract public class AnubisListener {
     }
 
     public synchronized void removeValue(ProviderInstance i, long time) {
-        AnubisValue v = values.remove(i.instance);
+        AnubisValue v = (AnubisValue) values.remove(i.instance);
         if (v != null) {
             setTime(time);
             v.set(time, ValueData.nullValue());
@@ -127,83 +128,79 @@ abstract public class AnubisListener {
     public String toString() {
         String ret = "Listener " + getName() + "=[size=" + size()
                      + ", mostRecentUpdate=" + getUpdateTime() + ", values=[";
-        for (AnubisValue value : values.values()) {
-            ret += value.toString();
+        Iterator iter = values().iterator();
+        while (iter.hasNext()) {
+            ret += iter.next().toString();
         }
         ret += "]";
         return ret;
     }
 
-    public synchronized Collection<AnubisValue> values() {
+    public synchronized Collection values() {
         return values.values();
     }
 
     /**
      * This method will invoke user code in the listener. It is timed, logs
      * timeliness errors and catches Throwables.
-     * 
+     *
      * @param listener
      */
-    private void safeNewValue(final AnubisValue v) {
+    private void safeNewValue(AnubisValue v) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        TimeQueueElement timeoutErrorLogger = new TimeQueueElement() {
-            @Override
-            public void expired() {
-                log.severe("User API Upcall took >200ms in newValue(p) where p="
-                           + v);
-            }
-
-        };
-
+        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
+                                                                       log,
+                                                                       "User API Upcall took >200ms in newValue(p) where p="
+                                                                               + v);
         timers.add(timeoutErrorLogger, (timein + 200));
         try {
             newValue(v);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in newValue(p) where p="
-                            + v, ex);
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "User API Upcall threw Throwable in newValue(p) where p="
+                                + v, ex);
+            }
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("User API Upcall took " + (timeout - timein)
-                       + "ms in newValue(p) where p=" + v);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("User API Upcall took " + (timeout - timein)
+                      + "ms in newValue(p) where p=" + v);
         }
     }
 
     /**
      * This method will invoke user code in the listener. It is timed, logs
      * timeliness errors and catches Throwables.
-     * 
+     *
      * @param listener
      */
-    private void safeRemoveValue(final AnubisValue v) {
+    private void safeRemoveValue(AnubisValue v) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        TimeQueueElement timeoutErrorLogger = new TimeQueueElement() {
-            @Override
-            public void expired() {
-                log.severe("User API Upcall took >200ms in removeValue(p) where p="
-                           + v);
-            }
-
-        };
+        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
+                                                                       log,
+                                                                       "User API Upcall took >200ms in removeValue(p) where p="
+                                                                               + v);
         timers.add(timeoutErrorLogger, (timein + 200));
         try {
             removeValue(v);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in removeValue(p) where p="
-                            + v, ex);
+            if (log.isLoggable(Level.SEVERE)) {
+                log.log(Level.SEVERE,
+                        "User API Upcall threw Throwable in removeValue(p) where p="
+                                + v, ex);
+            }
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("User API Upcall took " + (timeout - timein)
-                       + "ms in removeValue(p) where p=" + v);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("User API Upcall took " + (timeout - timein)
+                      + "ms in removeValue(p) where p=" + v);
         }
     }
 

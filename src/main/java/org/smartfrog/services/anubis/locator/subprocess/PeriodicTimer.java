@@ -16,14 +16,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.locator.subprocess;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 public class PeriodicTimer extends Thread {
-    private static final Logger log = Logger.getLogger(PeriodicTimer.class.getCanonicalName());
+
     long now;
     long period;
     boolean running;
@@ -32,13 +29,6 @@ public class PeriodicTimer extends Thread {
     public PeriodicTimer(String name, long period) {
         super(name);
         this.period = period;
-        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-            
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING, "Uncaught exception", e);
-            }
-        });
     }
 
     @Override
@@ -59,17 +49,6 @@ public class PeriodicTimer extends Thread {
         running = false;
     }
 
-    /**
-     * @param now
-     */
-    protected void act(long now) {
-        // override this method for action calls
-    }
-
-    protected void init() {
-        // override this method for initial actions if any
-    }
-
     private void doSleep() {
         while (wakeup <= now) {
             wakeup += period;
@@ -79,5 +58,13 @@ public class PeriodicTimer extends Thread {
         } catch (InterruptedException ex) {
         }
         now = System.currentTimeMillis();
+    }
+
+    protected void act(long now) {
+        // override this method for action calls
+    }
+
+    protected void init() {
+        // override this method for initial actions if any
     }
 }

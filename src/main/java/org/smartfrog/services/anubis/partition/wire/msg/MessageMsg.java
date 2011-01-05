@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
- */
+*/
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.ByteArrayInputStream;
@@ -42,7 +42,8 @@ public final class MessageMsg extends TimedMsg {
     private int payloadSz = UNDEFINED_SIZE;
 
     public MessageMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-                                          WireFormException, IOException {
+            WireFormException,
+            IOException {
         super();
         readWireForm(wireForm);
     }
@@ -97,19 +98,19 @@ public final class MessageMsg extends TimedMsg {
     }
 
     /**
-     * Sets the timed message attributes to the wire form held in a byte array
-     * 
-     * @param wireForm
-     *            byte[]
+     * Sets the timed message attributes to the wire form held in a
+     * byte array
+     *
+     * @param buf byte[]
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
     @Override
-    protected void readWireForm(ByteBuffer wireForm) throws IOException,
+    protected void readWireForm(ByteBuffer buf) throws IOException,
                                                WireFormException,
                                                ClassNotFoundException {
-        super.readWireForm(wireForm);
+        super.readWireForm(buf);
 
         payloadSz = wireForm.getInt(payloadLengthIdx);
         payload = new byte[payloadSz];
@@ -127,11 +128,12 @@ public final class MessageMsg extends TimedMsg {
     }
 
     /**
-     * Writes the timed message attributes to wire form in the given byte array
+     * Writes the timed message attributes to wire form in the given byte
+     * array
      */
     @Override
-    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException {
-        super.writeWireForm(wireForm);
+    protected void writeWireForm() throws WireFormException {
+        super.writeWireForm();
 
         wireForm.putInt(payloadLengthIdx, payloadSz);
         for (int i = 0, j = payloadIdx; i < payloadSz; i++, j++) {
