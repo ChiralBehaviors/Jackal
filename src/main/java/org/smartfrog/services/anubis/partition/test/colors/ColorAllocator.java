@@ -68,7 +68,7 @@ public class ColorAllocator {
 
         NodeIdSet bitSet = view.toBitSet();
         nodes.remove(bitSet, node);
-        if (nodes.getSet(bitSet) == null) { 
+        if (nodes.getSet(bitSet) == null) {
             colorMap.deallocate(bitSet);
             allocations.remove(bitSet);
         }

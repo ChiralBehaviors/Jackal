@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.protocols.leader;
 
 import java.util.Iterator;
@@ -37,36 +37,36 @@ public class LeaderMgr {
     }
 
     /**
-     * electLeader(v) performs an election amoung the members of the view
-     * v and sets the local candidate's vote to that member. The election
-     * uses one of two selection criteria depending on the stability of
-     * the view.
-     *
+     * electLeader(v) performs an election amoung the members of the view v and
+     * sets the local candidate's vote to that member. The election uses one of
+     * two selection criteria depending on the stability of the view.
+     * 
      * @param v
-     * @return  Identity
+     * @return Identity
      */
     public synchronized Identity electLeader(View v) {
         return v.isStable() ? stableElection(v) : unstableElection(v);
     }
 
     /**
-     * Returns the current leader - assumes there has been an election.
-     * The local candidate always votes for the winner of the local
-     * election. So return the local candidates vote
-     * @return  Identity
+     * Returns the current leader - assumes there has been an election. The
+     * local candidate always votes for the winner of the local election. So
+     * return the local candidates vote
+     * 
+     * @return Identity
      */
     public Identity getLeader() {
         return localCandidate.getVote();
     }
 
     /**
-     * predictLeader(v) performs an election amoung the members of the view
-     * v but does not set the local candidate's vote.
-     *
-     * This method can be used to predict which candidate would win the
-     * election at stability if the votes remain unchanged. There is no
-     * guarantee on accuracy, but it can be used as a guide.
-     *
+     * predictLeader(v) performs an election amoung the members of the view v
+     * but does not set the local candidate's vote.
+     * 
+     * This method can be used to predict which candidate would win the election
+     * at stability if the votes remain unchanged. There is no guarantee on
+     * accuracy, but it can be used as a guide.
+     * 
      * @param v
      * @return Identity
      */
@@ -75,18 +75,18 @@ public class LeaderMgr {
     }
 
     /**
-     * The election is based on the criteria for picking a leader set
-     * in CandidateInfo. The election has two passes - the first just initialises
-     * the candidates, the second pass counts votes and keeps a running note
-     * on the best candidate (to avoid a third pass to find the best candidate).
+     * The election is based on the criteria for picking a leader set in
+     * CandidateInfo. The election has two passes - the first just initialises
+     * the candidates, the second pass counts votes and keeps a running note on
+     * the best candidate (to avoid a third pass to find the best candidate).
      * the winner is returned.
-     *
-     * The election is relative to the view passed in (this will be the
-     * local parititon). Votes are only valid if the node voting and the
-     * node voted for are both in the partition.
-     *
+     * 
+     * The election is relative to the view passed in (this will be the local
+     * parititon). Votes are only valid if the node voting and the node voted
+     * for are both in the partition.
+     * 
      * @param v
-     * @return  Candidate
+     * @return Candidate
      */
     private synchronized Candidate election(View v) {
 
@@ -119,8 +119,8 @@ public class LeaderMgr {
             if (v.contains(voter.getId())) {
 
                 /**
-                 * Note if the voter itself is the best candidate we have
-                 * seen so far.
+                 * Note if the voter itself is the best candidate we have seen
+                 * so far.
                  */
                 if (voter.winsAgainst(bestSoFar)) {
                     bestSoFar = voter;
@@ -153,7 +153,7 @@ public class LeaderMgr {
 
     /**
      * Perform the stable election (most votes wins - highest id as tie-breaker)
-     *
+     * 
      * @param v
      * @return Identity
      */
@@ -165,9 +165,9 @@ public class LeaderMgr {
     /**
      * Perform the unstable election (previous winner wins if still in view,
      * otherwise local candidate)
-     *
+     * 
      * @param v
-     * @return  Identity
+     * @return Identity
      */
     private Identity unstableElection(View v) {
         if (!v.contains(localCandidate.getVote())) {

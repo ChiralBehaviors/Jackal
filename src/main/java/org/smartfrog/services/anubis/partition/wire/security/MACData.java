@@ -10,14 +10,15 @@ import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Calculate/check the MAC associated with data in a byte array.
- * The MAC is assumed to belong at the end of the byte array containing the data
+ * Calculate/check the MAC associated with data in a byte array. The MAC is
+ * assumed to belong at the end of the byte array containing the data
  * <p/>
- * Can statically set a default key that will be used for all subsequent created MACData objects
+ * Can statically set a default key that will be used for all subsequent created
+ * MACData objects
  * <p/>
- * To cope with distributed key update being non-transactional,
- * it will check the MAC with the current and the last key
- * but generates MAC with the latest key only.
+ * To cope with distributed key update being non-transactional, it will check
+ * the MAC with the current and the last key but generates MAC with the latest
+ * key only.
  */
 public class MACData {
     private static byte[] defaultKeyData = { (byte) 0x23, (byte) 0x45,
@@ -153,15 +154,20 @@ public class MACData {
 
     /**
      * Adds a MAC of the data to the byte array following the data
-     *
-     * @param data  - the buffer holding the data for the MAC, and the MAC
-     * @param start - inclusive start of data
-     * @param end   - inclusive end of data, mac added after this
+     * 
+     * @param data
+     *            - the buffer holding the data for the MAC, and the MAC
+     * @param start
+     *            - inclusive start of data
+     * @param end
+     *            - inclusive end of data, mac added after this
      * @throws javax.crypto.ShortBufferException
-     *                           - if the buffer is insufficiently long to hold the mac
-     * @throws SecurityException - no key yet provided for MAC calculation
+     *             - if the buffer is insufficiently long to hold the mac
+     * @throws SecurityException
+     *             - no key yet provided for MAC calculation
      */
-    public synchronized void addMAC(byte[] data, int start, int end) throws ShortBufferException,
+    public synchronized void addMAC(byte[] data, int start, int end)
+                                                                    throws ShortBufferException,
                                                                     SecurityException {
         Mac mac = currentMAC == null ? defaultMAC : currentMAC;
         if (mac == null) {
@@ -174,13 +180,18 @@ public class MACData {
 
     /**
      * validate a mac that is at the end of a piece of byte array data
-     *
-     * @param data  to validate
-     * @param start of the data - inclusive
-     * @param end   of the data - inlcusive, mac present after this
-     * @throws SecurityException - the mac does not match
+     * 
+     * @param data
+     *            to validate
+     * @param start
+     *            of the data - inclusive
+     * @param end
+     *            of the data - inlcusive, mac present after this
+     * @throws SecurityException
+     *             - the mac does not match
      */
-    public synchronized void checkMAC(byte[] data, int start, int end) throws SecurityException {
+    public synchronized void checkMAC(byte[] data, int start, int end)
+                                                                      throws SecurityException {
         if (currentMAC != null) {
             if (validateMac(currentMAC, data, start, end)) {
                 return;
@@ -205,7 +216,7 @@ public class MACData {
 
     /**
      * Return the size, in bytes, of the MAC
-     *
+     * 
      * @return the size in bytes
      */
     public int getMacSize() {
@@ -213,10 +224,11 @@ public class MACData {
     }
 
     /**
-     * Set the current key to use for the MAC. Makes the existing current key the last key.
-     * The default key is destroyed for this MACData object.
-     *
-     * @param k the key to use for the MAC
+     * Set the current key to use for the MAC. Makes the existing current key
+     * the last key. The default key is destroyed for this MACData object.
+     * 
+     * @param k
+     *            the key to use for the MAC
      * @throws InvalidKeyException
      */
     public synchronized void setKey(Key k) throws InvalidKeyException {

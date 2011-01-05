@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.BorderLayout;
@@ -148,24 +148,28 @@ public class NodeFrame extends JFrame {
         titledBorder1 = new TitledBorder("");
         jButton2.setText("Noop");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton2_actionPerformed(e);
             }
         });
         jButton3.setText("Noop");
         jButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton3_actionPerformed(e);
             }
         });
         jButton4.setText("Threads");
         jButton4.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton4_actionPerformed(e);
             }
         });
         jButton1.setText("Ignore");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton1_actionPerformed(e);
             }
@@ -176,6 +180,7 @@ public class NodeFrame extends JFrame {
         jPanel2.setBorder(BorderFactory.createRaisedBevelBorder());
         jTextArea1.setBorder(BorderFactory.createLoweredBevelBorder());
         jButton7.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton7_actionPerformed(e);
             }
@@ -187,6 +192,7 @@ public class NodeFrame extends JFrame {
         jButton8.setMinimumSize(new Dimension(60, 27));
         jButton8.setText("Stats");
         jButton8.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton8_actionPerformed(e);
             }

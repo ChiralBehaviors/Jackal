@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
 import java.io.IOException;
@@ -37,8 +37,9 @@ public class NonBlockingConnectionInitiator {
     private WireSecurity wireSecurity = null;
 
     public NonBlockingConnectionInitiator(MessageConnection con,
-                                          HeartbeatMsg hb, WireSecurity sec) throws IOException,
-            WireFormException {
+                                          HeartbeatMsg hb, WireSecurity sec)
+                                                                            throws IOException,
+                                                                            WireFormException {
         connection = con;
         heartbeat = hb;
         wireSecurity = sec;

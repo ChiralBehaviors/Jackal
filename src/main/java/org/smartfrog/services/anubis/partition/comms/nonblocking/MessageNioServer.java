@@ -59,18 +59,21 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     private ServerSocketChannel server = null;
     private static final Logger syncLog = Logger.getLogger(MessageNioServer.class.getCanonicalName());
     private Logger asyncLog = syncLog; // need to wrap with async log wrapper
-    private WireSecurity wireSecurity = null; 
+    private WireSecurity wireSecurity = null;
 
     private Vector writePendingKeys = null;
 
     /**
-     * This is a single threaded TCP socket server (de)multiplexing many socketChannels.  Rx deserialized objects
-     * are put on a decoupling queue so that the selector thread can return as quickly as possible to its task of managing channels.
-     * A pre-defined number of worker threads deal with those RX deserialized jobs and deliver them to the anubis layers.  By default there
-     * is only 1 decoupling thread.
+     * This is a single threaded TCP socket server (de)multiplexing many
+     * socketChannels. Rx deserialized objects are put on a decoupling queue so
+     * that the selector thread can return as quickly as possible to its task of
+     * managing channels. A pre-defined number of worker threads deal with those
+     * RX deserialized jobs and deliver them to the anubis layers. By default
+     * there is only 1 decoupling thread.
      */
     public MessageNioServer(ConnectionAddress address, Identity id,
-                            ConnectionSet cs, WireSecurity sec) throws IOException {
+                            ConnectionSet cs, WireSecurity sec)
+                                                               throws IOException {
 
         if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: constructing a new server");
@@ -84,8 +87,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         try {
             server = ServerSocketChannel.open();
             server.configureBlocking(false);
-            server.socket().bind(
-                                 new InetSocketAddress(address.ipaddress,
+            server.socket().bind(new InetSocketAddress(address.ipaddress,
                                                        address.port));
             connAdd = new ConnectionAddress(server.socket().getInetAddress(),
                                             server.socket().getLocalPort());
@@ -132,6 +134,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         connectWorker.start();
     }
 
+    @Override
     public ConnectionAddress getAddress() {
         if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: getAddress is called");
@@ -139,25 +142,24 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         return connAdd;
     }
 
+    @Override
     public String getThreadStatusString() {
         StringBuffer buffer = new StringBuffer();
-        buffer.append(super.getName()).append(" ............................ ").setLength(
-                                                                                          30);
+        buffer.append(super.getName()).append(" ............................ ").setLength(30);
         buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
         buffer.append(open ? ".. running ....." : ".. terminated ..");
         if (connAdd != null) {
-            buffer.append(" address = ").append(connAdd.ipaddress.getHostName()).append(
-                                                                                        ":").append(
-                                                                                                    connAdd.port);
+            buffer.append(" address = ").append(connAdd.ipaddress.getHostName()).append(":").append(connAdd.port);
         }
         return buffer.toString();
     }
 
+    @Override
     public void initiateConnection(Identity id, MessageConnection con,
                                    HeartbeatMsg hb) {
-		if (syncLog.isLoggable(Level.FINEST)) {
-			syncLog.finest("Initiating connection to " + con.getSender());
-		}
+        if (syncLog.isLoggable(Level.FINEST)) {
+            syncLog.finest("Initiating connection to " + con.getSender());
+        }
         NonBlockingConnectionInitiator initiator = null;
         try {
             initiator = new NonBlockingConnectionInitiator(con, hb,
@@ -228,6 +230,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
     }
 
+    @Override
     public void terminate() {
 
         if (asyncLog.isLoggable(Level.FINER)) {

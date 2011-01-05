@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.BorderLayout;
@@ -40,6 +40,7 @@ public class MainConsoleFrame extends JFrame {
     abstract class SliderListener implements ChangeListener {
         abstract public void newValue(int value);
 
+        @Override
         public void stateChanged(ChangeEvent e) {
             JSlider source = (JSlider) e.getSource();
             if (!source.getValueIsAdjusting()) {
@@ -161,24 +162,28 @@ public class MainConsoleFrame extends JFrame {
         jPanel4.setLayout(borderLayout3);
         jButton1.setText("Clear Partitions");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton1_actionPerformed(e);
             }
         });
         jButton2.setText("Sim Partition");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton2_actionPerformed(e);
             }
         });
         jButton3.setText("Asim Partition");
         jButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton3_actionPerformed(e);
             }
         });
         jButton4.setText("Asymetry Analysis");
         jButton4.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 jButton4_actionPerformed(e);
             }

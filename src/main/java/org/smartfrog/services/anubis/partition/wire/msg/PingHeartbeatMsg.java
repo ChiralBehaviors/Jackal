@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
@@ -39,15 +39,14 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
     private NodeIdSet pings;
 
     public PingHeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                                WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
 
     /**
      * Construct a ping heartbeat message
-     *
+     * 
      * @param identity
      * @param address
      */
@@ -87,7 +86,9 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
 
     /**
      * pings accessors
-     * @param id Identity
+     * 
+     * @param id
+     *            Identity
      */
     public synchronized void setPingBit(Identity id) {
         pings.add(id.id);
@@ -113,8 +114,9 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
 
     /**
      * Read the attributes from the wire format.
-     *
-     * @param buf byte[]
+     * 
+     * @param buf
+     *            byte[]
      */
     @Override
     protected void readWireForm(ByteBuffer buf) throws IOException,

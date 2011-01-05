@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.names;
 
 import java.io.Serializable;
@@ -33,10 +33,10 @@ public class NameData implements Serializable {
     }
 
     /**
-     * Two name data are equivalent if they have the same name and the
-     * same node. This is because there may be multiple proxies for a
-     * particular name, but only one per node.
-     *
+     * Two name data are equivalent if they have the same name and the same
+     * node. This is because there may be multiple proxies for a particular
+     * name, but only one per node.
+     * 
      * @param obj
      * @return boolean
      */

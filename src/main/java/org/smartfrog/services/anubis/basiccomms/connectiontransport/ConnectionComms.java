@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.io.IOException;
@@ -27,14 +27,13 @@ import java.nio.channels.SocketChannel;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
 /**
- * The ConnectionComms class is an abstract base class for connection
- * endpoints. The endpoint is used to send and receive objects using
- * object streams over a tcp connection. There are two methods to be
- * implemented: deliverObject is called to handle objects revceived over
- * the connection; is called to indicates that the connection is being closed.
- * Connection closure can occur in response to a remote end closure, a local
- * end closure (shutdown method) or an exception while sending or receving
- * an object.
+ * The ConnectionComms class is an abstract base class for connection endpoints.
+ * The endpoint is used to send and receive objects using object streams over a
+ * tcp connection. There are two methods to be implemented: deliverObject is
+ * called to handle objects revceived over the connection; is called to
+ * indicates that the connection is being closed. Connection closure can occur
+ * in response to a remote end closure, a local end closure (shutdown method) or
+ * an exception while sending or receving an object.
  */
 
 public abstract class ConnectionComms extends Thread implements WireSizes {
@@ -45,10 +44,10 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
     volatile private boolean open;
 
     /**
-     * constructor - creates a tcp connection with the remote address
-     * provided as a parameter. If the constructor fails to create
-     * the tcp connection it will result in a connection comms object
-     * in the closed state: connected() returns false.
+     * constructor - creates a tcp connection with the remote address provided
+     * as a parameter. If the constructor fails to create the tcp connection it
+     * will result in a connection comms object in the closed state: connected()
+     * returns false.
      */
     public ConnectionComms(String threadName, ConnectionAddress address) {
 
@@ -79,9 +78,9 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
     }
 
     /**
-     * constructor - used to create a ConnectionComms object for an
-     * existing tcp socket connection. This is typically used by a connection
-     * factory when a ConnectionServer object receives a connection request.
+     * constructor - used to create a ConnectionComms object for an existing tcp
+     * socket connection. This is typically used by a connection factory when a
+     * ConnectionServer object receives a connection request.
      */
 
     public ConnectionComms(String threadName, SocketChannel channel) {
@@ -111,23 +110,21 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
     }
 
     /**
-     * called to indicate that the tcp connection is closing.
-     * Not called if the constructor initially fails - i.e. the
-     * connection was never open.
+     * called to indicate that the tcp connection is closing. Not called if the
+     * constructor initially fails - i.e. the connection was never open.
      */
     public abstract void closing();
 
     /**
-     * returns the state of this connection. Synchronized to avoid
-     * reading the status while it is changing.
+     * returns the state of this connection. Synchronized to avoid reading the
+     * status while it is changing.
      */
     public synchronized boolean connected() {
         return open;
     }
 
     /**
-     * deliverObject is called to deliver an object received on this
-     * connection.
+     * deliverObject is called to deliver an object received on this connection.
      */
     public abstract void deliver(byte[] bytes);
 
@@ -136,12 +133,10 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
      */
     public String getThreadStatusString() {
         StringBuffer buffer = new StringBuffer();
-        buffer.append(super.getName()).append(" ............................ ").setLength(
-                                                                                          30);
+        buffer.append(super.getName()).append(" ............................ ").setLength(30);
         buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
         buffer.append(open ? ".. running ....." : ".. terminated ..");
-        buffer.append(" address = ").append(
-                                            connection.socket().getInetAddress()
+        buffer.append(" address = ").append(connection.socket().getInetAddress()
                                                     + ":"
                                                     + connection.socket().getPort());
         return buffer.toString();
@@ -153,8 +148,8 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
 
     /**
      * The receive object loop forms the main thread loop. When an object is
-     * received it is delivered. If the connection is closed at the other end
-     * or the read fails the connection is terminated.
+     * received it is delivered. If the connection is closed at the other end or
+     * the read fails the connection is terminated.
      */
     @Override
     public void run() {
@@ -221,9 +216,8 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
     }
 
     /**
-
+     * 
      * used to terminate this connection
-
      */
 
     public void shutdown() {

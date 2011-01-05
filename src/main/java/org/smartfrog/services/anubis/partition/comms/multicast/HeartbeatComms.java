@@ -38,203 +38,206 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
 public class HeartbeatComms extends MulticastComms implements
-		HeartbeatCommsIntf {
+        HeartbeatCommsIntf {
     private static final Logger log = Logger.getLogger(HeartbeatComms.class.getCanonicalName());
-	private HeartbeatReceiver connectionSet = null;
-	/**
-	 * for testing purposes
-	 */
-	private View ignoring = null;
-	private Object ingnoringMonitor = new Object();
-	private Identity me = null;
+    private HeartbeatReceiver connectionSet = null;
+    /**
+     * for testing purposes
+     */
+    private View ignoring = null;
+    private Object ingnoringMonitor = new Object();
+    private Identity me = null;
 
-	private Map messageHandlers = Collections.synchronizedMap(new HashMap());
-	private WireSecurity wireSecurity = null;
+    private Map messageHandlers = Collections.synchronizedMap(new HashMap());
+    private WireSecurity wireSecurity = null;
 
-	/**
-	 * Set up multicast coms specifying the network interface
-	 * 
-	 * @param address
-	 *            - multicast address
-	 * @param inf
-	 *            - network interface to use (specified as a connection address)
-	 * @param cs
-	 *            - connection set
-	 * @param threadName
-	 *            - name for multicast server thread
-	 * @param id
-	 *            - local identify
-	 * @param sec
-	 *            - security module
-	 * @throws IOException
-	 * @throws Exception
-	 */
-	public HeartbeatComms(MulticastAddress address, ConnectionAddress inf,
-			HeartbeatReceiver cs, String threadName, Identity id,
-			WireSecurity sec) throws IOException {
-		super(threadName, address, inf);
-		me = id;
-		connectionSet = cs;
-		wireSecurity = sec;
-		setPriority(Thread.MAX_PRIORITY);
-	}
+    /**
+     * Set up multicast coms specifying the network interface
+     * 
+     * @param address
+     *            - multicast address
+     * @param inf
+     *            - network interface to use (specified as a connection address)
+     * @param cs
+     *            - connection set
+     * @param threadName
+     *            - name for multicast server thread
+     * @param id
+     *            - local identify
+     * @param sec
+     *            - security module
+     * @throws IOException
+     * @throws Exception
+     */
+    public HeartbeatComms(MulticastAddress address, ConnectionAddress inf,
+                          HeartbeatReceiver cs, String threadName, Identity id,
+                          WireSecurity sec) throws IOException {
+        super(threadName, address, inf);
+        me = id;
+        connectionSet = cs;
+        wireSecurity = sec;
+        setPriority(Thread.MAX_PRIORITY);
+    }
 
-	/**
-	 * Set up multicast comms - uses default network interface
-	 * 
-	 * @param address
-	 *            - multicast address
-	 * @param cs
-	 *            - connection set
-	 * @param threadName
-	 *            - name for multicast server thread
-	 * @param id
-	 *            - local identify
-	 * @param sec
-	 *            - security module
-	 * @throws Exception
-	 */
-	public HeartbeatComms(MulticastAddress address, HeartbeatReceiver cs,
-			String threadName, Identity id, WireSecurity sec)
-			throws IOException {
-		super(threadName, address);
-		me = id;
-		connectionSet = cs;
-		wireSecurity = sec;
-		setPriority(Thread.MAX_PRIORITY);
-	}
+    /**
+     * Set up multicast comms - uses default network interface
+     * 
+     * @param address
+     *            - multicast address
+     * @param cs
+     *            - connection set
+     * @param threadName
+     *            - name for multicast server thread
+     * @param id
+     *            - local identify
+     * @param sec
+     *            - security module
+     * @throws Exception
+     */
+    public HeartbeatComms(MulticastAddress address, HeartbeatReceiver cs,
+                          String threadName, Identity id, WireSecurity sec)
+                                                                           throws IOException {
+        super(threadName, address);
+        me = id;
+        connectionSet = cs;
+        wireSecurity = sec;
+        setPriority(Thread.MAX_PRIORITY);
+    }
 
-	public void deregisterMessageHandler(Class type) {
-		messageHandlers.remove(type);
-	}
+    public void deregisterMessageHandler(Class type) {
+        messageHandlers.remove(type);
+    }
 
-	public boolean isIgnoring(Identity id) {
-		synchronized (ingnoringMonitor) {
-			return ignoring != null && ignoring.contains(id);
-		}
-	}
+    @Override
+    public boolean isIgnoring(Identity id) {
+        synchronized (ingnoringMonitor) {
+            return ignoring != null && ignoring.contains(id);
+        }
+    }
 
-	public void registerMessageHandler(Class type, MessageHandler handler) {
-		messageHandlers.put(type, handler);
-	}
+    public void registerMessageHandler(Class type, MessageHandler handler) {
+        messageHandlers.put(type, handler);
+    }
 
-	/**
-	 * Send a heartbeat message. Logs a failure at the error level.
-	 * 
-	 * @param msg
-	 *            message to send.
-	 */
-	public void sendHeartbeat(HeartbeatMsg msg) {
-		try {
-			super.sendObject(wireSecurity.toWireForm(msg));
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error sending heartbeat message", ex);
-		}
-	}
+    /**
+     * Send a heartbeat message. Logs a failure at the error level.
+     * 
+     * @param msg
+     *            message to send.
+     */
+    @Override
+    public void sendHeartbeat(HeartbeatMsg msg) {
+        try {
+            super.sendObject(wireSecurity.toWireForm(msg));
+        } catch (Exception ex) {
+            log.log(Level.SEVERE, "Error sending heartbeat message", ex);
+        }
+    }
 
-	/**
-	 * determine which nodes to ignore if any. This will be called from the
-	 * connection set - ignoring is used in a critical section in
-	 * deliverObject() that uses connectionSet as its monitor.
-	 * 
-	 * @param ignoringUpdate
-	 *            a view
-	 */
-	public void setIgnoring(View ignoringUpdate) {
-		synchronized (ingnoringMonitor) {
-			ignoring = ignoringUpdate.isEmpty() ? null : ignoringUpdate;
-		}
-	}
+    /**
+     * determine which nodes to ignore if any. This will be called from the
+     * connection set - ignoring is used in a critical section in
+     * deliverObject() that uses connectionSet as its monitor.
+     * 
+     * @param ignoringUpdate
+     *            a view
+     */
+    @Override
+    public void setIgnoring(View ignoringUpdate) {
+        synchronized (ingnoringMonitor) {
+            ignoring = ignoringUpdate.isEmpty() ? null : ignoringUpdate;
+        }
+    }
 
-	/**
-	 * Change of interface - connection users send objects or messages.
-	 * sendObject(Object) is not permitted because the only heartbeats can be
-	 * sent on a heartbeat connection. But the method of the base class
-	 * MulticastComms to send is to take an arbitrary Object. sendObject().
-	 * 
-	 * @param obj
-	 */
-	// public void sendObject(Object obj) { return; }
+    /**
+     * Change of interface - connection users send objects or messages.
+     * sendObject(Object) is not permitted because the only heartbeats can be
+     * sent on a heartbeat connection. But the method of the base class
+     * MulticastComms to send is to take an arbitrary Object. sendObject().
+     * 
+     * @param obj
+     */
+    // public void sendObject(Object obj) { return; }
 
-	public void terminate() {
-		shutdown();
-	}
+    @Override
+    public void terminate() {
+        shutdown();
+    }
 
-	private void handleHeartbeat(Heartbeat hb) {
-		/**
-		 * if not right magic discard it
-		 */
-		if (!hb.getSender().equalMagic(me)) {
-			if (log.isLoggable(Level.FINEST)) {
-				log.finest("heartbeat discarded due to invalid magic number: "
-						+ hb);
-			}
-			return;
-		}
+    private void handleHeartbeat(Heartbeat hb) {
+        /**
+         * if not right magic discard it
+         */
+        if (!hb.getSender().equalMagic(me)) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("heartbeat discarded due to invalid magic number: "
+                           + hb);
+            }
+            return;
+        }
 
-		/**
-		 * for testing purposes - can ignore messages from specified senders
-		 */
-		if (isIgnoring(hb.getSender())) {
-			if (log.isLoggable(Level.FINEST)) {
-				log.finest("Ignoring heart beat sender: " + hb);
-			}
-			return;
-		}
+        /**
+         * for testing purposes - can ignore messages from specified senders
+         */
+        if (isIgnoring(hb.getSender())) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("Ignoring heart beat sender: " + hb);
+            }
+            return;
+        }
 
-		/**
-		 * Deliver new heartbeat message - this needs to be synchronized on the
-		 * connection set so that nothing changes in the process.
-		 * 
-		 * The connection returned by getConnection may or may not be active
-		 * (i.e. it may be quiescing) if it is not active it is up to the
-		 * connection itself to deal with the heartbeat.
-		 */
-		if (log.isLoggable(Level.FINEST)) {
-			log.finest("Delivering heart beat: " + hb);
-		}
-		connectionSet.receiveHeartbeat(hb);
-	}
+        /**
+         * Deliver new heartbeat message - this needs to be synchronized on the
+         * connection set so that nothing changes in the process.
+         * 
+         * The connection returned by getConnection may or may not be active
+         * (i.e. it may be quiescing) if it is not active it is up to the
+         * connection itself to deal with the heartbeat.
+         */
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Delivering heart beat: " + hb);
+        }
+        connectionSet.receiveHeartbeat(hb);
+    }
 
-	private void handleNonHeartbeat(Object msg) {
-		MessageHandler handler = (MessageHandler) messageHandlers.get(msg
-				.getClass());
-		if (handler != null) {
-			if (log.isLoggable(Level.FINEST)) {
-				log.finest("Delivering message: " + msg);
-			}
-			handler.deliverObject(msg);
-		} else if (log.isLoggable(Level.SEVERE)) {
-			log.severe(me + " No handler found for message: " + msg);
-		}
-	}
+    private void handleNonHeartbeat(Object msg) {
+        MessageHandler handler = (MessageHandler) messageHandlers.get(msg.getClass());
+        if (handler != null) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("Delivering message: " + msg);
+            }
+            handler.deliverObject(msg);
+        } else if (log.isLoggable(Level.SEVERE)) {
+            log.severe(me + " No handler found for message: " + msg);
+        }
+    }
 
-	@Override
-	protected void deliverBytes(byte[] bytes) {
-		Object obj = null;
-		try {
+    @Override
+    protected void deliverBytes(byte[] bytes) {
+        Object obj = null;
+        try {
 
-			obj = wireSecurity.fromWireForm(bytes);
+            obj = wireSecurity.fromWireForm(bytes);
 
-		} catch (WireSecurityException ex) {
+        } catch (WireSecurityException ex) {
 
-			log.severe(me
-					+ "multicast transport encountered security violation receiving message - ignoring the message "); // +
-																														// this.getSender()
+            log.severe(me
+                       + "multicast transport encountered security violation receiving message - ignoring the message "); // +
+                                                                                                                          // this.getSender()
 
-			return;
+            return;
 
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, me
-					+ "Error reading wire form message - ignoring", ex);
-			return;
-		}
+        } catch (Exception ex) {
+            log.log(Level.SEVERE,
+                    me + "Error reading wire form message - ignoring", ex);
+            return;
+        }
 
-		if (obj instanceof Heartbeat) {
-			handleHeartbeat((Heartbeat) obj);
-		} else {
-			handleNonHeartbeat(obj);
-		}
-	}
+        if (obj instanceof Heartbeat) {
+            handleHeartbeat((Heartbeat) obj);
+        } else {
+            handleNonHeartbeat(obj);
+        }
+    }
 
 }

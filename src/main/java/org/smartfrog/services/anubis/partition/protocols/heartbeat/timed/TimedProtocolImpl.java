@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.timed;
 
 import java.util.logging.Level;
@@ -46,7 +46,8 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
 
     /**
      * Constructor - create a heartbeat protocol implementation using the
-     *               information provided in a heartbeat message
+     * information provided in a heartbeat message
+     * 
      * @param hb
      * @param vl
      */
@@ -62,34 +63,41 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
 
     /**
      * Sender interface
-     * @return  identity
+     * 
+     * @return identity
      */
+    @Override
     public Identity getSender() {
         return sender;
     }
 
+    @Override
     public ConnectionAddress getSenderAddress() {
         return address;
     }
 
     /**
      * Timed interface
-     * @return  time
+     * 
+     * @return time
      */
+    @Override
     public long getTime() {
         return time;
     }
 
     /**
      * indicates if the heartbeat protocol is timely. This method is called
-     * periodically by the connectionSet as part of a connection cleanup
-     * action. "Timelyness" is relative to the current time (timenow)
-     * and the timebound.
-     *
-     * @param timenow current time
-     * @param timebound expiration period
+     * periodically by the connectionSet as part of a connection cleanup action.
+     * "Timelyness" is relative to the current time (timenow) and the timebound.
+     * 
+     * @param timenow
+     *            current time
+     * @param timebound
+     *            expiration period
      * @return true if expried, false if not
      */
+    @Override
     public boolean isNotTimely(long timenow, long timebound) {
         return timenow - time > timebound || time - timenow > timebound;
     }
@@ -97,39 +105,44 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
     /**
      * indicates if the heartbeat protocol has quiesced. When the protocol has
      * expired it will be inactive for a period before it can be removed. This
-     * is used to avoid another instance of the protocol being created as
-     * soon as this one expires (the partition protocol requires that connections
-     * remain inactive for a period after they expire). The quiescence is relative
-     * to the current time and the quiesce timeout.
-     *
-     * @param timenow current time
-     * @param quiesce quesce timeout - must be greater than expire timeout*2
+     * is used to avoid another instance of the protocol being created as soon
+     * as this one expires (the partition protocol requires that connections
+     * remain inactive for a period after they expire). The quiescence is
+     * relative to the current time and the quiesce timeout.
+     * 
+     * @param timenow
+     *            current time
+     * @param quiesce
+     *            quesce timeout - must be greater than expire timeout*2
      * @return true if expired, false if not
      */
+    @Override
     public boolean isQuiesced(long timenow, long quiesce) {
         return timenow - time > quiesce;
     }
 
     /**
-     * This protocol measures clock skew as part of the accumulative
-     * time bound that it checks. This is because the timeliness check
-     * compares timestamps from the remote end with clock times at this
-     * end.
+     * This protocol measures clock skew as part of the accumulative time bound
+     * that it checks. This is because the timeliness check compares timestamps
+     * from the remote end with clock times at this end.
+     * 
      * @return boolean
      */
+    @Override
     public boolean measuresClockSkew() {
         return true;
     }
 
     /**
-     * receives a heartbeat message and deals with it according to the
-     * heartbeat protocol. This is protocol uses straight-forward
-     * timing of messages - only he most recent message time and its
-     * information counts.
-     *
-     * @param hb - heartbeat message
-     * @return  boolean false if terminated or failed
+     * receives a heartbeat message and deals with it according to the heartbeat
+     * protocol. This is protocol uses straight-forward timing of messages -
+     * only he most recent message time and its information counts.
+     * 
+     * @param hb
+     *            - heartbeat message
+     * @return boolean false if terminated or failed
      */
+    @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
 
         if (terminated) {
@@ -137,8 +150,8 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
         }
 
         /**
-         * Only bother with a heartbeat if it superceeds
-         * the last one (ordered delivery is not guaranteed!)
+         * Only bother with a heartbeat if it superceeds the last one (ordered
+         * delivery is not guaranteed!)
          */
         if (hb.getTime() > time) {
             time = hb.getTime();
@@ -146,8 +159,8 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
             boolean timeStampChanged = false;
 
             /**
-             * Check for a new view time stamp (as opposed to
-             * the heartbeat time!)
+             * Check for a new view time stamp (as opposed to the heartbeat
+             * time!)
              */
             if (timeStamp != hb.getView().getTimeStamp()) {
                 timeStamp = hb.getView().getTimeStamp();
@@ -155,9 +168,10 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
             }
 
             /**
-             * check for a new view (view number) if the view numbers are different
-             * but the views are the same then the view has changed and chaged back
-             * without us noticing! We need to pick this up as a real change.
+             * check for a new view (view number) if the view numbers are
+             * different but the views are the same then the view has changed
+             * and chaged back without us noticing! We need to pick this up as a
+             * real change.
              */
             if (hb.getViewNumber() != viewNumber) {
                 viewNumber = hb.getViewNumber();
@@ -167,8 +181,8 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
             }
 
             /**
-             * generate appropriate notification to next protocol
-             * layer if something changed.
+             * generate appropriate notification to next protocol layer if
+             * something changed.
              */
             if (viewChanged) {
                 listener.newView(sender, this);
@@ -176,23 +190,25 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
                 listener.newViewTime(sender, this);
             }
 
-	    	if (log.isLoggable(Level.FINEST)) {
-	    		log.finest("Accepting heart beat: " + hb);
-	    	}
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("Accepting heart beat: " + hb);
+            }
             return true;
 
         } else {
-	    	if (log.isLoggable(Level.FINEST)) {
-	    		log.finest("Rejecting heart beat: " + hb);
-	    	}
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("Rejecting heart beat: " + hb);
+            }
             return false;
         }
     }
 
+    @Override
     public void setTime(long t) {
         time = t;
     }
 
+    @Override
     public void terminate() {
         terminated = true;
     }

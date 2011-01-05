@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.registers;
 
 import java.util.HashMap;
@@ -80,7 +80,7 @@ public class LocalProviders {
 
     /**
      * Constructor
-     *
+     * 
      * @param l
      * @param id
      */
@@ -92,9 +92,9 @@ public class LocalProviders {
     public synchronized void addListener(ListenerProxy listener) {
 
         /**
-         * If there is no info associated with the listener's name then
-         * just return now - the global must have notified us of the listener
-         * after we have deregistered, but before it knew about that.
+         * If there is no info associated with the listener's name then just
+         * return now - the global must have notified us of the listener after
+         * we have deregistered, but before it knew about that.
          */
         if (!providers.containsKey(listener.name)) {
 
@@ -128,9 +128,9 @@ public class LocalProviders {
         }
 
         /**
-         * If there is an existing registration but the new one superceeds
-         * it then remove the old registration and add the new one. This can
-         * happen if a new registration via the global register overtakes the
+         * If there is an existing registration but the new one superceeds it
+         * then remove the old registration and add the new one. This can happen
+         * if a new registration via the global register overtakes the
          * deregistration that comes directly from the listener node.
          */
         else if (existingReg.uridPreceeds(listener)) {
@@ -149,9 +149,9 @@ public class LocalProviders {
         }
 
         /**
-         * If there is an existing registration that superceeds the new one
-         * then ignore the new one and return. This suggests that the global
-         * register has re-issued the registration after recovering from a
+         * If there is an existing registration that superceeds the new one then
+         * ignore the new one and return. This suggests that the global register
+         * has re-issued the registration after recovering from a
          * re-partitioning event. In this case we do not re-send values.
          */
         else if (existingReg.uridEquals(listener)) {
@@ -189,7 +189,7 @@ public class LocalProviders {
     /**
      * For each node that is not in the view remove all the bindings to
      * listeners on that node.
-     *
+     * 
      * @param view
      */
     public synchronized void checkNodes(View view) {
@@ -209,8 +209,8 @@ public class LocalProviders {
             }
 
             /**
-             * Iterate over the listeners records associated with the node
-             * and remove the listeners from the provider info
+             * Iterate over the listeners records associated with the node and
+             * remove the listeners from the provider info
              */
             Iterator listenerIter = listenersByNode.getSet(node).iterator();
             while (listenerIter.hasNext()) {
@@ -230,16 +230,16 @@ public class LocalProviders {
     public synchronized void deregister(AnubisProvider provider) {
 
         /**
-         * If there is no info associated with the provider's name then
-         * just return now
+         * If there is no info associated with the provider's name then just
+         * return now
          */
         if (!providers.containsKey(provider.getName())) {
             return;
         }
 
         /**
-         * Get the info associated with this provider's name. Remove the
-         * records for the instance data and the provider from the info.
+         * Get the info associated with this provider's name. Remove the records
+         * for the instance data and the provider from the info.
          */
         ProviderInfo info = (ProviderInfo) providers.get(provider.getName());
         ProviderInstance instance = (ProviderInstance) info.instances.remove(provider.getInstance());
@@ -254,9 +254,9 @@ public class LocalProviders {
         }
 
         /**
-         * Set the instance time to the time now and inorm any listners that
-         * the provider instance has gone away. Setting the time tells them
-         * when it went away.
+         * Set the instance time to the time now and inorm any listners that the
+         * provider instance has gone away. Setting the time tells them when it
+         * went away.
          */
         instance.time = System.currentTimeMillis();
 
@@ -267,8 +267,8 @@ public class LocalProviders {
         }
 
         /**
-         * If there are no more providers in this info then there are no
-         * more providers on this node. Drop the info record.
+         * If there are no more providers in this info then there are no more
+         * providers on this node. Drop the info record.
          */
         if (info.instances.isEmpty()) {
             providers.remove(provider.getName());
@@ -285,8 +285,8 @@ public class LocalProviders {
     public synchronized void newValue(AnubisProvider provider, ValueData value,
                                       long time) {
         /**
-         * If there is no info associated with the provider's name then
-         * just return now
+         * If there is no info associated with the provider's name then just
+         * return now
          */
         if (!providers.containsKey(provider.getName())) {
             return;
@@ -322,12 +322,13 @@ public class LocalProviders {
     }
 
     /**
-     * register a provider. This updates the local register with info about
-     * the provider and issues a registration with the global register.
-     *
+     * register a provider. This updates the local register with info about the
+     * provider and issues a registration with the global register.
+     * 
      * FIX ME: does not check for uniqueness in the partition.
-     *
-     * @param provider  - the provider interface
+     * 
+     * @param provider
+     *            - the provider interface
      * @param value
      * @param time
      */
@@ -345,9 +346,9 @@ public class LocalProviders {
                                                          me, time, value);
 
         /**
-         * If there is already provider info for the providers name, then
-         * add the new instance to the info and send the instance info to
-         * all the registered listeners (if any).
+         * If there is already provider info for the providers name, then add
+         * the new instance to the info and send the instance info to all the
+         * registered listeners (if any).
          */
         if (providers.containsKey(provider.getName())) {
 
@@ -365,8 +366,8 @@ public class LocalProviders {
 
         /**
          * If there is no provider info for this name there will be no
-         * registered listeners yet either. Create the new info record, add
-         * this instance and register with the global proxy.
+         * registered listeners yet either. Create the new info record, add this
+         * instance and register with the global proxy.
          */
         else {
             ProviderInfo info = new ProviderInfo(provider);
@@ -380,8 +381,8 @@ public class LocalProviders {
     public synchronized void removeListener(ListenerProxy listener) {
 
         /**
-         * If there is no info associated with the listener's name then
-         * just return now
+         * If there is no info associated with the listener's name then just
+         * return now
          */
         if (!providers.containsKey(listener.name)) {
             if (log.isLoggable(Level.FINER)) {
@@ -400,9 +401,9 @@ public class LocalProviders {
 
         /**
          * If the existing registration superceeds the deregistration then
-         * ignore it and return now. This implies that the listener's node
-         * has re-registered and the registration via the global has overtaken
-         * this direct deregister.
+         * ignore it and return now. This implies that the listener's node has
+         * re-registered and the registration via the global has overtaken this
+         * direct deregister.
          */
         if (listener.uridPreceeds(existingReg)) {
             if (log.isLoggable(Level.FINER)) {

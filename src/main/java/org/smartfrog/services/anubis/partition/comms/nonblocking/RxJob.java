@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
 import java.nio.ByteBuffer;
@@ -27,8 +27,8 @@ public class RxJob {
     private ByteBuffer readObj = null;
 
     /**
-     * container object that is put on the Rx decoupling queue
-     * and is taken of the queue by the worker threads.
+     * container object that is put on the Rx decoupling queue and is taken of
+     * the queue by the worker threads.
      */
     public RxJob(MessageNioHandler mnh, ByteBuffer readObj) {
         this.mnh = mnh;

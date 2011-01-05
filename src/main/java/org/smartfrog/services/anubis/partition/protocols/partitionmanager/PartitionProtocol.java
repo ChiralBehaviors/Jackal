@@ -16,11 +16,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
 import java.net.InetAddress;
-import java.util.logging.Level;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -46,12 +45,11 @@ public class PartitionProtocol {
     /**
      * Changed view is called during regular connection set checks if the
      * connection set has changed.
-     *
-     * removeCompletement() will remove nodes from the partition if
-     * they are not in the connection set. If this happens then we
-     * note that there have been changes and elect a new leader. The result
-     * is that the partition can only contract when it is unstable (i.e. when
-     * there is a view change).
+     * 
+     * removeCompletement() will remove nodes from the partition if they are not
+     * in the connection set. If this happens then we note that there have been
+     * changes and elect a new leader. The result is that the partition can only
+     * contract when it is unstable (i.e. when there is a view change).
      */
     public void changedView() {
         if (view.removeComplement(connectionSet.getView()) || view.isStable()) {
@@ -64,11 +62,18 @@ public class PartitionProtocol {
 
     /**
      * Establish a connection to the remote node
-     * @param id - id of remote node
+     * 
+     * @param id
+     *            - id of remote node
      * @return - the message connection
      */
     public MessageConnection connect(int id) {
         return connectionSet.connect(id);
+    }
+
+    @Deployed
+    public void deploy() {
+        leader = identity;
     }
 
     public ConnectionSet getConnectionSet() {
@@ -105,8 +110,9 @@ public class PartitionProtocol {
     }
 
     /**
-     * remove a node from the partition - if it is there. If it was there
-     * then destablise and elect a new leader.
+     * remove a node from the partition - if it is there. If it was there then
+     * destablise and elect a new leader.
+     * 
      * @param id
      */
     public void remove(Identity id) {
@@ -132,23 +138,17 @@ public class PartitionProtocol {
     }
 
     /**
-     * copy the stable view from the connection set - includes the
-     * time stamp in the copy. Note that a partition can expand
-     * when it is stable (the connectionSet may be bigger than the
-     * partition).
-     *
-     * Note that the node that wins the leader election at stability
-     * believed it was leader prior to stability.
+     * copy the stable view from the connection set - includes the time stamp in
+     * the copy. Note that a partition can expand when it is stable (the
+     * connectionSet may be bigger than the partition).
+     * 
+     * Note that the node that wins the leader election at stability believed it
+     * was leader prior to stability.
      */
     public void stableView() {
         changed = true;
         view.copyView(connectionSet.getView());
         leader = connectionSet.electLeader(view);
-    }
-
-    @Deployed
-    public void deploy() {
-        leader = identity;
     }
 
     @PostConstruct

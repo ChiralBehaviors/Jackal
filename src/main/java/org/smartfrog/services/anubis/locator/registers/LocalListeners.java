@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.registers;
 
 import java.util.HashMap;
@@ -40,11 +40,10 @@ public class LocalListeners {
 
     /**
      * The listener info class is a data structure that records the information
-     * relating to a single name for which this node holds listeners.
-     * This includes:
-     *   a listener proxy record;
-     *   the set of listeners at this node that are listening to this name;
-     *   the set of provider instances at any node that are providing this name.
+     * relating to a single name for which this node holds listeners. This
+     * includes: a listener proxy record; the set of listeners at this node that
+     * are listening to this name; the set of provider instances at any node
+     * that are providing this name.
      */
     private class ListenerInfo {
 
@@ -81,11 +80,10 @@ public class LocalListeners {
 
     private Integer me = null;
     /**
-     * providersByNode maps nodes-->Set of names.
-     * This data structure keeps a record of the names being provided
-     * at each node. When a partition occurs we pick out absent nodes and
-     * use the names to find providers that should be removed from the
-     * listenerInfo records.
+     * providersByNode maps nodes-->Set of names. This data structure keeps a
+     * record of the names being provided at each node. When a partition occurs
+     * we pick out absent nodes and use the names to find providers that should
+     * be removed from the listenerInfo records.
      */
     private SetMap providersByNode = new SetMap();
     private long uniqueRegId = 0;;
@@ -98,7 +96,7 @@ public class LocalListeners {
     /**
      * This method will search the listeners for bindings to providers that are
      * on absent nodes.
-     *
+     * 
      * @param view
      */
     public synchronized void checkNodes(View view) {
@@ -109,8 +107,8 @@ public class LocalListeners {
         long timeNow = System.currentTimeMillis();
 
         /**
-         * Iterate through the providersByNode mapSet looking for nodes
-         * that are not in the view.
+         * Iterate through the providersByNode mapSet looking for nodes that are
+         * not in the view.
          */
         Iterator nodeIter = providersByNode.keySet().iterator();
         while (nodeIter.hasNext()) {
@@ -124,10 +122,10 @@ public class LocalListeners {
             }
 
             /**
-             * Iterate through the provider names associated with the
-             * current node, get the info for each name and remove
-             * provider instances that are from that node. Then remove
-             * the entire record for that node.
+             * Iterate through the provider names associated with the current
+             * node, get the info for each name and remove provider instances
+             * that are from that node. Then remove the entire record for that
+             * node.
              */
 
             Iterator nameIter = providersByNode.getSet(node).iterator();
@@ -138,8 +136,7 @@ public class LocalListeners {
 
                 for (ProviderInstance instance = (ProviderInstance) info.providers.remove(proxy); instance != null; instance = (ProviderInstance) info.providers.remove(proxy)) {
 
-                    for (Iterator iter = info.listeners.iterator(); iter.hasNext(); ((AnubisListener) iter.next()).removeValue(
-                                                                                                                               instance,
+                    for (Iterator iter = info.listeners.iterator(); iter.hasNext(); ((AnubisListener) iter.next()).removeValue(instance,
                                                                                                                                timeNow)) {
                         ;
                     }
@@ -155,6 +152,7 @@ public class LocalListeners {
 
     /**
      * deregister a listener.
+     * 
      * @param listener
      */
     public synchronized void deregister(AnubisListener listener) {
@@ -173,10 +171,9 @@ public class LocalListeners {
         info.listeners.remove(listener);
 
         /**
-         * If there are no other listeners interested in the same provider
-         * then deregister from the global, deregister from each node that
-         * contains a provider, and clean up all information associated
-         * with the listener.
+         * If there are no other listeners interested in the same provider then
+         * deregister from the global, deregister from each node that contains a
+         * provider, and clean up all information associated with the listener.
          */
         if (info.listeners.isEmpty()) {
 
@@ -231,8 +228,7 @@ public class LocalListeners {
         }
 
         /**
-         * Get the info, if it does not contain this instance
-         * just return now.
+         * Get the info, if it does not contain this instance just return now.
          */
         ListenerInfo info = (ListenerInfo) listeners.get(provider.name);
         if (info.providers.remove(provider) == null) {
@@ -266,9 +262,9 @@ public class LocalListeners {
     public synchronized void providerValue(ProviderInstance provider) {
 
         /**
-         * if there is no corresponding listener info then ignore. Implies
-         * that the deregister crossed with this message during transmission.
-         * The deregister will happen.
+         * if there is no corresponding listener info then ignore. Implies that
+         * the deregister crossed with this message during transmission. The
+         * deregister will happen.
          */
         if (!listeners.containsKey(provider.name)) {
             if (log.isLoggable(Level.FINER)) {
@@ -284,9 +280,9 @@ public class LocalListeners {
         ListenerInfo info = (ListenerInfo) listeners.get(provider.name);
 
         /**
-         * put the provider instance in the set of providers. If the
-         * provider instance was not already known then make sure
-         * the providersByNode map contains a record for the source node.
+         * put the provider instance in the set of providers. If the provider
+         * instance was not already known then make sure the providersByNode map
+         * contains a record for the source node.
          */
         if (info.providers.put(provider, provider) == null) {
             if (log.isLoggable(Level.FINER)) {
@@ -307,7 +303,7 @@ public class LocalListeners {
 
     /**
      * comments please
-     *
+     * 
      * @param listener
      */
     public synchronized void register(AnubisListener listener) {
@@ -319,8 +315,8 @@ public class LocalListeners {
         ListenerInfo info;
 
         /**
-         * If this is not the first listener for this name then
-         * get then get the listener info and add the new listener.
+         * If this is not the first listener for this name then get then get the
+         * listener info and add the new listener.
          */
         if (listeners.containsKey(listener.getName())) {
             info = (ListenerInfo) listeners.get(listener.getName());
@@ -328,8 +324,8 @@ public class LocalListeners {
         }
 
         /**
-         * If this is the first listener then create the listener info
-         * and add the new listener, then register with the global registry
+         * If this is the first listener then create the listener info and add
+         * the new listener, then register with the global registry
          */
         else {
             info = new ListenerInfo(listener.getName(), listener);
@@ -338,9 +334,9 @@ public class LocalListeners {
         }
 
         /**
-         * if there are any provider instances then notify the listener.
-         * (if there are none then the listener will stabalise in its
-         * initial state - i.e. with none).
+         * if there are any provider instances then notify the listener. (if
+         * there are none then the listener will stabalise in its initial state
+         * - i.e. with none).
          */
         if (!info.providers.isEmpty()) {
             for (Iterator iter = info.providers.values().iterator(); iter.hasNext(); listener.newValue((ProviderInstance) iter.next())) {

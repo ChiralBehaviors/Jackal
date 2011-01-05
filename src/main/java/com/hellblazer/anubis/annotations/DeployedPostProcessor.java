@@ -14,18 +14,27 @@ import org.springframework.util.ReflectionUtils.MethodCallback;
 
 public class DeployedPostProcessor implements BeanPostProcessor, Ordered {
 
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    @Override
+    public int getOrder() {
+        return LOWEST_PRECEDENCE;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName)
+                                                                              throws BeansException {
         return bean;
     }
 
+    @Override
     public Object postProcessBeforeInitialization(final Object bean,
-                                                  String beanName) throws BeansException {
+                                                  String beanName)
+                                                                  throws BeansException {
         Class<?> targetClass = AopUtils.getTargetClass(bean);
         ReflectionUtils.doWithMethods(targetClass, new MethodCallback() {
+            @Override
             public void doWith(Method method) throws IllegalArgumentException,
                                              IllegalAccessException {
-                Deployed annotation = AnnotationUtils.getAnnotation(
-                                                                    method,
+                Deployed annotation = AnnotationUtils.getAnnotation(method,
                                                                     Deployed.class);
                 if (annotation != null) {
                     Assert.isTrue(void.class.equals(method.getReturnType()),
@@ -43,10 +52,6 @@ public class DeployedPostProcessor implements BeanPostProcessor, Ordered {
             }
         });
         return bean;
-    }
-
-    public int getOrder() {
-        return LOWEST_PRECEDENCE;
     }
 
 }

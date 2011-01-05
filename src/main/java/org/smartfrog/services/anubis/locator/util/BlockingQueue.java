@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.util;
 
 import java.util.LinkedList;
@@ -33,8 +33,8 @@ public class BlockingQueue {
     }
 
     /**
-     * If the queue is not active then clear the queue and set it to active.
-     * If the queue is already active do nothing.
+     * If the queue is not active then clear the queue and set it to active. If
+     * the queue is already active do nothing.
      */
     public synchronized void activate() {
         if (!active) {
@@ -52,8 +52,8 @@ public class BlockingQueue {
 
     /**
      * If the queue is active, clear the queue, unblock any waiting threads and
-     * indicate that the queue is not active.
-     * If the queue is not active do nothing.
+     * indicate that the queue is not active. If the queue is not active do
+     * nothing.
      */
     public synchronized void deactivate() {
         if (active) {
@@ -64,10 +64,10 @@ public class BlockingQueue {
     }
 
     /**
-     * get an object from the queue. Objects are retrieved from the front
-     * of the queue. If the queue is empty this method will block until
-     * an object is added or the queue it terminated.
-     *
+     * get an object from the queue. Objects are retrieved from the front of the
+     * queue. If the queue is empty this method will block until an object is
+     * added or the queue it terminated.
+     * 
      * @return an object from the queue or null if the queue is terminated
      */
     public synchronized Object get() {
@@ -86,11 +86,11 @@ public class BlockingQueue {
     }
 
     /**
-     * Add an object to the queue - objects are added to the end.
-     * When the object ahs been added any threads waiting on the queue
-     * will be notified. Hence the get() method that blocks when the queue
-     * is empty will be notified and able to get the added element.
-     *
+     * Add an object to the queue - objects are added to the end. When the
+     * object ahs been added any threads waiting on the queue will be notified.
+     * Hence the get() method that blocks when the queue is empty will be
+     * notified and able to get the added element.
+     * 
      * @param obj
      */
     public synchronized void put(Object obj) {

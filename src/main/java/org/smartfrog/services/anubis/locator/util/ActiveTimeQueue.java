@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.util;
 
 import java.util.Iterator;
@@ -35,9 +35,9 @@ public class ActiveTimeQueue extends Thread {
 
     /**
      * Add an element to the queue. Notify the worker thread in case this
-     * element has been added to the top of the queue and the worker has to
-     * wake up earlier.
-     *
+     * element has been added to the top of the queue and the worker has to wake
+     * up earlier.
+     * 
      * @param element
      * @param time
      * @return boolean
@@ -87,8 +87,8 @@ public class ActiveTimeQueue extends Thread {
             long nextTime = key.longValue();
 
             /**
-             * If no items to expire then sleep until the top one expires or
-             * we get woken up.
+             * If no items to expire then sleep until the top one expires or we
+             * get woken up.
              */
             if (nextTime > timeNow) {
                 try {
@@ -99,8 +99,8 @@ public class ActiveTimeQueue extends Thread {
             }
 
             /**
-             * If there are items to expire then remove them from the queue
-             * and return them.
+             * If there are items to expire then remove them from the queue and
+             * return them.
              */
             return queue.remove(key);
         }
@@ -110,7 +110,7 @@ public class ActiveTimeQueue extends Thread {
      * Remove an element from the queue - don't notify, the worst that can
      * happen is the worker thread can wake with nothing to do, so why wake it
      * now?
-     *
+     * 
      * @param element
      * @return boolean
      */
@@ -121,19 +121,19 @@ public class ActiveTimeQueue extends Thread {
     }
 
     /**
-     * The worker thread. This thread is the timer that wakes up to
-     * expire items on the queue as they reach their queued time.
-     *
+     * The worker thread. This thread is the timer that wakes up to expire items
+     * on the queue as they reach their queued time.
+     * 
      * The getExpiredOrBlock() method synchronizes on the queue and removes
      * items to be expired before releasing the monitor. So doExpirations()
-     * operates on a different data structure. This gives two benefits:
-     * 1) the add() and remove() methods are guaranteed to progress, because
-     *    getExpiredOrBlock() will not block them for long. Therefore calling
-     *    the expired() method on the dequeued elements will not deadlock if
-     *    those elements happen to have another thread calling add() or remove().
-     * 2) An element can call add() or remove() in the implementation of its
-     *    expired() method without causing a ConcurrentModificationException
-     *    to be thrown on the queue data structure.
+     * operates on a different data structure. This gives two benefits: 1) the
+     * add() and remove() methods are guaranteed to progress, because
+     * getExpiredOrBlock() will not block them for long. Therefore calling the
+     * expired() method on the dequeued elements will not deadlock if those
+     * elements happen to have another thread calling add() or remove(). 2) An
+     * element can call add() or remove() in the implementation of its expired()
+     * method without causing a ConcurrentModificationException to be thrown on
+     * the queue data structure.
      */
     @Override
     public void run() {
@@ -160,9 +160,9 @@ public class ActiveTimeQueue extends Thread {
     }
 
     /**
-     * Iterate through the set of expired elements and call their
-     * expired() method.
-     *
+     * Iterate through the set of expired elements and call their expired()
+     * method.
+     * 
      * @param timeNow
      */
     private void doExpirations(Set expiredElements) {

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class LocatorDebugConfiguration extends BasicConfiguration {
-	
+
     public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(LocatorDebugConfiguration.class);
     }

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator;
 
 /**
@@ -59,13 +59,13 @@ abstract public class AnubisListener {
     }
 
     /**
-     * This is a factory method for creating AnubisValue objects. An
-     * AnubisValue object is an object held by the user that the Anubis locator
-     * uses to indicate changes in values.
-     *
+     * This is a factory method for creating AnubisValue objects. An AnubisValue
+     * object is an object held by the user that the Anubis locator uses to
+     * indicate changes in values.
+     * 
      * The user should over-ride this method to create the users own sub-class
      * of the AnubisValue class.
-     *
+     * 
      * @param i
      * @return AnubisValue
      */
@@ -143,7 +143,7 @@ abstract public class AnubisListener {
     /**
      * This method will invoke user code in the listener. It is timed, logs
      * timeliness errors and catches Throwables.
-     *
+     * 
      * @param listener
      */
     private void safeNewValue(AnubisValue v) {
@@ -175,7 +175,7 @@ abstract public class AnubisListener {
     /**
      * This method will invoke user code in the listener. It is timed, logs
      * timeliness errors and catches Throwables.
-     *
+     * 
      * @param listener
      */
     private void safeRemoveValue(AnubisValue v) {

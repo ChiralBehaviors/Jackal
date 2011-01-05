@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
 import java.io.IOException;
@@ -29,7 +29,7 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class MessageConnectionServerFactory implements
-                                           IOConnectionServerFactory {
+        IOConnectionServerFactory {
 
     private WireSecurity wireSecurity;
 
@@ -37,8 +37,9 @@ public class MessageConnectionServerFactory implements
         super();
     }
 
+    @Override
     public IOConnectionServer create(ConnectionAddress address, Identity id,
-                                     ConnectionSet cs) throws IOException   {
+                                     ConnectionSet cs) throws IOException {
         return new MessageConnectionServer(address, id, cs, wireSecurity);
     }
 

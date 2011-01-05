@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.components.examples;
 
 import java.util.logging.Logger;
@@ -28,7 +28,6 @@ import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisStability;
 
 public class StabilityNotices {
-    private static final Logger log = Logger.getLogger(StabilityNotices.class.getCanonicalName());
     public class Stability extends AnubisStability {
         @Override
         public void stability(boolean isStable, long timeRef) {
@@ -40,6 +39,8 @@ public class StabilityNotices {
             }
         }
     }
+
+    private static final Logger log = Logger.getLogger(StabilityNotices.class.getCanonicalName());
 
     private AnubisLocator locator = null;
     private AnubisStability stability = null;

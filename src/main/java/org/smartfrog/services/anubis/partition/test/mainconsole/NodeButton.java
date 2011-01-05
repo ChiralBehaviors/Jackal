@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.Color;
@@ -40,6 +40,7 @@ public class NodeButton extends JButton {
         setForeground(Color.black);
         setBackground(Color.gray);
         addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 nodeButtonActionPerformed(e);
             }

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
@@ -42,7 +42,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     public static final int TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
     public static final int TIMED_MSG_WIRE_TYPE = 200;
 
-
     private boolean addressUnmarshalled = false;
     protected ConnectionAddress address = null;
     protected long order = -1;
@@ -51,23 +50,23 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     protected long time;
 
     /**
-     * Constructor - Construct a timed message without setting attributes.
-     *               used to construct when reading from wire. Construct in
-     *               the fromWire(wire) method, read attributes in the
-     *               readWireForm(wire) method.
-     *
+     * Constructor - Construct a timed message without setting attributes. used
+     * to construct when reading from wire. Construct in the fromWire(wire)
+     * method, read attributes in the readWireForm(wire) method.
+     * 
      */
     public TimedMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                        WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
 
     /**
-     * Constructor - A timed message may or may not have and address, all
-     *               have a time and a sender id.
-     * @param id - the sender id
+     * Constructor - A timed message may or may not have and address, all have a
+     * time and a sender id.
+     * 
+     * @param id
+     *            - the sender id
      */
     public TimedMsg(Identity id) {
         sender = id;
@@ -75,8 +74,10 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     }
 
     /**
-     * @param id - sender id
-     * @param addr - sender address
+     * @param id
+     *            - sender id
+     * @param addr
+     *            - sender address
      */
     public TimedMsg(Identity id, ConnectionAddress addr) {
         sender = id;
@@ -90,6 +91,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     /**
      * Msg order (only used in ordered connections)
+     * 
      * @return the order (-1 if not set)
      */
     public long getOrder() {
@@ -98,12 +100,15 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     /**
      * Sender interface implemenation
-     * @return  identity
+     * 
+     * @return identity
      */
+    @Override
     public Identity getSender() {
         return sender;
     }
 
+    @Override
     public ConnectionAddress getSenderAddress() {
         if (!addressUnmarshalled) {
             addressFromWire();
@@ -118,8 +123,10 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     /**
      * Timed interface
-     * @return  long time
+     * 
+     * @return long time
      */
+    @Override
     public long getTime() {
         return time;
     }
@@ -128,13 +135,14 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
         order = o;
     }
 
+    @Override
     public void setTime(long t) {
         time = t;
     }
 
     /**
      * toString method for debugging and logging
-     *
+     * 
      * @return String
      */
     @Override
@@ -160,8 +168,8 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     }
 
     /**
-     * Sets the timed message attributes to the wire form held in a
-     * byte array
+     * Sets the timed message attributes to the wire form held in a byte array
+     * 
      * @param buf
      * @throws IOException
      * @throws WireFormException
@@ -179,9 +187,8 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     }
 
     /**
-     * Writes the timed message attributes to wire form in the given byte
-     * array
-     *
+     * Writes the timed message attributes to wire form in the given byte array
+     * 
      */
     @Override
     protected void writeWireForm() throws WireFormException {

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.basiccomms.multicasttransport;
 
 import java.io.IOException;
@@ -29,25 +29,24 @@ import java.util.logging.Logger;
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 
 /**
- * MulticastComms is an abstract class representing an end point
- * for multicast communications.
- *
- * The endpoint is capable of
- * sending and receiving objects, transfered in packets as object streams.
- * Note that there is a limit to the size of an object when transfered as
- * an object stream.
- *
+ * MulticastComms is an abstract class representing an end point for multicast
+ * communications.
+ * 
+ * The endpoint is capable of sending and receiving objects, transfered in
+ * packets as object streams. Note that there is a limit to the size of an
+ * object when transfered as an object stream.
+ * 
  * The class is a thread and uses a blocking receive loop. Delivery of a
  * received object will be in this thread.
- *
+ * 
  * This class is extended to define how to deliver an object deliver method.
  */
 public class MulticastComms extends Thread {
 
     /**
-     * MAX_SEG_SIZE is a default maximum packet size. This may be small,
-     * but any network will be capable of handling this size so its transfer
-     * semantics are atomic (no fragmentation in the network).
+     * MAX_SEG_SIZE is a default maximum packet size. This may be small, but any
+     * network will be capable of handling this size so its transfer semantics
+     * are atomic (no fragmentation in the network).
      */
     static public final int MAX_SEG_SIZE = 1500; // Eathernet standard MTU
 
@@ -60,10 +59,10 @@ public class MulticastComms extends Thread {
     Object outObject;
 
     /**
-     * Constructor - uses MulticastAddress to define the multicast
-     * group etc.
+     * Constructor - uses MulticastAddress to define the multicast group etc.
      */
-    public MulticastComms(String threadName, MulticastAddress address) throws IOException {
+    public MulticastComms(String threadName, MulticastAddress address)
+                                                                      throws IOException {
 
         super(threadName);
         groupAddress = address;
@@ -74,9 +73,8 @@ public class MulticastComms extends Thread {
     }
 
     /**
-     * Constructor - uses MulticastAddress to define the multicast. Use inf to define
-     * the network interface to use.
-     * group etc.
+     * Constructor - uses MulticastAddress to define the multicast. Use inf to
+     * define the network interface to use. group etc.
      */
     public MulticastComms(String threadName, MulticastAddress address,
                           ConnectionAddress inf) throws IOException {
@@ -92,17 +90,15 @@ public class MulticastComms extends Thread {
 
     /**
      * Get the status of this thread.
+     * 
      * @return a string representing the status of this thread
      */
     public String getThreadStatusString() {
         StringBuffer buffer = new StringBuffer();
-        buffer.append(super.getName()).append(" ............................ ").setLength(
-                                                                                          30);
+        buffer.append(super.getName()).append(" ............................ ").setLength(30);
         buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
         buffer.append(!terminating ? ".. running ....." : ".. terminated ..");
-        buffer.append(" address = ").append(groupAddress.ipaddress.toString()).append(
-                                                                                      ":").append(
-                                                                                                  groupAddress.port);
+        buffer.append(" address = ").append(groupAddress.ipaddress.toString()).append(":").append(groupAddress.port);
         return buffer.toString();
     }
 
@@ -110,10 +106,10 @@ public class MulticastComms extends Thread {
      * the thread performs a blocking receive loop.
      */
     @Override
-    public void run() { 
-		if (log.isLoggable(Level.FINER)) {
-			log.finer("Starting receive processing on: " + groupAddress);
-		}
+    public void run() {
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("Starting receive processing on: " + groupAddress);
+        }
         while (!terminating) {
 
             try {
@@ -121,15 +117,17 @@ public class MulticastComms extends Thread {
                 inBytes = new byte[MAX_SEG_SIZE];
                 inPacket = new DatagramPacket(inBytes, inBytes.length);
                 sock.receive(inPacket);
-        		if (log.isLoggable(Level.FINEST)) {
-        			log.finest("Received packet from: " + inPacket.getSocketAddress());
-        		}
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("Received packet from: "
+                               + inPacket.getSocketAddress());
+                }
                 deliverBytes(inPacket.getData());
 
             } catch (Exception e) {
 
                 if (!terminating && log.isLoggable(Level.WARNING)) {
-                	log.log(Level.WARNING, "Exception processing inbound message", e);
+                    log.log(Level.WARNING,
+                            "Exception processing inbound message", e);
                 }
 
             }
@@ -137,12 +135,13 @@ public class MulticastComms extends Thread {
     }
 
     /**
-     * Send an array of bytes.
-     * The send function is synchronized to prevent multiple sends concurrent
-     * sends (is this necessary??) Can not deadlock - multiple threads will take
-     * turns to send, the receive loop (run) will block sends unless it is nested
-     * in the deliverObject method, which is ok.
-     * @param bytes bytes to send
+     * Send an array of bytes. The send function is synchronized to prevent
+     * multiple sends concurrent sends (is this necessary??) Can not deadlock -
+     * multiple threads will take turns to send, the receive loop (run) will
+     * block sends unless it is nested in the deliverObject method, which is ok.
+     * 
+     * @param bytes
+     *            bytes to send
      */
     public synchronized void sendObject(byte[] bytes) {
         try {
@@ -150,7 +149,7 @@ public class MulticastComms extends Thread {
                                     groupAddress.port));
         } catch (IOException ioe) {
             if (!terminating && log.isLoggable(Level.WARNING)) {
-            	log.log(Level.WARNING, "", ioe);
+                log.log(Level.WARNING, "", ioe);
             }
         }
     }
@@ -172,6 +171,7 @@ public class MulticastComms extends Thread {
 
     /**
      * convert the input buffer to a string - for debug purposes.
+     * 
      * @return a stringified inBytes
      */
     @SuppressWarnings("unused")
@@ -180,10 +180,9 @@ public class MulticastComms extends Thread {
     }
 
     /**
-     * deliverObject is the method for delivering received
-     * objects. Typically this method will cast the object and pass
-     * it to an appropriate handler. This may include handing off the
-     * delivery to another thread.
+     * deliverObject is the method for delivering received objects. Typically
+     * this method will cast the object and pass it to an appropriate handler.
+     * This may include handing off the delivery to another thread.
      */
     protected void deliverBytes(byte[] bytes) {
         // does nothing by default

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.Component;
@@ -133,8 +133,7 @@ public class SnugTable extends JTable {
                     headerRenderer = getTableHeader().getDefaultRenderer();
                 }
 
-                comp = headerRenderer.getTableCellRendererComponent(
-                                                                    this,
+                comp = headerRenderer.getTableCellRendererComponent(this,
                                                                     column.getHeaderValue(),
                                                                     false,
                                                                     false, -1,

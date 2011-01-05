@@ -31,105 +31,6 @@ import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 public class BasicConfiguration {
 
     @Bean
-    public DeployedPostProcessor deployedPostProcessor() {
-        return new DeployedPostProcessor();
-    }
-
-    public long heartbeatInterval() {
-        return 2000L;
-    }
-
-    public long heartbeatTimeout() {
-        return 3L;
-    }
-
-    public int heartbeatGroupPort() {
-        return 1966;
-    }
-
-    public InetAddress heartbeatGroupMulticastAddress()
-                                                       throws UnknownHostException {
-        return InetAddress.getByName("233.1.2.30");
-    }
-
-    public int heartbeatGroupTTL() {
-        return 1;
-    }
-
-    @Bean
-    public ConnectionAddress contactAddress() throws UnknownHostException {
-        return new ConnectionAddress(contactHost(), contactPort());
-    }
-
-    public int contactPort() {
-        return 0;
-    }
-
-    public InetAddress contactHost() throws UnknownHostException {
-        return InetAddress.getLocalHost();
-    }
-
-    @Bean
-    public Epoch epoch() {
-        return new Epoch();
-    }
-
-    @Bean
-    public Identity partitionIdentity() {
-        return new Identity(getMagic(), node(), epoch().longValue());
-    }
-
-    public int getMagic() {
-        return 12345;
-    }
-
-    public int node() {
-        try {
-            return Identity.getProcessUniqueId();
-        } catch (UnknownHostException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Bean
-    public MulticastAddress heartbeatGroup() throws UnknownHostException {
-        return new MulticastAddress(heartbeatGroupMulticastAddress(),
-                                    heartbeatGroupPort(), heartbeatGroupTTL());
-    }
-
-    @Bean
-    public WireSecurity wireSecurity() {
-        return new NoSecurityImpl();
-    }
-
-    @Bean
-    public AnubisLocator locator() {
-        Locator locator = new Locator();
-        locator.setIdentity(partitionIdentity());
-        locator.setPartition(partition());
-        locator.setHeartbeatInterval(heartbeatInterval());
-        locator.setHeartbeatTimeout(heartbeatTimeout());
-        return locator;
-    }
-
-    @Bean
-    public PartitionManager partition() {
-        PartitionManager partition = new PartitionManager();
-        partition.setIdentity(partitionIdentity());
-        return partition;
-    }
-
-    @Bean
-    public Timer timer() {
-        return new Timer("Partition timer", true);
-    }
-
-    @Bean
-    public LeaderProtocolFactory leaderProtocolFactory() {
-        return new LeaderProtocolFactory();
-    }
-
-    @Bean
     public ConnectionSet connectionSet() throws Exception {
         ConnectionSet connectionSet = new ConnectionSet();
         connectionSet.setLeaderProtocolFactory(leaderProtocolFactory());
@@ -145,16 +46,34 @@ public class BasicConfiguration {
     }
 
     @Bean
-    public PartitionProtocol partitionProtocol() throws UnknownHostException {
-        PartitionProtocol protocol = new PartitionProtocol();
-        protocol.setPartitionMgr(partition());
-        protocol.setIdentity(partitionIdentity());
-        return protocol;
+    public ConnectionAddress contactAddress() throws UnknownHostException {
+        return new ConnectionAddress(contactHost(), contactPort());
+    }
+
+    public InetAddress contactHost() throws UnknownHostException {
+        return InetAddress.getLocalHost();
+    }
+
+    public int contactPort() {
+        return 0;
     }
 
     @Bean
-    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        return new TimedProtocolFactory();
+    public DeployedPostProcessor deployedPostProcessor() {
+        return new DeployedPostProcessor();
+    }
+
+    @Bean
+    public Epoch epoch() {
+        return new Epoch();
+    }
+
+    public int getMagic() {
+        return 12345;
+    }
+
+    public boolean getTestable() {
+        return true;
     }
 
     @Bean
@@ -165,11 +84,86 @@ public class BasicConfiguration {
     }
 
     @Bean
+    public MulticastAddress heartbeatGroup() throws UnknownHostException {
+        return new MulticastAddress(heartbeatGroupMulticastAddress(),
+                                    heartbeatGroupPort(), heartbeatGroupTTL());
+    }
+
+    public InetAddress heartbeatGroupMulticastAddress()
+                                                       throws UnknownHostException {
+        return InetAddress.getByName("233.1.2.30");
+    }
+
+    public int heartbeatGroupPort() {
+        return 1966;
+    }
+
+    public int heartbeatGroupTTL() {
+        return 1;
+    }
+
+    public long heartbeatInterval() {
+        return 2000L;
+    }
+
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        return new TimedProtocolFactory();
+    }
+
+    public long heartbeatTimeout() {
+        return 3L;
+    }
+
+    @Bean
     public IOConnectionServerFactory ioConnectionServerFactory()
                                                                 throws Exception {
         MessageNioServerFactory factory = new MessageNioServerFactory();
         factory.setWireSecurity(wireSecurity());
         return factory;
+    }
+
+    @Bean
+    public LeaderProtocolFactory leaderProtocolFactory() {
+        return new LeaderProtocolFactory();
+    }
+
+    @Bean
+    public AnubisLocator locator() {
+        Locator locator = new Locator();
+        locator.setIdentity(partitionIdentity());
+        locator.setPartition(partition());
+        locator.setHeartbeatInterval(heartbeatInterval());
+        locator.setHeartbeatTimeout(heartbeatTimeout());
+        return locator;
+    }
+
+    public int node() {
+        try {
+            return Identity.getProcessUniqueId();
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Bean
+    public PartitionManager partition() {
+        PartitionManager partition = new PartitionManager();
+        partition.setIdentity(partitionIdentity());
+        return partition;
+    }
+
+    @Bean
+    public Identity partitionIdentity() {
+        return new Identity(getMagic(), node(), epoch().longValue());
+    }
+
+    @Bean
+    public PartitionProtocol partitionProtocol() throws UnknownHostException {
+        PartitionProtocol protocol = new PartitionProtocol();
+        protocol.setPartitionMgr(partition());
+        protocol.setIdentity(partitionIdentity());
+        return protocol;
     }
 
     @Bean
@@ -183,7 +177,13 @@ public class BasicConfiguration {
         return mgr;
     }
 
-    public boolean getTestable() {
-        return true;
+    @Bean
+    public Timer timer() {
+        return new Timer("Partition timer", true);
+    }
+
+    @Bean
+    public WireSecurity wireSecurity() {
+        return new NoSecurityImpl();
     }
 }

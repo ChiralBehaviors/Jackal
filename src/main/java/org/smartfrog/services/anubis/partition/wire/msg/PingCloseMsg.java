@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
@@ -30,24 +30,24 @@ public class PingCloseMsg extends PingHeartbeatMsg implements Close {
     public static final int CLOSE_MSG_WIRE_TYPE = 301;
 
     public PingCloseMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                            WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
 
     /**
      * Construct a close message that matches the heartbeat messsage
-     *
-     * @param hb HeartbeatMsg
+     * 
+     * @param hb
+     *            HeartbeatMsg
      */
     public PingCloseMsg(HeartbeatMsg hb) {
         super((PingHeartbeatMsg) hb);
     }
 
     /**
-        * Constructor - used internally when reading from wire
-        */
+     * Constructor - used internally when reading from wire
+     */
     protected PingCloseMsg() {
         super();
     }

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.nio.channels.SocketChannel;
@@ -24,19 +24,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The default connection factory is used by ConnectionServer when no
- * other factory has been set. The default immediately terminates connection
- * attempts.
+ * The default connection factory is used by ConnectionServer when no other
+ * factory has been set. The default immediately terminates connection attempts.
  */
 
 public class DefaultConnectionFactory implements ConnectionFactory {
-	private static final Logger log = Logger.getLogger(DefaultConnectionFactory.class.getCanonicalName());
+    private static final Logger log = Logger.getLogger(DefaultConnectionFactory.class.getCanonicalName());
 
+    @Override
     public void createConnection(SocketChannel channel) {
         try {
-        	if (log.isLoggable(Level.FINER)) {
-        		log.finer("Immediately closing connection: " + channel);
-        	}
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("Immediately closing connection: " + channel);
+            }
             channel.close();
         } catch (Exception ex) {
         }

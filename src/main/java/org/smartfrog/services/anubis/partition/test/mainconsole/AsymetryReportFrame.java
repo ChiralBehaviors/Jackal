@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.awt.BorderLayout;
@@ -52,7 +52,8 @@ public class AsymetryReportFrame extends JFrame {
     private int magic;
     private TitledBorder titledBorder1;
 
-    public AsymetryReportFrame(Controller controller, Map nodes, Identity id) throws HeadlessException {
+    public AsymetryReportFrame(Controller controller, Map nodes, Identity id)
+                                                                             throws HeadlessException {
         this.controller = controller;
         magic = id.magic;
         asymetryTable = getTable(nodes);
@@ -145,8 +146,9 @@ public class AsymetryReportFrame extends JFrame {
     }
 
     /**
-     * Creates an identity that is equal to the node with the given id
-     * in this system (same magic).
+     * Creates an identity that is equal to the node with the given id in this
+     * system (same magic).
+     * 
      * @param id
      * @return
      */

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition;
 
 import java.net.InetAddress;
@@ -56,14 +56,25 @@ public class PartitionManager implements Partition {
     TestMgr testManager = null;
     ActiveTimeQueue timer = null;
 
+    @Override
     public MessageConnection connect(int node) {
         return partitionProtocol.connect(node);
     }
 
+    @Deployed
+    public void deployed() {
+        timer = new ActiveTimeQueue("Anubis: Partition Manager timers (node "
+                                    + identity.id + ")");
+        notifiedView = BitView.create(identity, identity.epoch);
+        notifiedLeader = identity.id;
+    }
+
+    @Override
     public synchronized void deregister(PartitionNotification pn) {
         notificationSet.remove(pn);
     }
 
+    @Override
     public int getId() {
         return identity.id;
     }
@@ -72,6 +83,7 @@ public class PartitionManager implements Partition {
         return identity;
     }
 
+    @Override
     public InetAddress getNodeAddress(int node) {
         return partitionProtocol.getNodeAddress(node);
     }
@@ -80,6 +92,7 @@ public class PartitionManager implements Partition {
         return partitionProtocol;
     }
 
+    @Override
     public synchronized Status getStatus() {
         return new Status(notifiedView, notifiedLeader);
     }
@@ -114,6 +127,7 @@ public class PartitionManager implements Partition {
         }
     }
 
+    @Override
     public synchronized void register(PartitionNotification pn) {
         notificationSet.add(pn);
     }
@@ -124,14 +138,6 @@ public class PartitionManager implements Partition {
 
     public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
         this.partitionProtocol = partitionProtocol;
-    }
-
-    @Deployed
-    public void deployed() {
-        timer = new ActiveTimeQueue("Anubis: Partition Manager timers (node "
-                                    + identity.id + ")");
-        notifiedView = BitView.create(identity, identity.epoch);
-        notifiedLeader = identity.id;
     }
 
     @PostConstruct
@@ -156,7 +162,7 @@ public class PartitionManager implements Partition {
     /**
      * This method will invoke user code in the listener. It is timed, logs
      * timeliness severes and catches Throwables.
-     *
+     * 
      * @param listener
      */
     private void safeObjectNotification(PartitionNotification pn, Object obj,
@@ -192,8 +198,7 @@ public class PartitionManager implements Partition {
             pn.objectNotification(obj, sender, time);
         } catch (Throwable ex) {
             if (log.isLoggable(Level.SEVERE)) {
-                log.log(
-                        Level.SEVERE,
+                log.log(Level.SEVERE,
                         "User API Upcall threw Throwable in "
                                 + "objectNotification(obj, sender, time) where obj="
                                 + obj + ", sender=" + sender + ", time=" + time,
@@ -213,7 +218,7 @@ public class PartitionManager implements Partition {
     /**
      * This method will invoke user code in the listener. It is timed, logs
      * timeliness severes and catches Throwables.
-     *
+     * 
      * @param listener
      */
     private void safePartitionNotification(PartitionNotification pn, View view,
@@ -246,8 +251,7 @@ public class PartitionManager implements Partition {
             pn.partitionNotification(view, leader);
         } catch (Throwable ex) {
             if (log.isLoggable(Level.SEVERE)) {
-                log.log(
-                        Level.SEVERE,
+                log.log(Level.SEVERE,
                         "User API Upcall threw Throwable in "
                                 + "partitionNotification(view, leader) where view="
                                 + view + ", leader=" + leader, ex);

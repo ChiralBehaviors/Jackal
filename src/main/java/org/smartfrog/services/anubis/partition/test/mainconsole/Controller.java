@@ -180,17 +180,6 @@ public class Controller {
         return identity;
     }
 
-    private synchronized TimerTask getTask() {
-        task = new TimerTask() {
-
-            @Override
-            public void run() {
-                checkNodes();
-            }
-        };
-        return task;
-    }
-
     public Timer getTimer() {
         return timer;
     }
@@ -304,6 +293,17 @@ public class Controller {
         consoleFrame.dispose();
         consoleFrame = null;
         System.exit(0);
+    }
+
+    private synchronized TimerTask getTask() {
+        task = new TimerTask() {
+
+            @Override
+            public void run() {
+                checkNodes();
+            }
+        };
+        return task;
     }
 
 }

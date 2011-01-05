@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.components.examples;
 
 import java.net.InetAddress;
@@ -41,10 +41,12 @@ public class PartitionNotices implements PartitionNotification {
         return partition;
     }
 
+    @Override
     public void objectNotification(Object obj, int sender, long time) {
         return;
     }
 
+    @Override
     public void partitionNotification(View view, int leader) {
         if (view.isStable() != isStable) {
             isStable = view.isStable();

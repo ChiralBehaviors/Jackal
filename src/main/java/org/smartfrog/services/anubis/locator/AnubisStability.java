@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator;
 
 import java.util.logging.Level;
@@ -49,16 +49,16 @@ abstract public class AnubisStability {
         }
 
         /**
-         * if the stability has not changed and is unstable there
-         * is nothing new to tell the user
+         * if the stability has not changed and is unstable there is nothing new
+         * to tell the user
          */
         if (!isStable) {
             return;
         }
 
         /**
-         * if the stability has not changed but is stable and the time
-         * reference has changed, tell the user
+         * if the stability has not changed but is stable and the time reference
+         * has changed, tell the user
          */
         if (lastTimeRef != timeRef) {
             lastWasStable = isStable;

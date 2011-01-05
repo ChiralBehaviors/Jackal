@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.util;
 
 import java.util.Comparator;
@@ -30,6 +30,7 @@ public class TimeQueue extends SortedSetMap {
      */
     public TimeQueue() {
         super(new Comparator() {
+            @Override
             public int compare(Object obj1, Object obj2) {
                 Comparable c = (Comparable) obj1;
                 return c.compareTo(obj2);
@@ -43,12 +44,14 @@ public class TimeQueue extends SortedSetMap {
     }
 
     /**
-     * Add an element to the queue. The element is inserted into the queue
-     * in the order defined by the time paramter. The element is also stamped
-     * with that time.
-     *
-     * @param element the element
-     * @param time the time
+     * Add an element to the queue. The element is inserted into the queue in
+     * the order defined by the time paramter. The element is also stamped with
+     * that time.
+     * 
+     * @param element
+     *            the element
+     * @param time
+     *            the time
      * @return true
      */
     public boolean add(TimeQueueElement element, long time) {
@@ -61,7 +64,7 @@ public class TimeQueue extends SortedSetMap {
     /**
      * Removes an element from the queue. If the element is not queued at the
      * time recorded in its time-stamp the operation will fail.
-     *
+     * 
      * @param element
      * @return true if the element is removed successfully, false if not.
      */

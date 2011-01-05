@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire;
 
 import java.io.IOException;
@@ -34,15 +34,15 @@ public class WireMsg implements WireSizes {
     /**
      * Construct from the wire form. Each substype should implement a similar
      * constructor.
-     *
-     * @param wireForm ByteBuffer
+     * 
+     * @param wireForm
+     *            ByteBuffer
      * @throws ClassNotFoundException
      * @throws WireFormException
      * @throws IOException
      */
     public WireMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                       WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
@@ -55,9 +55,9 @@ public class WireMsg implements WireSizes {
     }
 
     /**
-     * Each subtype should over-ride getSize() to return its own
-     * calculation of size.
-     *
+     * Each subtype should over-ride getSize() to return its own calculation of
+     * size.
+     * 
      * @return int
      * @throws WireFormException
      */
@@ -66,10 +66,10 @@ public class WireMsg implements WireSizes {
     }
 
     /**
-     * Set the size of the trailer. When the message is converted to its
-     * wire form, the byte array will include a sequence of unused 
-     * bytes equal to the trailer size at the end. The byte array length will
-     * be getSize() + trailerSize.
+     * Set the size of the trailer. When the message is converted to its wire
+     * form, the byte array will include a sequence of unused bytes equal to the
+     * trailer size at the end. The byte array length will be getSize() +
+     * trailerSize.
      * 
      * @param n
      * @throws WireFormException
@@ -83,13 +83,14 @@ public class WireMsg implements WireSizes {
     }
 
     /**
-     * toWire() generates a byte array from this message. Messages that have
-     * an attribute with dynamic size should implement the
-     * fixDynamicSizeAttributes() method to prepare these attributes and so
-     * that their getSize() method can return the actual desired size. Otherwise
-     * this method should be over-ridden completely.
-     *
+     * toWire() generates a byte array from this message. Messages that have an
+     * attribute with dynamic size should implement the
+     * fixDynamicSizeAttributes() method to prepare these attributes and so that
+     * their getSize() method can return the actual desired size. Otherwise this
+     * method should be over-ridden completely.
+     * 
      * their size in
+     * 
      * @return byte[]
      * @throws WireFormException
      * @throws IOException
@@ -115,6 +116,7 @@ public class WireMsg implements WireSizes {
 
     /**
      * Each subtype should over-ride getType() to return its own type.
+     * 
      * @return int
      */
     protected int getType() {
@@ -125,8 +127,9 @@ public class WireMsg implements WireSizes {
      * top level readWireForm method. All subtypes should implement this method
      * to call their super.readWireForm(ByteBuffer) method and then read their
      * own attributes.
-     *
-     * @param buf ByteBuffer
+     * 
+     * @param buf
+     *            ByteBuffer
      * @throws IOException
      * @throws WireFormException
      * @throws ClassNotFoundException
@@ -146,11 +149,11 @@ public class WireMsg implements WireSizes {
     }
 
     /**
-     * Top level writeWireForm() method.
-     * subtypes should implement this method
+     * Top level writeWireForm() method. subtypes should implement this method
      * to call their super.writeWireForm and then write their own attributes.
-     *
-     * @throws WireFormException on trouble
+     * 
+     * @throws WireFormException
+     *             on trouble
      */
     protected void writeWireForm() throws WireFormException {
         wireForm.putInt(0, getType());

@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator;
 
 import java.io.IOException;
@@ -69,8 +69,7 @@ public class ValueData implements Serializable {
                 return ((java.rmi.MarshalledObject) value).get();
             } catch (ClassNotFoundException ex) {
                 if (log.isLoggable(Level.WARNING)) {
-                    log.log(
-                            Level.WARNING,
+                    log.log(Level.WARNING,
                             "Attempt to unmarshall a DataValue value in a JVM that does not have access to that class",
                             ex);
                 }

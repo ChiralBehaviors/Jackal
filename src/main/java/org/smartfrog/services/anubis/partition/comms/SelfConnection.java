@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
@@ -29,7 +29,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public class SelfConnection extends BitView implements Connection,
-                                           HeartbeatProtocol, Candidate {
+        HeartbeatProtocol, Candidate {
 
     /**
      * 
@@ -48,18 +48,22 @@ public class SelfConnection extends BitView implements Connection,
         candidate = new CandidateImpl(me, me, preferred);
     }
 
+    @Override
     public void clearReceivedVotes() {
         candidate.clearReceivedVotes();
     }
 
+    @Override
     public int countReceivedVotes() {
         return candidate.countReceivedVotes();
     }
 
     /**
      * Candidate interface - redirect to CandidateImpl
+     * 
      * @return Indentity
      */
+    @Override
     public Identity getId() {
         return getSender();
     }
@@ -67,10 +71,12 @@ public class SelfConnection extends BitView implements Connection,
     /**
      * Connection interface - includes Sender interface
      */
+    @Override
     public Identity getSender() {
         return me;
     }
 
+    @Override
     public ConnectionAddress getSenderAddress() {
         return address;
     }
@@ -78,10 +84,12 @@ public class SelfConnection extends BitView implements Connection,
     /**
      * Timed interface
      */
+    @Override
     public long getTime() {
         return System.currentTimeMillis();
     }
 
+    @Override
     public Identity getVote() {
         return candidate.getVote();
     }
@@ -89,14 +97,17 @@ public class SelfConnection extends BitView implements Connection,
     /**
      * HeartbeatProtocol interface
      */
+    @Override
     public boolean isNotTimely(long timenow, long timeout) {
         return false;
     }
 
+    @Override
     public boolean isPreferred() {
         return candidate.isPreferred();
     }
 
+    @Override
     public boolean isQuiesced(long timenow, long quiesce) {
         return false;
     }
@@ -104,38 +115,47 @@ public class SelfConnection extends BitView implements Connection,
     /**
      * Self connection is clearly not skewed
      */
+    @Override
     public boolean measuresClockSkew() {
         return true;
     }
 
     /**
      * HeartbeatProtocol interface
+     * 
      * @param h
      */
+    @Override
     public boolean receiveHeartbeat(Heartbeat h) {
         return true;
     }
 
+    @Override
     public void receiveVote(Candidate c) {
         candidate.receiveVote(c);
     }
 
+    @Override
     public void setTime(long t) {
         return;
     }
 
+    @Override
     public void setVote(Candidate c) {
         candidate.setVote(c);
     }
 
+    @Override
     public void setVote(Identity v) {
         candidate.setVote(v);
     }
 
+    @Override
     public void terminate() {
         return;
     }
 
+    @Override
     public boolean winsAgainst(Candidate c) {
         return candidate.winsAgainst(c);
     }

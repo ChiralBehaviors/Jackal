@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.names;
 
 import org.smartfrog.services.anubis.locator.AnubisProvider;
@@ -50,14 +50,13 @@ public class ProviderInstance extends NameData {
     }
 
     /**
-     * when a provider instance is compared with another provider instance
-     * they must match on name, instance, and node. If it is compared with
-     * something that is not a provider instance they are matched
-     * according to the super class equals() method (- which matches as name
-     * data).
-     *
+     * when a provider instance is compared with another provider instance they
+     * must match on name, instance, and node. If it is compared with something
+     * that is not a provider instance they are matched according to the super
+     * class equals() method (- which matches as name data).
+     * 
      * @param obj
-     * @return  boolean
+     * @return boolean
      */
     @Override
     public boolean equals(Object obj) {
@@ -73,8 +72,8 @@ public class ProviderInstance extends NameData {
      * hashcode uses the super class nameData hashCode() method. Mixing nameData
      * classes and providerInstance classes in a container will work, but is
      * poor style - it gets confusing.
-     *
-     * @return  hascode
+     * 
+     * @return hascode
      */
     @Override
     public int hashCode() {
@@ -83,7 +82,8 @@ public class ProviderInstance extends NameData {
 
     /**
      * Create a provider proxy that matches this instance
-     * @return  proxy provider
+     * 
+     * @return proxy provider
      */
     public ProviderProxy proxy() {
         return new ProviderProxy(name, node);

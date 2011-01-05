@@ -39,242 +39,251 @@ import com.hellblazer.anubis.annotations.Deployed;
 
 public class Test {
 
-	class Listener extends AnubisListener {
-		public Listener(String name) {
-			super(name);
-		}
+    class Listener extends AnubisListener {
+        public Listener(String name) {
+            super(name);
+        }
 
-		public void display() {
-			String str = "Listener " + getName() + " has values:";
-			for (Iterator iter = values().iterator(); iter.hasNext(); str += " "
-					+ iter.next().toString())
-				;
-			driver.println(str);
-		}
+        public void display() {
+            String str = "Listener " + getName() + " has values:";
+            for (Iterator iter = values().iterator(); iter.hasNext(); str += " "
+                                                                             + iter.next().toString()) {
+                ;
+            }
+            driver.println(str);
+        }
 
-		public void newValue(AnubisValue v) {
-			display();
-			if (v.getValue().equals("throw")) {
-				// this expression intentionally leads to an exception
-				@SuppressWarnings("unused")
-				int x = ((Integer) null).intValue();
-			} else if (v.getValue().equals("wait")) {
-				// this expression intentially leads to a pause
-				try {
-					wait(1000);
-				} catch (Exception ex) {
-				}
-			}
-		}
+        @Override
+        public void newValue(AnubisValue v) {
+            display();
+            if (v.getValue().equals("throw")) {
+                // this expression intentionally leads to an exception
+                @SuppressWarnings("unused")
+                int x = ((Integer) null).intValue();
+            } else if (v.getValue().equals("wait")) {
+                // this expression intentially leads to a pause
+                try {
+                    wait(1000);
+                } catch (Exception ex) {
+                }
+            }
+        }
 
-		public void removeValue(AnubisValue v) {
-			driver.println("Removing value " + v.toString());
-			display();
-		}
-	}
+        @Override
+        public void removeValue(AnubisValue v) {
+            driver.println("Removing value " + v.toString());
+            display();
+        }
+    }
 
-	class Provider extends AnubisProvider {
-		Provider(String name) {
-			super(name);
-		}
-	}
+    class Provider extends AnubisProvider {
+        Provider(String name) {
+            super(name);
+        }
+    }
 
-	private Map providers;
-	private Map listeners;
-	private AnubisLocator locator;
-	private Driver driver;
-	private String title;
+    private Map providers;
+    private Map listeners;
+    private AnubisLocator locator;
+    private Driver driver;
+    private String title;
 
-	public Test() {
-		this(UUID.randomUUID().toString());
-	}
+    public Test() {
+        this(UUID.randomUUID().toString());
+    }
 
-	public Test(String title) {
-		this.title = title;
-		locator = null;
-		driver = null;
-		providers = new HashMap();
-		listeners = new HashMap();
-	}
+    public Test(String title) {
+        this.title = title;
+        locator = null;
+        driver = null;
+        providers = new HashMap();
+        listeners = new HashMap();
+    }
 
-	public String getTitle() {
-		return title;
-	}
+    public void addProvider(String str) {
 
-	public void setTitle(String title) {
-		this.title = title;
-	}
+        String name = retrieveName(str);
+        String value = retrieveValue(str);
 
-	public AnubisLocator getLocator() {
-		return locator;
-	}
+        if (name.equals("")) {
+            driver.println("Need a name");
+            return;
+        }
 
-	public void setLocator(AnubisLocator locator) {
-		this.locator = locator;
-	}
+        Provider provider = (Provider) providers.get(name);
+        if (provider == null) {
+            provider = new Provider(name);
+            provider.setValue(value);
+            providers.put(name, provider);
+            locator.registerProvider(provider);
+            driver.println("Registered provider for " + name + " with value "
+                           + value);
+        } else {
+            provider.setValue(value);
+            driver.println("Set value of provider " + name + " to " + value);
+        }
+    }
 
-	/**
-	 * Implementation of Prim interface.
-	 * 
-	 * @throws Exception
-	 */
-	@Deployed
-	public void start() {
-		driver = new Driver(this, "TestDriver: " + title);
-		driver.setVisible(true);
-	}
+    public AnubisLocator getLocator() {
+        return locator;
+    }
 
-	/**
-	 * Implementation of Prim interface.
-	 * 
-	 * @param tr
-	 */
-	@PreDestroy
-	public void terminate() {
-		if (driver != null)
-			driver.setVisible(false);
-		removeLocal();
-		removeGlobal();
-		System.exit(0);
-	}
+    public String getTitle() {
+        return title;
+    }
 
-	public String retrieveName(String str) {
-		String trimmed = str.trim();
-		int spaceIndex = trimmed.indexOf(' ');
-		return (spaceIndex == -1) ? trimmed : trimmed.substring(0, spaceIndex);
-	}
+    public void nonBlockAddListener(String str) {
 
-	public String retrieveValue(String str) {
-		String trimmed = str.trim();
-		int spaceIndex = trimmed.indexOf(' ');
-		return (spaceIndex == -1) ? "dummy" : trimmed.substring(spaceIndex)
-				.trim();
-	}
+        String name = retrieveName(str);
 
-	public void addProvider(String str) {
+        if (name.equals("")) {
+            driver.println("Need a name");
+            return;
+        }
 
-		String name = retrieveName(str);
-		String value = retrieveValue(str);
+        Listener l = new Listener(name);
+        if (listeners.containsKey(name)) {
+            ((Set) listeners.get(name)).add(l);
+        } else {
+            Set s = new HashSet();
+            s.add(l);
+            listeners.put(name, s);
+        }
 
-		if (name.equals("")) {
-			driver.println("Need a name");
-			return;
-		}
+        locator.registerListener(l);
+    }
 
-		Provider provider = (Provider) providers.get(name);
-		if (provider == null) {
-			provider = new Provider(name);
-			provider.setValue(value);
-			providers.put(name, provider);
-			locator.registerProvider(provider);
-			driver.println("Registered provider for " + name + " with value "
-					+ value);
-		} else {
-			provider.setValue(value);
-			driver.println("Set value of provider " + name + " to " + value);
-		}
-	}
+    public void rapidStates(String str) {
 
-	public void removeProvider(String str) {
+        StringTokenizer tokens = new StringTokenizer(str);
 
-		String name = retrieveName(str);
+        if (tokens.countTokens() < 2) {
+            driver.println("Error - Usage: <name> <sequence of states>");
+            return;
+        }
 
-		if (name.equals("")) {
-			driver.println("Need a name");
-			return;
-		}
+        String name = tokens.nextToken();
+        if (!providers.containsKey(name)) {
+            driver.println("Error - unknown provider name");
+            return;
+        }
 
-		if (providers.containsKey(name)) {
-			Provider p = (Provider) providers.remove(name);
-			locator.deregisterProvider(p);
-			driver.println("Deregistered provider for " + name);
-		} else
-			driver.println("Can't deregister a provider that does not exist");
-	}
+        Provider provider = (Provider) providers.get(name);
+        while (tokens.hasMoreTokens()) {
+            provider.setValue(tokens.nextToken());
+        }
+    }
 
-	public void rapidStates(String str) {
+    public void removeGlobal() {
+        if (locator != null && ((Locator) locator).local != null) {
+            ((Locator) locator).global.removeDebugFrame();
+        }
+    }
 
-		StringTokenizer tokens = new StringTokenizer(str);
+    public void removeListener(String str) {
 
-		if (tokens.countTokens() < 2) {
-			driver.println("Error - Usage: <name> <sequence of states>");
-			return;
-		}
+        String name = retrieveName(str);
 
-		String name = tokens.nextToken();
-		if (!providers.containsKey(name)) {
-			driver.println("Error - unknown provider name");
-			return;
-		}
+        if (name.equals("")) {
+            driver.println("Need a name");
+            return;
+        }
 
-		Provider provider = (Provider) providers.get(name);
-		while (tokens.hasMoreTokens())
-			provider.setValue(tokens.nextToken());
-	}
+        if (listeners.containsKey(name)) {
 
-	public void nonBlockAddListener(String str) {
+            Set s = (Set) listeners.get(name);
+            Listener l = (Listener) s.iterator().next();
+            s.remove(l);
+            if (s.isEmpty()) {
+                listeners.remove(name);
+            }
 
-		String name = retrieveName(str);
+            locator.deregisterListener(l);
+            driver.println("Deregistered listener for " + name + " -- "
+                           + s.size() + " left");
 
-		if (name.equals("")) {
-			driver.println("Need a name");
-			return;
-		}
+        } else {
+            driver.println("There are no listeners for " + name);
+        }
+    }
 
-		Listener l = new Listener(name);
-		if (listeners.containsKey(name)) {
-			((Set) listeners.get(name)).add(l);
-		} else {
-			Set s = new HashSet();
-			s.add(l);
-			listeners.put(name, s);
-		}
+    public void removeLocal() {
+        if (locator != null && ((Locator) locator).local != null) {
+            ((Locator) locator).local.removeDebugFrame();
+        }
+    }
 
-		locator.registerListener(l);
-	}
+    public void removeProvider(String str) {
 
-	public void removeListener(String str) {
+        String name = retrieveName(str);
 
-		String name = retrieveName(str);
+        if (name.equals("")) {
+            driver.println("Need a name");
+            return;
+        }
 
-		if (name.equals("")) {
-			driver.println("Need a name");
-			return;
-		}
+        if (providers.containsKey(name)) {
+            Provider p = (Provider) providers.remove(name);
+            locator.deregisterProvider(p);
+            driver.println("Deregistered provider for " + name);
+        } else {
+            driver.println("Can't deregister a provider that does not exist");
+        }
+    }
 
-		if (listeners.containsKey(name)) {
+    public String retrieveName(String str) {
+        String trimmed = str.trim();
+        int spaceIndex = trimmed.indexOf(' ');
+        return spaceIndex == -1 ? trimmed : trimmed.substring(0, spaceIndex);
+    }
 
-			Set s = (Set) listeners.get(name);
-			Listener l = (Listener) s.iterator().next();
-			s.remove(l);
-			if (s.isEmpty())
-				listeners.remove(name);
+    public String retrieveValue(String str) {
+        String trimmed = str.trim();
+        int spaceIndex = trimmed.indexOf(' ');
+        return spaceIndex == -1 ? "dummy"
+                               : trimmed.substring(spaceIndex).trim();
+    }
 
-			locator.deregisterListener(l);
-			driver.println("Deregistered listener for " + name + " -- "
-					+ s.size() + " left");
+    public void setLocator(AnubisLocator locator) {
+        this.locator = locator;
+    }
 
-		} else {
-			driver.println("There are no listeners for " + name);
-		}
-	}
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-	public void showGlobal() {
-		((Locator) locator).global.showDebugFrame();
-	}
+    public void showGlobal() {
+        ((Locator) locator).global.showDebugFrame();
+    }
 
-	public void removeGlobal() {
-		if (locator != null && ((Locator) locator).local != null)
-			((Locator) locator).global.removeDebugFrame();
-	}
+    public void showLocal() {
+        ((Locator) locator).local.showDebugFrame();
+    }
 
-	public void showLocal() {
-		((Locator) locator).local.showDebugFrame();
-	}
+    /**
+     * Implementation of Prim interface.
+     * 
+     * @throws Exception
+     */
+    @Deployed
+    public void start() {
+        driver = new Driver(this, "TestDriver: " + title);
+        driver.setVisible(true);
+    }
 
-	public void removeLocal() {
-		if (locator != null && ((Locator) locator).local != null)
-			((Locator) locator).local.removeDebugFrame();
-	}
+    /**
+     * Implementation of Prim interface.
+     * 
+     * @param tr
+     */
+    @PreDestroy
+    public void terminate() {
+        if (driver != null) {
+            driver.setVisible(false);
+        }
+        removeLocal();
+        removeGlobal();
+        System.exit(0);
+    }
 
 }

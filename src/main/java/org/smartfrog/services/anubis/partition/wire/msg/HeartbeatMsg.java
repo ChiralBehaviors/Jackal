@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
@@ -58,7 +58,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
                                                       + testInterfaceSz;
     public static final int HEARTBEAT_MSG_WIRE_TYPE = 300;
 
-
     private Identity candidate = null;
 
     private boolean candidateUnmarshalled;
@@ -80,17 +79,16 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     private boolean viewUnmarshalled;
 
     /**
-     * Constructor - Creates a heartbeat message from the wire formatted
-     *               byte array. This constructor does not use the usual
-     *               pattern of simply extending the super(byte[])
-     *               sonstructor because it wants to retain the wire and
-     *               byte buffer for lazy unmarshalling later.
+     * Constructor - Creates a heartbeat message from the wire formatted byte
+     * array. This constructor does not use the usual pattern of simply
+     * extending the super(byte[]) sonstructor because it wants to retain the
+     * wire and byte buffer for lazy unmarshalling later.
+     * 
      * @param wireForm
-     *
+     * 
      */
     public HeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
-            WireFormException,
-            IOException {
+                                            WireFormException, IOException {
         super();
         readWireForm(wireForm);
     }
@@ -106,9 +104,9 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     /**
-     * Constructor - a heartbeat message is provided with the sender and
-     *               the sender's address
-     *
+     * Constructor - a heartbeat message is provided with the sender and the
+     * sender's address
+     * 
      * @param identity
      * @param address
      */
@@ -126,8 +124,10 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
     /**
      * Candidate interface
-     * @return  identity
+     * 
+     * @return identity
      */
+    @Override
     public Identity getCandidate() {
         if (!candidateUnmarshalled) {
             candidateFromWire();
@@ -135,14 +135,17 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         return candidate;
     }
 
+    @Override
     public boolean getIsPreferred() {
         return preferred;
     }
 
     /**
      * Message link requirements data field
+     * 
      * @return NodeIdSet
      */
+    @Override
     public NodeIdSet getMsgLinks() {
         if (!msgLinksUnmarshalled) {
             msgLinksFromWire();
@@ -164,8 +167,10 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
     /**
      * NumberedView interface implementation
+     * 
      * @return view
      */
+    @Override
     public View getView() {
         if (!viewUnmarshalled) {
             viewFromWire();
@@ -173,10 +178,12 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         return new BitView(stable, view, viewTimeStamp);
     }
 
+    @Override
     public long getViewNumber() {
         return viewNumber;
     }
 
+    @Override
     public void setCandidate(Identity id) {
         candidate = id;
     }
@@ -185,24 +192,28 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         this.preferred = preferred;
     }
 
+    @Override
     public void setMsgLinks(NodeIdSet l) {
         msgLinks = l;
     }
 
     /**
      * testInterface get and set
+     * 
      * @param address
      */
     public void setTestInterface(ConnectionAddress address) {
         testInterface = address;
     }
 
+    @Override
     public void setView(View v) {
         view = v.toBitSet();
         stable = v.isStable();
         viewTimeStamp = v.getTimeStamp();
     }
 
+    @Override
     public void setViewNumber(long n) {
         viewNumber = n;
     }
@@ -220,8 +231,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         str += "view#=" + viewNumber + ", viewTS=" + viewTimeStamp + ", ";
         str += "isPreferred#=" + preferred + ", ";
         str += (candidateUnmarshalled ? "cand=" + candidate
-                                     : "CANDIDATE_MARSHALLED")
-               + ", ";
+                                     : "CANDIDATE_MARSHALLED") + ", ";
         str += "links#=" + msgLinksNumber + ", ";
         str += (msgLinksUnmarshalled ? "links=" + msgLinks : "LINKS_MARSHALLED")
                + ", ";
@@ -270,12 +280,13 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     /**
-     * Read the attributes from the wire format. Note that some of the attributes
-     * (views, msgLinks and test interface) are not read here. These are read
-     * on demand. These attributes are not likely to be needed often - so we
-     * only unmarshall them when we have to.
-     *
-     * @param buf byte[]
+     * Read the attributes from the wire format. Note that some of the
+     * attributes (views, msgLinks and test interface) are not read here. These
+     * are read on demand. These attributes are not likely to be needed often -
+     * so we only unmarshall them when we have to.
+     * 
+     * @param buf
+     *            byte[]
      */
     @Override
     protected void readWireForm(ByteBuffer buf) throws IOException,
@@ -292,8 +303,8 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         preferred = wireForm.getInt(isPreferredIdx) == 1;
 
         /**
-         * Do not unmarshall candidate, msgLinks, view or test interface
-         * These are done on demand only
+         * Do not unmarshall candidate, msgLinks, view or test interface These
+         * are done on demand only
          */
         candidateUnmarshalled = false;
         msgLinksUnmarshalled = false;

@@ -16,16 +16,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.nio.channels.SocketChannel;
 
 /**
- * interface for a connection factory. The connection factory is used
- * after accepting incoming connections to create an object for handling
- * the connection endpoint.
- *
+ * interface for a connection factory. The connection factory is used after
+ * accepting incoming connections to create an object for handling the
+ * connection endpoint.
+ * 
  * The connection factory is called by ConnectionServer. The createConnection
  * method can use a class extending ConnectionComms to create the connection
  * endpoint.

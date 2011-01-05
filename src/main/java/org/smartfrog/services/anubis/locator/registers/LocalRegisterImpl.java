@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.registers;
 
 import java.util.HashSet;
@@ -24,9 +24,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
@@ -44,14 +41,14 @@ import org.smartfrog.services.anubis.partition.views.View;
 public class LocalRegisterImpl {
 
     /**
-     * RequestServer is required to avoid a potential deadlock
-     * between the local and global if they send messages to each
-     * other on the local node. Sending a message to the local node
-     * results in direct delivery by method call in the same thread.
-     * It is possible for a thread that holds the GlobalRegisterImpl monitor
-     * to make a call to the LocalRegisterImpl, and vice versa at the same time.
-     * So, instead of blocking on a monitor we create a queue of requests for
-     * the global and service the queue with a single thread.
+     * RequestServer is required to avoid a potential deadlock between the local
+     * and global if they send messages to each other on the local node. Sending
+     * a message to the local node results in direct delivery by method call in
+     * the same thread. It is possible for a thread that holds the
+     * GlobalRegisterImpl monitor to make a call to the LocalRegisterImpl, and
+     * vice versa at the same time. So, instead of blocking on a monitor we
+     * create a queue of requests for the global and service the queue with a
+     * single thread.
      */
     private class RequestServer extends Thread {
         private boolean running = false;
@@ -67,9 +64,10 @@ public class LocalRegisterImpl {
              * server object for this thread. The locator is then able to check
              * if calls to its interface are made by this thread by checking the
              * value of locator.callingThread and comparing it to this object.
-             *
+             * 
              * This is the method used to check if the user is making illegal
-             * re-entrant calls during an upcall initiated by the local register.
+             * re-entrant calls during an upcall initiated by the local
+             * register.
              */
             locator.callingThread.set(this);
             running = true;
@@ -176,11 +174,10 @@ public class LocalRegisterImpl {
     }
 
     /**
-     * deregisterListener: deregister locally.
-     *                     deregister with providers local if appropriate.
-     *                     deregister globally if the listener was pending
-     *                     and there are no more.
-     *                     The global only has pending listeners registered.
+     * deregisterListener: deregister locally. deregister with providers local
+     * if appropriate. deregister globally if the listener was pending and there
+     * are no more. The global only has pending listeners registered.
+     * 
      * @param listener
      */
     public void deregisterListener(AnubisListener listener) {
@@ -189,11 +186,10 @@ public class LocalRegisterImpl {
     }
 
     /**
-     * deregisterProvider: deregister with global register.
-     *                     local register is responsible for informing
-     *                     listeners that have already contacted this
-     *                     register.
-     *                     deregister with local register.
+     * deregisterProvider: deregister with global register. local register is
+     * responsible for informing listeners that have already contacted this
+     * register. deregister with local register.
+     * 
      * @param provider
      */
     public void deregisterProvider(AnubisProvider provider) {
@@ -203,7 +199,9 @@ public class LocalRegisterImpl {
 
     /**
      * deregisterStability: deregister a stability notification object.
-     * @param stability AnubisStability
+     * 
+     * @param stability
+     *            AnubisStability
      */
     public void deregisterStability(AnubisStability stability) {
         requests.put(new UserStabilityRequest(UserStabilityRequest.Deregister,
@@ -212,7 +210,7 @@ public class LocalRegisterImpl {
 
     /**
      * indicates that a provider has been assigned a new value.
-     *
+     * 
      * @param provider
      */
     public void newProviderValue(AnubisProvider provider) {
@@ -230,11 +228,10 @@ public class LocalRegisterImpl {
     }
 
     /**
-     * registerProvider: add provider to global registry and locally.
-     *                   the global is responsible for telling listeners
-     *                   where the provider is.
-     *                   the listeners are responsible for contacting this
-     *                   local registry to get provider info.
+     * registerProvider: add provider to global registry and locally. the global
+     * is responsible for telling listeners where the provider is. the listeners
+     * are responsible for contacting this local registry to get provider info.
+     * 
      * @param provider
      */
     public void registerProvider(AnubisProvider provider) {
@@ -245,7 +242,9 @@ public class LocalRegisterImpl {
 
     /**
      * registerStability: register a stability notification object.
-     * @param stability AnubisStability
+     * 
+     * @param stability
+     *            AnubisStability
      */
     public void registerStability(AnubisStability stability) {
         requests.put(new UserStabilityRequest(UserStabilityRequest.Register,
@@ -267,12 +266,10 @@ public class LocalRegisterImpl {
     }
 
     /**
-     * When stable:
-     * 1) find the global
-     * 2) start accessing it
-     * 3) register all providers and listeners again
-     * Note: we are being dumb and pessimistic here - always recover all
-     * registrations - could be more clever.
+     * When stable: 1) find the global 2) start accessing it 3) register all
+     * providers and listeners again Note: we are being dumb and pessimistic
+     * here - always recover all registrations - could be more clever.
+     * 
      * @param leader
      * @param timeStamp
      */
@@ -310,9 +307,9 @@ public class LocalRegisterImpl {
     }
 
     /**
-     * When unstable:
-     * 1) stop accessing the global - it needs time to clear up
+     * When unstable: 1) stop accessing the global - it needs time to clear up
      * 2) check provider and listener dependencies - I could have lost some
+     * 
      * @param view
      */
     public synchronized void unstable(View view) {

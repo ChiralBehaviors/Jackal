@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.partition.comms;
 
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
@@ -26,7 +26,7 @@ public interface IOConnection {
     public static int INITIAL_MSG_ORDER = 0;
 
     public boolean connected();
- 
+
     public void send(TimedMsg msg);
 
     public void setIgnoring(boolean ignoring);

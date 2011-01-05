@@ -8,6 +8,7 @@ import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
 public class NoSecurityImpl implements WireSecurity {
 
+    @Override
     public WireMsg fromWireForm(byte[] wireFrom) throws WireSecurityException,
                                                 WireFormException {
         try {
@@ -17,6 +18,7 @@ public class NoSecurityImpl implements WireSecurity {
         }
     }
 
+    @Override
     public byte[] toWireForm(WireMsg msg) throws WireFormException {
         try {
             return msg.toWire();
