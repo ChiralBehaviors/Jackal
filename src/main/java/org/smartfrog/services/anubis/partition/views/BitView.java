@@ -150,11 +150,6 @@ public class BitView implements View, Cloneable, Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return view.hashCode();
-    }
-
-    @Override
     public boolean isEmpty() {
         return view.isEmpty();
     }
