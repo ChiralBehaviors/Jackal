@@ -19,6 +19,8 @@ import com.sun.corba.se.impl.orbutil.HexOutputStream;
 /**
  * @version $Rev$ $Date$
  */
+
+@SuppressWarnings("restriction")
 public class MulticastTool {
 
     static class Send extends TimerTask {
