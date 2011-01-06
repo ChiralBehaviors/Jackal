@@ -24,7 +24,7 @@ import java.util.LinkedList;
 public class BlockingQueue {
 
     private boolean active = true;
-    private LinkedList queue = new LinkedList();
+    private LinkedList<Object> queue = new LinkedList<Object>();
 
     /**
      * Constructor

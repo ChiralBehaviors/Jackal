@@ -84,15 +84,15 @@ public class ControllerConfiguration {
         return new Epoch();
     }
 
+    protected boolean headless() {
+        return false;
+    }
+
     protected int magic() {
         return 12345;
     }
 
     protected int node() throws UnknownHostException {
         return Identity.getProcessUniqueId();
-    }
-    
-    protected boolean headless() {
-        return false;
     }
 }

@@ -21,7 +21,7 @@ package org.smartfrog.services.anubis.locator.util;
 
 import java.util.Comparator;
 
-public class TimeQueue extends SortedSetMap {
+public class TimeQueue extends SortedSetMap<Long, TimeQueueElement> {
 
     /**
      * Construct the super class using the given comparator. The keys of the
@@ -29,16 +29,10 @@ public class TimeQueue extends SortedSetMap {
      * orders these keys by value.
      */
     public TimeQueue() {
-        super(new Comparator() {
+        super(new Comparator<Long>() {
             @Override
-            public int compare(Object obj1, Object obj2) {
-                Comparable c = (Comparable) obj1;
-                return c.compareTo(obj2);
-            }
-
-            @SuppressWarnings("unused")
-            public boolean equals(Object obj1, Object obj2) {
-                return obj1.equals(obj2);
+            public int compare(Long obj1, Long obj2) {
+                return obj1.compareTo(obj2);
             }
         });
     }

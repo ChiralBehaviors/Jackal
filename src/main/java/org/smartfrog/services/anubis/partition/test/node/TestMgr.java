@@ -44,7 +44,7 @@ public class TestMgr {
 
     private static final long STATSRATE = 5;
     private ConnectionAddress connectionAddress;
-    private Set connections = new HashSet();
+    private Set<TestConnection> connections = new HashSet<TestConnection>();
     private TestServer connectionServer = null;
     private ConnectionSet connectionSet = null;
     private Identity identity;
@@ -177,17 +177,17 @@ public class TestMgr {
     public void terminate() {
         if (testable) {
             connectionServer.shutdown();
-            Iterator iter = connections.iterator();
+            Iterator<TestConnection> iter = connections.iterator();
             while (iter.hasNext()) {
-                ((TestConnection) iter.next()).shutdown();
+                iter.next().shutdown();
             }
         }
     }
 
     public void updateIgnoring(View ignoring) {
-        Iterator iter = connections.iterator();
+        Iterator<TestConnection> iter = connections.iterator();
         while (iter.hasNext()) {
-            updateIgnoring(ignoring, (TestConnection) iter.next());
+            updateIgnoring(ignoring, iter.next());
         }
     }
 
@@ -197,9 +197,9 @@ public class TestMgr {
 
     public void updateStats(long timenow) {
         if (lastStats < timenow - statsInterval) {
-            Iterator iter = connections.iterator();
+            Iterator<TestConnection> iter = connections.iterator();
             while (iter.hasNext()) {
-                updateStats((TestConnection) iter.next());
+                updateStats(iter.next());
             }
             lastStats = timenow;
         }
@@ -220,9 +220,9 @@ public class TestMgr {
     }
 
     public void updateTiming() {
-        Iterator iter = connections.iterator();
+        Iterator<TestConnection> iter = connections.iterator();
         while (iter.hasNext()) {
-            updateTiming((TestConnection) iter.next());
+            updateTiming(iter.next());
         }
     }
 

@@ -52,6 +52,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public ThreadLocal callingThread = new ThreadLocal();
     public GlobalRegisterImpl global = null; // public for debug
     public LocalRegisterImpl local = null; // public for debug
@@ -60,7 +61,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     private long heartbeatTimeout = 0;
     private InstanceGenerator instanceGenerator = new InstanceGenerator();
     private Integer leader = null;
-    private Map links = new HashMap();
+    private Map<Integer, MessageConnection> links = new HashMap<Integer, MessageConnection>();
     private static final Logger log = Logger.getLogger(Locator.class.getCanonicalName());
     private long maxTransDelay;
     private Identity identity = null;
@@ -362,9 +363,9 @@ public class Locator implements PartitionNotification, AnubisLocator {
     @SuppressWarnings("unused")
     private void clearConnections() {
         synchronized (links) {
-            Iterator iter = links.values().iterator();
+            Iterator<MessageConnection> iter = links.values().iterator();
             while (iter.hasNext()) {
-                ((MessageConnection) iter.next()).disconnect();
+                iter.next().disconnect();
             }
             links.clear();
         }
@@ -390,12 +391,12 @@ public class Locator implements PartitionNotification, AnubisLocator {
      */
     private void dropBrokenConnections(View v) {
         synchronized (links) {
-            Iterator iter = links.entrySet().iterator();
+            Iterator<Map.Entry<Integer, MessageConnection>> iter = links.entrySet().iterator();
             while (iter.hasNext()) {
-                Map.Entry entry = (Map.Entry) iter.next();
-                Integer node = (Integer) entry.getKey();
+                Map.Entry<Integer, MessageConnection> entry = iter.next();
+                Integer node = entry.getKey();
                 if (!v.contains(node.intValue())) {
-                    ((MessageConnection) entry.getValue()).disconnect();
+                    entry.getValue().disconnect();
                     iter.remove();
                 }
             }
@@ -413,7 +414,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
      */
     private void send(Object obj, Integer node) {
         synchronized (links) {
-            MessageConnection con = (MessageConnection) links.get(node);
+            MessageConnection con = links.get(node);
             if (con == null) {
                 con = partition.connect(node.intValue());
                 if (con == null) {

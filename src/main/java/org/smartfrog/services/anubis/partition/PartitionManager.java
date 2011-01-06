@@ -47,7 +47,7 @@ public class PartitionManager implements Partition {
 
     Identity identity = null;
     private static final Logger log = Logger.getLogger(PartitionManager.class.getCanonicalName()); //TODO Need to wrap Async
-    Set notificationSet = new HashSet();
+    Set<PartitionNotification> notificationSet = new HashSet<PartitionNotification>();
     int notifiedLeader = UNDEFINED_LEADER;
     View notifiedView = null;
     PartitionProtocol partitionProtocol = null;
@@ -109,10 +109,10 @@ public class PartitionManager implements Partition {
 
         notifiedView = new BitView(view);
         notifiedLeader = leader;
-        Iterator iter = ((Set) ((HashSet) notificationSet).clone()).iterator();
+        @SuppressWarnings("unchecked")
+        Iterator<PartitionNotification> iter = ((Set<PartitionNotification>) ((HashSet<PartitionNotification>) notificationSet).clone()).iterator();
         while (iter.hasNext()) {
-            safePartitionNotification((PartitionNotification) iter.next(),
-                                      notifiedView, notifiedLeader);
+            safePartitionNotification(iter.next(), notifiedView, notifiedLeader);
         }
     }
 
@@ -120,10 +120,10 @@ public class PartitionManager implements Partition {
         if (terminated) {
             return;
         }
-        Iterator iter = ((Set) ((HashSet) notificationSet).clone()).iterator();
+        @SuppressWarnings("unchecked")
+        Iterator<PartitionNotification> iter = ((Set<PartitionNotification>) ((HashSet<PartitionNotification>) notificationSet).clone()).iterator();
         while (iter.hasNext()) {
-            safeObjectNotification((PartitionNotification) iter.next(), obj,
-                                   sender, time);
+            safeObjectNotification(iter.next(), obj, sender, time);
         }
     }
 

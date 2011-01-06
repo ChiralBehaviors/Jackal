@@ -77,9 +77,8 @@ public class WireMsg implements WireSizes {
     public void setTrailerSize(int n) throws WireFormException {
         if (n < 0) {
             throw new WireFormException("Negative trailer size specified: " + n);
-        } else {
-            trailerSize = n;
         }
+        trailerSize = n;
     }
 
     /**

@@ -21,7 +21,7 @@ package org.smartfrog.services.anubis.locator.registers;
 
 import java.rmi.RemoteException;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -73,13 +73,13 @@ public class GlobalRegisterImpl {
 
     private boolean active = true;
     private DebugFrame debug = null;
-    private SetMap listenersByName = new SetMap();
-    private SetMap listenersByNode = new SetMap();
+    private SetMap<String, ListenerProxy> listenersByName = new SetMap<String, ListenerProxy>();
+    private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
     private Locator locator = null;
     private static final Logger log = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
     private int me = -1;
-    private SetMap providersByName = new SetMap();
-    private SetMap providersByNode = new SetMap();
+    private SetMap<String, ProviderProxy> providersByName = new SetMap<String, ProviderProxy>();
+    private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
 
     private BlockingQueue requests = new BlockingQueue();
     private RequestServer server = new RequestServer();
@@ -121,13 +121,13 @@ public class GlobalRegisterImpl {
         /**
          * Check providers for nodes that are not in the view
          */
-        Iterator piter = providersByNode.keySet().iterator();
+        Iterator<Integer> piter = providersByNode.keySet().iterator();
         while (piter.hasNext()) {
-            Integer node = (Integer) piter.next();
+            Integer node = piter.next();
             if (!view.contains(node.intValue())) {
-                Iterator iter = providersByNode.getSet(node).iterator();
+                Iterator<ProviderProxy> iter = providersByNode.getSet(node).iterator();
                 while (iter.hasNext()) {
-                    ProviderProxy provider = (ProviderProxy) iter.next();
+                    ProviderProxy provider = iter.next();
                     providersByName.remove(provider);
                 }
                 piter.remove();
@@ -137,13 +137,13 @@ public class GlobalRegisterImpl {
         /**
          * Check listeners for nodes that are not in the view
          */
-        Iterator liter = listenersByNode.keySet().iterator();
+        Iterator<Integer> liter = listenersByNode.keySet().iterator();
         while (liter.hasNext()) {
-            Integer node = (Integer) liter.next();
+            Integer node = liter.next();
             if (!view.contains(node.intValue())) {
-                Iterator iter = listenersByNode.getSet(node).iterator();
+                Iterator<ListenerProxy> iter = listenersByNode.getSet(node).iterator();
                 while (iter.hasNext()) {
-                    ListenerProxy listener = (ListenerProxy) iter.next();
+                    ListenerProxy listener = iter.next();
                     listenersByName.remove(listener);
                 }
                 liter.remove();
@@ -289,24 +289,23 @@ public class GlobalRegisterImpl {
         }
 
         String str = "Providers By Node:\n";
-        Iterator iter = providersByNode.entrySet().iterator();
+        Iterator<Entry<Integer, Set<ProviderProxy>>> iter = providersByNode.entrySet().iterator();
 
         while (iter.hasNext()) {
-            Map.Entry entry = (Map.Entry) iter.next();
-            Iterator piter = ((Set) entry.getValue()).iterator();
+            Entry<Integer, Set<ProviderProxy>> entry = iter.next();
+            Iterator<ProviderProxy> piter = entry.getValue().iterator();
             while (piter.hasNext()) {
-                str += "    " + ((ProviderProxy) piter.next()).toString()
-                       + "\n";
+                str += "    " + piter.next().toString() + "\n";
             }
         }
 
         str += "\nPending Listeners:\n";
-        iter = listenersByNode.entrySet().iterator();
+        Iterator<Entry<Integer, Set<ListenerProxy>>> iter2 = listenersByNode.entrySet().iterator();
         while (iter.hasNext()) {
-            Map.Entry entry = (Map.Entry) iter.next();
-            Iterator piter = ((Set) entry.getValue()).iterator();
+            Entry<Integer, Set<ListenerProxy>> entry = iter2.next();
+            Iterator<ListenerProxy> piter = entry.getValue().iterator();
             while (piter.hasNext()) {
-                ListenerProxy listener = (ListenerProxy) piter.next();
+                ListenerProxy listener = piter.next();
                 str += "    " + listener.toString() + "\n";
             }
         }
@@ -397,14 +396,14 @@ public class GlobalRegisterImpl {
         /**
          * Check for existing providers and inform them of the new listener
          */
-        Set providers = providersByName.getSet(listener.name);
+        Set<ProviderProxy> providers = providersByName.getSet(listener.name);
         if (providers == null) {
             return;
         }
 
-        Iterator iter = providers.iterator();
+        Iterator<ProviderProxy> iter = providers.iterator();
         while (iter.hasNext()) {
-            ProviderProxy provider = (ProviderProxy) iter.next();
+            ProviderProxy provider = iter.next();
             RegisterMsg msg = RegisterMsg.addListener(listener);
             locator.sendToLocal(msg, provider.node);
         }
@@ -431,14 +430,14 @@ public class GlobalRegisterImpl {
          * Check for existing listeners and inform the provider of their
          * existance
          */
-        Set listeners = listenersByName.getSet(provider.name);
+        Set<ListenerProxy> listeners = listenersByName.getSet(provider.name);
         if (listeners == null) {
             return;
         }
 
-        Iterator iter = listeners.iterator();
+        Iterator<ListenerProxy> iter = listeners.iterator();
         while (iter.hasNext()) {
-            ListenerProxy listener = (ListenerProxy) iter.next();
+            ListenerProxy listener = iter.next();
             RegisterMsg msg = RegisterMsg.addListener(listener);
             locator.sendToLocal(msg, provider.node);
         }

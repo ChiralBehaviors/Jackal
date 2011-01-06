@@ -46,12 +46,12 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     private ConnectionAddress connAdd = null;
     private ConnectionSet connectionSet = null;
     private RxQueue connectQueue = null;
-    private Vector deadKeys = null;
+    private Vector<SelectionKey> deadKeys = null;
 
     private Identity me = null;
     volatile private boolean open = false;
 
-    private Hashtable pendingNewChannels = null;
+    private Hashtable<SocketChannel, MessageNioHandler> pendingNewChannels = null;
     private final int RX_WORKERS = 4;
     private RxQueue[] rxQueue = null;
     private int rxQueueCounter = 0;
@@ -61,7 +61,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     private Logger asyncLog = syncLog; // need to wrap with async log wrapper
     private WireSecurity wireSecurity = null;
 
-    private Vector writePendingKeys = null;
+    private Vector<SelectionKey> writePendingKeys = null;
 
     /**
      * This is a single threaded TCP socket server (de)multiplexing many
@@ -72,8 +72,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
      * there is only 1 decoupling thread.
      */
     public MessageNioServer(ConnectionAddress address, Identity id,
-                            ConnectionSet cs, WireSecurity sec)
-                                                               throws IOException {
+                            ConnectionSet cs, WireSecurity sec) {
 
         if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: constructing a new server");
@@ -105,9 +104,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         }
         setName("Anubis: Nio Message Server (node " + me.id + ")");
         setPriority(MAX_PRIORITY);
-        pendingNewChannels = new Hashtable();
-        deadKeys = new Vector();
-        writePendingKeys = new Vector();
+        pendingNewChannels = new Hashtable<SocketChannel, MessageNioHandler>();
+        deadKeys = new Vector<SelectionKey>();
+        writePendingKeys = new Vector<SelectionKey>();
         open = true;
 
         // create as many queues as needed
@@ -257,8 +256,8 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     // this is the selector thread - only woken up when there is activity on a registered socketChannel
     private void runLoop() {
 
-        Set keys = null;
-        Iterator iter = null;
+        Set<SelectionKey> keys = null;
+        Iterator<SelectionKey> iter = null;
         SelectionKey key = null;
         while (open) {
             if (asyncLog.isLoggable(Level.FINER)) {
@@ -282,10 +281,10 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                     }
                     SocketChannel sc = null;
                     MessageNioHandler mnh = null;
-                    for (Enumeration en = pendingNewChannels.keys(); en.hasMoreElements();) {
-                        sc = (SocketChannel) en.nextElement();
+                    for (Enumeration<SocketChannel> en = pendingNewChannels.keys(); en.hasMoreElements();) {
+                        sc = en.nextElement();
                         if (sc != null) {
-                            mnh = (MessageNioHandler) pendingNewChannels.remove(sc);
+                            mnh = pendingNewChannels.remove(sc);
                             try {
                                 synchronized (selector) {
                                     // sc.register(selector, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, mnh);
@@ -314,7 +313,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                     asyncLog.finer(getName()
                                    + ": going through the key iterator");
                 }
-                key = (SelectionKey) iter.next();
+                key = iter.next();
 
                 if (key.isAcceptable()) {
                     if (asyncLog.isLoggable(Level.FINER)) {
@@ -430,7 +429,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                     SocketChannel deadChannel = null;
                     int deadKeyNumber = deadKeys.size();
                     for (int i = 0; i < deadKeyNumber; ++i) {
-                        deadKey = (SelectionKey) deadKeys.remove(0);
+                        deadKey = deadKeys.remove(0);
                         if (asyncLog.isLoggable(Level.FINER)) {
                             asyncLog.finer("MNS: *** Cleanup starting ***" + i);
                         }
@@ -469,7 +468,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                        + pendingNumber);
                     }
                     for (int i = 0; i < pendingNumber; ++i) {
-                        pendingKey = (SelectionKey) writePendingKeys.remove(0);
+                        pendingKey = writePendingKeys.remove(0);
                         pendingKey.interestOps(pendingKey.interestOps()
                                                | SelectionKey.OP_WRITE);
                     }

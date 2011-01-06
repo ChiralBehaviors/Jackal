@@ -51,7 +51,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     private boolean announceTerm = true;
     private ConnectionSet connectionSet = null;
     private ByteBuffer[] dataToWrite = null;
-    private Vector deadKeys = null;
+    private Vector<SelectionKey> deadKeys = null;
     private ByteBuffer[] fullObject = null;
     // fields to replace MessageConectionImpl
     private boolean ignoring = false;
@@ -76,7 +76,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     private WireSecurity wireSecurity = null;
 
     private boolean writePending = false;
-    private Vector writePendingKeys = null;
+    private Vector<SelectionKey> writePendingKeys = null;
 
     private boolean writingOK = false;
 
@@ -88,7 +88,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
      * socketChannel can occur in many chunks as well if the channel is busy.
      */
     public MessageNioHandler(Selector selector, SocketChannel sc,
-                             Vector deadKeys, Vector writePendingKeys,
+                             Vector<SelectionKey> deadKeys,
+                             Vector<SelectionKey> writePendingKeys,
                              RxQueue rxQueue, WireSecurity sec) {
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Constructing a new MessageNioHandler");
@@ -369,12 +370,10 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 ByteBuffer returnedObject = rxObject;
                 resetReadingVars();
                 return returnedObject;
-            } else {
-                return null;
             }
-        } else {
             return null;
         }
+        return null;
     }
 
     public void readyForWriting() {

@@ -159,7 +159,7 @@ public class BasicConfiguration {
     }
 
     @Bean
-    public PartitionProtocol partitionProtocol() throws UnknownHostException {
+    public PartitionProtocol partitionProtocol() {
         PartitionProtocol protocol = new PartitionProtocol();
         protocol.setPartitionMgr(partition());
         protocol.setIdentity(partitionIdentity());

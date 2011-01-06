@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,8 +41,7 @@ public class BlockingConnectionInitiator extends Thread {
 
     public BlockingConnectionInitiator(Identity id, MessageConnection con,
                                        ConnectionSet cset, HeartbeatMsg hb,
-                                       WireSecurity sec) throws IOException,
-                                                        WireFormException {
+                                       WireSecurity sec) {
         super();
         me = id;
         connection = con;

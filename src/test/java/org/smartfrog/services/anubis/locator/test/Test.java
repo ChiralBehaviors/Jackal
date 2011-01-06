@@ -37,6 +37,7 @@ import org.smartfrog.services.anubis.locator.Locator;
 
 import com.hellblazer.anubis.annotations.Deployed;
 
+@SuppressWarnings("rawtypes")
 public class Test {
 
     class Listener extends AnubisListener {
@@ -46,8 +47,8 @@ public class Test {
 
         public void display() {
             String str = "Listener " + getName() + " has values:";
-            for (Iterator iter = values().iterator(); iter.hasNext(); str += " "
-                                                                             + iter.next().toString()) {
+            for (Iterator<?> iter = values().iterator(); iter.hasNext(); str += " "
+                                                                                + iter.next().toString()) {
                 ;
             }
             driver.println(str);
@@ -82,8 +83,8 @@ public class Test {
         }
     }
 
-    private Map providers;
-    private Map listeners;
+    private Map<String, Provider> providers;
+    private Map<String, Set<Listener>> listeners;
     private AnubisLocator locator;
     private Driver driver;
     private String title;
@@ -96,8 +97,8 @@ public class Test {
         this.title = title;
         locator = null;
         driver = null;
-        providers = new HashMap();
-        listeners = new HashMap();
+        providers = new HashMap<String, Provider>();
+        listeners = new HashMap<String, Set<Listener>>();
     }
 
     public void addProvider(String str) {
@@ -110,7 +111,7 @@ public class Test {
             return;
         }
 
-        Provider provider = (Provider) providers.get(name);
+        Provider provider = providers.get(name);
         if (provider == null) {
             provider = new Provider(name);
             provider.setValue(value);
@@ -143,9 +144,9 @@ public class Test {
 
         Listener l = new Listener(name);
         if (listeners.containsKey(name)) {
-            ((Set) listeners.get(name)).add(l);
+            listeners.get(name).add(l);
         } else {
-            Set s = new HashSet();
+            Set<Listener> s = new HashSet<Listener>();
             s.add(l);
             listeners.put(name, s);
         }
@@ -168,7 +169,7 @@ public class Test {
             return;
         }
 
-        Provider provider = (Provider) providers.get(name);
+        Provider provider = providers.get(name);
         while (tokens.hasMoreTokens()) {
             provider.setValue(tokens.nextToken());
         }
@@ -191,7 +192,7 @@ public class Test {
 
         if (listeners.containsKey(name)) {
 
-            Set s = (Set) listeners.get(name);
+            Set s = listeners.get(name);
             Listener l = (Listener) s.iterator().next();
             s.remove(l);
             if (s.isEmpty()) {
@@ -223,7 +224,7 @@ public class Test {
         }
 
         if (providers.containsKey(name)) {
-            Provider p = (Provider) providers.remove(name);
+            Provider p = providers.remove(name);
             locator.deregisterProvider(p);
             driver.println("Deregistered provider for " + name);
         } else {

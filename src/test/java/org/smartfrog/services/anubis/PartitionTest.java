@@ -25,8 +25,6 @@ import org.springframework.context.annotation.Configuration;
 import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 
 public class PartitionTest extends TestCase {
-    private static final Logger log = Logger.getLogger(PartitionTest.class.getCanonicalName());
-
     static class MyController extends Controller {
         @Override
         protected NodeData createNode(HeartbeatMsg hb) {
@@ -259,6 +257,8 @@ public class PartitionTest extends TestCase {
         }
     }
 
+    private static final Logger log = Logger.getLogger(PartitionTest.class.getCanonicalName());
+
     static CyclicBarrier INITIAL_BARRIER;
     @SuppressWarnings("rawtypes")
     final static Class[] CONFIGS = { node0.class, node1.class, node2.class,
@@ -273,6 +273,56 @@ public class PartitionTest extends TestCase {
     List<AnnotationConfigApplicationContext> memberContexts;
     MyController controller;
     List<Node> partition;
+
+    /**
+     * Test that a partition can form two asymmetric partitions, with one
+     * stabilizing, and then reform the original partition.
+     */
+    public void testAsymmetricPartition() throws Exception {
+        int minorPartitionSize = CONFIGS.length / 2;
+        BitView A = new BitView();
+        CyclicBarrier barrierA = new CyclicBarrier(minorPartitionSize + 1);
+        List<Node> partitionA = new ArrayList<PartitionTest.Node>();
+
+        CyclicBarrier barrierB = new CyclicBarrier(minorPartitionSize + 1);
+        List<Node> partitionB = new ArrayList<PartitionTest.Node>();
+
+        int i = 0;
+        for (Node member : partition) {
+            if (i++ % 2 == 0) {
+                partitionB.add(member);
+                member.barrier = barrierA;
+                member.cardinality = minorPartitionSize;
+                A.add(member.getIdentity());
+            } else {
+                partitionA.add(member);
+                member.barrier = barrierB;
+                member.cardinality = minorPartitionSize;
+            }
+        }
+        log.info("asymmetric partitioning: " + A);
+        controller.asymPartition(A);
+        log.info("Awaiting stabilty of minor partition A");
+        barrierA.await(30, TimeUnit.SECONDS);
+        // The other partition should still be unstable.
+        assertEquals(0, barrierB.getNumberWaiting());
+
+        View viewA = partitionA.get(0).getView();
+        for (Node member : partitionA) {
+            assertEquals(viewA, member.getView());
+        }
+
+        // reform
+        CyclicBarrier barrier = new CyclicBarrier(CONFIGS.length + 1);
+        for (Node node : partition) {
+            node.barrier = barrier;
+            node.cardinality = CONFIGS.length;
+        }
+
+        controller.clearPartitions();
+        log.info("Awaiting stabilty of reformed major partition");
+        barrier.await(30, TimeUnit.SECONDS);
+    }
 
     /**
      * Test that a partition can form two stable sub partions and then reform
@@ -315,56 +365,6 @@ public class PartitionTest extends TestCase {
         View viewB = partitionB.get(0).getView();
         for (Node member : partitionB) {
             assertEquals(viewB, member.getView());
-        }
-
-        // reform
-        CyclicBarrier barrier = new CyclicBarrier(CONFIGS.length + 1);
-        for (Node node : partition) {
-            node.barrier = barrier;
-            node.cardinality = CONFIGS.length;
-        }
-
-        controller.clearPartitions();
-        log.info("Awaiting stabilty of reformed major partition");
-        barrier.await(30, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Test that a partition can form two asymmetric partitions, with one
-     * stabilizing, and then reform the original partition.
-     */
-    public void testAsymmetricPartition() throws Exception {
-        int minorPartitionSize = CONFIGS.length / 2;
-        BitView A = new BitView();
-        CyclicBarrier barrierA = new CyclicBarrier(minorPartitionSize + 1);
-        List<Node> partitionA = new ArrayList<PartitionTest.Node>();
-
-        CyclicBarrier barrierB = new CyclicBarrier(minorPartitionSize + 1);
-        List<Node> partitionB = new ArrayList<PartitionTest.Node>();
-
-        int i = 0;
-        for (Node member : partition) {
-            if (i++ % 2 == 0) {
-                partitionB.add(member);
-                member.barrier = barrierA;
-                member.cardinality = minorPartitionSize;
-                A.add(member.getIdentity());
-            } else {
-                partitionA.add(member);
-                member.barrier = barrierB;
-                member.cardinality = minorPartitionSize;
-            }
-        }
-        log.info("asymmetric partitioning: " + A);
-        controller.asymPartition(A);
-        log.info("Awaiting stabilty of minor partition A");
-        barrierA.await(30, TimeUnit.SECONDS);
-        // The other partition should still be unstable.
-        assertEquals(0, barrierB.getNumberWaiting());
-
-        View viewA = partitionA.get(0).getView();
-        for (Node member : partitionA) {
-            assertEquals(viewA, member.getView());
         }
 
         // reform

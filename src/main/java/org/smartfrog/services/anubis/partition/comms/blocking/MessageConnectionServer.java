@@ -65,7 +65,7 @@ public class MessageConnectionServer extends ConnectionServer implements
     private ConnectionSet connectionSet = null;
     private static final Logger log = Logger.getLogger(MessageConnectionServer.class.getCanonicalName());
     private Identity me = null;
-    private Set pending = new HashSet();
+    private Set<MessageConnectionImpl> pending = new HashSet<MessageConnectionImpl>();
     private WireSecurity wireSecurity = null;
 
     /**

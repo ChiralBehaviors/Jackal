@@ -34,7 +34,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.WindowConstants;
-import javax.swing.border.TitledBorder;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 
@@ -45,15 +44,14 @@ public class AsymetryReportFrame extends JFrame {
      */
     private static final long serialVersionUID = 1L;
     private JTable asymetryTable = null;
-    private BorderLayout borderLayout1 = new BorderLayout();
     private Controller controller;
     private JPanel jPanel1 = new JPanel();
     private JScrollPane jScrollPane = new JScrollPane(jPanel1);
     private int magic;
-    private TitledBorder titledBorder1;
 
-    public AsymetryReportFrame(Controller controller, Map nodes, Identity id)
-                                                                             throws HeadlessException {
+    public AsymetryReportFrame(Controller controller,
+                               Map<Identity, NodeData> nodes, Identity id)
+                                                                          throws HeadlessException {
         this.controller = controller;
         magic = id.magic;
         asymetryTable = getTable(nodes);
@@ -64,20 +62,20 @@ public class AsymetryReportFrame extends JFrame {
         }
     }
 
-    public void recalculate(Map nodes) {
+    public void recalculate(Map<Identity, NodeData> nodes) {
         jPanel1.remove(asymetryTable);
         asymetryTable = getTable(nodes);
         jPanel1.add(asymetryTable);
         jPanel1.updateUI();
     }
 
-    private int getHighestNodeId(Map nodes) {
+    private int getHighestNodeId(Map<Identity, NodeData> nodes) {
         int highestSoFar = -1;
         int highest;
-        Iterator iter = nodes.values().iterator();
+        Iterator<NodeData> iter = nodes.values().iterator();
 
         while (iter.hasNext()) {
-            highest = highestIdInData((NodeData) iter.next());
+            highest = highestIdInData(iter.next());
             if (highest > highestSoFar) {
                 highestSoFar = highest;
             }
@@ -86,10 +84,11 @@ public class AsymetryReportFrame extends JFrame {
         return highestSoFar;
     }
 
-    private Vector getRow(int highestId, int id, Map nodes) {
+    private Vector<String> getRow(int highestId, int id,
+                                  Map<Identity, NodeData> nodes) {
 
-        NodeData nodeData = (NodeData) nodes.get(identity(id));
-        Vector vector = new Vector(highestId + 2);
+        NodeData nodeData = nodes.get(identity(id));
+        Vector<String> vector = new Vector<String>(highestId + 2);
         boolean itseesme;
         boolean iseeit;
         NodeData it;
@@ -103,27 +102,26 @@ public class AsymetryReportFrame extends JFrame {
             }
             return vector;
 
-        } else {
-
-            for (int i = 0; i < highestId; i++) {
-                iseeit = nodeData.getView().contains(i);
-                it = (NodeData) nodes.get(identity(i));
-                itseesme = it == null ? false : it.getView().contains(id);
-                if (iseeit && !itseesme) {
-                    vector.add("X");
-                } else {
-                    vector.add("");
-                }
-            }
-            return vector;
         }
+        for (int i = 0; i < highestId; i++) {
+            iseeit = nodeData.getView().contains(i);
+            it = nodes.get(identity(i));
+            itseesme = it == null ? false : it.getView().contains(id);
+            if (iseeit && !itseesme) {
+                vector.add("X");
+            } else {
+                vector.add("");
+            }
+        }
+        return vector;
     }
 
-    private JTable getTable(Map nodes) {
+    private JTable getTable(Map<Identity, NodeData> nodes) {
 
         int highestId = getHighestNodeId(nodes);
-        Vector columnNames = new Vector(highestId + 2);
-        Vector rowData = new Vector(highestId + 2);
+        Vector<String> columnNames = new Vector<String>(highestId + 2);
+        Vector<Vector<String>> rowData = new Vector<Vector<String>>(
+                                                                    highestId + 2);
 
         columnNames.add("\\");
         for (int i = 0; i < highestId; i++) {

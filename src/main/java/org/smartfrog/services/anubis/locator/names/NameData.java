@@ -45,9 +45,8 @@ public class NameData implements Serializable {
         if (obj instanceof NameData) {
             return name.equals(((NameData) obj).name)
                    && node.equals(((NameData) obj).node);
-        } else {
-            return false;
         }
+        return false;
     }
 
     @Override

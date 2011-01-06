@@ -57,6 +57,7 @@ public class LocalRegisterImpl {
             super();
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void run() {
             /**
@@ -147,7 +148,7 @@ public class LocalRegisterImpl {
     }
 
     public RequestServer server = new RequestServer(); // public so Locator can test for re-entry
-    public Set stabilityNotifications = new HashSet();
+    public Set<AnubisStability> stabilityNotifications = new HashSet<AnubisStability>();
     public boolean stable = true;
     public long timeRef = -1;
     private DebugFrame debug = null;
@@ -438,9 +439,9 @@ public class LocalRegisterImpl {
      * notify all stability notification objects
      */
     private void notifyStability() {
-        Iterator iter = stabilityNotifications.iterator();
+        Iterator<AnubisStability> iter = stabilityNotifications.iterator();
         while (iter.hasNext()) {
-            ((AnubisStability) iter.next()).notifyStability(stable, timeRef);
+            iter.next().notifyStability(stable, timeRef);
         }
     }
 

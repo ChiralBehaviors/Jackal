@@ -50,7 +50,7 @@ abstract public class AnubisListener {
      * The name of the provider that this listener listens for.
      */
     private String name;
-    private Map values = new HashMap();
+    private Map<String, AnubisValue> values = new HashMap<String, AnubisValue>();
     private static final Logger log = Logger.getLogger(AnubisListener.class.getCanonicalName());;
     protected ActiveTimeQueue timers;
 
@@ -86,7 +86,7 @@ abstract public class AnubisListener {
     public synchronized void newValue(ProviderInstance i) {
         AnubisValue v;
         if (values.containsKey(i.instance)) {
-            v = (AnubisValue) values.get(i.instance);
+            v = values.get(i.instance);
             v.set(i.time, i.value);
         } else {
             v = createValue(i);
@@ -99,7 +99,7 @@ abstract public class AnubisListener {
     abstract public void removeValue(AnubisValue value);
 
     public synchronized void removeValue(ProviderInstance i) {
-        AnubisValue v = (AnubisValue) values.remove(i.instance);
+        AnubisValue v = values.remove(i.instance);
         if (v != null) {
             setTime(i.time);
             v.set(i.time, ValueData.nullValue());
@@ -108,7 +108,7 @@ abstract public class AnubisListener {
     }
 
     public synchronized void removeValue(ProviderInstance i, long time) {
-        AnubisValue v = (AnubisValue) values.remove(i.instance);
+        AnubisValue v = values.remove(i.instance);
         if (v != null) {
             setTime(time);
             v.set(time, ValueData.nullValue());
@@ -128,7 +128,7 @@ abstract public class AnubisListener {
     public String toString() {
         String ret = "Listener " + getName() + "=[size=" + size()
                      + ", mostRecentUpdate=" + getUpdateTime() + ", values=[";
-        Iterator iter = values().iterator();
+        Iterator<AnubisValue> iter = values().iterator();
         while (iter.hasNext()) {
             ret += iter.next().toString();
         }
@@ -136,7 +136,7 @@ abstract public class AnubisListener {
         return ret;
     }
 
-    public synchronized Collection values() {
+    public synchronized Collection<AnubisValue> values() {
         return values.values();
     }
 

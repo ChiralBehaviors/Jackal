@@ -42,7 +42,7 @@ public class ColorAllocator {
      * keep a list of nodes that have a color allocated indexed by bitmap (from
      * the view)
      */
-    private SetMap nodes = new SetMap();
+    private SetMap<NodeIdSet, NodeData> nodes = new SetMap<NodeIdSet, NodeData>();
 
     public ColorAllocator() {
     }

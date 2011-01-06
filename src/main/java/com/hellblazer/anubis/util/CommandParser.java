@@ -370,10 +370,9 @@ public class CommandParser {
                 items.remove();
                 // next item is the value
                 return possibleValue;
-            } else {
-                // next item is an option
-                items.previous();
             }
+            // next item is an option
+            items.previous();
         }
         return "";
     }

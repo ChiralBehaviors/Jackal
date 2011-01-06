@@ -47,8 +47,8 @@ public class LocalListeners {
      */
     private class ListenerInfo {
 
-        public Set listeners = new HashSet();
-        public Map providers = new HashMap(); // instance --> name
+        public Set<AnubisListener> listeners = new HashSet<AnubisListener>();
+        public Map<ProviderInstance, ProviderInstance> providers = new HashMap<ProviderInstance, ProviderInstance>(); // instance --> name
         public ListenerProxy proxy = null;
 
         public ListenerInfo(String name, AnubisListener l) {
@@ -61,9 +61,9 @@ public class LocalListeners {
             String str = proxy.toString() + " has " + listeners.size()
                          + " listeners and " + providers.size()
                          + " providers:\n";
-            for (Iterator iter = providers.values().iterator(); iter.hasNext(); str += "        "
-                                                                                       + ((ProviderInstance) iter.next()).toString()
-                                                                                       + "\n") {
+            for (Iterator<ProviderInstance> iter = providers.values().iterator(); iter.hasNext(); str += "        "
+                                                                                                         + iter.next().toString()
+                                                                                                         + "\n") {
                 ;
             }
             return str;
@@ -73,7 +73,7 @@ public class LocalListeners {
     /**
      * listeners maps names-->ListenerInfo records.
      */
-    private Map listeners = new HashMap();
+    private Map<String, Object> listeners = new HashMap<String, Object>();
     private Locator locator = null;
 
     private static final Logger log = Logger.getLogger(LocalListeners.class.getCanonicalName());
@@ -85,7 +85,7 @@ public class LocalListeners {
      * we pick out absent nodes and use the names to find providers that should
      * be removed from the listenerInfo records.
      */
-    private SetMap providersByNode = new SetMap();
+    private SetMap<Object, ProviderProxy> providersByNode = new SetMap<Object, ProviderProxy>();
     private long uniqueRegId = 0;;
 
     public LocalListeners(Locator l, Integer id) {
@@ -110,7 +110,7 @@ public class LocalListeners {
          * Iterate through the providersByNode mapSet looking for nodes that are
          * not in the view.
          */
-        Iterator nodeIter = providersByNode.keySet().iterator();
+        Iterator<Object> nodeIter = providersByNode.keySet().iterator();
         while (nodeIter.hasNext()) {
 
             /**
@@ -128,16 +128,16 @@ public class LocalListeners {
              * node.
              */
 
-            Iterator nameIter = providersByNode.getSet(node).iterator();
+            Iterator<ProviderProxy> nameIter = providersByNode.getSet(node).iterator();
             while (nameIter.hasNext()) {
 
-                ProviderProxy proxy = (ProviderProxy) nameIter.next();
+                ProviderProxy proxy = nameIter.next();
                 ListenerInfo info = (ListenerInfo) listeners.get(proxy.name);
 
-                for (ProviderInstance instance = (ProviderInstance) info.providers.remove(proxy); instance != null; instance = (ProviderInstance) info.providers.remove(proxy)) {
+                for (ProviderInstance instance = info.providers.remove(proxy); instance != null; instance = info.providers.remove(proxy)) {
 
-                    for (Iterator iter = info.listeners.iterator(); iter.hasNext(); ((AnubisListener) iter.next()).removeValue(instance,
-                                                                                                                               timeNow)) {
+                    for (Iterator<AnubisListener> iter = info.listeners.iterator(); iter.hasNext(); iter.next().removeValue(instance,
+                                                                                                                            timeNow)) {
                         ;
                     }
                 }
@@ -186,8 +186,8 @@ public class LocalListeners {
             /**
              * Inform all nodes from which we have received values
              */
-            Set informedNodes = new HashSet();
-            Iterator providerIter = info.providers.values().iterator();
+            Set<Integer> informedNodes = new HashSet<Integer>();
+            Iterator<ProviderInstance> providerIter = info.providers.values().iterator();
 
             while (providerIter.hasNext()) {
 
@@ -195,7 +195,7 @@ public class LocalListeners {
                  * get the next known provider and remove it from the nodes
                  * information.
                  */
-                ProviderProxy providerProxy = ((ProviderInstance) providerIter.next()).proxy();
+                ProviderProxy providerProxy = providerIter.next().proxy();
                 if (providersByNode.remove(providerProxy.node, providerProxy)) {
 
                     /**
@@ -254,7 +254,7 @@ public class LocalListeners {
         /**
          * Inform all the listeners that this value has now gone
          */
-        for (Iterator iter = info.listeners.iterator(); iter.hasNext(); ((AnubisListener) iter.next()).removeValue(provider)) {
+        for (Iterator<AnubisListener> iter = info.listeners.iterator(); iter.hasNext(); iter.next().removeValue(provider)) {
             ;
         }
     }
@@ -296,7 +296,7 @@ public class LocalListeners {
         /**
          * Inform all the listeners of this new value
          */
-        for (Iterator iter = info.listeners.iterator(); iter.hasNext(); ((AnubisListener) iter.next()).newValue(provider)) {
+        for (Iterator<AnubisListener> iter = info.listeners.iterator(); iter.hasNext(); iter.next().newValue(provider)) {
             ;
         }
     }
@@ -339,7 +339,7 @@ public class LocalListeners {
          * - i.e. with none).
          */
         if (!info.providers.isEmpty()) {
-            for (Iterator iter = info.providers.values().iterator(); iter.hasNext(); listener.newValue((ProviderInstance) iter.next())) {
+            for (Iterator<ProviderInstance> iter = info.providers.values().iterator(); iter.hasNext(); listener.newValue(iter.next())) {
                 ;
             }
         }
@@ -350,7 +350,7 @@ public class LocalListeners {
      * bound.
      */
     public synchronized void reRegisterAll() {
-        Iterator iter = listeners.values().iterator();
+        Iterator<Object> iter = listeners.values().iterator();
         while (iter.hasNext()) {
             ListenerInfo info = (ListenerInfo) iter.next();
             locator.sendToGlobal(RegisterMsg.registerListener(info.proxy));
@@ -359,15 +359,15 @@ public class LocalListeners {
 
     @Override
     public synchronized String toString() {
-        Iterator iter;
+        Iterator<Object> iter;
 
         String str = "Remote Providers by node:\n";
         iter = providersByNode.keySet().iterator();
         while (iter.hasNext()) {
             Integer node = (Integer) iter.next();
             str += "    " + node;
-            for (Iterator iter2 = providersByNode.getSet(node).iterator(); iter2.hasNext(); str += " "
-                                                                                                   + ((ProviderProxy) iter2.next()).name) {
+            for (Iterator<ProviderProxy> iter2 = providersByNode.getSet(node).iterator(); iter2.hasNext(); str += " "
+                                                                                                                  + iter2.next().name) {
                 ;
             }
             str += "\n";

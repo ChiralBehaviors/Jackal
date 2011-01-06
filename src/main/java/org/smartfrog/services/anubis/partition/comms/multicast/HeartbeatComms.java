@@ -48,7 +48,7 @@ public class HeartbeatComms extends MulticastComms implements
     private Object ingnoringMonitor = new Object();
     private Identity me = null;
 
-    private Map messageHandlers = Collections.synchronizedMap(new HashMap());
+    private Map<Class<?>, MessageHandler> messageHandlers = Collections.synchronizedMap(new HashMap<Class<?>, MessageHandler>());
     private WireSecurity wireSecurity = null;
 
     /**
@@ -104,7 +104,7 @@ public class HeartbeatComms extends MulticastComms implements
         setPriority(Thread.MAX_PRIORITY);
     }
 
-    public void deregisterMessageHandler(Class type) {
+    public void deregisterMessageHandler(Class<?> type) {
         messageHandlers.remove(type);
     }
 
@@ -115,7 +115,7 @@ public class HeartbeatComms extends MulticastComms implements
         }
     }
 
-    public void registerMessageHandler(Class type, MessageHandler handler) {
+    public void registerMessageHandler(Class<?> type, MessageHandler handler) {
         messageHandlers.put(type, handler);
     }
 
@@ -201,7 +201,7 @@ public class HeartbeatComms extends MulticastComms implements
     }
 
     private void handleNonHeartbeat(Object msg) {
-        MessageHandler handler = (MessageHandler) messageHandlers.get(msg.getClass());
+        MessageHandler handler = messageHandlers.get(msg.getClass());
         if (handler != null) {
             if (log.isLoggable(Level.FINEST)) {
                 log.finest("Delivering message: " + msg);

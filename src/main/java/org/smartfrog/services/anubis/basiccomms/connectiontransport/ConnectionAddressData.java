@@ -49,9 +49,8 @@ public class ConnectionAddressData {
     protected InetAddress getAddress() throws Exception {
         if (hostName.equals(LOCALHOST)) {
             return InetAddress.getLocalHost();
-        } else {
-            return InetAddress.getByName(hostName);
         }
+        return InetAddress.getByName(hostName);
     }
 
 }

@@ -22,15 +22,16 @@ package org.smartfrog.services.anubis.partition.protocols.leader;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class LeaderMgr {
 
-    protected Map candidates = null;
+    protected Map<Identity, Connection> candidates = null;
     protected Candidate localCandidate = null;
 
-    public LeaderMgr(Map candidateMap, Candidate local) {
+    public LeaderMgr(Map<Identity, Connection> candidateMap, Candidate local) {
         candidates = candidateMap;
         localCandidate = local;
         localCandidate.setVote(localCandidate.getId());
@@ -90,7 +91,7 @@ public class LeaderMgr {
      */
     private synchronized Candidate election(View v) {
 
-        Iterator iter;
+        Iterator<Connection> iter;
 
         /**
          * reset the candidates (clear the votes)

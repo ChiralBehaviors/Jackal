@@ -37,9 +37,9 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class LocalProviders {
     private class ProviderInfo {
-        public Map instances = new HashMap();
-        public Map listeners = new HashMap();
-        public Map providers = new HashMap();
+        public Map<String, ProviderInstance> instances = new HashMap<String, ProviderInstance>();
+        public Map<ListenerProxy, ListenerProxy> listeners = new HashMap<ListenerProxy, ListenerProxy>();
+        public Map<String, AnubisProvider> providers = new HashMap<String, AnubisProvider>();
         public ProviderProxy proxy;
 
         public ProviderInfo(AnubisProvider provider) {
@@ -53,22 +53,22 @@ public class LocalProviders {
                          + listeners.size() + " listeners \n";
             str += "        at nodes: ";
 
-            Iterator iter = listeners.values().iterator();
+            Iterator<ListenerProxy> iter = listeners.values().iterator();
             while (iter.hasNext()) {
-                str += ((ListenerProxy) iter.next()).node.toString() + " ";
+                str += iter.next().node.toString() + " ";
             }
 
             return str + "\n";
         }
     }
 
-    private SetMap listenersByNode = new SetMap(); // node-->Set of listeners
+    private SetMap<Object, ListenerProxy> listenersByNode = new SetMap<Object, ListenerProxy>(); // node-->Set of listeners
 
     private Locator locator = null;
     private static final Logger log = Logger.getLogger(LocalProviders.class.getCanonicalName());
 
     private Integer me = null;
-    private Map providers = new HashMap(); // name-->record
+    private Map<String, Object> providers = new HashMap<String, Object>(); // name-->record
 
     public LocalProviders() {
         try {
@@ -111,7 +111,7 @@ public class LocalProviders {
          * existing registration (if it exists).
          */
         ProviderInfo info = (ProviderInfo) providers.get(listener.name);
-        ListenerProxy existingReg = (ListenerProxy) info.listeners.get(listener);
+        ListenerProxy existingReg = info.listeners.get(listener);
 
         /**
          * If there is no existing registration for this listener then add it.
@@ -169,7 +169,7 @@ public class LocalProviders {
          * If we get to this point then we have a new listener registration so
          * inform the listener of all the provider instances.
          */
-        Iterator iter = info.instances.values().iterator();
+        Iterator<ProviderInstance> iter = info.instances.values().iterator();
         if (log.isLoggable(Level.FINER)) {
             log.finer(me + ": sending states of "
                       + info.instances.values().size()
@@ -177,7 +177,7 @@ public class LocalProviders {
         }
         while (iter.hasNext()) {
 
-            RegisterMsg msg = RegisterMsg.providerValue((ProviderInstance) iter.next());
+            RegisterMsg msg = RegisterMsg.providerValue(iter.next());
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me + ": sending " + msg + " to node " + listener.node);
             }
@@ -197,7 +197,7 @@ public class LocalProviders {
         /**
          * Iterate over all the nodes
          */
-        Iterator nodeIter = listenersByNode.keySet().iterator();
+        Iterator<Object> nodeIter = listenersByNode.keySet().iterator();
         while (nodeIter.hasNext()) {
 
             /**
@@ -212,9 +212,9 @@ public class LocalProviders {
              * Iterate over the listeners records associated with the node and
              * remove the listeners from the provider info
              */
-            Iterator listenerIter = listenersByNode.getSet(node).iterator();
+            Iterator<ListenerProxy> listenerIter = listenersByNode.getSet(node).iterator();
             while (listenerIter.hasNext()) {
-                ListenerProxy listener = (ListenerProxy) listenerIter.next();
+                ListenerProxy listener = listenerIter.next();
                 ProviderInfo info = (ProviderInfo) providers.get(listener.name);
                 // the following line is unchanged with maps
                 info.listeners.remove(listener);
@@ -242,9 +242,7 @@ public class LocalProviders {
          * for the instance data and the provider from the info.
          */
         ProviderInfo info = (ProviderInfo) providers.get(provider.getName());
-        ProviderInstance instance = (ProviderInstance) info.instances.remove(provider.getInstance());
-        info.providers.remove(instance.instance);
-
+        ProviderInstance instance = info.instances.remove(provider.getInstance());
         /**
          * If there was no instance record (and hance no provider record) then
          * return now - it means the provider was not know
@@ -253,6 +251,8 @@ public class LocalProviders {
             return;
         }
 
+        info.providers.remove(instance.instance);
+
         /**
          * Set the instance time to the time now and inorm any listners that the
          * provider instance has gone away. Setting the time tells them when it
@@ -260,10 +260,10 @@ public class LocalProviders {
          */
         instance.time = System.currentTimeMillis();
 
-        Iterator iter = info.listeners.values().iterator();
+        Iterator<ListenerProxy> iter = info.listeners.values().iterator();
         while (iter.hasNext()) {
             locator.sendToLocal(RegisterMsg.providerNotPresent(instance),
-                                ((ListenerProxy) iter.next()).node);
+                                iter.next().node);
         }
 
         /**
@@ -274,9 +274,9 @@ public class LocalProviders {
             providers.remove(provider.getName());
             locator.sendToGlobal(RegisterMsg.deregisterProvider(info.proxy));
 
-            Iterator listenerIter = info.listeners.values().iterator();
+            Iterator<ListenerProxy> listenerIter = info.listeners.values().iterator();
             while (listenerIter.hasNext()) {
-                ListenerProxy proxy = (ListenerProxy) listenerIter.next();
+                ListenerProxy proxy = listenerIter.next();
                 listenersByNode.remove(proxy.node, proxy);
             }
         }
@@ -297,7 +297,7 @@ public class LocalProviders {
          * instance then return now.
          */
         ProviderInfo info = (ProviderInfo) providers.get(provider.getName());
-        ProviderInstance instance = (ProviderInstance) info.instances.get(provider.getInstance());
+        ProviderInstance instance = info.instances.get(provider.getInstance());
         if (instance == null) {
             return;
         }
@@ -311,10 +311,10 @@ public class LocalProviders {
         /**
          * Inform any listners that there is a new value
          */
-        Iterator iter = info.listeners.values().iterator();
+        Iterator<ListenerProxy> iter = info.listeners.values().iterator();
         while (iter.hasNext()) {
 
-            ListenerProxy listener = (ListenerProxy) iter.next();
+            ListenerProxy listener = iter.next();
             locator.sendToLocal(RegisterMsg.providerValue(instance),
                                 listener.node);
 
@@ -356,9 +356,9 @@ public class LocalProviders {
             info.providers.put(instance.instance, provider);
             info.instances.put(instance.instance, instance);
 
-            Iterator iter = info.listeners.values().iterator();
+            Iterator<ListenerProxy> iter = info.listeners.values().iterator();
             while (iter.hasNext()) {
-                ListenerProxy listener = (ListenerProxy) iter.next();
+                ListenerProxy listener = iter.next();
                 locator.sendToLocal(RegisterMsg.providerValue(instance),
                                     listener.node);
             }
@@ -397,7 +397,7 @@ public class LocalProviders {
          * registration.
          */
         ProviderInfo info = (ProviderInfo) providers.get(listener.name);
-        ListenerProxy existingReg = (ListenerProxy) info.listeners.get(listener);
+        ListenerProxy existingReg = info.listeners.get(listener);
 
         /**
          * If the existing registration superceeds the deregistration then
@@ -429,7 +429,7 @@ public class LocalProviders {
      * Register all the providers known to the local register.
      */
     public synchronized void reRegisterAll() {
-        Iterator iter = providers.values().iterator();
+        Iterator<Object> iter = providers.values().iterator();
         while (iter.hasNext()) {
             ProviderInfo info = (ProviderInfo) iter.next();
             locator.sendToGlobal(RegisterMsg.registerProvider(info.proxy));
@@ -440,12 +440,12 @@ public class LocalProviders {
     public synchronized String toString() {
 
         String str = "Remote Listeners By Node:\n";
-        Iterator iter = listenersByNode.keySet().iterator();
+        Iterator<Object> iter = listenersByNode.keySet().iterator();
         while (iter.hasNext()) {
             Integer node = (Integer) iter.next();
             str += "    " + node;
-            for (Iterator iter2 = listenersByNode.getSet(node).iterator(); iter2.hasNext(); str += " "
-                                                                                                   + ((ListenerProxy) iter2.next()).name) {
+            for (Iterator<ListenerProxy> iter2 = listenersByNode.getSet(node).iterator(); iter2.hasNext(); str += " "
+                                                                                                                  + iter2.next().name) {
                 ;
             }
             str += "\n";

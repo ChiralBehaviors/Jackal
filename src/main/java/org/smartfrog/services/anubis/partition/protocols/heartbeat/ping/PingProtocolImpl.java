@@ -230,12 +230,11 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
             }
             return true;
 
-        } else {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Rejecting heart beat: " + hb);
-            }
-            return false;
         }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Rejecting heart beat: " + hb);
+        }
+        return false;
     }
 
     @Override

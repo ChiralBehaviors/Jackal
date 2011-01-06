@@ -33,16 +33,13 @@ public class AnubisCompound {
         private Provider(String str) {
             super(str);
         }
-
-        public boolean anubisLivenessPoll() {
-            return true;
-        }
     }
 
     private AnubisLocator locator = null;
     private String name = null;
     private AnubisProvider provider = null;
 
+    @SuppressWarnings("unused")
     public AnubisCompound() throws RemoteException {
         super();
     }

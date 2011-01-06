@@ -35,7 +35,8 @@ public class ValueData implements Serializable {
 
     static public ValueData newMarshalledValue(Object value) {
         try {
-            return new ValueData(true, new java.rmi.MarshalledObject(value));
+            return new ValueData(true,
+                                 new java.rmi.MarshalledObject<Object>(value));
         } catch (IOException ex) {
             if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING,
@@ -66,7 +67,7 @@ public class ValueData implements Serializable {
     public Object getValue() {
         if (marshalled) {
             try {
-                return ((java.rmi.MarshalledObject) value).get();
+                return ((java.rmi.MarshalledObject<?>) value).get();
             } catch (ClassNotFoundException ex) {
                 if (log.isLoggable(Level.WARNING)) {
                     log.log(Level.WARNING,
@@ -81,9 +82,8 @@ public class ValueData implements Serializable {
                 }
                 return noUnmarshall;
             }
-        } else {
-            return value;
         }
+        return value;
     }
 
     @Override
@@ -91,14 +91,13 @@ public class ValueData implements Serializable {
         if (marshalled) {
             try {
                 return "Marshalled[ "
-                       + ((java.rmi.MarshalledObject) value).get() + " ]";
+                       + ((java.rmi.MarshalledObject<?>) value).get() + " ]";
             } catch (ClassNotFoundException ex) {
                 return "Marshalled[ class not known here ]";
             } catch (IOException ex) {
                 return "Marshalled[ IOException when unmarshalling ]";
             }
-        } else {
-            return getValue().toString();
         }
+        return getValue().toString();
     }
 }

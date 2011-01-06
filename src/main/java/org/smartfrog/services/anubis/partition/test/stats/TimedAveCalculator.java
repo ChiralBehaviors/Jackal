@@ -39,7 +39,7 @@ public class TimedAveCalculator implements AveCalculator {
     private long biggest = 0;
     private boolean complete = false;
     private long count = 0;
-    private List entries = new LinkedList();
+    private List<Entry> entries = new LinkedList<Entry>();
     private long period = 0;
 
     public TimedAveCalculator(long period) {
@@ -54,9 +54,9 @@ public class TimedAveCalculator implements AveCalculator {
         }
         count++;
         accumulator += delay;
-        Iterator iter = entries.iterator();
+        Iterator<Entry> iter = entries.iterator();
         while (iter.hasNext()) {
-            Entry earliest = (Entry) iter.next();
+            Entry earliest = iter.next();
             if (earliest.time >= time - period) {
                 break;
             }
@@ -75,9 +75,9 @@ public class TimedAveCalculator implements AveCalculator {
     @Override
     public long biggest() {
         long result = 0;
-        Iterator iter = entries.listIterator();
+        Iterator<Entry> iter = entries.listIterator();
         while (iter.hasNext()) {
-            long current = ((Entry) iter.next()).delay;
+            long current = iter.next().delay;
             if (current > result) {
                 result = current;
             }

@@ -249,12 +249,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
     private void msgLinksFromWire() {
         msgLinksUnmarshalled = true;
-        try {
-            msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
-        } catch (WireFormException ex) {
-            ex.printStackTrace();
-            msgLinks = new NodeIdSet();
-        }
+        msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
     }
 
     private void testInterfaceFromWire() {
@@ -266,12 +261,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     private void viewFromWire() {
         viewUnmarshalled = true;
         stable = wireForm.getInt(stableIdx) == booleanTrueValue;
-        try {
-            view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
-        } catch (WireFormException ex) {
-            ex.printStackTrace();
-            view = new NodeIdSet();
-        }
+        view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
     }
 
     @Override

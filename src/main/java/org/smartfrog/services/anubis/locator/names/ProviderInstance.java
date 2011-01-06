@@ -63,9 +63,8 @@ public class ProviderInstance extends NameData {
         if (obj instanceof ProviderInstance) {
             return super.equals(obj)
                    && instance.equals(((ProviderInstance) obj).instance);
-        } else {
-            return super.equals(obj);
         }
+        return super.equals(obj);
     }
 
     /**

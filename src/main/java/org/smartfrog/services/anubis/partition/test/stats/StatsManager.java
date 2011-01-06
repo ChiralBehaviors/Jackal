@@ -27,7 +27,7 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class StatsManager {
 
-    private Map heartbeat = new HashMap();
+    private Map<Identity, Heartbeats> heartbeat = new HashMap<Identity, Heartbeats>();
     private Scheduling scheduling = new Scheduling();
 
     public StatsManager() {
@@ -35,7 +35,7 @@ public class StatsManager {
 
     public void heartbeatInfo(Identity connection, long time, long delay) {
 
-        Heartbeats heartbeatStats = (Heartbeats) heartbeat.get(connection);
+        Heartbeats heartbeatStats = heartbeat.get(connection);
         if (heartbeatStats == null) {
             heartbeatStats = new Heartbeats();
             heartbeat.put(connection, heartbeatStats);

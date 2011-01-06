@@ -70,6 +70,7 @@ import java.util.Set;
  * 
  * @version $Rev$ $Date$
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class Options {
 
     public static interface Log {
@@ -235,7 +236,7 @@ public class Options {
                 } else if (defaults.size() == enumType.getEnumConstants().length) {
                     defaultValues = "ALL";
                 } else {
-                    defaultValues = join(", ", lowercase(defaults));
+                    defaultValues = join(", ", (Object[]) lowercase(defaults));
                 }
 
                 getLogger().debug("Using default \'" + property + "="
@@ -301,7 +302,7 @@ public class Options {
     }
 
     protected static String possibleValues(Class<? extends Enum> enumType) {
-        return join(", ", lowercase(enumType.getEnumConstants()));
+        return join(", ", (Object[]) lowercase(enumType.getEnumConstants()));
     }
 
     protected static <V extends Enum<V>> String possibleValues(V v) {
@@ -479,7 +480,8 @@ public class Options {
         }
 
         getLogger().info("Using \'" + property + "="
-                                 + join(", ", lowercase(value)) + "\'");
+                                 + join(", ", (Object[]) lowercase(value))
+                                 + "\'");
 
         return value;
     }

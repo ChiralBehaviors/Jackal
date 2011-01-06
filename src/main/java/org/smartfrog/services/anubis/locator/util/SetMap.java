@@ -22,6 +22,7 @@ package org.smartfrog.services.anubis.locator.util;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -47,15 +48,15 @@ import java.util.Set;
  * @version 1.0
  */
 
-public class SetMap {
+public class SetMap<K, V> {
 
-    protected Map map = null;
+    protected Map<K, Set<V>> map = null;
 
     /**
      * Default constructor creates a HashMap implementation
      */
     public SetMap() {
-        map = new HashMap();
+        map = new HashMap<K, Set<V>>();
     }
 
     /**
@@ -65,7 +66,7 @@ public class SetMap {
      * 
      * @param map
      */
-    public SetMap(Map map) {
+    public SetMap(Map<K, Set<V>> map) {
         this.map = map;
     }
 
@@ -93,7 +94,7 @@ public class SetMap {
      * 
      * @return Set
      */
-    public Set entrySet() {
+    public Set<Entry<K, Set<V>>> entrySet() {
         return map.entrySet();
     }
 
@@ -105,8 +106,8 @@ public class SetMap {
      * @return - the set of entries associated with the key, or null if the key
      *         is not contained in the map.
      */
-    public Set getSet(Object key) {
-        return (Set) map.get(key);
+    public Set<V> getSet(Object key) {
+        return map.get(key);
     }
 
     /**
@@ -135,7 +136,7 @@ public class SetMap {
      * 
      * @return a set view of the keys
      */
-    public Set keySet() {
+    public Set<K> keySet() {
         return map.keySet();
     }
 
@@ -152,30 +153,16 @@ public class SetMap {
      *            - the entry
      * @return - true if the key was already in the map, false if it was not.
      */
-    public boolean put(Object key, Object entry) {
+    public boolean put(K key, V entry) {
         if (map.containsKey(key)) {
-            Set s = (Set) map.get(key);
+            Set<V> s = map.get(key);
             s.add(entry);
             return true;
-        } else {
-            Set s = new HashSet();
-            s.add(entry);
-            map.put(key, s);
-            return false;
         }
-    }
-
-    /**
-     * removes the key and the entire set of entries associated with it from the
-     * map. The set of entries is returned.
-     * 
-     * @param key
-     *            - the key
-     * @return - the set of entries that was previously associated with the key.
-     *         null is returned if the key was not in the map
-     */
-    public Set remove(Object key) {
-        return (Set) map.remove(key);
+        Set<V> s = new HashSet<V>();
+        s.add(entry);
+        map.put(key, s);
+        return false;
     }
 
     /**
@@ -189,10 +176,10 @@ public class SetMap {
      * @return - true if the entry was removed from the map, false if it was not
      *         in the map.
      */
-    public boolean remove(Object key, Object entry) {
+    public boolean remove(K key, V entry) {
         if (map.containsKey(key)) {
-            Set s = (Set) map.get(key);
-            if (s.remove(entry)) {
+            Set<V> s = map.get(key);
+            if (s != null && s.remove(entry)) {
                 if (s.isEmpty()) {
                     map.remove(key);
                 }
@@ -200,5 +187,18 @@ public class SetMap {
             }
         }
         return false;
+    }
+
+    /**
+     * removes the key and the entire set of entries associated with it from the
+     * map. The set of entries is returned.
+     * 
+     * @param key
+     *            - the key
+     * @return - the set of entries that was previously associated with the key.
+     *         null is returned if the key was not in the map
+     */
+    public Set<V> remove(Object key) {
+        return map.remove(key);
     }
 }

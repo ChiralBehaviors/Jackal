@@ -60,6 +60,16 @@ public class Controller {
     private TimerTask task;
     private Timer timer;
 
+    public synchronized void asymPartition(BitView partition) {
+        Iterator<NodeData> iter = nodes.values().iterator();
+        while (iter.hasNext()) {
+            NodeData node = iter.next();
+            if (partition.contains(node.getIdentity())) {
+                node.setIgnoringAsymPartition(globalView, partition);
+            }
+        }
+    }
+
     public synchronized void asymPartition(String nodeStr) {
 
         StringTokenizer tokens = new StringTokenizer(nodeStr);
@@ -84,16 +94,6 @@ public class Controller {
         }
 
         asymPartition(partition);
-    }
-
-    public synchronized void asymPartition(BitView partition) {
-        Iterator<NodeData> iter = nodes.values().iterator();
-        while (iter.hasNext()) {
-            NodeData node = iter.next();
-            if (partition.contains(node.getIdentity())) {
-                node.setIgnoringAsymPartition(globalView, partition);
-            }
-        }
     }
 
     public synchronized void checkNodes() {
@@ -299,6 +299,13 @@ public class Controller {
         }
     }
 
+    public synchronized void symPartition(BitView partition) {
+        Iterator<NodeData> iter = nodes.values().iterator();
+        while (iter.hasNext()) {
+            iter.next().setIgnoringSymPartition(globalView, partition);
+        }
+    }
+
     public synchronized void symPartition(String nodeStr) {
 
         StringTokenizer tokens = new StringTokenizer(nodeStr);
@@ -323,13 +330,6 @@ public class Controller {
         }
 
         symPartition(partition);
-    }
-
-    public synchronized void symPartition(BitView partition) {
-        Iterator<NodeData> iter = nodes.values().iterator();
-        while (iter.hasNext()) {
-            iter.next().setIgnoringSymPartition(globalView, partition);
-        }
     }
 
     @PreDestroy

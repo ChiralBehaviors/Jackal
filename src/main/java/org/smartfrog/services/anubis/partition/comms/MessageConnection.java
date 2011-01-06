@@ -49,7 +49,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     private static final Logger log = Logger.getLogger(MessageConnection.class.getCanonicalName());
     private Identity me = null;
 
-    private LinkedList msgQ = new LinkedList();
+    private LinkedList<TimedMsg> msgQ = new LinkedList<TimedMsg>();
 
     private boolean terminated = false;
 
@@ -109,7 +109,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
 
             while (!msgQ.isEmpty()) {
-                connectionImpl.send((TimedMsg) msgQ.removeFirst());
+                connectionImpl.send(msgQ.removeFirst());
             }
 
             if (disconnectPending) {

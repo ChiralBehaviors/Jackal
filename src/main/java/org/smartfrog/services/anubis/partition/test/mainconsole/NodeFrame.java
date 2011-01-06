@@ -61,7 +61,6 @@ public class NodeFrame extends JFrame {
     private JTextArea jTextArea1 = new JTextArea();
     private JTextField jTextField1 = new JTextField();
     private NodeData nodeData;
-    private TitledBorder titledBorder1;
 
     public NodeFrame(NodeData nodeData) {
         this.nodeData = nodeData;
@@ -145,7 +144,7 @@ public class NodeFrame extends JFrame {
     }
 
     private void jbInit() throws Exception {
-        titledBorder1 = new TitledBorder("");
+        new TitledBorder("");
         jButton2.setText("Noop");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             @Override

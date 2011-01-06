@@ -44,7 +44,7 @@ public class GroupListener extends AnubisListener {
 
     public void printGroup() {
         String str = "[ ";
-        Iterator iter = values().iterator();
+        Iterator<?> iter = values().iterator();
         while (iter.hasNext()) {
             str += ((AnubisValue) iter.next()).getValue() + " ";
         }

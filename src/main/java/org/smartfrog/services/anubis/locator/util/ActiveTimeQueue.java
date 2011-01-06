@@ -26,7 +26,6 @@ public class ActiveTimeQueue extends Thread {
 
     private boolean running = false;
 
-    private long wakeup = 0;
     TimeQueue queue = new TimeQueue();
 
     public ActiveTimeQueue(String threadName) {
@@ -47,13 +46,12 @@ public class ActiveTimeQueue extends Thread {
             if (queue.add(element, time)) {
                 queue.notify();
                 return true;
-            } else {
-                return false;
             }
+            return false;
         }
     }
 
-    public Set getExpiredOrBlock() {
+    public Set<TimeQueueElement> getExpiredOrBlock() {
 
         /**
          * synchronized on the queue.
@@ -83,7 +81,7 @@ public class ActiveTimeQueue extends Thread {
              * get timing information.
              */
             long timeNow = System.currentTimeMillis();
-            Long key = (Long) queue.firstKey();
+            Long key = queue.firstKey();
             long nextTime = key.longValue();
 
             /**
@@ -140,7 +138,7 @@ public class ActiveTimeQueue extends Thread {
         running = true;
         while (running) {
 
-            Set expiredElements = getExpiredOrBlock();
+            Set<TimeQueueElement> expiredElements = getExpiredOrBlock();
             if (expiredElements != null) {
                 doExpirations(expiredElements);
             }
@@ -165,10 +163,10 @@ public class ActiveTimeQueue extends Thread {
      * 
      * @param timeNow
      */
-    private void doExpirations(Set expiredElements) {
-        Iterator iter = expiredElements.iterator();
+    private void doExpirations(Set<TimeQueueElement> expiredElements) {
+        Iterator<TimeQueueElement> iter = expiredElements.iterator();
         while (iter.hasNext()) {
-            ((TimeQueueElement) iter.next()).expired();
+            iter.next().expired();
         }
     }
 }

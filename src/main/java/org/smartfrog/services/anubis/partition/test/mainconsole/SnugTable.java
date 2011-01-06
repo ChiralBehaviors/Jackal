@@ -41,7 +41,7 @@ public class SnugTable extends JTable {
         super();
     }
 
-    public SnugTable(Vector v1, Vector v2) {
+    public SnugTable(Vector<Vector<String>> v1, Vector<String> v2) {
         super(v1, v2);
         resizeColumns();
     }
