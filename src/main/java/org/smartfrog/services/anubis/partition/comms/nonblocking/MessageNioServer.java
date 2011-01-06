@@ -73,6 +73,12 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
      */
     public MessageNioServer(ConnectionAddress address, Identity id,
                             ConnectionSet cs, WireSecurity sec) {
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                syncLog.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
 
         if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: constructing a new server");
@@ -176,7 +182,6 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     @Override
     public void run() {
         try {
-
             if (syncLog.isLoggable(Level.INFO)) {
                 syncLog.info(me.toString() + getName() + " thread started");
             }
@@ -187,15 +192,10 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                 syncLog.info(me.toString() + getName()
                              + " thread has terminated without throwable");
             }
-
         } catch (Throwable thr) {
-
-            if (syncLog.isLoggable(Level.SEVERE)) {
-                syncLog.log(Level.SEVERE,
-                            me.toString() + getName()
-                                    + " THREAD HAS TERMINATED WITH THROWABLE",
-                            thr);
-            }
+            syncLog.log(Level.SEVERE,
+                        me.toString() + getName()
+                                + " THREAD HAS TERMINATED WITH THROWABLE", thr);
         }
     }
 

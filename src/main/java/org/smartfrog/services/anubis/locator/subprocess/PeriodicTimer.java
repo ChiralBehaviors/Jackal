@@ -19,8 +19,11 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.locator.subprocess;
 
-public class PeriodicTimer extends Thread {
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+public class PeriodicTimer extends Thread {
+    private final static Logger log = Logger.getLogger(PeriodicTimer.class.getCanonicalName());
     long now;
     long period;
     boolean running;
@@ -29,6 +32,12 @@ public class PeriodicTimer extends Thread {
     public PeriodicTimer(String name, long period) {
         super(name);
         this.period = period;
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     @Override
@@ -39,9 +48,17 @@ public class PeriodicTimer extends Thread {
         init();
         while (running) {
             if (now >= wakeup) {
-                act(now);
+                try {
+                    act(now);
+                } catch (Throwable e) {
+                    log.log(Level.WARNING, "Exception performing task", e);
+                }
             }
-            doSleep();
+            try {
+                doSleep();
+            } catch (InterruptedException e) {
+                return;
+            }
         }
     }
 
@@ -49,14 +66,11 @@ public class PeriodicTimer extends Thread {
         running = false;
     }
 
-    private void doSleep() {
+    private void doSleep() throws InterruptedException {
         while (wakeup <= now) {
             wakeup += period;
         }
-        try {
-            sleep(wakeup - now);
-        } catch (InterruptedException ex) {
-        }
+        sleep(wakeup - now);
         now = System.currentTimeMillis();
     }
 

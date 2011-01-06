@@ -160,35 +160,25 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             msg = wireSecurity.fromWireForm(fullRxBuffer.array());
 
         } catch (WireSecurityException ex) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "non blocking connection transport encountered security violation unmarshalling message - ignoring the message "); // +
-                                                                                                                                                // this.getSender()
-                                                                                                                                                // );
-            }
+            log.severe(me
+                       + "non blocking connection transport encountered security violation unmarshalling message - ignoring the message "); // +
+                                                                                                                                            // this.getSender()
+                                                                                                                                            // );
             return;
 
         } catch (Exception ex) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport unable to unmarshall message "); // +
-                                                                                    // this.getSender()
-                                                                                    // );
-            }
+            log.severe(me
+                       + "connection transport unable to unmarshall message "); // +
+                                                                                // this.getSender()
+                                                                                // );
             shutdown();
             return;
         }
 
         if (!(msg instanceof TimedMsg)) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport received non timed message "); // +
-                                                                                  // this.getSender()
-                                                                                  // );
-            }
+            log.severe(me + "connection transport received non timed message "); // +
+                                                                                 // this.getSender()
+                                                                                 // );
             shutdown();
             return;
         }
@@ -196,10 +186,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         TimedMsg tm = (TimedMsg) msg;
 
         if (tm.getOrder() != receiveCount) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport has delivered a message out of order - shutting down");
-            }
+            log.severe(me
+                       + "connection transport has delivered a message out of order - shutting down");
             shutdown();
             return;
         }
@@ -443,11 +431,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             sendCount++;
             bytesToSend = wireSecurity.toWireForm(tm);
         } catch (Exception ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE, me
-                                      + " failed to marshall timed message: "
-                                      + tm + " - not sent", ex);
-            }
+            log.log(Level.SEVERE, me + " failed to marshall timed message: "
+                                  + tm + " - not sent", ex);
             return;
         }
 

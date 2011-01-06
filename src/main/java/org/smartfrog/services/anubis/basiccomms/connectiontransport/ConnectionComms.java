@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
@@ -37,7 +39,7 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
  */
 
 public abstract class ConnectionComms extends Thread implements WireSizes {
-
+    private static final Logger log = Logger.getLogger(ConnectionComms.class.getCanonicalName());
     private SocketChannel connection;
     private byte[] headerBytesIn = new byte[HEADER_SIZE];
     private byte[] headerBytesOut = new byte[HEADER_SIZE];
@@ -52,6 +54,13 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
     public ConnectionComms(String threadName, ConnectionAddress address) {
 
         super(threadName);
+
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
 
         try {
 

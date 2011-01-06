@@ -207,7 +207,7 @@ public class HeartbeatComms extends MulticastComms implements
                 log.finest("Delivering message: " + msg);
             }
             handler.deliverObject(msg);
-        } else if (log.isLoggable(Level.SEVERE)) {
+        } else {
             log.severe(me + " No handler found for message: " + msg);
         }
     }

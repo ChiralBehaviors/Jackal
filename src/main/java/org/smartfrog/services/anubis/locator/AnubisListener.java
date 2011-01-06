@@ -158,11 +158,9 @@ abstract public class AnubisListener {
         try {
             newValue(v);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in newValue(p) where p="
-                                + v, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in newValue(p) where p="
+                            + v, ex);
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);
@@ -190,11 +188,9 @@ abstract public class AnubisListener {
         try {
             removeValue(v);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in removeValue(p) where p="
-                                + v, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in removeValue(p) where p="
+                            + v, ex);
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);

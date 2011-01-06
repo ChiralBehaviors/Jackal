@@ -19,8 +19,11 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
-public class ConnectWorker extends Thread {
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+public class ConnectWorker extends Thread {
+    private static final Logger log = Logger.getLogger(ConnectWorker.class.getCanonicalName());
     private RxQueue rxQueue = null;
 
     /**
@@ -28,6 +31,12 @@ public class ConnectWorker extends Thread {
      */
     public ConnectWorker(RxQueue rxQueue) {
         this.rxQueue = rxQueue;
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**
@@ -39,12 +48,15 @@ public class ConnectWorker extends Thread {
         MessageNioHandler mnh = null;
 
         while (rxQueue.isOpen()) {
+            try {
+                mnh = (MessageNioHandler) rxQueue.next();
 
-            mnh = (MessageNioHandler) rxQueue.next();
-
-            if (mnh != null) {
-                // got an object from the queue - do what needs to be done
-                mnh.getMCI().finishNioConnect(mnh);
+                if (mnh != null) {
+                    // got an object from the queue - do what needs to be done
+                    mnh.getMCI().finishNioConnect(mnh);
+                }
+            } catch (Throwable e) {
+                log.log(Level.WARNING, "error finishing connect", e);
             }
         }
     }

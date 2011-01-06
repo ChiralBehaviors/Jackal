@@ -63,13 +63,18 @@ public class MulticastComms extends Thread {
      */
     public MulticastComms(String threadName, MulticastAddress address)
                                                                       throws IOException {
-
         super(threadName);
         groupAddress = address;
         sock = new MulticastSocket(address.port);
         sock.joinGroup(address.ipaddress);
         sock.setTimeToLive(address.timeToLive);
         terminating = false;
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**
@@ -123,7 +128,7 @@ public class MulticastComms extends Thread {
                 }
                 deliverBytes(inPacket.getData());
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 if (!terminating && log.isLoggable(Level.WARNING)) {
                     log.log(Level.WARNING,

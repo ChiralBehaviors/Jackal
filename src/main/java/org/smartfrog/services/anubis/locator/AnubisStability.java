@@ -83,11 +83,9 @@ abstract public class AnubisStability {
         try {
             stability(isStable, timeRef);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in stability(s,t) where s="
-                                + isStable + ", t=" + timeRef, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in stability(s,t) where s="
+                            + isStable + ", t=" + timeRef, ex);
         }
         timeout = System.currentTimeMillis();
         timers.remove(timeoutErrorLogger);

@@ -54,6 +54,12 @@ public class IntervalExec extends Thread {
         interval = i;
         setPriority(MAX_PRIORITY);
         random = new Random(System.currentTimeMillis() + 100 * me.id);
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**
@@ -91,78 +97,81 @@ public class IntervalExec extends Thread {
         heartbeatTime = timenow + random.nextInt((int) interval);
         lastCheckTime = timenow;
         synchronized (connectionSet) {
-
             while (running) {
+                try {
+                    /**
+                     * enter a sleep interval. Normally this is the regular
+                     * heartbeat interval as defined by wakeup. If we are
+                     * stablizing and the stability period ends before the next
+                     * heartbeat interval then wake up at the stability interval
+                     * end as defined by stabilityTime.
+                     */
+                    timenow = stabalizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
+                                                                                           stabilityTime)
+                                                                          : sleepInterval(timenow,
+                                                                                          heartbeatTime);
 
-                /**
-                 * enter a sleep interval. Normally this is the regular
-                 * heartbeat interval as defined by wakeup. If we are stablizing
-                 * and the stability period ends before the next heartbeat
-                 * interval then wake up at the stability interval end as
-                 * defined by stabilityTime.
-                 */
-                timenow = stabalizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
-                                                                                       stabilityTime)
-                                                                      : sleepInterval(timenow,
-                                                                                      heartbeatTime);
-
-                checkSleepDelays(timenow, stabilityTime, heartbeatTime);
-
-                /**
-                 * Operations performed once per heartbeat period only
-                 */
-                if (timenow >= heartbeatTime) {
+                    checkSleepDelays(timenow, stabilityTime, heartbeatTime);
 
                     /**
-                     * If testing then produce delay info
+                     * Operations performed once per heartbeat period only
                      */
-                    if (testable) {
-                        testManager.schedulingInfo(timenow, timenow
-                                                            - heartbeatTime);
+                    if (timenow >= heartbeatTime) {
+
+                        /**
+                         * If testing then produce delay info
+                         */
+                        if (testable) {
+                            testManager.schedulingInfo(timenow, timenow
+                                                                - heartbeatTime);
+                        }
+
+                        /**
+                         * check the timeouts and cleanup
+                         */
+                        connectionSet.checkTimeouts(timenow);
+
+                        /**
+                         * viewChangeCheck - this is done before sending the
+                         * heartbeat so that any information determined in the
+                         * report check (i.e. convergence time for the
+                         * partition) can be sent out on the heartbeat
+                         */
+                        connectionSet.viewChangeCheck(timenow);
+
+                        /**
+                         * send a new heartbeat from this node - note comments
+                         * about doing the viewChangeCheck first (above).
+                         */
+                        connectionSet.sendHeartbeat(timenow);
+
+                        /**
+                         * set next heartbeatTime time
+                         */
+                        heartbeatTime = nextHeartbeatTime(timenow,
+                                                          heartbeatTime);
+
                     }
 
                     /**
-                     * check the timeouts and cleanup
+                     * check for stability - only done on a stability boundary
                      */
-                    connectionSet.checkTimeouts(timenow);
+                    if (stabalizing && timenow >= stabilityTime) {
 
-                    /**
-                     * viewChangeCheck - this is done before sending the
-                     * heartbeat so that any information determined in the
-                     * report check (i.e. convergence time for the partition)
-                     * can be sent out on the heartbeat
-                     */
-                    connectionSet.viewChangeCheck(timenow);
+                        /**
+                         * If testing then produce delay info
+                         */
+                        if (testable) {
+                            testManager.schedulingInfo(timenow, timenow
+                                                                - stabilityTime);
+                        }
 
-                    /**
-                     * send a new heartbeat from this node - note comments about
-                     * doing the viewChangeCheck first (above).
-                     */
-                    connectionSet.sendHeartbeat(timenow);
-
-                    /**
-                     * set next heartbeatTime time
-                     */
-                    heartbeatTime = nextHeartbeatTime(timenow, heartbeatTime);
-
-                }
-
-                /**
-                 * check for stability - only done on a stability boundary
-                 */
-                if (stabalizing && timenow >= stabilityTime) {
-
-                    /**
-                     * If testing then produce delay info
-                     */
-                    if (testable) {
-                        testManager.schedulingInfo(timenow, timenow
-                                                            - stabilityTime);
+                        connectionSet.checkStability(timenow);
                     }
-
-                    connectionSet.checkStability(timenow);
+                } catch (Throwable e) {
+                    log.log(Level.WARNING, "Error during interval maintenance",
+                            e);
                 }
-
             }
         }
     }
@@ -203,10 +212,9 @@ public class IntervalExec extends Thread {
         long delay;
 
         if (timenow < lastCheckTime) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
-            }
+            log.log(Level.SEVERE,
+                    "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
+
         }
 
         lastCheckTime = timenow;

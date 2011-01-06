@@ -49,17 +49,12 @@ public class NonBlockingConnectionInitiator {
                 heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
                 impl.send(wireSecurity.toWireForm(heartbeat));
             } catch (WireFormException e) {
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.log(Level.SEVERE,
-                            "MCI: failed to marshall timed message: "
-                                    + heartbeat, e);
-                }
+                log.log(Level.SEVERE, "MCI: failed to marshall timed message: "
+                                      + heartbeat, e);
                 return;
             }
         } else {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe("MCI: can't send first heartbeat!!!");
-            }
+            log.severe("MCI: can't send first heartbeat!!!");
         }
 
         /**

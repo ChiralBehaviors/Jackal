@@ -19,8 +19,11 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
-public class RxQueueWorker extends Thread {
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+public class RxQueueWorker extends Thread {
+    private static final Logger log = Logger.getLogger(RxQueue.class.getCanonicalName());
     private RxQueue rxQueue = null;
 
     /**
@@ -29,6 +32,12 @@ public class RxQueueWorker extends Thread {
      */
     public RxQueueWorker(RxQueue rxQueue) {
         this.rxQueue = rxQueue;
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     @Override
@@ -37,13 +46,16 @@ public class RxQueueWorker extends Thread {
         RxJob rxJob = null;
 
         while (rxQueue.isOpen()) {
+            try {
+                rxJob = (RxJob) rxQueue.next();
 
-            rxJob = (RxJob) rxQueue.next();
-
-            if (rxJob != null) {
-                // got an object from the queue - deliver the object within to the appropriate mnh
-                MessageNioHandler mnh = rxJob.getHandler();
-                mnh.deliverObject(rxJob.getDeliverable());
+                if (rxJob != null) {
+                    // got an object from the queue - deliver the object within to the appropriate mnh
+                    MessageNioHandler mnh = rxJob.getHandler();
+                    mnh.deliverObject(rxJob.getDeliverable());
+                }
+            } catch (Throwable e) {
+                log.log(Level.WARNING, "Exception delivering", e);
             }
         }
     }

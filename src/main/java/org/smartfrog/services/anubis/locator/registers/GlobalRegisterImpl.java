@@ -53,15 +53,25 @@ public class GlobalRegisterImpl {
 
         public RequestServer() {
             super();
+            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    log.log(Level.WARNING, "Uncaught exception", e);
+                }
+            });
         }
 
         @Override
         public void run() {
             running = true;
             while (running) {
-                Object obj = requests.get();
-                if (obj != null) {
-                    deliver((RegisterMsg) obj);
+                try {
+                    Object obj = requests.get();
+                    if (obj != null) {
+                        deliver((RegisterMsg) obj);
+                    }
+                } catch (Throwable e) {
+                    log.log(Level.WARNING, "Exception delivering message", e);
                 }
             }
         }
@@ -101,9 +111,7 @@ public class GlobalRegisterImpl {
      */
     public void activate() {
         if (active) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me + " *** Global.activate called when active!!!");
-            }
+            log.severe(me + " *** Global.activate called when active!!!");
         } else {
             active = true;
             updateDebugFrame();
@@ -177,12 +185,9 @@ public class GlobalRegisterImpl {
 
         switch (request.type) {
             case RegisterMsg.Undefined:
-
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " Global received request explicitly declared as type Undefined "
-                               + request + " ?!?!?");
-                }
+                log.severe(me
+                           + " Global received request explicitly declared as type Undefined "
+                           + request + " ?!?!?");
                 break;
 
             case RegisterMsg.RegisterProvider:
@@ -210,10 +215,8 @@ public class GlobalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me + " Global received unexpected message "
-                               + request + " ?!?!?");
-                }
+                log.severe(me + " Global received unexpected message "
+                           + request + " ?!?!?");
         }
     }
 

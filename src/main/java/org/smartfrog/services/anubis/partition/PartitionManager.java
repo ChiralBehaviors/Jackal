@@ -100,8 +100,7 @@ public class PartitionManager implements Partition {
     public synchronized void notify(View view, int leader) {
 
         if (view.isStable() && leader == identity.id
-            && notifiedLeader != leader && notifiedLeader != UNDEFINED_LEADER
-            && log.isLoggable(Level.SEVERE)) {
+            && notifiedLeader != leader && notifiedLeader != UNDEFINED_LEADER) {
             log.severe("Leader changed to me on stabalization, old leader = "
                        + notifiedLeader + ", new leader = " + leader
                        + ", view = " + view);
@@ -182,11 +181,9 @@ public class PartitionManager implements Partition {
 
             @Override
             public void expired() {
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe("User API Upcall took >200ms in "
-                               + "objectNotification(obj, sender, time) where obj="
-                               + obj + ", sender=" + sender + ", time=" + time);
-                }
+                log.severe("User API Upcall took >200ms in "
+                           + "objectNotification(obj, sender, time) where obj="
+                           + obj + ", sender=" + sender + ", time=" + time);
             }
         }
         TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(obj,
@@ -197,13 +194,10 @@ public class PartitionManager implements Partition {
         try {
             pn.objectNotification(obj, sender, time);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in "
-                                + "objectNotification(obj, sender, time) where obj="
-                                + obj + ", sender=" + sender + ", time=" + time,
-                        ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in "
+                            + "objectNotification(obj, sender, time) where obj="
+                            + obj + ", sender=" + sender + ", time=" + time, ex);
         }
         timeout = System.currentTimeMillis();
         timer.remove(timeoutErrorLogger);
@@ -236,11 +230,9 @@ public class PartitionManager implements Partition {
 
             @Override
             public void expired() {
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe("User API Upcall took >200ms in "
-                               + "partitionNotification(view, leader) where view="
-                               + view + ", leader=" + leader);
-                }
+                log.severe("User API Upcall took >200ms in "
+                           + "partitionNotification(view, leader) where view="
+                           + view + ", leader=" + leader);
             }
         }
         TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(view,
@@ -250,12 +242,10 @@ public class PartitionManager implements Partition {
         try {
             pn.partitionNotification(view, leader);
         } catch (Throwable ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        "User API Upcall threw Throwable in "
-                                + "partitionNotification(view, leader) where view="
-                                + view + ", leader=" + leader, ex);
-            }
+            log.log(Level.SEVERE,
+                    "User API Upcall threw Throwable in "
+                            + "partitionNotification(view, leader) where view="
+                            + view + ", leader=" + leader, ex);
         }
         timeout = System.currentTimeMillis();
         timer.remove(timeoutErrorLogger);

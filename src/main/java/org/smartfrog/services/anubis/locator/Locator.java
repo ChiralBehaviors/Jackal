@@ -163,7 +163,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
          */
         if (obj instanceof RegisterMsg) {
             deliverRequest((RegisterMsg) obj);
-        } else if (log.isLoggable(Level.SEVERE)) {
+        } else {
             log.severe("Locator received un-recognised message " + obj
                        + " in objectNotificaiton");
         }

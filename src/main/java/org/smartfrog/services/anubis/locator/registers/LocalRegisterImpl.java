@@ -55,6 +55,12 @@ public class LocalRegisterImpl {
 
         public RequestServer() {
             super();
+            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    log.log(Level.WARNING, "Uncaught exception", e);
+                }
+            });
         }
 
         @SuppressWarnings("unchecked")
@@ -73,23 +79,25 @@ public class LocalRegisterImpl {
             locator.callingThread.set(this);
             running = true;
             while (running) {
-                Object obj = requests.get();
-                if (obj instanceof RegisterMsg) {
-                    deliver((RegisterMsg) obj);
-                } else if (obj instanceof UserProviderRequest) {
-                    deliver((UserProviderRequest) obj);
-                } else if (obj instanceof UserListenerRequest) {
-                    deliver((UserListenerRequest) obj);
-                } else if (obj instanceof UserStabilityRequest) {
-                    deliver((UserStabilityRequest) obj);
-                } else if (obj == null) {
-                    continue;
-                } else {
-                    if (log.isLoggable(Level.SEVERE)) {
+                try {
+                    Object obj = requests.get();
+                    if (obj instanceof RegisterMsg) {
+                        deliver((RegisterMsg) obj);
+                    } else if (obj instanceof UserProviderRequest) {
+                        deliver((UserProviderRequest) obj);
+                    } else if (obj instanceof UserListenerRequest) {
+                        deliver((UserListenerRequest) obj);
+                    } else if (obj instanceof UserStabilityRequest) {
+                        deliver((UserStabilityRequest) obj);
+                    } else if (obj == null) {
+                        continue;
+                    } else {
                         log.severe(me
                                    + " *** Local register encountered unknown request or message type: "
                                    + obj);
                     }
+                } catch (Throwable e) {
+                    log.log(Level.WARNING, "Exception delivering request", e);
                 }
             }
         }
@@ -351,10 +359,7 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me + " *** Local received unexpected message "
-                               + msg);
-                }
+                log.severe(me + " *** Local received unexpected message " + msg);
         }
     }
 
@@ -373,11 +378,9 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " *** Local register encountered unknown user stability request type: "
-                               + request.type);
-                }
+                log.severe(me
+                           + " *** Local register encountered unknown user stability request type: "
+                           + request.type);
         }
     }
 
@@ -405,11 +408,9 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " *** Local register encountered unknown user provider request type: "
-                               + request.type);
-                }
+                log.severe(me
+                           + " *** Local register encountered unknown user provider request type: "
+                           + request.type);
         }
     }
 
@@ -427,11 +428,9 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " *** Local register encountered unknown user stability request type: "
-                               + request.type);
-                }
+                log.severe(me
+                           + " *** Local register encountered unknown user stability request type: "
+                           + request.type);
         }
     }
 

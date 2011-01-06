@@ -109,10 +109,8 @@ public class NodeData {
         } else if (obj instanceof ThreadsMsg) {
             threads((ThreadsMsg) obj);
         } else {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe("Unrecognised object received in test connection at console"
-                           + obj);
-            }
+            log.severe("Unrecognised object received in test connection at console"
+                       + obj);
             connection.shutdown();
         }
     }

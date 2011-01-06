@@ -71,12 +71,10 @@ public class TestConnection extends ConnectionComms {
 
     @Override
     public void send(byte[] bytes) {
-        if (log.isLoggable(Level.SEVERE)) {
-            Exception e = new Exception();
-            e.fillInStackTrace();
-            log.log(Level.SEVERE,
-                    "Should not call send(byte[] bytes) in TestConnection", e);
-        }
+        Exception e = new Exception();
+        e.fillInStackTrace();
+        log.log(Level.SEVERE,
+                "Should not call send(byte[] bytes) in TestConnection", e);
     }
 
     public void sendObject(Object obj) {

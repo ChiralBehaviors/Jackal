@@ -47,8 +47,13 @@ public class ConnectionServer extends Thread {
      * listening socket and a null connection factory (i.e. an unusable server).
      */
     public ConnectionServer() {
-
         super();
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
 
         listenSocket = null;
         connectionFactory = null;

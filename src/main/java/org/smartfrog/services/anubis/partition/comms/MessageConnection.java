@@ -94,14 +94,12 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             }
 
             if (connectionImpl != null) {
-                if (log.isLoggable(Level.SEVERE)) {
-                    Exception e = new Exception();
-                    e.fillInStackTrace();
-                    log.log(Level.SEVERE,
-                            me
-                                    + " attempt to assign a new implementation when one exists",
-                            e);
-                }
+                Exception e = new Exception();
+                e.fillInStackTrace();
+                log.log(Level.SEVERE,
+                        me
+                                + " attempt to assign a new implementation when one exists",
+                        e);
                 return false;
             }
 
@@ -182,20 +180,12 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                                         mmsg.getSender(), mmsg.getTime());
 
         } else if (msg == null) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport delivered null message from "
-                           + getSender());
-            }
-
+            log.severe(me + "connection transport delivered null message from "
+                       + getSender());
         } else {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport delivered unknown message type from "
-                           + getSender() + " message=" + msg);
-            }
+            log.severe(me
+                       + "connection transport delivered unknown message type from "
+                       + getSender() + " message=" + msg);
         }
     }
 
@@ -250,13 +240,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     public void sendMsg(TimedMsg msg) {
 
         if (msg == null) {
-            if (log.isLoggable(Level.SEVERE)) {
-                Exception e = new Exception();
-                e.fillInStackTrace();
-                log.log(Level.SEVERE,
-                        me + " sendBytes(WireMsg) called with null parameter ",
-                        e);
-            }
+            Exception e = new Exception();
+            e.fillInStackTrace();
+            log.log(Level.SEVERE,
+                    me + " sendBytes(WireMsg) called with null parameter ", e);
             return;
         }
 
@@ -393,14 +380,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                 closingImpl.send(connectionSet.getHeartbeatMsg().toClose());
 
             } catch (Exception ex) {
-
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.log(Level.SEVERE,
-                            me
-                                    + "failed to marshall close message - not sent to "
-                                    + getSender(), ex);
-                }
-
+                log.log(Level.SEVERE,
+                        me + "failed to marshall close message - not sent to "
+                                + getSender(), ex);
             }
         }
     }

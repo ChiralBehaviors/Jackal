@@ -48,6 +48,12 @@ public class BlockingConnectionInitiator extends Thread {
         connectionSet = cset;
         heartbeat = hb;
         wireSecurity = sec;
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**
@@ -83,11 +89,8 @@ public class BlockingConnectionInitiator extends Thread {
             heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
             impl.send(wireSecurity.toWireForm(heartbeat));
         } catch (WireFormException e) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE, me
-                                      + " failed to marshall timed message: "
-                                      + heartbeat, e);
-            }
+            log.log(Level.SEVERE, me + " failed to marshall timed message: "
+                                  + heartbeat, e);
             return;
         }
 

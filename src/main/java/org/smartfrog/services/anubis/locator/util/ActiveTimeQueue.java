@@ -21,15 +21,23 @@ package org.smartfrog.services.anubis.locator.util;
 
 import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ActiveTimeQueue extends Thread {
-
+    private static final Logger log = Logger.getLogger(ActiveTimeQueue.class.getCanonicalName());
     private boolean running = false;
 
     TimeQueue queue = new TimeQueue();
 
     public ActiveTimeQueue(String threadName) {
         super(threadName);
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exceptiion", e);
+            }
+        });
     }
 
     /**
@@ -137,12 +145,14 @@ public class ActiveTimeQueue extends Thread {
     public void run() {
         running = true;
         while (running) {
-
-            Set<TimeQueueElement> expiredElements = getExpiredOrBlock();
-            if (expiredElements != null) {
-                doExpirations(expiredElements);
+            try {
+                Set<TimeQueueElement> expiredElements = getExpiredOrBlock();
+                if (expiredElements != null) {
+                    doExpirations(expiredElements);
+                }
+            } catch (Throwable e) {
+                log.log(Level.WARNING, "execption processing expirations", e);
             }
-
         }
     }
 

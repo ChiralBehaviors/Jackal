@@ -115,29 +115,19 @@ public class MessageConnectionImpl extends ConnectionComms implements
             msg = wireSecurity.fromWireForm(bytes);
 
         } catch (WireSecurityException ex) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport encountered security violation unmarshalling message - ignoring "); // + this.getSender() );
-            }
+            log.severe(me
+                       + "connection transport encountered security violation unmarshalling message - ignoring "); // + this.getSender() );
             return;
 
         } catch (Exception ex) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport unable to unmarshall message "); // + this.getSender() );
-            }
+            log.severe(me
+                       + "connection transport unable to unmarshall message "); // + this.getSender() );
             shutdown();
             return;
         }
 
         if (!(msg instanceof TimedMsg)) {
-
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport received non timed message "); // + this.getSender() );
-            }
+            log.severe(me + "connection transport received non timed message "); // + this.getSender() );
             shutdown();
             return;
         }
@@ -145,10 +135,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
         TimedMsg tm = (TimedMsg) msg;
 
         if (tm.getOrder() != receiveCount) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "connection transport has delivered a message out of order - shutting down");
-            }
+            log.severe(me
+                       + "connection transport has delivered a message out of order - shutting down");
             shutdown();
             return;
         }
@@ -193,11 +181,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
             sendCount++;
             super.send(wireSecurity.toWireForm(tm));
         } catch (Exception ex) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE, me
-                                      + " failed to marshall timed message: "
-                                      + tm + " - shutting down connection", ex);
-            }
+            log.log(Level.SEVERE, me + " failed to marshall timed message: "
+                                  + tm + " - shutting down connection", ex);
             shutdown();
         }
     }
@@ -237,12 +222,10 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * must be a heartbeat message
          */
         if (!(obj instanceof HeartbeatMsg)) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.log(Level.SEVERE,
-                        me
-                                + " did not receive a heartbeat message first - shutdown",
-                        new Exception());
-            }
+            log.log(Level.SEVERE,
+                    me
+                            + " did not receive a heartbeat message first - shutdown",
+                    new Exception());
             shutdown();
             return;
         }
@@ -253,11 +236,9 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * There must be a valid connection (heartbeat connection)
          */
         if (!connectionSet.getView().contains(hbmsg.getSender())) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me + " did not have incoming connection from "
-                           + hbmsg.getSender().toString()
-                           + " in the connection set");
-            }
+            log.severe(me + " did not have incoming connection from "
+                       + hbmsg.getSender().toString()
+                       + " in the connection set");
             shutdown();
             return;
         }
@@ -277,11 +258,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
                         + ", remote node " + con.getSender().id + ")");
                 messageConnection.deliver(bytes);
             } else {
-                if (log.isLoggable(Level.SEVERE)) {
-                    log.severe(me
-                               + " failed to assign incoming connection from "
-                               + con.getSender().toString());
-                }
+                log.severe(me + " failed to assign incoming connection from "
+                           + con.getSender().toString());
                 shutdown();
             }
             return;
@@ -291,12 +269,10 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * By now we should be left with a heartbeat connection - sanity check
          */
         if (!(con instanceof HeartbeatConnection)) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + " ?!? incoming connection from "
-                           + con.getSender().toString()
-                           + " is in connection set, but not heartbeat or message type");
-            }
+            log.severe(me
+                       + " ?!? incoming connection from "
+                       + con.getSender().toString()
+                       + " is in connection set, but not heartbeat or message type");
             shutdown();
             return;
         }
@@ -317,15 +293,13 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * do log its occurance.
          */
         if (!hbmsg.getMsgLinks().contains(me.id)) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + " VALID CASE - FOR INFORMATION ONLY:=> incoming connection from "
-                           + con.getSender().toString()
-                           + " when neither end wants the connection");
-                // next two lines removed to allow this case
-                // shutdown();
-                // return;
-            }
+            log.severe(me
+                       + " VALID CASE - FOR INFORMATION ONLY:=> incoming connection from "
+                       + con.getSender().toString()
+                       + " when neither end wants the connection");
+            // next two lines removed to allow this case
+            // shutdown();
+            // return;
         }
 
         /**
@@ -361,11 +335,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * comit suicide in disgust!!!!
          */
         if (!connectionSet.useNewMessageConnection(messageConnection)) {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(me
-                           + "Concurrent creation of message connections from "
-                           + messageConnection.getSender());
-            }
+            log.severe(me + "Concurrent creation of message connections from "
+                       + messageConnection.getSender());
             shutdown();
             return;
         }
