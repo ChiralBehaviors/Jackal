@@ -44,7 +44,6 @@ public class NodeData {
     private NodeButton button;
     private ColorAllocator colorAllocator;
     private TestConnection connection = null;
-    private MainConsoleFrame consoleFrame;
     private Controller controller = null;
     private long heartbeatInterval = 0;
     private View ignoring = new BitView();
@@ -53,7 +52,7 @@ public class NodeData {
     private int leader = -1;
     private static final Logger log = Logger.getLogger(NodeData.class.getCanonicalName());
     private Identity nodeId = null;
-
+    private final boolean headless;
     private View partition = new BitView();
     private Color partitionColor = Color.lightGray;
     private StatsMsg stats = null;
@@ -63,21 +62,22 @@ public class NodeData {
     private View view = null;
     private NodeFrame window = null;
 
-    public NodeData(HeartbeatMsg hb, MainConsoleFrame consoleFrame,
-                    ColorAllocator colorAllocator, Controller controller) {
+    public NodeData(HeartbeatMsg hb, ColorAllocator colorAllocator,
+                    Controller controller, boolean headless) {
         this.controller = controller;
         this.colorAllocator = colorAllocator;
+        this.headless = headless;
         lastReceive = System.currentTimeMillis();
         lastHB = hb.getTime();
         view = hb.getView();
         nodeId = hb.getSender();
         ConnectionAddress address = hb.getTestInterface();
-        button = new NodeButton(nodeId, this);
-        button.setOpaque(true);
-        button.setBackground(Color.lightGray);
-        button.setForeground(Color.black);
-        this.consoleFrame = consoleFrame;
-        consoleFrame.addNode(this);
+        if (!headless) {
+            button = new NodeButton(nodeId, this);
+            button.setOpaque(true);
+            button.setBackground(Color.lightGray);
+            button.setForeground(Color.black);
+        }
         connectIfAvailable(address);
         //System.out.print("Heartbeat from new Node" + nodeId.id + " stamped " + lastHB);
         //long timeNow = System.currentTimeMillis();
@@ -119,9 +119,10 @@ public class NodeData {
 
     public void disconnected() {
         connection = null;
-        colorAllocator.deallocate(partition, this);
-        partitionColor = Color.lightGray;
-
+        if (!headless) {
+            colorAllocator.deallocate(partition, this);
+            partitionColor = Color.lightGray;
+        }
         update();
     }
 
@@ -200,7 +201,7 @@ public class NodeData {
             connection.shutdown();
         }
         closeWindow();
-        consoleFrame.removeNode(this);
+        controller.removeNode(this);
     }
 
     public void setIgnoring(String str) {
@@ -282,26 +283,49 @@ public class NodeData {
 
         connection = new TestConnection(address, this, nodeId, controller);
         if (connection.connected()) {
-            connection.sendObject(new SetTimingMsg(consoleFrame.getInterval(),
-                                                   consoleFrame.getTimeout()));
+            connection.sendObject(new SetTimingMsg(
+                                                   controller.getHeartbeatInterval(),
+                                                   controller.getHeartbeatTimeout()));
             connection.start();
         } else {
             connection = null;
         }
     }
 
-    private void ignoring(IgnoringMsg ignoringMsg) {
+    private View partOrIgnoring(View partition, View ignoring) {
+        return new BitView().copyView(partition).merge(ignoring);
+    }
+
+    private void update() {
+        if (threadsInfoExpire < System.currentTimeMillis()) {
+            threadsInfo = null;
+        }
+        if (!headless) {
+            if (window != null) {
+                window.update(partition, view, leader, ignoring,
+                              heartbeatInterval, timeout, stats, threadsInfo);
+            }
+            button.setBackground(partitionColor);
+            if (partition.isStable()) {
+                button.setForeground(Color.black);
+            } else {
+                button.setForeground(Color.yellow);
+            }
+        }
+    }
+
+    protected void ignoring(IgnoringMsg ignoringMsg) {
         ignoring = ignoringMsg.ignoring;
         update();
     }
 
-    private View partCompOrIgnoring(View globalView, View partition,
-                                    View ignoring) {
+    protected View partCompOrIgnoring(View globalView, View partition,
+                                      View ignoring) {
         View complement = new BitView().copyView(globalView).subtract(partition);
         return new BitView().copyView(complement).merge(ignoring);
     }
 
-    private void partitionNotification(View partition, int leader) {
+    protected void partitionNotification(View partition, int leader) {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(String.format("Updating node view %s with partition view %s, leader %s",
                                      nodeId, partition, leader));
@@ -311,7 +335,8 @@ public class NodeData {
          * if partition has changed membership deallocate current color and then
          * reallocate new color
          */
-        if (!this.partition.toBitSet().equals(partition.toBitSet())) {
+        if (!headless
+            && !this.partition.toBitSet().equals(partition.toBitSet())) {
             colorAllocator.deallocate(this.partition, this);
             partitionColor = colorAllocator.allocate(partition, this);
         }
@@ -320,41 +345,21 @@ public class NodeData {
         update();
     }
 
-    private View partOrIgnoring(View partition, View ignoring) {
-        return new BitView().copyView(partition).merge(ignoring);
-    }
-
-    private void stats(StatsMsg stats) {
+    protected void stats(StatsMsg stats) {
         this.stats = stats;
         update();
     }
 
-    private void threads(ThreadsMsg threads) {
+    protected void threads(ThreadsMsg threads) {
         threadsInfoExpire = System.currentTimeMillis() + 10000;
         threadsInfo = threads;
         update();
     }
 
-    private void timing(long interval, long timeout) {
+    protected void timing(long interval, long timeout) {
         heartbeatInterval = interval;
         this.timeout = timeout;
         update();
-    }
-
-    private void update() {
-        if (threadsInfoExpire < System.currentTimeMillis()) {
-            threadsInfo = null;
-        }
-        if (window != null) {
-            window.update(partition, view, leader, ignoring, heartbeatInterval,
-                          timeout, stats, threadsInfo);
-        }
-        button.setBackground(partitionColor);
-        if (partition.isStable()) {
-            button.setForeground(Color.black);
-        } else {
-            button.setForeground(Color.yellow);
-        }
     }
 
 }

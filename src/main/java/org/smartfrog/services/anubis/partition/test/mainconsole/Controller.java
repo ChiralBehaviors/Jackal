@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -46,12 +47,12 @@ public class Controller {
     private MulticastAddress address;
     private AsymetryReportFrame asymetryReport = null;
     private long checkPeriod = 1000;
-    private ColorAllocator colorAllocator = new ColorAllocator();
+    protected ColorAllocator colorAllocator = new ColorAllocator();
     private MainConsoleFrame consoleFrame;
     private long expirePeriod = 10000;
     private BitView globalView = new BitView();
     private long heartbeatInterval = 1000;
-
+    protected boolean headless = false;
     private long heartbeatTimeout = 2000;
     private Identity identity;
     private Map<Identity, NodeData> nodes = new HashMap<Identity, NodeData>();
@@ -75,10 +76,17 @@ public class Controller {
                 partition.add(new Integer(token).intValue());
             }
         } catch (NumberFormatException ex) {
+            if (headless) {
+                throw new IllegalArgumentException(ex);
+            }
             consoleFrame.inputError("Unknown: " + token);
             return;
         }
 
+        asymPartition(partition);
+    }
+
+    public synchronized void asymPartition(BitView partition) {
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
             NodeData node = iter.next();
@@ -125,7 +133,10 @@ public class Controller {
             nodeData.heartbeat(hb);
             return;
         }
-        nodeData = new NodeData(hb, consoleFrame, colorAllocator, this);
+        nodeData = createNode(hb);
+        if (!headless) {
+            consoleFrame.addNode(nodeData);
+        }
         nodes.put(hb.getSender(), nodeData);
         globalView.add(hb.getSender());
     }
@@ -145,10 +156,12 @@ public class Controller {
         snoop = new Snoop(
                           "Anubis: Partition Manager Test Console heartbeat snoop",
                           address, identity, this);
-        consoleFrame = new MainConsoleFrame(this);
-        consoleFrame.setTitle("Partition Manager Test Controller - "
-                              + Anubis.version);
-        consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
+        if (!headless) {
+            consoleFrame = new MainConsoleFrame(this);
+            consoleFrame.setTitle("Partition Manager Test Controller - "
+                                  + Anubis.version);
+            consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
+        }
         snoop.start();
     }
 
@@ -169,10 +182,16 @@ public class Controller {
     }
 
     public long getHeartbeatInterval() {
+        if (!headless) {
+            heartbeatInterval = consoleFrame.getInterval();
+        }
         return heartbeatInterval;
     }
 
     public long getHeartbeatTimeout() {
+        if (!headless) {
+            heartbeatTimeout = consoleFrame.getTimeout();
+        }
         return heartbeatTimeout;
     }
 
@@ -180,8 +199,20 @@ public class Controller {
         return identity;
     }
 
+    public NodeData getNode(Identity id) {
+        return nodes.get(id);
+    }
+
+    public Collection<? extends NodeData> getNodes() {
+        return nodes.values();
+    }
+
     public Timer getTimer() {
         return timer;
+    }
+
+    public boolean isHeadless() {
+        return headless;
     }
 
     public String nodesToString() {
@@ -198,6 +229,12 @@ public class Controller {
         asymetryReport = null;
     }
 
+    public void removeNode(NodeData nodeData) {
+        if (!headless) {
+            consoleFrame.removeNode(nodeData);
+        }
+    }
+
     public void setAddress(MulticastAddress address) {
         this.address = address;
     }
@@ -208,6 +245,10 @@ public class Controller {
 
     public synchronized void setExpirePeriod(long expirePeriod) {
         this.expirePeriod = expirePeriod;
+    }
+
+    public void setHeadless(boolean headless) {
+        this.headless = headless;
     }
 
     public void setHeartbeatInterval(long heartbeatInterval) {
@@ -253,7 +294,9 @@ public class Controller {
 
     @PostConstruct
     public synchronized void start() {
-        consoleFrame.setVisible(true);
+        if (!headless) {
+            consoleFrame.setVisible(true);
+        }
     }
 
     public synchronized void symPartition(String nodeStr) {
@@ -272,10 +315,17 @@ public class Controller {
                 partition.add(new Integer(token).intValue());
             }
         } catch (NumberFormatException ex) {
+            if (headless) {
+                throw new IllegalArgumentException(ex);
+            }
             consoleFrame.inputError("Unknown: " + token);
             return;
         }
 
+        symPartition(partition);
+    }
+
+    public synchronized void symPartition(BitView partition) {
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
             iter.next().setIgnoringSymPartition(globalView, partition);
@@ -289,10 +339,12 @@ public class Controller {
             task.cancel();
         }
         clearNodes();
-        consoleFrame.setVisible(false);
-        consoleFrame.dispose();
-        consoleFrame = null;
-        System.exit(0);
+        if (!headless) {
+            consoleFrame.setVisible(false);
+            consoleFrame.dispose();
+            consoleFrame = null;
+            System.exit(0);
+        }
     }
 
     private synchronized TimerTask getTask() {
@@ -306,4 +358,9 @@ public class Controller {
         return task;
     }
 
+    protected NodeData createNode(HeartbeatMsg hb) {
+        NodeData nodeData;
+        nodeData = new NodeData(hb, colorAllocator, this, headless);
+        return nodeData;
+    }
 }
