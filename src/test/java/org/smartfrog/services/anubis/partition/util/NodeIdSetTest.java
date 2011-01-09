@@ -28,6 +28,11 @@ import junit.framework.TestCase;
 
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
+/**
+ * 
+ * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
+ * 
+ */
 public class NodeIdSetTest extends TestCase {
 
     public void testBasic() {
