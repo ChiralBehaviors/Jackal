@@ -429,6 +429,9 @@ public class LocalProviders {
      * Register all the providers known to the local register.
      */
     public synchronized void reRegisterAll() {
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Reregistering all providers");
+        }
         Iterator<Object> iter = providers.values().iterator();
         while (iter.hasNext()) {
             ProviderInfo info = (ProviderInfo) iter.next();

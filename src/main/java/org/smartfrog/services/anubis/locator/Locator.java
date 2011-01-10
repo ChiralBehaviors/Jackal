@@ -291,21 +291,15 @@ public class Locator implements PartitionNotification, AnubisLocator {
     public void sendToGlobal(RegisterMsg msg) {
         if (stable) {
             if (leader.equals(me)) {
-
                 global.deliverRequest(msg);
-
             } else {
-
                 send(msg, leader);
-
             }
-        } else {
-
+        } else { 
             if (log.isLoggable(Level.INFO)) {
                 log.info("Due to instability I am _NOT_ Sending " + msg
                          + " to global register");
             }
-
         }
     }
 

@@ -350,6 +350,9 @@ public class LocalListeners {
      * bound.
      */
     public synchronized void reRegisterAll() {
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Reregistering all listeners");
+        }
         Iterator<Object> iter = listeners.values().iterator();
         while (iter.hasNext()) {
             ListenerInfo info = (ListenerInfo) iter.next();

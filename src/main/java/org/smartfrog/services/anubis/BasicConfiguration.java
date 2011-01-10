@@ -6,7 +6,6 @@ import java.util.Timer;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
-import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
@@ -129,7 +128,7 @@ public class BasicConfiguration {
     }
 
     @Bean
-    public AnubisLocator locator() {
+    public Locator locator() {
         Locator locator = new Locator();
         locator.setIdentity(partitionIdentity());
         locator.setPartition(partition());
