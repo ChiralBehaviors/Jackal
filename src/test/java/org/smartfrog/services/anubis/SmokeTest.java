@@ -16,6 +16,7 @@
  */
 package org.smartfrog.services.anubis;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
@@ -23,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 
+import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
@@ -37,6 +39,20 @@ public class SmokeTest extends TestCase {
         @Override
         public boolean getTestable() {
             return false;
+        }
+
+        @Override
+        public int getMagic() {
+            try {
+                return Identity.getMagicFromLocalIpAddress();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Override
+        public int heartbeatGroupTTL() {
+            return 0;
         }
 
     }

@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -72,6 +74,13 @@ public class Identity implements Serializable, Cloneable, WireSizes {
         return new Identity(bytes.getInt(idx + magicIdx),
                             bytes.getInt(idx + idIdx),
                             bytes.getLong(idx + epochIdx));
+    }
+
+    public static int getMagicFromLocalIpAddress() throws IOException {
+        DataInputStream dis = new DataInputStream(
+                                                  new ByteArrayInputStream(
+                                                                           InetAddress.getLocalHost().getHostAddress().getBytes()));
+        return dis.readInt();
     }
 
     public final long epoch;

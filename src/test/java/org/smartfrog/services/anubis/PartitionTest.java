@@ -16,6 +16,7 @@
  */
 package org.smartfrog.services.anubis;
 
+import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,6 +73,20 @@ public class PartitionTest extends TestCase {
             return true;
         }
 
+        @Override
+        public int magic() {
+            try {
+                return Identity.getMagicFromLocalIpAddress();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Override
+        public int heartbeatGroupTTL() {
+            return 0;
+        }
+
     }
 
     static class Node extends NodeData {
@@ -118,8 +133,24 @@ public class PartitionTest extends TestCase {
         }
     }
 
+    static class nodeCfg extends BasicConfiguration {
+        @Override
+        public int getMagic() {
+            try {
+                return Identity.getMagicFromLocalIpAddress();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Override
+        public int heartbeatGroupTTL() {
+            return 0;
+        }
+    }
+
     @Configuration
-    static class node0 extends BasicConfiguration {
+    static class node0 extends nodeCfg {
         @Override
         public int node() {
             return 0;
@@ -127,7 +158,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node1 extends BasicConfiguration {
+    static class node1 extends nodeCfg {
         @Override
         public int node() {
             return 1;
@@ -135,7 +166,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node10 extends BasicConfiguration {
+    static class node10 extends nodeCfg {
         @Override
         public int node() {
             return 10;
@@ -143,7 +174,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node11 extends BasicConfiguration {
+    static class node11 extends nodeCfg {
         @Override
         public int node() {
             return 11;
@@ -151,7 +182,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node12 extends BasicConfiguration {
+    static class node12 extends nodeCfg {
         @Override
         public int node() {
             return 12;
@@ -159,7 +190,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node13 extends BasicConfiguration {
+    static class node13 extends nodeCfg {
         @Override
         public int node() {
             return 13;
@@ -167,7 +198,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node14 extends BasicConfiguration {
+    static class node14 extends nodeCfg {
         @Override
         public int node() {
             return 14;
@@ -175,7 +206,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node15 extends BasicConfiguration {
+    static class node15 extends nodeCfg {
         @Override
         public int node() {
             return 15;
@@ -183,7 +214,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node16 extends BasicConfiguration {
+    static class node16 extends nodeCfg {
         @Override
         public int node() {
             return 16;
@@ -191,7 +222,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node17 extends BasicConfiguration {
+    static class node17 extends nodeCfg {
         @Override
         public int node() {
             return 17;
@@ -199,7 +230,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node18 extends BasicConfiguration {
+    static class node18 extends nodeCfg {
         @Override
         public int node() {
             return 18;
@@ -207,7 +238,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node19 extends BasicConfiguration {
+    static class node19 extends nodeCfg {
         @Override
         public int node() {
             return 19;
@@ -215,7 +246,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node2 extends BasicConfiguration {
+    static class node2 extends nodeCfg {
         @Override
         public int node() {
             return 2;
@@ -223,7 +254,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node3 extends BasicConfiguration {
+    static class node3 extends nodeCfg {
         @Override
         public int node() {
             return 3;
@@ -231,7 +262,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node4 extends BasicConfiguration {
+    static class node4 extends nodeCfg {
         @Override
         public int node() {
             return 4;
@@ -239,7 +270,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node5 extends BasicConfiguration {
+    static class node5 extends nodeCfg {
         @Override
         public int node() {
             return 5;
@@ -247,7 +278,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node6 extends BasicConfiguration {
+    static class node6 extends nodeCfg {
         @Override
         public int node() {
             return 6;
@@ -255,7 +286,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node7 extends BasicConfiguration {
+    static class node7 extends nodeCfg {
         @Override
         public int node() {
             return 7;
@@ -263,7 +294,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node8 extends BasicConfiguration {
+    static class node8 extends nodeCfg {
         @Override
         public int node() {
             return 8;
@@ -271,7 +302,7 @@ public class PartitionTest extends TestCase {
     }
 
     @Configuration
-    static class node9 extends BasicConfiguration {
+    static class node9 extends nodeCfg {
         @Override
         public int node() {
             return 9;
