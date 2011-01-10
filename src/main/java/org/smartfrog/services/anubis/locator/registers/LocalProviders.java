@@ -70,14 +70,6 @@ public class LocalProviders {
     private Integer me = null;
     private Map<String, Object> providers = new HashMap<String, Object>(); // name-->record
 
-    public LocalProviders() {
-        try {
-            jbInit();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
     /**
      * Constructor
      * 
@@ -97,13 +89,11 @@ public class LocalProviders {
          * we have deregistered, but before it knew about that.
          */
         if (!providers.containsKey(listener.name)) {
-
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me + ": no provider info matching reported "
                           + listener);
             }
             return;
-
         }
 
         /**
@@ -117,14 +107,12 @@ public class LocalProviders {
          * If there is no existing registration for this listener then add it.
          */
         if (existingReg == null) {
-
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me + ": new registration " + listener);
             }
 
             info.listeners.put(listener, listener);
             listenersByNode.put(listener.node, listener);
-
         }
 
         /**
@@ -134,7 +122,6 @@ public class LocalProviders {
          * deregistration that comes directly from the listener node.
          */
         else if (existingReg.uridPreceeds(listener)) {
-
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me + ": new reg superceeds existing registration "
                           + listener);
@@ -145,7 +132,6 @@ public class LocalProviders {
 
             info.listeners.put(listener, listener);
             listenersByNode.put(listener.node, listener);
-
         }
 
         /**
@@ -155,14 +141,12 @@ public class LocalProviders {
          * re-partitioning event. In this case we do not re-send values.
          */
         else if (existingReg.uridEquals(listener)) {
-
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me
                           + ": new reg does not superceed existing registration "
                           + listener);
             }
             return;
-
         }
 
         /**
@@ -182,7 +166,6 @@ public class LocalProviders {
                 log.finer(me + ": sending " + msg + " to node " + listener.node);
             }
             locator.sendToLocal(msg, listener.node);
-
         }
     }
 
@@ -317,7 +300,6 @@ public class LocalProviders {
             ListenerProxy listener = iter.next();
             locator.sendToLocal(RegisterMsg.providerValue(instance),
                                 listener.node);
-
         }
     }
 
@@ -429,8 +411,8 @@ public class LocalProviders {
      * Register all the providers known to the local register.
      */
     public synchronized void reRegisterAll() {
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Reregistering all providers");
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Reregistering all providers");
         }
         Iterator<Object> iter = providers.values().iterator();
         while (iter.hasNext()) {
@@ -461,9 +443,6 @@ public class LocalProviders {
         }
         str += "\n";
         return str;
-    }
-
-    private void jbInit() throws Exception {
     }
 
 }

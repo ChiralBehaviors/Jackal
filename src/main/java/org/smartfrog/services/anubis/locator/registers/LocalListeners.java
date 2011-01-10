@@ -100,7 +100,6 @@ public class LocalListeners {
      * @param view
      */
     public synchronized void checkNodes(View view) {
-
         /**
          * time of partitioning
          */
@@ -156,7 +155,6 @@ public class LocalListeners {
      * @param listener
      */
     public synchronized void deregister(AnubisListener listener) {
-
         /**
          * if there is no corresponding listener info then just drop
          */
@@ -176,7 +174,6 @@ public class LocalListeners {
          * provider, and clean up all information associated with the listener.
          */
         if (info.listeners.isEmpty()) {
-
             /**
              * Inform the global register
              */
@@ -215,7 +212,6 @@ public class LocalListeners {
     }
 
     public synchronized void providerNotPresent(ProviderInstance provider) {
-
         /**
          * if there is no corresponding listener info then just drop
          */
@@ -246,9 +242,7 @@ public class LocalListeners {
          * will return true.
          */
         if (!info.providers.containsKey(provider.proxy())) {
-
             providersByNode.remove(provider.node, provider.proxy());
-
         }
 
         /**
@@ -260,7 +254,6 @@ public class LocalListeners {
     }
 
     public synchronized void providerValue(ProviderInstance provider) {
-
         /**
          * if there is no corresponding listener info then ignore. Implies that
          * the deregister crossed with this message during transmission. The
@@ -307,7 +300,6 @@ public class LocalListeners {
      * @param listener
      */
     public synchronized void register(AnubisListener listener) {
-
         /**
          * if there are any provider instances registered then notify the
          * listener.
@@ -350,8 +342,8 @@ public class LocalListeners {
      * bound.
      */
     public synchronized void reRegisterAll() {
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Reregistering all listeners");
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Reregistering all listeners");
         }
         Iterator<Object> iter = listeners.values().iterator();
         while (iter.hasNext()) {
