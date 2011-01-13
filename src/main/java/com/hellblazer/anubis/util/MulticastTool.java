@@ -1,7 +1,8 @@
 package com.hellblazer.anubis.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
+import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -14,12 +15,12 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.sun.corba.se.impl.orbutil.HexOutputStream;
+import com.hellblazer.anubis.satellite.Hexdump;
 
 /**
  * @version $Rev$ $Date$
  */
- 
+
 public class MulticastTool {
 
     static class Send extends TimerTask {
@@ -192,6 +193,7 @@ public class MulticastTool {
                     sb.append(" - ");
                     sb.append(packet.getAddress().getHostAddress());
                     sb.append(" - ");
+                    sb.append('\n');
                     sb.append(toHex(packet.getData(), packet.getOffset(),
                                     packet.getLength()));
                     System.out.println(sb.toString());
@@ -215,11 +217,11 @@ public class MulticastTool {
 
     private static String toHex(byte[] data, int offset, int length)
                                                                     throws IOException {
-        StringWriter writer = new StringWriter();
-        HexOutputStream os = new HexOutputStream(writer);
-        os.write(data, offset, length);
-        os.close();
-        return writer.toString();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+        PrintStream stream = new PrintStream(baos);
+        Hexdump.hexdump(stream, data, offset, length);
+        stream.close();
+        return baos.toString();
     }
 
 }

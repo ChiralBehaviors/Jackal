@@ -1,30 +1,22 @@
 package com.hellblazer.anubis.satellite;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.rmi.Remote;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 
 import javax.annotation.PostConstruct;
 
+import org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapter;
 import org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapterImpl;
 
 import sun.rmi.server.UnicastServerRef2;
 
-import com.hellblazer.anubis.util.Base64Coder;
-
+@SuppressWarnings("restriction")
 public class SPLocatorAdapterExporter {
-    private int port;
     private SPLocatorAdapterImpl adapter;
     private RMIClientSocketFactory clientFactory;
     private RMIServerSocketFactory serverFactory;
-    private String ref;
-
-    public void setPort(int port) {
-        this.port = port;
-    }
+    private SPLocatorAdapter stub;
 
     public void setClientFactory(RMIClientSocketFactory clientFactory) {
         this.clientFactory = clientFactory;
@@ -40,18 +32,12 @@ public class SPLocatorAdapterExporter {
 
     @PostConstruct
     public void export() throws IOException {
-        UnicastServerRef2 reference = new UnicastServerRef2(port,
-                                                            clientFactory,
+        UnicastServerRef2 reference = new UnicastServerRef2(0, clientFactory,
                                                             serverFactory);
-        Remote stub = reference.exportObject(adapter, null, true);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(stub);
-        oos.close();
-        ref = Base64Coder.encodeLines(baos.toByteArray());
+        stub = (SPLocatorAdapter) reference.exportObject(adapter, null, true);
     }
 
-    public String getRef() {
-        return ref;
+    public SPLocatorAdapter getAdapter() {
+        return stub;
     }
 }
