@@ -1,6 +1,7 @@
 package com.hellblazer.anubis.satellite;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -10,7 +11,8 @@ import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 
 public class LocalHostSocketFactory implements RMIServerSocketFactory,
-        RMIClientSocketFactory {
+        RMIClientSocketFactory, Serializable {
+    private static final long serialVersionUID = 1L;
     private int backlog = 10;
     private final static InetAddress LOOPBACK;
 

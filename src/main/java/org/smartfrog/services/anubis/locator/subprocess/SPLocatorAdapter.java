@@ -22,55 +22,53 @@ package org.smartfrog.services.anubis.locator.subprocess;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.ValueData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public interface SPLocatorAdapter extends Remote {
-    public void registerSPLocator(AnubisLocator spLocator)
-                                                          throws RemoteException,
-                                                          DuplicateSPLocatorException;
+    public void registerSPLocator(SPLocator spLocator) throws RemoteException,
+                                                      DuplicateSPLocatorException;
 
-    public void deregisterSPLocator(AnubisLocator spLocator)
-                                                            throws RemoteException,
-                                                            UnknownSPLocatorException;
+    public void deregisterSPLocator(SPLocator spLocator)
+                                                        throws RemoteException,
+                                                        UnknownSPLocatorException;
 
-    public SPProviderRegRet registerProvider(AnubisLocator subProcessLocator,
+    public SPProviderRegRet registerProvider(SPLocator subProcessLocator,
                                              String name, ValueData value)
                                                                           throws RemoteException,
                                                                           UnknownSPLocatorException;
 
-    public void deregisterProvider(AnubisLocator subProcessLocator,
-                                   String instance) throws RemoteException,
-                                                   UnknownSPLocatorException;
+    public void deregisterProvider(SPLocator subProcessLocator, String instance)
+                                                                                throws RemoteException,
+                                                                                UnknownSPLocatorException;
 
-    public void newProviderValue(AnubisLocator subProcessLocator,
-                                 String instance, ValueData value, long time)
-                                                                             throws RemoteException,
-                                                                             UnknownSPLocatorException;
+    public void newProviderValue(SPLocator subProcessLocator, String instance,
+                                 ValueData value, long time)
+                                                            throws RemoteException,
+                                                            UnknownSPLocatorException;
 
-    public void registerListener(AnubisLocator subProcessLocator, String name,
+    public void registerListener(SPLocator subProcessLocator, String name,
                                  SPListener listener) throws RemoteException,
                                                      UnknownSPLocatorException;
 
-    public void deregisterListener(AnubisLocator subProcessLocator,
+    public void deregisterListener(SPLocator subProcessLocator,
                                    SPListener listener) throws RemoteException,
                                                        UnknownSPLocatorException;
 
-    public void registerStability(AnubisLocator subProcessLocator,
+    public void registerStability(SPLocator subProcessLocator,
                                   SPStability stability)
                                                         throws RemoteException,
                                                         UnknownSPLocatorException;
 
-    public void deregisterStability(AnubisLocator subProcessLocator,
+    public void deregisterStability(SPLocator subProcessLocator,
                                     SPStability stability)
                                                           throws RemoteException,
                                                           UnknownSPLocatorException;
 
-    public void livenessPing(AnubisLocator subProcessLocator)
-                                                             throws RemoteException,
-                                                             UnknownSPLocatorException,
-                                                             AdapterTerminatedException;
+    public void livenessPing(SPLocator subProcessLocator)
+                                                         throws RemoteException,
+                                                         UnknownSPLocatorException,
+                                                         AdapterTerminatedException;
 
-    public Identity getIdentity();
+    public Identity getIdentity() throws RemoteException;
 }

@@ -20,9 +20,6 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.locator.subprocess;
 
 import java.rmi.RemoteException;
-import java.rmi.server.RMIClientSocketFactory;
-import java.rmi.server.RMIServerSocketFactory;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,21 +39,8 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 
 import com.hellblazer.anubis.annotations.Deployed;
 
-public class SPLocatorImpl extends UnicastRemoteObject implements AnubisLocator {
+public class SPLocatorImpl implements AnubisLocator, SPLocator {
     private static final long serialVersionUID = 1L;
-
-    public SPLocatorImpl() throws RemoteException {
-        super();
-    }
-
-    public SPLocatorImpl(int port, RMIClientSocketFactory csf,
-                         RMIServerSocketFactory ssf) throws RemoteException {
-        super(port, csf, ssf);
-    }
-
-    public SPLocatorImpl(int port) throws RemoteException {
-        super(port);
-    }
 
     class LivenessChecker extends PeriodicTimer {
         LivenessChecker(long period) {
@@ -345,9 +329,8 @@ public class SPLocatorImpl extends UnicastRemoteObject implements AnubisLocator 
         try {
             registered();
         } catch (Exception ex) {
-            RemoteException remoteException = new RemoteException();
-            remoteException.initCause(ex);
-            throw remoteException;
+            throw new RemoteException("Cannot register locator implementation",
+                                      ex);
         }
     }
 
@@ -362,7 +345,9 @@ public class SPLocatorImpl extends UnicastRemoteObject implements AnubisLocator 
     public void terminate() {
         terminated = true;
         deregister();
-        timers.terminate();
+        if (timers != null) {
+            timers.terminate();
+        }
     }
 
     private void checkLiveness(long now) {
@@ -484,7 +469,11 @@ public class SPLocatorImpl extends UnicastRemoteObject implements AnubisLocator 
     }
 
     public Identity getIdentity() {
-        return adapter.getIdentity();
+        try {
+            return adapter.getIdentity();
+        } catch (RemoteException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
 }

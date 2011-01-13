@@ -63,7 +63,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     private AnubisLocator locator;
-    private Map<AnubisLocator, SPLocatorData> subProcessLocators = new HashMap<AnubisLocator, SPLocatorData>();
+    private Map<SPLocator, SPLocatorData> subProcessLocators = new HashMap<SPLocator, SPLocatorData>();
     private long timeout;
     private long period;
     private LivenessChecker livenessChecker;
@@ -76,7 +76,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized void deregisterListener(AnubisLocator spLocator,
+    public synchronized void deregisterListener(SPLocator spLocator,
                                                 SPListener spListener)
                                                                       throws RemoteException,
                                                                       UnknownSPLocatorException {
@@ -98,7 +98,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized void deregisterProvider(AnubisLocator spLocator,
+    public synchronized void deregisterProvider(SPLocator spLocator,
                                                 String instance)
                                                                 throws RemoteException,
                                                                 UnknownSPLocatorException {
@@ -119,9 +119,9 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized void deregisterSPLocator(AnubisLocator spLocator)
-                                                                         throws RemoteException,
-                                                                         UnknownSPLocatorException {
+    public synchronized void deregisterSPLocator(SPLocator spLocator)
+                                                                     throws RemoteException,
+                                                                     UnknownSPLocatorException {
 
         if (terminated) {
             throw new RemoteException();
@@ -133,10 +133,9 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public void deregisterStability(AnubisLocator spLocator,
-                                    SPStability spStability)
-                                                            throws UnknownSPLocatorException,
-                                                            RemoteException {
+    public void deregisterStability(SPLocator spLocator, SPStability spStability)
+                                                                                 throws UnknownSPLocatorException,
+                                                                                 RemoteException {
 
         if (terminated) {
             throw new RemoteException();
@@ -155,10 +154,10 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized void livenessPing(AnubisLocator spLocator)
-                                                                  throws RemoteException,
-                                                                  UnknownSPLocatorException,
-                                                                  AdapterTerminatedException {
+    public synchronized void livenessPing(SPLocator spLocator)
+                                                              throws RemoteException,
+                                                              UnknownSPLocatorException,
+                                                              AdapterTerminatedException {
 
         if (terminated) {
             throw new AdapterTerminatedException();
@@ -168,7 +167,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized void newProviderValue(AnubisLocator spLocator,
+    public synchronized void newProviderValue(SPLocator spLocator,
                                               String instance, ValueData value,
                                               long time)
                                                         throws RemoteException,
@@ -186,10 +185,10 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized void registerListener(AnubisLocator spLocator,
-                                              String name, SPListener spListener)
-                                                                                 throws RemoteException,
-                                                                                 UnknownSPLocatorException {
+    public synchronized void registerListener(SPLocator spLocator, String name,
+                                              SPListener spListener)
+                                                                    throws RemoteException,
+                                                                    UnknownSPLocatorException {
 
         if (terminated) {
             throw new RemoteException();
@@ -204,7 +203,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized SPProviderRegRet registerProvider(AnubisLocator spLocator,
+    public synchronized SPProviderRegRet registerProvider(SPLocator spLocator,
                                                           String name,
                                                           ValueData value)
                                                                           throws RemoteException,
@@ -223,9 +222,9 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public synchronized void registerSPLocator(AnubisLocator spLocator)
-                                                                       throws RemoteException,
-                                                                       DuplicateSPLocatorException {
+    public synchronized void registerSPLocator(SPLocator spLocator)
+                                                                   throws RemoteException,
+                                                                   DuplicateSPLocatorException {
         if (terminated) {
             throw new RemoteException();
         }
@@ -238,10 +237,9 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public void registerStability(AnubisLocator spLocator,
-                                  SPStability spStability)
-                                                          throws UnknownSPLocatorException,
-                                                          RemoteException {
+    public void registerStability(SPLocator spLocator, SPStability spStability)
+                                                                               throws UnknownSPLocatorException,
+                                                                               RemoteException {
 
         if (terminated) {
             throw new RemoteException();
@@ -281,9 +279,9 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     private void checkLiveness(long now) {
-        Map.Entry<AnubisLocator, SPLocatorData> entry;
+        Map.Entry<SPLocator, SPLocatorData> entry;
         SPLocatorData spLocatorData;
-        Iterator<Map.Entry<AnubisLocator, SPLocatorData>> iter = subProcessLocators.entrySet().iterator();
+        Iterator<Map.Entry<SPLocator, SPLocatorData>> iter = subProcessLocators.entrySet().iterator();
         while (iter.hasNext()) {
             entry = iter.next();
             spLocatorData = entry.getValue();
@@ -307,12 +305,12 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     @Override
-    public Identity getIdentity() {
+    public Identity getIdentity() throws RemoteException {
         return locator.getIdentity();
     }
 
-    private SPLocatorData getSPLocatorData(AnubisLocator spLocator)
-                                                                   throws UnknownSPLocatorException {
+    private SPLocatorData getSPLocatorData(SPLocator spLocator)
+                                                               throws UnknownSPLocatorException {
         SPLocatorData spLocatorData = subProcessLocators.get(spLocator);
         if (spLocatorData == null) {
             throw new UnknownSPLocatorException();

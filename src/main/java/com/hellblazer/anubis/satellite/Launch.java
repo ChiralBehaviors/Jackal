@@ -1,18 +1,22 @@
 package com.hellblazer.anubis.satellite;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.InputStream;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.PreDestroy;
 
@@ -20,65 +24,96 @@ import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapter;
 import org.smartfrog.services.anubis.locator.subprocess.SPLocatorImpl;
 
-import sun.rmi.server.UnicastServerRef2;
-
-import com.hellblazer.anubis.util.Base64Coder;
-
-@SuppressWarnings("restriction")
 public class Launch {
+    private static Logger log = Logger.getLogger(Launch.class.getCanonicalName());
+
     private long launchTimeout = 30L;
     private TimeUnit launchTimeoutUnit = TimeUnit.SECONDS;
-    private SPLocatorImpl locator;
+    SPLocatorImpl locator;
     private String configPackage;
     private Process satellite;
-    private RMIClientSocketFactory clientFactory = new LocalHostSocketFactory();
-    private RMIServerSocketFactory serverFactory = new LocalHostSocketFactory();
-    private CyclicBarrier barrier;
-    private long period;
-    private long timeout;
+    RMIClientSocketFactory clientFactory = new LocalHostSocketFactory();
+    RMIServerSocketFactory serverFactory = new LocalHostSocketFactory();
+    CyclicBarrier barrier;
+    long period;
+    long timeout;
+    private Thread ioPump;
+    Registry localRegistry;
 
     public void setConfigPackage(String configPackage) {
         this.configPackage = configPackage;
     }
 
-    public AnubisLocator getLocator() throws IOException, InterruptedException,
-                                     BrokenBarrierException, TimeoutException {
+    public AnubisLocator getLocator() throws Exception {
+        localRegistry = LocateRegistry.createRegistry(1099);
+
+        Handshake handshake = new HandshakeImpl();
+        Remote stub = UnicastRemoteObject.exportObject(handshake, 0);
+        String name = UUID.randomUUID().toString();
+        localRegistry.bind(name, stub);
+
+        locator = new SPLocatorImpl();
+        stub = UnicastRemoteObject.exportObject(locator, 0);
+
         barrier = new CyclicBarrier(2);
-        launchSatellite();
+
+        launchSatellite(name);
+
         barrier.await(launchTimeout, launchTimeoutUnit);
+
         locator.deploy();
         locator.start();
+
+        localRegistry.unbind(name);
+
         return locator;
     }
 
     @PreDestroy
     public void shutDown() {
-        satellite.destroy();
-        locator.terminate();
+        if (satellite != null) {
+            try {
+                satellite.getErrorStream().close();
+                satellite.getInputStream().close();
+                satellite.getOutputStream().close();
+            } catch (IOException e) {
+                // ignore
+            }
+            satellite.destroy();
+        }
+        if (locator != null) {
+            locator.terminate();
+        }
     }
 
-    private void launchSatellite() throws IOException {
+    private void launchSatellite(String name) throws IOException {
         List<String> command = new ArrayList<String>();
         command.add(getJavaExecutable());
         command.add("-cp");
         command.add(System.getProperty("java.class.path"));
         command.add(Bootstrap.class.getCanonicalName());
-        command.add(exportHandshake());
         command.add(configPackage);
+        command.add(name);
         ProcessBuilder builder = new ProcessBuilder(command);
         builder.redirectErrorStream(true);
         satellite = builder.start();
-    }
-
-    private String exportHandshake() throws IOException {
-        UnicastServerRef2 reference = new UnicastServerRef2(0, clientFactory,
-                                                            serverFactory);
-        Remote stub = reference.exportObject(new HandshakeImpl(), null, true);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(stub);
-        oos.close();
-        return Base64Coder.encodeLines(baos.toByteArray());
+        ioPump = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream is = satellite.getInputStream();
+                byte[] buffer = new byte[4096];
+                try {
+                    for (int read = is.read(buffer); read != -1; read = is.read(buffer)) {
+                        System.out.write(buffer, 0, read);
+                    }
+                } catch (IOException e) {
+                    log.log(Level.WARNING,
+                            "Exception while pumping IO for process: "
+                                    + satellite, e);
+                }
+            }
+        }, "Anubis: Satellite process IO pump");
+        ioPump.start();
     }
 
     private String getJavaExecutable() {
@@ -95,13 +130,12 @@ public class Launch {
                                                                  + "java";
     }
 
-    public class HandshakeImpl implements Remote, Handshake {
+    class HandshakeImpl implements Handshake {
         /* (non-Javadoc)
          * @see com.hellblazer.anubis.satellite.Handshake#setAdapter(org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapter)
          */
         @Override
         public void setAdapter(SPLocatorAdapter adapter) throws RemoteException {
-            locator = new SPLocatorImpl(0, clientFactory, serverFactory);
             locator.setPeriod(period);
             locator.setTimeout(timeout);
             locator.setAdapter(adapter);

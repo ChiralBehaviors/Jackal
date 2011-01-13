@@ -1,25 +1,21 @@
 package com.hellblazer.anubis.satellite;
 
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
+import java.rmi.Naming;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import com.hellblazer.anubis.util.Base64Coder;
-
 public class Bootstrap {
     public static void main(String[] argv) throws Exception {
-
-        if (argv.length != 1) {
-            System.err.println("usage <configurationPackage>");
+        if (argv.length != 2) {
+            System.err.println("Satellite Launch usage: <configuration package> <handshake name>");
             System.exit(1);
         }
-        // Decode the reference to the launch handshake
-        ByteArrayInputStream bais = new ByteArrayInputStream(
-                                                             Base64Coder.decodeLines(argv[1]));
-        ObjectInputStream ois = new ObjectInputStream(bais);
-        Handshake handshake = (Handshake) ois.readObject();
+
+        System.out.println("Satellite Launch Configuration Package: " + argv[0]);
+        System.out.println("Satellite Launch Handshake Name: " + argv[1]);
+        Handshake handshake = (Handshake) Naming.lookup("//localhost:1099/"
+                                                        + argv[1]);
 
         ApplicationContext context = new AnnotationConfigApplicationContext(
                                                                             argv[0]);
