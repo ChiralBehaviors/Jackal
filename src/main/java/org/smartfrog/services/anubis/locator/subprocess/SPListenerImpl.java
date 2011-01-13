@@ -19,15 +19,31 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.locator.subprocess;
 
-import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 
-public class SPProviderRegRet implements Serializable {
+import org.smartfrog.services.anubis.locator.AnubisListener;
+import org.smartfrog.services.anubis.locator.names.ProviderInstance;
+
+public class SPListenerImpl extends UnicastRemoteObject implements SPListener {
     private static final long serialVersionUID = 1L;
-    public String instance;
-    public long time;
+    private AnubisListener listener;
 
-    public SPProviderRegRet(String instance, long time) {
-        this.instance = instance;
-        this.time = time;
+    public SPListenerImpl(AnubisListener listener) throws RemoteException {
+        this.listener = listener;
     }
+
+    public void newValue(ProviderInstance i) throws RemoteException {
+        listener.newValue(i);
+    }
+
+    public void removeValue(ProviderInstance i) throws RemoteException {
+        listener.removeValue(i);
+    }
+
+    public void removeValue(ProviderInstance i, long time)
+                                                          throws RemoteException {
+        listener.removeValue(i, time);
+    }
+
 }

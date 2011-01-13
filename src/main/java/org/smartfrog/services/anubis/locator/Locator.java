@@ -120,6 +120,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
         return heartbeatTimeout;
     }
 
+    @Override
     public Identity getIdentity() {
         return identity;
     }

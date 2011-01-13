@@ -34,6 +34,7 @@ package org.smartfrog.services.anubis.locator;
  *                 them using this API.
  */
 import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
+import org.smartfrog.services.anubis.partition.util.Identity;
 
 public interface AnubisLocator {
     /**
@@ -99,4 +100,6 @@ public interface AnubisLocator {
      * becomes stable or unstable.
      */
     public void registerStability(AnubisStability stability);
+
+    public abstract Identity getIdentity();
 }
