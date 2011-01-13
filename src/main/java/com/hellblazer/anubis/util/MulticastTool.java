@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.hellblazer.anubis.satellite.Hexdump;
-
 /**
  * @version $Rev$ $Date$
  */
@@ -215,11 +213,10 @@ public class MulticastTool {
         System.out.println();
     }
 
-    private static String toHex(byte[] data, int offset, int length)
-                                                                    throws IOException {
+    private static String toHex(byte[] data, int offset, int length) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
         PrintStream stream = new PrintStream(baos);
-        Hexdump.hexdump(stream, data, offset, length);
+        HexDump.hexdump(stream, data, offset, length);
         stream.close();
         return baos.toString();
     }
