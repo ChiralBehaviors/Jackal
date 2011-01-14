@@ -87,6 +87,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
     public void deploy() throws RemoteException {
         try {
             liveness = new Liveness(timeout);
+            liveness.ping();
             pinger = new Pinger(period);
             livenessChecker = new LivenessChecker(period);
             timers = new ActiveTimeQueue("Anubis: subprocess locator timers");
@@ -404,12 +405,11 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         } catch (RemoteException ex) {
 
             if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "Exceptioin during ping", ex);
+                asyncLog.log(Level.WARNING, "Exception during ping", ex);
             }
             pinger.terminate();
 
         } catch (AdapterTerminatedException ex) {
-
             if (asyncLog.isLoggable(Level.WARNING)) {
                 asyncLog.log(Level.WARNING, "Adapter has been terminated", ex);
             }

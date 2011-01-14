@@ -104,7 +104,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
                                                                 UnknownSPLocatorException {
 
         if (terminated) {
-            throw new RemoteException();
+            throw new RemoteException("already terminated");
         }
 
         Map<String, Provider> providers = getSPLocatorData(spLocator).getProviders();
@@ -124,7 +124,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
                                                                      UnknownSPLocatorException {
 
         if (terminated) {
-            throw new RemoteException();
+            throw new RemoteException("already terminated");
         }
 
         SPLocatorData spLocatorData = getSPLocatorData(spLocator);
@@ -138,7 +138,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
                                                                                  RemoteException {
 
         if (terminated) {
-            throw new RemoteException();
+            throw new RemoteException("already terminated");
         }
 
         Map<SPStability, SPStabilityAdapterImpl> stabilities = getSPLocatorData(
@@ -174,7 +174,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
                                                         UnknownSPLocatorException {
 
         if (terminated) {
-            throw new RemoteException();
+            throw new RemoteException("already terminated");
         }
 
         Map<String, Provider> providers = getSPLocatorData(spLocator).getProviders();
@@ -191,7 +191,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
                                                                     UnknownSPLocatorException {
 
         if (terminated) {
-            throw new RemoteException();
+            throw new RemoteException("already terminated");
         }
 
         Map<SPListener, SPListenerAdapterImpl> listeners = getSPLocatorData(
@@ -226,7 +226,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
                                                                    throws RemoteException,
                                                                    DuplicateSPLocatorException {
         if (terminated) {
-            throw new RemoteException();
+            throw new RemoteException("already terminated");
         }
 
         if (subProcessLocators.containsKey(spLocator)) {
@@ -242,7 +242,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
                                                                                RemoteException {
 
         if (terminated) {
-            throw new RemoteException();
+            throw new RemoteException("already terminated");
         }
 
         Map<SPStability, SPStabilityAdapterImpl> stabilities = getSPLocatorData(
@@ -285,9 +285,14 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         while (iter.hasNext()) {
             entry = iter.next();
             spLocatorData = entry.getValue();
-            if (spLocatorData.getLiveness().isNotTimely(now)) {
-                clearRegistrations(spLocatorData);
+            if (spLocatorData == null) {
+                // already dead, jim
                 iter.remove();
+            } else {
+                if (spLocatorData.getLiveness().isNotTimely(now)) {
+                    clearRegistrations(spLocatorData);
+                    iter.remove();
+                }
             }
         }
     }

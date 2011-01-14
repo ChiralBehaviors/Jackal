@@ -25,8 +25,26 @@ import org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapter;
 import org.smartfrog.services.anubis.locator.subprocess.SPLocatorImpl;
 
 public class Launch {
-    private static Logger log = Logger.getLogger(Launch.class.getCanonicalName());
+    class HandshakeImpl implements Handshake {
+        /* (non-Javadoc)
+         * @see com.hellblazer.anubis.satellite.Handshake#setAdapter(org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapter)
+         */
+        @Override
+        public void setAdapter(SPLocatorAdapter adapter) throws RemoteException {
+            locator.setPeriod(period);
+            locator.setTimeout(timeout);
+            locator.setAdapter(adapter);
+            try {
+                barrier.await();
+            } catch (InterruptedException e) {
+                return;
+            } catch (BrokenBarrierException e) {
+                return;
+            }
+        }
+    }
 
+    private static Logger log = Logger.getLogger(Launch.class.getCanonicalName());
     private long launchTimeout = 30L;
     private TimeUnit launchTimeoutUnit = TimeUnit.SECONDS;
     SPLocatorImpl locator;
@@ -38,11 +56,9 @@ public class Launch {
     long period;
     long timeout;
     private Thread ioPump;
-    Registry localRegistry;
+    private Thread terminationThread;
 
-    public void setConfigPackage(String configPackage) {
-        this.configPackage = configPackage;
-    }
+    Registry localRegistry;
 
     public AnubisLocator getLocator() throws Exception {
         localRegistry = LocateRegistry.createRegistry(1099);
@@ -53,6 +69,8 @@ public class Launch {
         localRegistry.bind(name, stub);
 
         locator = new SPLocatorImpl();
+        locator.setPeriod(period);
+        locator.setTimeout(timeout);
         stub = UnicastRemoteObject.exportObject(locator, 0);
 
         barrier = new CyclicBarrier(2);
@@ -66,24 +84,71 @@ public class Launch {
 
         localRegistry.unbind(name);
 
+        locator.deploy();
+        locator.start();
+
         return locator;
+    }
+
+    public void setConfigPackage(String configPackage) {
+        this.configPackage = configPackage;
+    }
+
+    public void setPeriod(long period) {
+        this.period = period;
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
     }
 
     @PreDestroy
     public void shutDown() {
+        if (locator != null) {
+            locator.terminate();
+        }
+        terminateSatellite();
+        Runtime.getRuntime().removeShutdownHook(terminationThread);
+    }
+
+    protected void terminateSatellite() {
         if (satellite != null) {
             try {
                 satellite.getErrorStream().close();
+            } catch (IOException e) {
+                // ignore
+            }
+            try {
                 satellite.getInputStream().close();
+            } catch (IOException e) {
+                // ignore
+            }
+            try {
                 satellite.getOutputStream().close();
             } catch (IOException e) {
                 // ignore
             }
             satellite.destroy();
+            try {
+                satellite.waitFor();
+            } catch (InterruptedException e) {
+                return;
+            }
+            satellite = null;
         }
-        if (locator != null) {
-            locator.terminate();
+    }
+
+    private String getJavaExecutable() {
+        String pathSeparator = System.getProperty("file.separator");
+        String javaBin = System.getProperty("java.home");
+        if (javaBin.endsWith(pathSeparator)) {
+            javaBin += "bin";
+        } else {
+            javaBin += pathSeparator + "bin";
         }
+        javaBin += pathSeparator;
+        String os = System.getProperty("os.name").toLowerCase();
+        return os.indexOf("win") >= 0 ? javaBin + "java.exe" : javaBin + "java";
     }
 
     private void launchSatellite(String name) throws IOException {
@@ -96,6 +161,13 @@ public class Launch {
         command.add(name);
         ProcessBuilder builder = new ProcessBuilder(command);
         builder.redirectErrorStream(true);
+        terminationThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                terminateSatellite();
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(terminationThread);
         satellite = builder.start();
         ioPump = new Thread(new Runnable() {
             @Override
@@ -114,38 +186,5 @@ public class Launch {
             }
         }, "Anubis: Satellite process IO pump");
         ioPump.start();
-    }
-
-    private String getJavaExecutable() {
-        String pathSeparator = System.getProperty("file.separator");
-        String javaBin = System.getProperty("java.home");
-        if (javaBin.endsWith(pathSeparator)) {
-            javaBin += "bin";
-        } else {
-            javaBin += pathSeparator + "bin";
-        }
-        javaBin += pathSeparator;
-        String os = System.getProperty("os.name").toLowerCase();
-        return (os.indexOf("win") >= 0) ? javaBin + "java.exe" : javaBin
-                                                                 + "java";
-    }
-
-    class HandshakeImpl implements Handshake {
-        /* (non-Javadoc)
-         * @see com.hellblazer.anubis.satellite.Handshake#setAdapter(org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapter)
-         */
-        @Override
-        public void setAdapter(SPLocatorAdapter adapter) throws RemoteException {
-            locator.setPeriod(period);
-            locator.setTimeout(timeout);
-            locator.setAdapter(adapter);
-            try {
-                barrier.await();
-            } catch (InterruptedException e) {
-                return;
-            } catch (BrokenBarrierException e) {
-                return;
-            }
-        }
     }
 }
