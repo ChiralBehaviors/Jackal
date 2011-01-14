@@ -276,8 +276,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                     return null;
                 }
             } catch (IOException ioe) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING, "Failed to read socket channel", ioe);
+                if (log.isLoggable(Level.FINE)) {
+                    log.log(Level.FINE, "Failed to read socket channel", ioe);
                 }
                 cleanup(key);
                 return null;

@@ -127,7 +127,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
             throw new RemoteException("already terminated");
         }
 
-        SPLocatorData spLocatorData = getSPLocatorData(spLocator);
+        SPLocatorData spLocatorData = removeSPLocatorData(spLocator);
         clearRegistrations(spLocatorData);
         subProcessLocators.remove(spLocatorData);
     }
@@ -285,7 +285,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         while (iter.hasNext()) {
             entry = iter.next();
             spLocatorData = entry.getValue();
-            if (spLocatorData == null) {
+            if (spLocatorData == null || spLocatorData.getLiveness() == null) {
                 // already dead, jim
                 iter.remove();
             } else {
@@ -317,7 +317,16 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     private SPLocatorData getSPLocatorData(SPLocator spLocator)
                                                                throws UnknownSPLocatorException {
         SPLocatorData spLocatorData = subProcessLocators.get(spLocator);
-        if (spLocatorData == null) {
+        if (spLocatorData == null || spLocatorData.getLiveness() == null) {
+            throw new UnknownSPLocatorException();
+        }
+        return spLocatorData;
+    }
+
+    private SPLocatorData removeSPLocatorData(SPLocator spLocator)
+                                                               throws UnknownSPLocatorException {
+        SPLocatorData spLocatorData = subProcessLocators.remove(spLocator);
+        if (spLocatorData == null || spLocatorData.getLiveness() == null) {
             throw new UnknownSPLocatorException();
         }
         return spLocatorData;
