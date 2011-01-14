@@ -130,6 +130,8 @@ public class Launch {
                 satellite.waitFor();
             } catch (InterruptedException e) {
                 return;
+            } finally {
+                Thread.interrupted();
             }
             satellite = null;
         }
