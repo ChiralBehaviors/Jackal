@@ -79,9 +79,6 @@ public class Launch {
 
         barrier.await(launchTimeout, launchTimeoutUnit);
 
-        locator.deploy();
-        locator.start();
-
         localRegistry.unbind(name);
 
         locator.deploy();

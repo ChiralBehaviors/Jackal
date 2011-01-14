@@ -77,7 +77,7 @@ public class TestLaunch extends TestCase {
     protected void setUp() throws Exception {
         launch = new Launch();
         launch.setPeriod(3000);
-        launch.setTimeout(3000);
+        launch.setTimeout(6000);
     }
 
     @Override

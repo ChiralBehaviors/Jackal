@@ -87,7 +87,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
     public void deploy() throws RemoteException {
         try {
             liveness = new Liveness(timeout);
-            liveness.ping();
+            // liveness.ping();
             pinger = new Pinger(period);
             livenessChecker = new LivenessChecker(period);
             timers = new ActiveTimeQueue("Anubis: subprocess locator timers");
@@ -389,9 +389,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
      * will check the pings are happening.
      */
     private void pingAdapter() {
-
         try {
-
             adapter.livenessPing(this);
             liveness.ping();
 
@@ -414,14 +412,11 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
                 asyncLog.log(Level.WARNING, "Adapter has been terminated", ex);
             }
             pinger.terminate();
-
         }
     }
 
     private boolean registered() {
-
         synchronized (adapterMonitor) {
-
             if (!isDeployed) {
                 // this case implies an attempt to register before the component
                 // has been fully deployed.
@@ -449,7 +444,6 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
                 pinger.start();
                 livenessChecker.start();
                 return true;
-
             } catch (DuplicateSPLocatorException ex) {
                 syncLog.log(Level.SEVERE,
                             "Already registered when trying to register with SPLocatorAdapter",
