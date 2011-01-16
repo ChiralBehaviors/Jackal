@@ -112,9 +112,6 @@ public class ServiceInformationPrioritisedTest {
         final Iterator<ServiceInformation> informationIterator = new ServiceInformationPrioritised(
                                                                                                    new BentWeightRandomNumberGenerator(),
                                                                                                    new ArrayList<ServiceInformation>() {
-                                                                                                       /**
-             * 
-             */
                                                                                                        private static final long serialVersionUID = 1L;
 
                                                                                                        {
@@ -125,10 +122,10 @@ public class ServiceInformationPrioritisedTest {
                                                                                                        }
                                                                                                    }).iterator();
 
-        assertThat(informationIterator.next(), is(highest));
+        assertThat(informationIterator.next(), is(lowest));
         assertThat(informationIterator.next(), is(middleAndSame1));
         assertThat(informationIterator.next(), is(middleAndSame2));
-        assertThat(informationIterator.next(), is(lowest));
+        assertThat(informationIterator.next(), is(highest));
         assertFalse(informationIterator.hasNext());
     }
 

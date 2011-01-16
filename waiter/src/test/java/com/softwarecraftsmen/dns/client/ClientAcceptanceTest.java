@@ -35,7 +35,7 @@ public class ClientAcceptanceTest {
     private static final HostName GoogleAliasHostName = hostName("www.google.com");
     private static final HostName GoogleCanonicalHostName = hostName("www.l.google.com");
     private static final DomainName GoogleDomainName = domainName("google.com");
-    private static final HostName GooglePointerName = hostName("nf-in-f104.google.com");
+    private static final HostName GooglePointerName = hostName("tz-in-f104.1e100.net");
 
     private Client client;
 

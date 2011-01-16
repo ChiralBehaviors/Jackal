@@ -31,8 +31,7 @@ public class SynchronousDnsResolver implements DnsResolver {
     public SynchronousDnsResolver(final ServerAddressFinder serverAddressFinder) {
         this.serverAddressFinder = serverAddressFinder;
     }
-
-    @SuppressWarnings({ "EmptyCatchBlock" })
+ 
     public Message resolve(final Name name,
                            final InternetClassType internetClassType) {
         return resolveAgainstAllServers(query(internetQuestion(name,

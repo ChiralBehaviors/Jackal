@@ -25,6 +25,7 @@ import com.softwarecraftsmen.dns.Text;
 import com.softwarecraftsmen.dns.client.resourceRecordRepositories.ResourceRecordRepository;
 import com.softwarecraftsmen.dns.labels.ServiceLabel;
 import com.softwarecraftsmen.dns.labels.ServiceProtocolLabel;
+import com.softwarecraftsmen.dns.labels.SimpleLabel;
 import com.softwarecraftsmen.dns.messaging.InternetClassType;
 import com.softwarecraftsmen.dns.messaging.serializer.Serializable;
 import com.softwarecraftsmen.dns.names.DomainName;
@@ -104,8 +105,7 @@ public class Client {
         return findOptionalData(hostName, TXT);
     }
 
-    @SuppressWarnings({ "LoopStatementThatDoesntLoop" })
-    private <T extends Serializable> Optional<T> findOptionalData(final Name name,
+    private <T extends Serializable> Optional<T> findOptionalData(final Name<SimpleLabel> name,
                                                                   final InternetClassType internetClassType) {
         final Set<T> set = resourceRecordRepository.findData(name,
                                                              internetClassType);
