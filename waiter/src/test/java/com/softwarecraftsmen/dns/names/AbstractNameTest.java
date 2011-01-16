@@ -6,6 +6,8 @@ package com.softwarecraftsmen.dns.names;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.Empty;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.simpleLabel;
 import static com.softwarecraftsmen.dns.names.HostName.hostName;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasToString;
 import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
@@ -18,8 +20,6 @@ import com.softwarecraftsmen.dns.labels.SimpleLabel;
 import com.softwarecraftsmen.dns.names.AbstractName.EmptyLabelsAreNotAllowedInNamesExceptAtTheEnd;
 import com.softwarecraftsmen.dns.names.AbstractName.NameIncludingPeriodsAndFinalEmptyLabelCanNotBeMoreThan255Characters;
 import com.softwarecraftsmen.dns.names.AbstractName.TooManyLabelsException;
-
-import static org.hamcrest.Matchers.*;
 
 public class AbstractNameTest {
     private final static class AbstractNameForTest extends AbstractName {

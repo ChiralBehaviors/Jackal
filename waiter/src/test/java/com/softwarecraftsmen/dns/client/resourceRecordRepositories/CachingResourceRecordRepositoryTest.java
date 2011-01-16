@@ -13,6 +13,7 @@ import static com.softwarecraftsmen.dns.resourceRecords.InternetProtocolVersion4
 import static java.lang.Thread.sleep;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
 
 import java.net.Inet4Address;
@@ -25,8 +26,6 @@ import org.junit.Test;
 import com.softwarecraftsmen.dns.SerializableInternetProtocolAddress;
 import com.softwarecraftsmen.dns.client.resolvers.MockDnsResolver;
 import com.softwarecraftsmen.dns.names.HostName;
-
-import static org.hamcrest.Matchers.*;
 
 public class CachingResourceRecordRepositoryTest {
     private static final HostName CanonicalName = hostName("www.l.google.com");

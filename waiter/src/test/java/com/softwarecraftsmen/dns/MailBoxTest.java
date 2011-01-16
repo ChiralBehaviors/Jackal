@@ -3,12 +3,11 @@
  */
 package com.softwarecraftsmen.dns;
 
-
-import static org.hamcrest.Matchers.*;
 import static com.softwarecraftsmen.dns.MailBox.mailBox;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.Empty;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.simpleLabel;
 import static com.softwarecraftsmen.dns.names.DomainName.domainName;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 import java.util.List;

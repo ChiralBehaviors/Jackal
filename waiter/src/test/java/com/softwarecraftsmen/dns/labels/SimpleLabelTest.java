@@ -8,6 +8,9 @@ import static com.softwarecraftsmen.dns.labels.ServiceProtocolLabel.TCP;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.Empty;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.simpleLabel;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
@@ -15,8 +18,6 @@ import org.junit.Test;
 import com.softwarecraftsmen.dns.NonAsciiAndControlCharactersAreNotSupportedInCharacterStringsException;
 import com.softwarecraftsmen.dns.labels.SimpleLabel.LabelsCanNotBeLongerThan63CharactersException;
 import com.softwarecraftsmen.dns.labels.SimpleLabel.LabelsCanNotContainPeriodsException;
-
-import static org.hamcrest.Matchers.*;
 
 public class SimpleLabelTest {
     @Test

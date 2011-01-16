@@ -3,6 +3,8 @@
  */
 package com.softwarecraftsmen.dns.client.resolvers;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
@@ -15,8 +17,6 @@ import com.softwarecraftsmen.dns.messaging.Question;
 import com.softwarecraftsmen.dns.messaging.serializer.Serializable;
 import com.softwarecraftsmen.dns.names.Name;
 import com.softwarecraftsmen.dns.resourceRecords.ResourceRecord;
-
-import static org.hamcrest.Matchers.*;
 
 public final class MockDnsResolver implements DnsResolver {
     private List<ResourceRecord<? extends Name, ? extends Serializable>> resourceRecords;

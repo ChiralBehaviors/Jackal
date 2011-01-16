@@ -8,6 +8,7 @@ import static com.softwarecraftsmen.dns.SerializableInternetProtocolAddress.seri
 import static com.softwarecraftsmen.dns.names.HostName.hostName;
 import static com.softwarecraftsmen.dns.resourceRecords.CanonicalNameResourceRecord.canonicalNameResourceRecord;
 import static com.softwarecraftsmen.dns.resourceRecords.InternetProtocolVersion4AddressResourceRecord.internetProtocolVersion4AddressResourceRecord;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
 
 import java.net.Inet4Address;
@@ -20,8 +21,6 @@ import com.softwarecraftsmen.dns.SerializableInternetProtocolAddress;
 import com.softwarecraftsmen.dns.client.resolvers.MockDnsResolver;
 import com.softwarecraftsmen.dns.messaging.InternetClassType;
 import com.softwarecraftsmen.dns.names.HostName;
-
-import static org.hamcrest.Matchers.*;
 
 public class NonCachingResourceRecordRepositoryTest {
     private static final HostName CanonicalName = hostName("www.l.google.com");

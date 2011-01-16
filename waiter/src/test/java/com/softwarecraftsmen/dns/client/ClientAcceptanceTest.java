@@ -9,6 +9,7 @@ import static com.softwarecraftsmen.dns.names.DomainName.domainName;
 import static com.softwarecraftsmen.dns.names.HostName.hostName;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
 import java.net.Inet4Address;
@@ -29,8 +30,6 @@ import com.softwarecraftsmen.dns.client.resourceRecordRepositories.NonCachingRes
 import com.softwarecraftsmen.dns.labels.ServiceLabel;
 import com.softwarecraftsmen.dns.names.DomainName;
 import com.softwarecraftsmen.dns.names.HostName;
-
-import static org.hamcrest.Matchers.*;
 
 public class ClientAcceptanceTest {
     private static final HostName GoogleAliasHostName = hostName("www.google.com");

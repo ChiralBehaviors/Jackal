@@ -6,10 +6,12 @@ package com.softwarecraftsmen.dns;
 import static com.softwarecraftsmen.dns.MailExchange.mailExchange;
 import static com.softwarecraftsmen.dns.names.HostName.hostName;
 import static com.softwarecraftsmen.unsignedIntegers.Unsigned16BitInteger.unsigned16BitInteger;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
-import static org.hamcrest.Matchers.*;
 
 public class MailExchangeTest {
     @Test

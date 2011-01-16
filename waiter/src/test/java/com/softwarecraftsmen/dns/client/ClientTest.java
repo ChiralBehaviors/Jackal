@@ -22,6 +22,7 @@ import static com.softwarecraftsmen.dns.resourceRecords.TextResourceRecord.textR
 import static com.softwarecraftsmen.unsignedIntegers.Unsigned16BitInteger.unsigned16BitInteger;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
 import java.net.Inet4Address;
@@ -44,8 +45,6 @@ import com.softwarecraftsmen.dns.names.DomainName;
 import com.softwarecraftsmen.dns.names.HostName;
 import com.softwarecraftsmen.dns.names.PointerName;
 import com.softwarecraftsmen.dns.names.ServiceName;
-
-import static org.hamcrest.Matchers.*;
 
 public class ClientTest {
     private static final HostName CanonicalName = hostName("www.l.google.com");

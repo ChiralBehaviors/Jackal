@@ -6,6 +6,7 @@ package com.softwarecraftsmen.dns.names;
 import static com.softwarecraftsmen.ConvenientArrayList.toList;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.Empty;
 import static com.softwarecraftsmen.dns.labels.SimpleLabel.simpleLabel;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 import java.util.List;
@@ -15,8 +16,6 @@ import org.junit.Test;
 import com.softwarecraftsmen.ConvenientArrayList;
 import com.softwarecraftsmen.dns.labels.Label;
 import com.softwarecraftsmen.dns.messaging.GenericName;
-
-import static org.hamcrest.Matchers.*;
 
 public class GenericNameTest {
     @Test

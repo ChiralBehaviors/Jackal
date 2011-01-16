@@ -8,14 +8,15 @@ import static com.softwarecraftsmen.dns.names.HostName.hostName;
 import static com.softwarecraftsmen.unsignedIntegers.Unsigned16BitInteger.Four;
 import static com.softwarecraftsmen.unsignedIntegers.Unsigned16BitInteger.One;
 import static com.softwarecraftsmen.unsignedIntegers.Unsigned16BitInteger.Zero;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 
 import com.softwarecraftsmen.dns.names.HostName;
 import com.softwarecraftsmen.unsignedIntegers.Unsigned16BitInteger;
-
-import static org.hamcrest.Matchers.*;
 
 public class ServiceInformationTest {
     private static final Unsigned16BitInteger somePort = One;
