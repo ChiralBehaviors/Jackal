@@ -1,0 +1,64 @@
+Multi-thread:-
+Check cache
+	UDP / TCP Sending thread
+	UDP Receiving thread
+Thread to notify recepients that queries are done
+Encache
+
+Cache - hmmm how...
+	By question -> tie to responses (most queries are either 'A' or 'Any' or reverse look ups (PTR requests)
+	Cache eviction -> queue of records to evict by time-to-live; thread goes and regularly cleans up cache OR removed on first use (easier and neater)
+	Also, consider double querying - make a second query against the name server authority, using A records in additional records?
+	Record response time precisely
+	Cap time-to-live at, say, three hours
+	Do an A question => look in cache, see if exact match(es) [several IP addresses possible].If not, look for CNAME with same owner. Then look in cache for exact match(es)
+
+Test serialization of all ResourceRecords (including Length of RDATA)
+
+Higher level API:-
+	Find SOA (default if no records for name)
+	Find All (basis of all caching approaches)
+	Cascaded find (www.google.com, google.com, com, .)
+	Find All IPAddresses given one IPAddress (find PTR, find A or find CNAME)
+	Fina authoritative name server
+
+Add record types:-
+	NULL (contains any data)
+	WKS
+	RP
+
+Support internationalised domain names
+Support EDNS for >512 byte UDP
+
+Domain Changes
+Add a class to combine Weight and Priority to implement the rules in RFC2782 for SRV records to order servers; look at MailExchagne for ideas.
+Consider comparable on all Names... look at mail exchange for ideas.
+Implement AbstractResourceRecord.serialize
+Implement Serialize in all Names...
+Add all common IANA service names as a partial enumerated list to ServiceClassLabel.
+
+Confirm
+SOA is domain name or host name owner?
+Negative caching
+SRV code works for real (do an acceptance test)!
+
+BIND Like Support
+Use /etc/hosts (or Windows equivalent) to speed up searches
+Use /etc/resolv.conf domain and search lines?
+Use $LOCALDOMAINNAME (is it that) environment variable
+Listen to changes to /etc/hosts or /etc/resolv.conf
+Multiple retries
+
+ZeroConf
+Support using UDP on 5353 for Bonjour / ZeroConf
+Support running as a local broadcast responding DNS server for ZeroConf
+(need a way of registering broadcast records, and making sure these are re-broadcast; effectively, becomes a mini-DNS server authoritatitive for the current host)
+Multicast host is 224.0.0.251.
+Each computer stores its own DNS records for A, MX, PTR, CNAME, etc
+Listens for requests; if for A record for our hostname/domainname (eg myhost.local.) then responds
+
+Case Insensitivity
+Comparision of Name?
+
+Google Code
+Wiki examples of the major APIs
