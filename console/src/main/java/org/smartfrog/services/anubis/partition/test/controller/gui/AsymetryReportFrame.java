@@ -17,7 +17,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 For more information: www.smartfrog.org
 
  */
-package org.smartfrog.services.anubis.partition.test.mainconsole;
+package org.smartfrog.services.anubis.partition.test.controller.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -35,6 +35,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.WindowConstants;
 
+import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class AsymetryReportFrame extends JFrame {
@@ -44,12 +45,12 @@ public class AsymetryReportFrame extends JFrame {
      */
     private static final long serialVersionUID = 1L;
     private JTable asymetryTable = null;
-    private Controller controller;
+    private GraphicController controller;
     private JPanel jPanel1 = new JPanel();
     private JScrollPane jScrollPane = new JScrollPane(jPanel1);
     private int magic;
 
-    public AsymetryReportFrame(Controller controller,
+    public AsymetryReportFrame(GraphicController controller,
                                Map<Identity, NodeData> nodes, Identity id)
                                                                           throws HeadlessException {
         this.controller = controller;

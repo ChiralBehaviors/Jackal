@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.smartfrog.services.anubis.locator.util.SetMap;
-import org.smartfrog.services.anubis.partition.test.mainconsole.NodeData;
+import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.View;
 

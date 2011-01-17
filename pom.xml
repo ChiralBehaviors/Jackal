@@ -9,6 +9,7 @@
 	<description>Umbrella project for Anubis related tech</description>
 	<modules>
 		<module>framework</module>
+        <module>console</module>
 		<module>satellite</module>
 		<module>slp</module>
 		<module>load-test</module>

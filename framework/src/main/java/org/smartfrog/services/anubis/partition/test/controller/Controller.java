@@ -17,7 +17,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 For more information: www.smartfrog.org
 
  */
-package org.smartfrog.services.anubis.partition.test.mainconsole;
+package org.smartfrog.services.anubis.partition.test.controller;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -38,14 +38,13 @@ import com.hellblazer.anubis.annotations.Deployed;
 
 public class Controller {
     private MulticastAddress address;
-    private AsymetryReportFrame asymetryReport = null;
     private long checkPeriod = 1000;
     private long expirePeriod = 10000;
     private BitView globalView = new BitView();
     protected long heartbeatInterval = 1000;
     protected long heartbeatTimeout = 2000;
-    private Identity identity;
-    private Map<Identity, NodeData> nodes = new HashMap<Identity, NodeData>();
+    protected Identity identity;
+    protected Map<Identity, NodeData> nodes = new HashMap<Identity, NodeData>();
     private Snoop snoop;
     private TimerTask task;
     private Timer timer;
@@ -169,10 +168,6 @@ public class Controller {
         return str;
     }
 
-    public synchronized void removeAsymetryReport() {
-        asymetryReport = null;
-    }
-
     public void removeNode(NodeData nodeData) {
     }
 
@@ -218,14 +213,6 @@ public class Controller {
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
             iter.next().setTiming(interval, timeout);
-        }
-    }
-
-    public synchronized void showAsymetryReport() {
-        if (asymetryReport == null) {
-            asymetryReport = new AsymetryReportFrame(this, nodes, identity);
-        } else {
-            asymetryReport.recalculate(nodes);
         }
     }
 

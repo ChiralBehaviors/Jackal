@@ -27,9 +27,9 @@ import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
-import org.smartfrog.services.anubis.partition.test.mainconsole.Controller;
-import org.smartfrog.services.anubis.partition.test.mainconsole.ControllerConfiguration;
-import org.smartfrog.services.anubis.partition.test.mainconsole.NodeData;
+import org.smartfrog.services.anubis.partition.test.controller.Controller;
+import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
+import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;

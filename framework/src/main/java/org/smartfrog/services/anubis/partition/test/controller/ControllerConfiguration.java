@@ -1,4 +1,4 @@
-package org.smartfrog.services.anubis.partition.test.mainconsole;
+package org.smartfrog.services.anubis.partition.test.controller;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
