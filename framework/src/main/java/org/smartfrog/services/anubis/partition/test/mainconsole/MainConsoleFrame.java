@@ -59,7 +59,7 @@ public class MainConsoleFrame extends JFrame {
     private BorderLayout borderLayout2 = new BorderLayout();
     private BorderLayout borderLayout3 = new BorderLayout();
     private BorderLayout borderLayout4 = new BorderLayout();
-    private Controller controller;
+    private GraphicController controller;
     private FlowLayout flowLayout1 = new FlowLayout();
     private JButton jButton1 = new JButton();
     private JButton jButton2 = new JButton();
@@ -76,7 +76,7 @@ public class MainConsoleFrame extends JFrame {
     @SuppressWarnings("unused")
     private TitledBorder titledBorder1;
 
-    public MainConsoleFrame(Controller controller) {
+    public MainConsoleFrame(GraphicController controller) {
         try {
             this.controller = controller;
             setVisible(false);
@@ -99,7 +99,7 @@ public class MainConsoleFrame extends JFrame {
         }
     }
 
-    public void addNode(NodeData nodeData) {
+    public void addNode(GraphicNodeData nodeData) {
         jPanel2.add(nodeData.getButton());
         jPanel2.updateUI();
     }
@@ -125,7 +125,7 @@ public class MainConsoleFrame extends JFrame {
         jTextField2.setText("[" + errorStr + "]" + jTextField2.getText());
     }
 
-    public void removeNode(NodeData nodeData) {
+    public void removeNode(GraphicNodeData nodeData) {
         jPanel2.remove(nodeData.getButton());
         jPanel2.updateUI();
     }

@@ -30,7 +30,6 @@ public class ControllerConfiguration {
         controller.setIdentity(partitionIdentity());
         controller.setHeartbeatTimeout(heartbeatTimeout());
         controller.setHeartbeatInterval(heartbeatInterval());
-        controller.setHeadless(headless());
         return controller;
     }
 
@@ -82,10 +81,6 @@ public class ControllerConfiguration {
 
     protected Epoch epoch() {
         return new Epoch();
-    }
-
-    protected boolean headless() {
-        return false;
     }
 
     protected int magic() {

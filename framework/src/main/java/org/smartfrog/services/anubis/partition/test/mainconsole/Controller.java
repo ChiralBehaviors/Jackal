@@ -24,18 +24,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
-import org.smartfrog.services.anubis.Anubis;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
-import org.smartfrog.services.anubis.partition.test.colors.ColorAllocator;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
@@ -43,17 +37,13 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import com.hellblazer.anubis.annotations.Deployed;
 
 public class Controller {
-
     private MulticastAddress address;
     private AsymetryReportFrame asymetryReport = null;
     private long checkPeriod = 1000;
-    protected ColorAllocator colorAllocator = new ColorAllocator();
-    private MainConsoleFrame consoleFrame;
     private long expirePeriod = 10000;
     private BitView globalView = new BitView();
-    private long heartbeatInterval = 1000;
-    protected boolean headless = false;
-    private long heartbeatTimeout = 2000;
+    protected long heartbeatInterval = 1000;
+    protected long heartbeatTimeout = 2000;
     private Identity identity;
     private Map<Identity, NodeData> nodes = new HashMap<Identity, NodeData>();
     private Snoop snoop;
@@ -68,32 +58,6 @@ public class Controller {
                 node.setIgnoringAsymPartition(globalView, partition);
             }
         }
-    }
-
-    public synchronized void asymPartition(String nodeStr) {
-
-        StringTokenizer tokens = new StringTokenizer(nodeStr);
-        BitView partition = new BitView();
-        String token = "";
-
-        if (tokens.countTokens() == 0) {
-            return;
-        }
-
-        try {
-            while (tokens.hasMoreTokens()) {
-                token = tokens.nextToken();
-                partition.add(new Integer(token).intValue());
-            }
-        } catch (NumberFormatException ex) {
-            if (headless) {
-                throw new IllegalArgumentException(ex);
-            }
-            consoleFrame.inputError("Unknown: " + token);
-            return;
-        }
-
-        asymPartition(partition);
     }
 
     public synchronized void checkNodes() {
@@ -134,9 +98,10 @@ public class Controller {
             return;
         }
         nodeData = createNode(hb);
-        if (!headless) {
-            consoleFrame.addNode(nodeData);
-        }
+        addNode(hb, nodeData);
+    }
+
+    protected void addNode(HeartbeatMsg hb, NodeData nodeData) {
         nodes.put(hb.getSender(), nodeData);
         globalView.add(hb.getSender());
     }
@@ -146,22 +111,11 @@ public class Controller {
     }
 
     @Deployed
-    public synchronized void deploy() throws IOException,
-                                     ClassNotFoundException,
-                                     InstantiationException,
-                                     IllegalAccessException,
-                                     UnsupportedLookAndFeelException {
-        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+    public synchronized void deploy() throws IOException {
         timer.schedule(getTask(), checkPeriod, checkPeriod);
         snoop = new Snoop(
                           "Anubis: Partition Manager Test Console heartbeat snoop",
                           address, identity, this);
-        if (!headless) {
-            consoleFrame = new MainConsoleFrame(this);
-            consoleFrame.setTitle("Partition Manager Test Controller - "
-                                  + Anubis.version);
-            consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
-        }
         snoop.start();
     }
 
@@ -182,16 +136,10 @@ public class Controller {
     }
 
     public long getHeartbeatInterval() {
-        if (!headless) {
-            heartbeatInterval = consoleFrame.getInterval();
-        }
         return heartbeatInterval;
     }
 
     public long getHeartbeatTimeout() {
-        if (!headless) {
-            heartbeatTimeout = consoleFrame.getTimeout();
-        }
         return heartbeatTimeout;
     }
 
@@ -211,10 +159,6 @@ public class Controller {
         return timer;
     }
 
-    public boolean isHeadless() {
-        return headless;
-    }
-
     public String nodesToString() {
         String str = "Nodes Table\n===========\n";
         Iterator<Map.Entry<Identity, NodeData>> iter = nodes.entrySet().iterator();
@@ -230,9 +174,6 @@ public class Controller {
     }
 
     public void removeNode(NodeData nodeData) {
-        if (!headless) {
-            consoleFrame.removeNode(nodeData);
-        }
     }
 
     public void setAddress(MulticastAddress address) {
@@ -245,10 +186,6 @@ public class Controller {
 
     public synchronized void setExpirePeriod(long expirePeriod) {
         this.expirePeriod = expirePeriod;
-    }
-
-    public void setHeadless(boolean headless) {
-        this.headless = headless;
     }
 
     public void setHeartbeatInterval(long heartbeatInterval) {
@@ -292,44 +229,11 @@ public class Controller {
         }
     }
 
-    @PostConstruct
-    public synchronized void start() {
-        if (!headless) {
-            consoleFrame.setVisible(true);
-        }
-    }
-
     public synchronized void symPartition(BitView partition) {
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
             iter.next().setIgnoringSymPartition(globalView, partition);
         }
-    }
-
-    public synchronized void symPartition(String nodeStr) {
-
-        StringTokenizer tokens = new StringTokenizer(nodeStr);
-        BitView partition = new BitView();
-        String token = "";
-
-        if (tokens.countTokens() == 0) {
-            return;
-        }
-
-        try {
-            while (tokens.hasMoreTokens()) {
-                token = tokens.nextToken();
-                partition.add(new Integer(token).intValue());
-            }
-        } catch (NumberFormatException ex) {
-            if (headless) {
-                throw new IllegalArgumentException(ex);
-            }
-            consoleFrame.inputError("Unknown: " + token);
-            return;
-        }
-
-        symPartition(partition);
     }
 
     @PreDestroy
@@ -339,12 +243,6 @@ public class Controller {
             task.cancel();
         }
         clearNodes();
-        if (!headless) {
-            consoleFrame.setVisible(false);
-            consoleFrame.dispose();
-            consoleFrame = null;
-            System.exit(0);
-        }
     }
 
     private synchronized TimerTask getTask() {
@@ -360,7 +258,7 @@ public class Controller {
 
     protected NodeData createNode(HeartbeatMsg hb) {
         NodeData nodeData;
-        nodeData = new NodeData(hb, colorAllocator, this, headless);
+        nodeData = new NodeData(hb, this);
         return nodeData;
     }
 }

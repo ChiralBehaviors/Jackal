@@ -19,13 +19,10 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.test.mainconsole;
 
-import java.awt.Color;
-import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
-import org.smartfrog.services.anubis.partition.test.colors.ColorAllocator;
 import org.smartfrog.services.anubis.partition.test.msg.GetStatsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.GetThreadsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.IgnoringMsg;
@@ -41,58 +38,30 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class NodeData {
-    private NodeButton button;
-    private ColorAllocator colorAllocator;
-    private TestConnection connection = null;
-    private Controller controller = null;
-    private long heartbeatInterval = 0;
-    private View ignoring = new BitView();
-    private long lastHB = 0;
-    private long lastReceive = 0;
-    private int leader = -1;
+    protected TestConnection connection = null;
+    protected Controller controller = null;
+    protected long heartbeatInterval = 0;
+    protected View ignoring = new BitView();
+    protected long lastHB = 0;
+    protected long lastReceive = 0;
+    protected int leader = -1;
     private static final Logger log = Logger.getLogger(NodeData.class.getCanonicalName());
-    private Identity nodeId = null;
-    private final boolean headless;
-    private View partition = new BitView();
-    private Color partitionColor = Color.lightGray;
-    private StatsMsg stats = null;
-    private ThreadsMsg threadsInfo = null;
-    private long threadsInfoExpire = 0;
-    private long timeout = 0;
-    private View view = null;
-    private NodeFrame window = null;
+    protected Identity nodeId = null;
+    protected View partition = new BitView();
+    protected StatsMsg stats = null;
+    protected ThreadsMsg threadsInfo = null;
+    protected long threadsInfoExpire = 0;
+    protected long timeout = 0;
+    protected View view = null;
 
-    public NodeData(HeartbeatMsg hb, ColorAllocator colorAllocator,
-                    Controller controller, boolean headless) {
+    public NodeData(HeartbeatMsg hb, Controller controller) {
         this.controller = controller;
-        this.colorAllocator = colorAllocator;
-        this.headless = headless;
         lastReceive = System.currentTimeMillis();
         lastHB = hb.getTime();
         view = hb.getView();
         nodeId = hb.getSender();
         ConnectionAddress address = hb.getTestInterface();
-        if (!headless) {
-            button = new NodeButton(nodeId, this);
-            button.setOpaque(true);
-            button.setBackground(Color.lightGray);
-            button.setForeground(Color.black);
-        }
         connectIfAvailable(address);
-        //System.out.print("Heartbeat from new Node" + nodeId.id + " stamped " + lastHB);
-        //long timeNow = System.currentTimeMillis();
-        //if( timeNow < (lastHB-100) )
-        //    System.out.println(" <=== this is " + (lastHB - timeNow) + "ms old!!!!!");
-        //else
-        //    System.out.println("");
-    }
-
-    public void closeWindow() {
-        if (window != null) {
-            window.setVisible(false);
-            window.dispose();
-            window = null;
-        }
     }
 
     public void deliverObject(Object obj) {
@@ -116,16 +85,8 @@ public class NodeData {
     }
 
     public void disconnected() {
-        connection = null;
-        if (!headless) {
-            colorAllocator.deallocate(partition, this);
-            partitionColor = Color.lightGray;
-        }
+        connection = null; 
         update();
-    }
-
-    public NodeButton getButton() {
-        return button;
     }
 
     public Identity getIdentity() {
@@ -185,50 +146,11 @@ public class NodeData {
         return lastReceive < oldTime;
     }
 
-    public void openWindow() {
-        if (window == null) {
-            window = new NodeFrame(this);
-            window.setTitle("Node: " + nodeId.toString());
-            update();
-            window.setVisible(true);
-        }
-    }
-
     public void removeNode() {
         if (connection != null && connection.connected()) {
             connection.shutdown();
         }
-        closeWindow();
         controller.removeNode(this);
-    }
-
-    public void setIgnoring(String str) {
-        StringTokenizer nodes = new StringTokenizer(str);
-        BitView ignoring = new BitView();
-        String token = "";
-
-        if (nodes.countTokens() == 0) {
-            setIgnoring(new BitView());
-            return;
-        }
-
-        try {
-            while (nodes.hasMoreTokens()) {
-                token = nodes.nextToken();
-                // System.out.println("Looking at token: " + token);
-                Integer inode = new Integer(token);
-                int node = inode.intValue();
-                if (node < 0) {
-                    throw new NumberFormatException();
-                }
-                ignoring.add(node);
-            }
-        } catch (NumberFormatException ex) {
-            window.inputError("Not a correct node value: " + token);
-            return;
-        }
-
-        setIgnoring(ignoring);
     }
 
     public void setIgnoring(View ignoring) {
@@ -294,21 +216,9 @@ public class NodeData {
         return new BitView().copyView(partition).merge(ignoring);
     }
 
-    private void update() {
+    protected void update() {
         if (threadsInfoExpire < System.currentTimeMillis()) {
             threadsInfo = null;
-        }
-        if (!headless) {
-            if (window != null) {
-                window.update(partition, view, leader, ignoring,
-                              heartbeatInterval, timeout, stats, threadsInfo);
-            }
-            button.setBackground(partitionColor);
-            if (partition.isStable()) {
-                button.setForeground(Color.black);
-            } else {
-                button.setForeground(Color.yellow);
-            }
         }
     }
 
@@ -327,16 +237,6 @@ public class NodeData {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(String.format("Updating node view %s with partition view %s, leader %s",
                                      nodeId, partition, leader));
-        }
-
-        /**
-         * if partition has changed membership deallocate current color and then
-         * reallocate new color
-         */
-        if (!headless
-            && !this.partition.toBitSet().equals(partition.toBitSet())) {
-            colorAllocator.deallocate(this.partition, this);
-            partitionColor = colorAllocator.allocate(partition, this);
         }
         this.partition = partition;
         this.leader = leader;

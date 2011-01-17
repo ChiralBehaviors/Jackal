@@ -32,9 +32,9 @@ public class NodeButton extends JButton {
      * 
      */
     private static final long serialVersionUID = 1L;
-    private NodeData nodeData;
+    private GraphicNodeData nodeData;
 
-    public NodeButton(Identity id, NodeData nodeData) {
+    public NodeButton(Identity id, GraphicNodeData nodeData) {
         this.nodeData = nodeData;
         setText(Integer.toString(id.id));
         setForeground(Color.black);

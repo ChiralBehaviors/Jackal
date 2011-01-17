@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
-import org.smartfrog.services.anubis.partition.test.colors.ColorAllocator;
 import org.smartfrog.services.anubis.partition.test.mainconsole.Controller;
 import org.smartfrog.services.anubis.partition.test.mainconsole.ControllerConfiguration;
 import org.smartfrog.services.anubis.partition.test.mainconsole.NodeData;
@@ -48,9 +47,10 @@ import com.hellblazer.anubis.annotations.DeployedPostProcessor;
  */
 public class PartitionTest extends TestCase {
     static class MyController extends Controller {
+
         @Override
         protected NodeData createNode(HeartbeatMsg hb) {
-            return new Node(hb, colorAllocator, this, headless);
+            return new Node(hb, this);
         }
 
     }
@@ -66,11 +66,6 @@ public class PartitionTest extends TestCase {
         @Override
         protected Controller constructController() {
             return new MyController();
-        }
-
-        @Override
-        protected boolean headless() {
-            return true;
         }
 
         @Override
@@ -96,9 +91,8 @@ public class PartitionTest extends TestCase {
         boolean interrupted = false;
         boolean barrierBroken = false;
 
-        public Node(HeartbeatMsg hb, ColorAllocator colorAllocator,
-                    Controller controller, boolean headless) {
-            super(hb, colorAllocator, controller, headless);
+        public Node(HeartbeatMsg hb, Controller controller) {
+            super(hb, controller);
         }
 
         @Override

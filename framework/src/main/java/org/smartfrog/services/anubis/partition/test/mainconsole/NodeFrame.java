@@ -60,9 +60,9 @@ public class NodeFrame extends JFrame {
 
     private JTextArea jTextArea1 = new JTextArea();
     private JTextField jTextField1 = new JTextField();
-    private NodeData nodeData;
+    private GraphicNodeData nodeData;
 
-    public NodeFrame(NodeData nodeData) {
+    public NodeFrame(GraphicNodeData nodeData) {
         this.nodeData = nodeData;
         try {
             jbInit();
