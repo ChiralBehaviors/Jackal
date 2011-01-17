@@ -8,7 +8,6 @@
 	<name>Umbrella project for Anubis related tech</name>
 	<description>Umbrella project for Anubis related tech</description>
 	<modules>
-		<module>waiter</module>
 		<module>framework</module>
 		<module>slp</module>
 	</modules>
