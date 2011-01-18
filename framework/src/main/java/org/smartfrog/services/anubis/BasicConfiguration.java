@@ -10,7 +10,7 @@ import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
-import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
+import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
@@ -45,17 +45,8 @@ public class BasicConfiguration {
         return connectionSet;
     }
 
-    @Bean
-    public ConnectionAddress contactAddress() throws UnknownHostException {
-        return new ConnectionAddress(contactHost(), contactPort());
-    }
-
     public InetAddress contactHost() throws UnknownHostException {
         return InetAddress.getLocalHost();
-    }
-
-    public int contactPort() {
-        return 0;
     }
 
     @Bean
@@ -68,66 +59,6 @@ public class BasicConfiguration {
         return new Epoch();
     }
 
-    public int getMagic() {
-        return 12345;
-    }
-
-    public boolean getTestable() {
-        return true;
-    }
-
-    @Bean
-    public HeartbeatCommsFactory heartbeatCommsFactory() {
-        HeartbeatCommsFactory factory = new HeartbeatCommsFactory();
-        factory.setWireSecurity(wireSecurity());
-        return factory;
-    }
-
-    @Bean
-    public MulticastAddress heartbeatGroup() throws UnknownHostException {
-        return new MulticastAddress(heartbeatGroupMulticastAddress(),
-                                    heartbeatGroupPort(), heartbeatGroupTTL());
-    }
-
-    public InetAddress heartbeatGroupMulticastAddress()
-                                                       throws UnknownHostException {
-        return InetAddress.getByName("233.1.2.30");
-    }
-
-    public int heartbeatGroupPort() {
-        return 1966;
-    }
-
-    public int heartbeatGroupTTL() {
-        return 1;
-    }
-
-    public long heartbeatInterval() {
-        return 2000L;
-    }
-
-    @Bean
-    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        return new TimedProtocolFactory();
-    }
-
-    public long heartbeatTimeout() {
-        return 3L;
-    }
-
-    @Bean
-    public IOConnectionServerFactory ioConnectionServerFactory()
-                                                                throws Exception {
-        MessageNioServerFactory factory = new MessageNioServerFactory();
-        factory.setWireSecurity(wireSecurity());
-        return factory;
-    }
-
-    @Bean
-    public LeaderProtocolFactory leaderProtocolFactory() {
-        return new LeaderProtocolFactory();
-    }
-
     @Bean
     public AnubisLocator locator() {
         Locator locator = new Locator();
@@ -136,14 +67,6 @@ public class BasicConfiguration {
         locator.setHeartbeatInterval(heartbeatInterval());
         locator.setHeartbeatTimeout(heartbeatTimeout());
         return locator;
-    }
-
-    public int node() {
-        try {
-            return Identity.getProcessUniqueId();
-        } catch (UnknownHostException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     @Bean
@@ -185,5 +108,76 @@ public class BasicConfiguration {
     @Bean
     public WireSecurity wireSecurity() {
         return new NoSecurityImpl();
+    }
+
+    protected ConnectionAddress contactAddress() throws UnknownHostException {
+        return new ConnectionAddress(contactHost(), contactPort());
+    }
+
+    protected int contactPort() {
+        return 0;
+    }
+
+    protected int getMagic() {
+        return 12345;
+    }
+
+    protected boolean getTestable() {
+        return true;
+    }
+
+    protected MulticastHeartbeatCommsFactory heartbeatCommsFactory() {
+        MulticastHeartbeatCommsFactory factory = new MulticastHeartbeatCommsFactory();
+        factory.setWireSecurity(wireSecurity());
+        return factory;
+    }
+
+    protected MulticastAddress heartbeatGroup() throws UnknownHostException {
+        return new MulticastAddress(heartbeatGroupMulticastAddress(),
+                                    heartbeatGroupPort(), heartbeatGroupTTL());
+    }
+
+    protected InetAddress heartbeatGroupMulticastAddress()
+                                                          throws UnknownHostException {
+        return InetAddress.getByName("233.1.2.30");
+    }
+
+    protected int heartbeatGroupPort() {
+        return 1966;
+    }
+
+    protected int heartbeatGroupTTL() {
+        return 1;
+    }
+
+    protected long heartbeatInterval() {
+        return 2000L;
+    }
+
+    protected HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        return new TimedProtocolFactory();
+    }
+
+    protected long heartbeatTimeout() {
+        return 3L;
+    }
+
+    protected IOConnectionServerFactory ioConnectionServerFactory()
+                                                                   throws Exception {
+        MessageNioServerFactory factory = new MessageNioServerFactory();
+        factory.setWireSecurity(wireSecurity());
+        return factory;
+    }
+
+    protected LeaderProtocolFactory leaderProtocolFactory() {
+        return new LeaderProtocolFactory();
+    }
+
+    protected int node() {
+        try {
+            return Identity.getProcessUniqueId();
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

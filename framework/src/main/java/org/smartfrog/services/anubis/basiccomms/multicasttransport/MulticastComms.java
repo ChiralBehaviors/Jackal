@@ -48,7 +48,7 @@ public class MulticastComms extends Thread {
      * network will be capable of handling this size so its transfer semantics
      * are atomic (no fragmentation in the network).
      */
-    static public final int MAX_SEG_SIZE = 1500; // Eathernet standard MTU
+    static public final int MAX_SEG_SIZE = 1500; // Ethernet standard MTU
 
     private MulticastAddress groupAddress;
     private byte[] inBytes;

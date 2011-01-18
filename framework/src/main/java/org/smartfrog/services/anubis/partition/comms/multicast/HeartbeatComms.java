@@ -20,9 +20,6 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,8 +44,6 @@ public class HeartbeatComms extends MulticastComms implements
     private View ignoring = null;
     private Object ingnoringMonitor = new Object();
     private Identity me = null;
-
-    private Map<Class<?>, MessageHandler> messageHandlers = Collections.synchronizedMap(new HashMap<Class<?>, MessageHandler>());
     private WireSecurity wireSecurity = null;
 
     /**
@@ -104,19 +99,11 @@ public class HeartbeatComms extends MulticastComms implements
         setPriority(Thread.MAX_PRIORITY);
     }
 
-    public void deregisterMessageHandler(Class<?> type) {
-        messageHandlers.remove(type);
-    }
-
     @Override
     public boolean isIgnoring(Identity id) {
         synchronized (ingnoringMonitor) {
             return ignoring != null && ignoring.contains(id);
         }
-    }
-
-    public void registerMessageHandler(Class<?> type, MessageHandler handler) {
-        messageHandlers.put(type, handler);
     }
 
     /**
@@ -200,18 +187,6 @@ public class HeartbeatComms extends MulticastComms implements
         connectionSet.receiveHeartbeat(hb);
     }
 
-    private void handleNonHeartbeat(Object msg) {
-        MessageHandler handler = messageHandlers.get(msg.getClass());
-        if (handler != null) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Delivering message: " + msg);
-            }
-            handler.deliverObject(msg);
-        } else {
-            log.severe(me + " No handler found for message: " + msg);
-        }
-    }
-
     @Override
     protected void deliverBytes(byte[] bytes) {
         Object obj = null;
@@ -222,9 +197,7 @@ public class HeartbeatComms extends MulticastComms implements
         } catch (WireSecurityException ex) {
 
             log.severe(me
-                       + "multicast transport encountered security violation receiving message - ignoring the message "); // +
-                                                                                                                          // this.getSender()
-
+                       + "multicast transport encountered security violation receiving message - ignoring the message ");
             return;
 
         } catch (Exception ex) {
@@ -236,7 +209,9 @@ public class HeartbeatComms extends MulticastComms implements
         if (obj instanceof Heartbeat) {
             handleHeartbeat((Heartbeat) obj);
         } else {
-            handleNonHeartbeat(obj);
+            if (log.isLoggable(Level.INFO)) {
+                log.info(me + "Error reading wire form message - ignoring");
+            }
         }
     }
 

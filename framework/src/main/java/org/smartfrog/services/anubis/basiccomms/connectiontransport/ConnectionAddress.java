@@ -86,23 +86,6 @@ public class ConnectionAddress implements Cloneable, WireSizes {
         return new InetSocketAddress(ipaddress, port);
     }
 
-    @Override
-    public Object clone() {
-        try {
-            ConnectionAddress addr = (ConnectionAddress) super.clone();
-            return addr;
-        } catch (CloneNotSupportedException ex) {
-            return null;
-        }
-    }
-
-    /**
-     * test to see if this is a null address
-     */
-    public boolean isNullAddress() {
-        return ipaddress == null;
-    }
-
     /**
      * toString for debug purposes
      */
@@ -118,5 +101,34 @@ public class ConnectionAddress implements Cloneable, WireSizes {
             bytes.put(idx + addressIdx + i, address[i]);
         }
         bytes.putInt(idx + portIdx, port);
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                 + ((ipaddress == null) ? 0 : ipaddress.hashCode());
+        result = prime * result + port;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ConnectionAddress other = (ConnectionAddress) obj;
+        if (ipaddress == null) {
+            if (other.ipaddress != null)
+                return false;
+        } else if (!ipaddress.equals(other.ipaddress))
+            return false;
+        if (port != other.port)
+            return false;
+        return true;
     }
 }
