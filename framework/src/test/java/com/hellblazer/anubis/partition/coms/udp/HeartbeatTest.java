@@ -25,7 +25,6 @@ import java.net.InetSocketAddress;
 import junit.framework.TestCase;
 
 import org.mockito.ArgumentCaptor;
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
@@ -50,7 +49,7 @@ public class HeartbeatTest extends TestCase {
                                             new RunImmediate(), sa);
         try {
             heartbeat.addMember(sa);
-            ConnectionAddress ca = new ConnectionAddress(sa);
+            InetSocketAddress ca = new InetSocketAddress(sa.getAddress(), sa.getPort());
             HeartbeatMsg msg = new HeartbeatMsg(id, ca);
             msg.setCandidate(id);
             msg.setIsPreferred(false);

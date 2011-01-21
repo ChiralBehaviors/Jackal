@@ -20,11 +20,11 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.wire;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import junit.framework.TestCase;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -48,11 +48,11 @@ public class Test extends TestCase {
             int loops = 100000;
 
             Identity outId = new Identity(123456, 1, 654321);
-            ConnectionAddress outAddress = new ConnectionAddress(
+            InetSocketAddress outAddress = new InetSocketAddress(
                                                                  InetAddress.getLocalHost(),
                                                                  1066);
 
-            ConnectionAddress outTestIF = new ConnectionAddress(
+            InetSocketAddress outTestIF = new InetSocketAddress(
                                                                 InetAddress.getLocalHost(),
                                                                 2020);
 
@@ -124,11 +124,11 @@ public class Test extends TestCase {
     public void testIt3() {
         try {
             Identity outId = new Identity(123456, 1, 654321);
-            ConnectionAddress outAddress = new ConnectionAddress(
+            InetSocketAddress outAddress = new InetSocketAddress(
                                                                  InetAddress.getLocalHost(),
                                                                  1066);
 
-            ConnectionAddress outTestIF = new ConnectionAddress(
+            InetSocketAddress outTestIF = new InetSocketAddress(
                                                                 InetAddress.getLocalHost(),
                                                                 2020);
 

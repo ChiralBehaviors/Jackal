@@ -51,7 +51,7 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
      * will result in a connection comms object in the closed state: connected()
      * returns false.
      */
-    public ConnectionComms(String threadName, ConnectionAddress address) {
+    public ConnectionComms(String threadName, InetSocketAddress address) {
 
         super(threadName);
 
@@ -66,8 +66,7 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
 
             connection = SocketChannel.open();
             connection.configureBlocking(true);
-            connection.connect(new InetSocketAddress(address.ipaddress,
-                                                     address.port));
+            connection.connect(address);
             connection.socket().setTcpNoDelay(true);
             connection.socket().setKeepAlive(true);
             open = true;

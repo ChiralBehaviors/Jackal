@@ -20,13 +20,13 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionFactory;
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
@@ -81,11 +81,11 @@ public class MessageConnectionServer extends ConnectionServer implements
      * @throws Exception
      *             - if problems with creating the server socket
      */
-    public MessageConnectionServer(ConnectionAddress address, Identity id,
+    public MessageConnectionServer(InetSocketAddress address, Identity id,
                                    ConnectionSet cs, WireSecurity sec)
                                                                       throws IOException {
         super("Anubis: Connection Server (node " + id.id + ")",
-              address.ipaddress.getHostName(), address.port);
+              address.getAddress().getHostName(), address.getPort());
         me = id;
         connectionSet = cs;
         wireSecurity = sec;

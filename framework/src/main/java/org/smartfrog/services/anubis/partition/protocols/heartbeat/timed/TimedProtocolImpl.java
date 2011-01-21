@@ -19,10 +19,10 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.timed;
 
+import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -36,7 +36,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      * 
      */
     private static final long serialVersionUID = 1L;
-    private ConnectionAddress address = null;
+    private InetSocketAddress address = null;
     private ViewListener listener = null;
     private Identity sender = null;
     private boolean terminated = false;
@@ -72,7 +72,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
     }
 
     @Override
-    public ConnectionAddress getSenderAddress() {
+    public InetSocketAddress getSenderAddress() {
         return address;
     }
 

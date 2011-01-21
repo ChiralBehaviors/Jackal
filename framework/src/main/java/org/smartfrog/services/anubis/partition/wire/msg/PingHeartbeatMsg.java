@@ -20,9 +20,9 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
@@ -50,7 +50,7 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
      * @param identity
      * @param address
      */
-    public PingHeartbeatMsg(Identity identity, ConnectionAddress address) {
+    public PingHeartbeatMsg(Identity identity, InetSocketAddress address) {
         super(identity, address);
         pings = new NodeIdSet();
     }

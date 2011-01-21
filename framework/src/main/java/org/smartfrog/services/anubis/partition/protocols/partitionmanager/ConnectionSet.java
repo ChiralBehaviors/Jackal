@@ -21,6 +21,7 @@ package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,7 +34,6 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
@@ -82,7 +82,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
     private boolean changeInViews = false;
 
-    private ConnectionAddress connectionAddress;
+    private InetSocketAddress connectionAddress;
     private Map<Identity, Connection> connections = new HashMap<Identity, Connection>();
     private IOConnectionServer connectionServer = null;
     private BitView connectionView = new BitView();
@@ -459,7 +459,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return connections.get(id);
     }
 
-    public ConnectionAddress getConnectionAddress() {
+    public InetSocketAddress getConnectionAddress() {
         return connectionAddress;
     }
 
@@ -536,7 +536,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         Identity node = new Identity(identity.magic, id, 0);
         Connection con = connections.get(node);
 
-        return con.getSenderAddress().ipaddress;
+        return con.getSenderAddress().getAddress();
     }
 
     public PartitionProtocol getPartitionProtocol() {
@@ -749,7 +749,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         msgConDelayedDelete.clear();
     }
 
-    public void setConnectionAddress(ConnectionAddress connectionAddress) {
+    public void setConnectionAddress(InetSocketAddress connectionAddress) {
         this.connectionAddress = connectionAddress;
     }
 

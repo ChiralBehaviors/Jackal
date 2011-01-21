@@ -19,11 +19,11 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionComms;
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.comms.IOConnection;
@@ -56,7 +56,7 @@ public class MessageConnectionImpl extends ConnectionComms implements
     private WireSecurity wireSecurity = null;
 
     public MessageConnectionImpl(Identity id, ConnectionSet cs,
-                                 ConnectionAddress address,
+                                 InetSocketAddress address,
                                  MessageConnection mc, WireSecurity sec) {
         super("Anubis: Connection Comms (node " + id.id + ", remote node "
               + mc.getSender().id + ")", address);

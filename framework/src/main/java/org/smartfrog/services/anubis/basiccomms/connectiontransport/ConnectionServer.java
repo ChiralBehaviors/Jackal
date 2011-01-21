@@ -97,12 +97,12 @@ public class ConnectionServer extends Thread {
     /**
      * return the address being used by this ConnectionServer.
      */
-    public ConnectionAddress getAddress() {
+    public InetSocketAddress getAddress() {
 
         if (listenSocket == null) {
             return null;
         }
-        return new ConnectionAddress(listenSocket.socket().getInetAddress(),
+        return new InetSocketAddress(listenSocket.socket().getInetAddress(),
                                      listenSocket.socket().getLocalPort());
     }
 

@@ -19,10 +19,10 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.ping;
 
+import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -60,7 +60,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
      * 
      */
     private static final long serialVersionUID = 1L;
-    private ConnectionAddress address = null;
+    private InetSocketAddress address = null;
     private boolean expected = true;
     private ViewListener listener = null;
     private static final Logger log = Logger.getLogger(PingProtocolImpl.class.getCanonicalName());
@@ -110,7 +110,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     }
 
     @Override
-    public ConnectionAddress getSenderAddress() {
+    public InetSocketAddress getSenderAddress() {
         return address;
     }
 

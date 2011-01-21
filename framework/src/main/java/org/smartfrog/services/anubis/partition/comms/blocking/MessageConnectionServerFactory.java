@@ -20,8 +20,8 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.blocking;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
@@ -38,7 +38,7 @@ public class MessageConnectionServerFactory implements
     }
 
     @Override
-    public IOConnectionServer create(ConnectionAddress address, Identity id,
+    public IOConnectionServer create(InetSocketAddress address, Identity id,
                                      ConnectionSet cs) throws IOException {
         return new MessageConnectionServer(address, id, cs, wireSecurity);
     }

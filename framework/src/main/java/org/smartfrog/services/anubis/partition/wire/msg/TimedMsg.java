@@ -20,9 +20,10 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import org.smartfrog.services.anubis.basiccomms.connectiontransport.AddressMarshalling;
 import org.smartfrog.services.anubis.partition.protocols.Sender;
 import org.smartfrog.services.anubis.partition.protocols.Timed;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -38,12 +39,12 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     static final private int identitySz = Identity.identityWireSz;
     static final private int identityIdx = orderIdx + orderSz;
     static final private int addressIdx = identityIdx + identitySz;
-    static final private int addressSz = ConnectionAddress.connectionAddressWireSz;
+    static final private int addressSz = AddressMarshalling.connectionAddressWireSz;
     public static final int TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
     public static final int TIMED_MSG_WIRE_TYPE = 200;
 
     private boolean addressUnmarshalled = false;
-    protected ConnectionAddress address = null;
+    protected InetSocketAddress address = null;
     protected long order = -1;
 
     protected Identity sender;
@@ -79,7 +80,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
      * @param addr
      *            - sender address
      */
-    public TimedMsg(Identity id, ConnectionAddress addr) {
+    public TimedMsg(Identity id, InetSocketAddress addr) {
         sender = id;
         address = addr;
         addressUnmarshalled = true;
@@ -109,7 +110,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     }
 
     @Override
-    public ConnectionAddress getSenderAddress() {
+    public InetSocketAddress getSenderAddress() {
         if (!addressUnmarshalled) {
             addressFromWire();
         }
@@ -159,7 +160,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     private void addressFromWire() {
         addressUnmarshalled = true;
-        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
+        address = AddressMarshalling.readWireForm(wireForm, addressIdx);
     }
 
     @Override
@@ -183,7 +184,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
         time = wireForm.getLong(timeIdx);
         order = wireForm.getLong(orderIdx);
         sender = Identity.readWireForm(wireForm, identityIdx);
-        address = ConnectionAddress.readWireForm(wireForm, addressIdx);
+        address = AddressMarshalling.readWireForm(wireForm, addressIdx);
     }
 
     /**
@@ -197,9 +198,9 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
         wireForm.putLong(orderIdx, order);
         sender.writeWireForm(wireForm, identityIdx);
         if (address != null) {
-            address.writeWireForm(wireForm, addressIdx);
+            AddressMarshalling.writeWireForm(address, wireForm, addressIdx);
         } else {
-            ConnectionAddress.writeNullWireForm(wireForm, addressIdx);
+            AddressMarshalling.writeNullWireForm(wireForm, addressIdx);
         }
     }
 

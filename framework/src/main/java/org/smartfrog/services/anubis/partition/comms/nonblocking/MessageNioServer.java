@@ -34,7 +34,6 @@ import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
@@ -43,7 +42,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class MessageNioServer extends Thread implements IOConnectionServer {
-    private ConnectionAddress connAdd = null;
+    private InetSocketAddress connAdd = null;
     private ConnectionSet connectionSet = null;
     private RxQueue connectQueue = null;
     private Vector<SelectionKey> deadKeys = null;
@@ -71,7 +70,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
      * RX deserialized jobs and deliver them to the anubis layers. By default
      * there is only 1 decoupling thread.
      */
-    public MessageNioServer(ConnectionAddress address, Identity id,
+    public MessageNioServer(InetSocketAddress address, Identity id,
                             ConnectionSet cs, WireSecurity sec) {
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
@@ -92,14 +91,14 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         try {
             server = ServerSocketChannel.open();
             server.configureBlocking(false);
-            server.socket().bind(new InetSocketAddress(address.ipaddress,
-                                                       address.port));
-            connAdd = new ConnectionAddress(server.socket().getInetAddress(),
+            server.socket().bind(new InetSocketAddress(address.getAddress(),
+                                                       address.getPort()));
+            connAdd = new InetSocketAddress(server.socket().getInetAddress(),
                                             server.socket().getLocalPort());
             if (asyncLog.isLoggable(Level.FINER)) {
                 asyncLog.finer("MNS: server bound to: "
-                               + connAdd.ipaddress.getHostName() + " - "
-                               + connAdd.port);
+                               + connAdd.getAddress().getHostName() + " - "
+                               + connAdd.getPort());
             }
             selector = Selector.open();
             server.register(selector, SelectionKey.OP_ACCEPT);
@@ -140,7 +139,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     }
 
     @Override
-    public ConnectionAddress getAddress() {
+    public InetSocketAddress getAddress() {
         if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: getAddress is called");
         }
@@ -154,7 +153,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
         buffer.append(open ? ".. running ....." : ".. terminated ..");
         if (connAdd != null) {
-            buffer.append(" address = ").append(connAdd.ipaddress.getHostName()).append(":").append(connAdd.port);
+            buffer.append(" address = ").append(connAdd.getAddress().getHostName()).append(":").append(connAdd.getPort());
         }
         return buffer.toString();
     }
@@ -199,12 +198,13 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         }
     }
 
-    public void startConnection(ConnectionAddress conAd, Identity me,
+    public void startConnection(InetSocketAddress conAd, Identity me,
                                 ConnectionSet cs, MessageConnection con,
                                 NonBlockingConnectionInitiator mci) {
         if (asyncLog.isLoggable(Level.FINER)) {
             asyncLog.finer("MNS: startConnection is called: "
-                           + conAd.ipaddress.getHostName() + " - " + conAd.port);
+                           + conAd.getAddress().getHostName() + " - "
+                           + conAd.getPort());
         }
         MessageNioHandler mnh = null;
         try {
@@ -214,8 +214,8 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                         writePendingKeys, assignRxQueue(),
                                         wireSecurity);
             mnh.init(me, cs, con, mci);
-            sendingChannel.connect(new InetSocketAddress(conAd.ipaddress,
-                                                         conAd.port));
+            sendingChannel.connect(new InetSocketAddress(conAd.getAddress(),
+                                                         conAd.getPort()));
             if (asyncLog.isLoggable(Level.FINER)) {
                 asyncLog.finer("MNS: Trying to register a new channel");
             }

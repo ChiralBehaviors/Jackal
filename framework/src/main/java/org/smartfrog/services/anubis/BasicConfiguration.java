@@ -1,10 +1,10 @@
 package org.smartfrog.services.anubis;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Timer;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.Locator;
@@ -110,8 +110,8 @@ public class BasicConfiguration {
         return new NoSecurityImpl();
     }
 
-    protected ConnectionAddress contactAddress() throws UnknownHostException {
-        return new ConnectionAddress(contactHost(), contactPort());
+    protected InetSocketAddress contactAddress() throws UnknownHostException {
+        return new InetSocketAddress(contactHost(), contactPort());
     }
 
     protected int contactPort() {

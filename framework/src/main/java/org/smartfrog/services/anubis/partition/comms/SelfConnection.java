@@ -19,7 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import java.net.InetSocketAddress;
+
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 import org.smartfrog.services.anubis.partition.protocols.leader.CandidateImpl;
@@ -35,11 +36,11 @@ public class SelfConnection extends BitView implements Connection,
      * 
      */
     private static final long serialVersionUID = 1L;
-    private ConnectionAddress address = null;
+    private InetSocketAddress address = null;
     private Candidate candidate = null;
     private Identity me = null;
 
-    public SelfConnection(Identity id, View v, ConnectionAddress addr,
+    public SelfConnection(Identity id, View v, InetSocketAddress addr,
                           boolean preferred) {
         me = id;
         address = addr;
@@ -77,7 +78,7 @@ public class SelfConnection extends BitView implements Connection,
     }
 
     @Override
-    public ConnectionAddress getSenderAddress() {
+    public InetSocketAddress getSenderAddress() {
         return address;
     }
 

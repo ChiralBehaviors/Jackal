@@ -19,7 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import java.net.InetSocketAddress;
+
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
@@ -36,7 +37,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
  */
 
 public interface HeartbeatProtocolFactory {
-    public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address);
+    public HeartbeatMsg createMsg(Identity identity, InetSocketAddress address);
 
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
                                             HeartbeatMsg sharedHeartbeat);

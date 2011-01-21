@@ -19,10 +19,10 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat;
 
+import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
@@ -123,7 +123,7 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
     }
 
     @Override
-    public ConnectionAddress getSenderAddress() {
+    public InetSocketAddress getSenderAddress() {
         return heartbeatProtocol.getSenderAddress();
     }
 

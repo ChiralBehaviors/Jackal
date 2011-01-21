@@ -20,9 +20,10 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import org.smartfrog.services.anubis.basiccomms.connectiontransport.AddressMarshalling;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -43,7 +44,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
                                               + viewTimeStampSz;
     static final private int isPreferredSz = booleanSz;
     static final private int candidateIdx = isPreferredIdx + isPreferredSz;
-    static final private int candidateSz = ConnectionAddress.connectionAddressWireSz;
+    static final private int candidateSz = AddressMarshalling.connectionAddressWireSz;
     static final private int msgLinksNumberIdx = candidateIdx + candidateSz;
     static final private int msgLinksNumberSz = longSz;
     static final private int msgLinksIdx = msgLinksNumberIdx + msgLinksNumberSz;
@@ -52,7 +53,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     static final private int stableSz = booleanSz;
     static final private int viewIdx = stableIdx + stableSz;
     static final private int viewSz = MAX_BIT_SIZE + intSz;
-    static final private int testInterfaceSz = ConnectionAddress.connectionAddressWireSz;
+    static final private int testInterfaceSz = AddressMarshalling.connectionAddressWireSz;
     static final private int testInterfaceIdx = viewIdx + viewSz;
     public static final int HEARTBEAT_MSG_WIRE_SIZE = testInterfaceIdx
                                                       + testInterfaceSz;
@@ -69,7 +70,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     private boolean preferred = false;
     private boolean stable = true;
 
-    private ConnectionAddress testInterface = null;
+    private InetSocketAddress testInterface = null;
     private boolean testInterfaceUnmarshalled;
 
     private NodeIdSet view = null;
@@ -110,7 +111,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      * @param identity
      * @param address
      */
-    public HeartbeatMsg(Identity identity, ConnectionAddress address) {
+    public HeartbeatMsg(Identity identity, InetSocketAddress address) {
         super(identity, address);
         candidateUnmarshalled = true;
         viewUnmarshalled = true;
@@ -158,7 +159,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         return HEARTBEAT_MSG_WIRE_SIZE;
     }
 
-    public ConnectionAddress getTestInterface() {
+    public InetSocketAddress getTestInterface() {
         if (!testInterfaceUnmarshalled) {
             testInterfaceFromWire();
         }
@@ -202,7 +203,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      * 
      * @param address
      */
-    public void setTestInterface(ConnectionAddress address) {
+    public void setTestInterface(InetSocketAddress address) {
         testInterface = address;
     }
 
@@ -254,7 +255,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
     private void testInterfaceFromWire() {
         testInterfaceUnmarshalled = true;
-        testInterface = ConnectionAddress.readWireForm(wireForm,
+        testInterface = AddressMarshalling.readWireForm(wireForm,
                                                        testInterfaceIdx);
     }
 
@@ -338,9 +339,9 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
          * Test interface (if there is one)
          */
         if (testInterface == null) {
-            ConnectionAddress.writeNullWireForm(wireForm, testInterfaceIdx);
+            AddressMarshalling.writeNullWireForm(wireForm, testInterfaceIdx);
         } else {
-            testInterface.writeWireForm(wireForm, testInterfaceIdx);
+            AddressMarshalling.writeWireForm(testInterface, wireForm, testInterfaceIdx);
         }
     }
 

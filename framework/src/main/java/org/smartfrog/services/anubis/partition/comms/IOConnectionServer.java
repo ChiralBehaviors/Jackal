@@ -19,12 +19,13 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import java.net.InetSocketAddress;
+
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public interface IOConnectionServer {
-    public ConnectionAddress getAddress();
+    public InetSocketAddress getAddress();
 
     public String getThreadStatusString();
 

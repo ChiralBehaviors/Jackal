@@ -19,10 +19,10 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.test.controller;
 
+import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionComms;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.Wire;
@@ -34,7 +34,7 @@ public class TestConnection extends ConnectionComms {
     private static final Logger log = Logger.getLogger(TestConnection.class.getCanonicalName());
     private NodeData nodeData;
 
-    public TestConnection(ConnectionAddress address, NodeData nodeData,
+    public TestConnection(InetSocketAddress address, NodeData nodeData,
                           Identity id, Controller controller) {
         super(
               "Anubis: Partition Manager Test Console - connection (remote node "

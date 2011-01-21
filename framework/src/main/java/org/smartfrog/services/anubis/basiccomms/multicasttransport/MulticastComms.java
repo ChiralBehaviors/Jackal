@@ -22,11 +22,10 @@ package org.smartfrog.services.anubis.basiccomms.multicasttransport;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 
 /**
  * MulticastComms is an abstract class representing an end point for multicast
@@ -82,12 +81,12 @@ public class MulticastComms extends Thread {
      * define the network interface to use. group etc.
      */
     public MulticastComms(String threadName, MulticastAddress address,
-                          ConnectionAddress inf) throws IOException {
+                          InetSocketAddress inf) throws IOException {
 
         super(threadName);
         groupAddress = address;
         sock = new MulticastSocket(address.port);
-        sock.setInterface(inf.ipaddress);
+        sock.setInterface(inf.getAddress());
         sock.joinGroup(address.ipaddress);
         sock.setTimeToLive(address.timeToLive);
         terminating = false;

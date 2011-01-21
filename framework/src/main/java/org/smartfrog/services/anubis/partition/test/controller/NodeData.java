@@ -19,10 +19,10 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.test.controller;
 
+import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.test.msg.GetStatsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.GetThreadsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.IgnoringMsg;
@@ -60,8 +60,7 @@ public class NodeData {
         lastHB = hb.getTime();
         view = hb.getView();
         nodeId = hb.getSender();
-        ConnectionAddress address = hb.getTestInterface();
-        connectIfAvailable(address);
+        connectIfAvailable(hb.getTestInterface());
     }
 
     public void deliverObject(Object obj) {
@@ -195,7 +194,7 @@ public class NodeData {
         connection.sendObject(new SetTimingMsg(interval, timeout));
     }
 
-    private void connectIfAvailable(ConnectionAddress address) {
+    private void connectIfAvailable(InetSocketAddress address) {
 
         if (address == null) {
             return;

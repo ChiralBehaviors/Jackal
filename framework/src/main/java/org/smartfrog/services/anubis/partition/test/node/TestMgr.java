@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.test.node;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,7 +29,6 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.Status;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
@@ -43,7 +43,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 public class TestMgr {
 
     private static final long STATSRATE = 5;
-    private ConnectionAddress connectionAddress;
+    private InetSocketAddress connectionAddress;
     private Set<TestConnection> connections = new HashSet<TestConnection>();
     private TestServer connectionServer = null;
     private ConnectionSet connectionSet = null;
@@ -70,11 +70,11 @@ public class TestMgr {
         }
     }
 
-    public ConnectionAddress getAddress() {
+    public InetSocketAddress getAddress() {
         return connectionServer.getAddress();
     }
 
-    public ConnectionAddress getConnectionAddress() {
+    public InetSocketAddress getConnectionAddress() {
         return connectionAddress;
     }
 
@@ -115,7 +115,7 @@ public class TestMgr {
         updateStats(time);
     }
 
-    public void setConnectionAddress(ConnectionAddress connectionAddress) {
+    public void setConnectionAddress(InetSocketAddress connectionAddress) {
         this.connectionAddress = connectionAddress;
     }
 
@@ -162,8 +162,9 @@ public class TestMgr {
                             + identity.id + ") - connection server";
         connectionServer = new TestServer(
                                           this,
-                                          connectionAddress.ipaddress.getHostName(),
-                                          connectionAddress.port, threadName);
+                                          connectionAddress.getAddress().getHostName(),
+                                          connectionAddress.getPort(),
+                                          threadName);
 
         if (!testable) {
             terminate();

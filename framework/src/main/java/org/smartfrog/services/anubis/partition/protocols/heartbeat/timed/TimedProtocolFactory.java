@@ -19,7 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.timed;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress;
+import java.net.InetSocketAddress;
+
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -29,7 +30,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class TimedProtocolFactory implements HeartbeatProtocolFactory {
     @Override
-    public HeartbeatMsg createMsg(Identity identity, ConnectionAddress address) {
+    public HeartbeatMsg createMsg(Identity identity, InetSocketAddress address) {
         return new HeartbeatMsg(identity, address);
     }
 

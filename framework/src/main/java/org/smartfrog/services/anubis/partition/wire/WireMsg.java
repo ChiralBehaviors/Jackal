@@ -102,7 +102,6 @@ public class WireMsg implements WireSizes {
         wireForm = ByteBuffer.wrap(bytes);
 
         writeWireForm();
-
         return bytes;
     }
 
