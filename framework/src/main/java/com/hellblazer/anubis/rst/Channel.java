@@ -33,19 +33,11 @@ public interface Channel {
     void addChild(Channel child);
 
     /**
-     * Answer the color of the channel. The channel is colored RED if the
-     * channel is down, or the associated node is colored RED.
+     * Answer the id of the node associated with the chanel.
      * 
-     * @return the color of the channel
+     * @return the id of the associated node
      */
-    Color getColor();
-
-    /**
-     * Answer the index of the node associated with the chanel.
-     * 
-     * @return the index of the associated node
-     */
-    int getIndex();
+    int getId();
 
     /**
      * Answer the index of member the node associated with the channel believes
@@ -56,17 +48,31 @@ public interface Channel {
     int getRoot();
 
     /**
+     * @return true if the channel or the node associated with the channel is
+     *         colored green
+     */
+    boolean isGreen();
+
+    /**
+     * @return true if the channel or the node associated with the channel is
+     *         colored red
+     */
+    boolean isRed();
+
+    /**
+     * Mark the color of this channel to green
+     */
+    void markGreen();
+
+    /**
+     * Mark the color of this channel to red
+     */
+    void markRed();
+
+    /**
      * Remove the child from the node associated with the channel
      * 
      * @param child
      */
     void removeChild(Channel child);
-
-    /**
-     * Set the color of the channel
-     * 
-     * @param color
-     *            - the color of the channel
-     */
-    void setColor(Color color);
 }

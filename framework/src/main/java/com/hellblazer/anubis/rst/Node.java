@@ -16,9 +16,6 @@
  */
 package com.hellblazer.anubis.rst;
 
-import static com.hellblazer.anubis.rst.Color.GREEN;
-import static com.hellblazer.anubis.rst.Color.RED;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,10 +65,6 @@ public class Node {
         }
     }
 
-    public Color getColor() {
-        return myChannel.getColor();
-    }
-
     void addChild(Channel child) {
         children.add(child);
     }
@@ -87,11 +80,11 @@ public class Node {
      * @return true if there was a change in state
      */
     boolean colorRed() {
-        if (getColor() == RED) {
+        if (myChannel.isRed()) {
             return false;
         }
-        if (parent.getColor() == RED || members.get(parent.getIndex()) == null) {
-            myChannel.setColor(RED);
+        if (parent.isRed() || members.get(parent.getId()) == null) {
+            myChannel.markRed();
             return true;
         }
         return false;
@@ -105,13 +98,13 @@ public class Node {
      * @return true if there was a change in state
      */
     boolean disownParent() {
-        if (getColor() == GREEN) {
+        if (myChannel.isGreen()) {
             return false;
         }
         if (!children.isEmpty()) {
             return false;
         }
-        myChannel.setColor(GREEN);
+        myChannel.markGreen();
         parent = myChannel;
         root = myChannel;
         return true;
@@ -119,20 +112,20 @@ public class Node {
 
     /**
      * This action merges the nodes in to the tree. If the node detects a member
-     * that has a higher root value, the node marks that value as the root and
-     * the member as the parent.
+     * that has a higher root id, the node marks that value as the root and the
+     * member as the parent.
      * 
      * @return true if there was a change in state.
      */
     boolean merge() {
-        if (getColor() == RED) {
+        if (myChannel.isRed()) {
             return false;
         }
         Channel currentParent = parent;
         Channel currentRoot = root;
         for (Channel channel : members.values()) {
-            if (channel.getColor() == GREEN) {
-                if (currentRoot.getIndex() < channel.getRoot()) {
+            if (channel.isGreen()) {
+                if (currentRoot.getId() < channel.getRoot()) {
                     currentRoot = members.get(channel.getRoot());
                     currentParent = channel;
                 }
