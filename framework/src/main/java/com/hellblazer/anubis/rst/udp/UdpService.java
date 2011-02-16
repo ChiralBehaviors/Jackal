@@ -17,17 +17,20 @@
 package com.hellblazer.anubis.rst.udp;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.Selector;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,6 +46,7 @@ import com.hellblazer.anubis.util.HexDump;
  * 
  */
 public class UdpService {
+    private static final int SELECT_TIMEOUT = 1000;
     private static final Logger log = Logger.getLogger(UdpService.class.getCanonicalName());
     /**
      * MAX_SEG_SIZE is a default maximum packet size. This may be small, but any
@@ -50,28 +54,56 @@ public class UdpService {
      * are atomic (no fragmentation in the network).
      */
     public static final int MAX_SEG_SIZE = 1500; // Ethernet standard MTU
-    private final DatagramSocket socket;
+
+    private static String toHex(byte[] data, int offset, int length) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+        PrintStream stream = new PrintStream(baos);
+        HexDump.hexdump(stream, data, offset, length);
+        stream.close();
+        return baos.toString();
+    }
+
+    private final DatagramChannel socketChannel;
     private final InetSocketAddress address;
     private final AtomicBoolean running = new AtomicBoolean();
-    private Thread serviceThread;
+    private final Executor serviceEvaluator = Executors.newSingleThreadExecutor();
     private final Node self;
+
     private final Map<Integer, MemberChannel> members;
 
     public UdpService(int id, InetSocketAddress myAddress,
                       Map<Integer, InetSocketAddress> M) throws SocketException {
         super();
         address = myAddress;
-        socket = new DatagramSocket(address);
+        DatagramSocket socket = new DatagramSocket();
         socket.setReceiveBufferSize(MAX_SEG_SIZE);
         socket.setReuseAddress(true);
         socket.setSendBufferSize(MAX_SEG_SIZE);
-        LocalChannel myChannel = new LocalChannel(id, this, address);
+        socketChannel = socket.getChannel();
         members = getMembership(M);
         HashMap<Integer, Channel> channels = new HashMap<Integer, Channel>();
         channels.putAll(members);
+        LocalChannel myChannel = new LocalChannel(id, this, address);
         channels.put(id, myChannel);
         self = new Node(myChannel, channels);
-        myChannel.setSelf(self);
+    }
+
+    /**
+     * Start the service
+     */
+    public void start() {
+        if (running.compareAndSet(false, true)) {
+            serviceEvaluator.execute(service());
+        }
+    }
+
+    /**
+     * Stop the service
+     */
+    public void stop() {
+        if (running.compareAndSet(true, false)) {
+
+        }
     }
 
     Map<Integer, MemberChannel> getMembership(Map<Integer, InetSocketAddress> members) {
@@ -84,30 +116,39 @@ public class UdpService {
         return channels;
     }
 
-    public void start() {
-        if (running.compareAndSet(false, true)) {
-            serviceThread = new Thread(service(), "RST datagram service");
-            serviceThread.run();
-        }
+    /**
+     * Send the datagram across the net
+     * 
+     * @param packet
+     * @throws IOException
+     */
+    void send(DatagramPacket packet) throws IOException {
+        // socket.send(packet);
     }
 
-    public void stop() {
-        if (running.compareAndSet(true, false)) {
-            serviceThread.interrupt();
-        }
-    }
-
+    /**
+     * The service loop.
+     * 
+     * @return the Runnable action implementing the service loop.
+     */
     private Runnable service() {
         return new Runnable() {
             @Override
             public void run() {
-                byte[] inBytes = new byte[MAX_SEG_SIZE];
-                final DatagramPacket packet = new DatagramPacket(inBytes,
-                                                                 MAX_SEG_SIZE);
+                Selector selector;
+                try {
+                    socketChannel.connect(address);
+                    selector = Selector.open();
+                } catch (Throwable e) {
+                    log.log(Level.SEVERE, "Cannot connect", e);
+                    running.set(false);
+                    return;
+                }
                 while (running.get()) {
                     try {
+                        selector.select(SELECT_TIMEOUT);
+                        /*
                         Arrays.fill(inBytes, (byte) 0);
-                        socket.receive(packet);
                         if (log.isLoggable(Level.FINEST)) {
                             final StringBuilder sb = new StringBuilder();
                             sb.append(new SimpleDateFormat().format(new Date()));
@@ -123,7 +164,8 @@ public class UdpService {
                             log.fine("Received packet from: "
                                      + packet.getSocketAddress());
                         }
-                        serviceInbound(packet);
+                        serviceInbound(ByteBuffer.wrap(packet.getData()));
+                        */
                     } catch (Throwable e) {
                         if (log.isLoggable(Level.WARNING)) {
                             log.log(Level.WARNING,
@@ -136,16 +178,7 @@ public class UdpService {
         };
     }
 
-    private void serviceInbound(DatagramPacket packet) {
-        // TODO Auto-generated method stub
-
-    }
-
-    private static String toHex(byte[] data, int offset, int length) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-        PrintStream stream = new PrintStream(baos);
-        HexDump.hexdump(stream, data, offset, length);
-        stream.close();
-        return baos.toString();
+    private void serviceInbound(ByteBuffer buffer) {
+        self.evaluateProtocol();
     }
 }

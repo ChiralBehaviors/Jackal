@@ -20,7 +20,6 @@ import java.net.InetSocketAddress;
 
 import com.hellblazer.anubis.rst.Channel;
 import com.hellblazer.anubis.rst.ThisChannel;
-import com.hellblazer.anubis.rst.Node;
 
 /**
  * Implementation of the channel representing the local node.
@@ -29,15 +28,10 @@ import com.hellblazer.anubis.rst.Node;
  * 
  */
 public class LocalChannel extends AbstractChannel implements ThisChannel {
-    private Node self;
 
     public LocalChannel(int index, UdpService udpService,
                         InetSocketAddress memberAddress) {
         super(index, udpService, memberAddress);
-    }
-
-    void setSelf(Node n) {
-        self = n;
     }
 
     @Override

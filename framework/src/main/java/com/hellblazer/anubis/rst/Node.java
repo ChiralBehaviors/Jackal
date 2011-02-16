@@ -20,7 +20,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The logic for maintaining a node in a rooted spanning tree. The protocol is
@@ -37,7 +40,9 @@ public class Node {
     private final ThisChannel myChannel;
     private Channel parent;
     private int root;
-    private ReentrantLock stateLock = new ReentrantLock();
+    private final Executor protocolEvaluator = Executors.newSingleThreadExecutor();
+    private final AtomicBoolean running = new AtomicBoolean();
+    private final Semaphore stateModified = new Semaphore(0);
 
     public Node(ThisChannel channel, Map<Integer, Channel> M) {
         myChannel = channel;
@@ -47,30 +52,51 @@ public class Node {
         root = myChannel.getId();
     }
 
-    public void addChild(Channel child) throws InterruptedException {
+    /**
+     * Add the channel as a child of the receiver in the tree
+     * 
+     * @param child
+     *            - the channel to add as a child
+     */
+    public void addChild(Channel child) {
         children.add(child);
     }
 
     /**
-     * Evaluate the protocol.
-     * 
-     * @throws InterruptedException
+     * Evaluate all the actions of the protocol, ensuring that the protocol will
+     * be evaluated at least once. The evaluation of the protocol is
+     * asynchronously processed in a seperate thread.
      */
-    public void evaluate() throws InterruptedException {
-        final ReentrantLock myLock = stateLock;
-        myLock.lockInterruptibly();
-        try {
-            boolean modified = true;
-            while (modified) {
-                modified |= colorRed() | disownParent() | merge();
-            }
-        } finally {
-            myLock.unlock();
+    public void evaluateProtocol() {
+        stateModified.release();
+    }
+
+    /**
+     * Remove the channel from the list of receiver's children
+     * 
+     * @param child
+     *            - the channel to remove
+     */
+    public void removeChild(Channel child) {
+        children.remove(child);
+    }
+
+    /**
+     * Start the protocol evaluation thread
+     */
+    public void start() {
+        if (running.compareAndSet(false, true)) {
+            protocolEvaluator.execute(evaluationAction());
         }
     }
 
-    public void removeChild(Channel child) throws InterruptedException {
-        children.remove(child);
+    /**
+     * Stop the protocol evaluation thread
+     */
+    public void stop() {
+        if (running.compareAndSet(false, true)) {
+
+        }
     }
 
     /**
@@ -110,6 +136,39 @@ public class Node {
         root = myChannel.getId();
         myChannel.setRoot(root);
         return true;
+    }
+
+    /**
+     * Evaluate the protocol's actions. All actions will be evaluated at least
+     * once. The protocol will continue to evaluate until there are no state
+     * changes resulting from the evaluation.
+     */
+    void evaluate() {
+        boolean modified = true;
+        while (modified) {
+            modified |= colorRed() | disownParent() | merge();
+        }
+    }
+
+    /**
+     * The runnable which implements the protocol evaluation loop
+     * 
+     * @return the Runnable protocol evaluation action
+     */
+    Runnable evaluationAction() {
+        return new Runnable() {
+            @Override
+            public void run() {
+                while (running.get()) {
+                    try {
+                        stateModified.acquire();
+                        evaluate();
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                }
+            }
+        };
     }
 
     /**
