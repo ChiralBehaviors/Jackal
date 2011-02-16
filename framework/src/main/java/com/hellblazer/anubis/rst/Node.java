@@ -16,10 +16,10 @@
  */
 package com.hellblazer.anubis.rst;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -32,19 +32,23 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  */
 public class Node {
-    private final List<Channel> children = new ArrayList<Channel>();
+    private final List<Channel> children = new CopyOnWriteArrayList<Channel>();
     private final Map<Integer, Channel> members;
-    private final Channel myChannel;
+    private final ThisChannel myChannel;
     private Channel parent;
-    private Channel root;
+    private int root;
     private ReentrantLock stateLock = new ReentrantLock();
 
-    public Node(Channel channel, Map<Integer, Channel> M) {
+    public Node(ThisChannel channel, Map<Integer, Channel> M) {
         myChannel = channel;
         members = new HashMap<Integer, Channel>(M.size());
         members.putAll(M);
         parent = myChannel;
-        root = parent;
+        root = myChannel.getId();
+    }
+
+    public void addChild(Channel child) throws InterruptedException {
+        children.add(child);
     }
 
     /**
@@ -65,17 +69,14 @@ public class Node {
         }
     }
 
-    void addChild(Channel child) {
-        children.add(child);
-    }
-
-    void removeChild(Channel child) {
+    public void removeChild(Channel child) throws InterruptedException {
         children.remove(child);
     }
 
     /**
      * The first action of the protocol. This action colors the node red if the
-     * parent of the node is red.
+     * parent of the node is red, or the parent is not a member of the adjacent
+     * set.
      * 
      * @return true if there was a change in state
      */
@@ -83,7 +84,7 @@ public class Node {
         if (myChannel.isRed()) {
             return false;
         }
-        if (parent.isRed() || members.get(parent.getId()) == null) {
+        if (parent.isRed() || !members.containsKey(parent.getId())) {
             myChannel.markRed();
             return true;
         }
@@ -106,14 +107,15 @@ public class Node {
         }
         myChannel.markGreen();
         parent = myChannel;
-        root = myChannel;
+        root = myChannel.getId();
+        myChannel.setRoot(root);
         return true;
     }
 
     /**
-     * This action merges the nodes in to the tree. If the node detects a member
-     * that has a higher root id, the node marks that value as the root and the
-     * member as the parent.
+     * The third action of the protocol. This action merges the nodes in to the
+     * tree. If the node detects a member that has a higher root id, the node
+     * marks that value as the root and the member as the parent.
      * 
      * @return true if there was a change in state.
      */
@@ -121,20 +123,21 @@ public class Node {
         if (myChannel.isRed()) {
             return false;
         }
-        Channel currentParent = parent;
-        Channel currentRoot = root;
+        Channel newParent = parent;
+        int newRoot = root;
         for (Channel channel : members.values()) {
             if (channel.isGreen()) {
-                if (currentRoot.getId() < channel.getRoot()) {
-                    currentRoot = members.get(channel.getRoot());
-                    currentParent = channel;
+                if (newRoot < channel.getRoot()) {
+                    newRoot = channel.getRoot();
+                    newParent = channel;
                 }
             }
         }
-        if (parent != currentParent) {
+        if (parent != newParent) {
             parent.removeChild(myChannel);
-            parent = currentParent;
-            root = currentRoot;
+            parent = newParent;
+            root = newRoot;
+            myChannel.setRoot(root);
             parent.addChild(myChannel);
             return true;
         }

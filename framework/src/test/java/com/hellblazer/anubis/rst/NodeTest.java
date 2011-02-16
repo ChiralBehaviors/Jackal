@@ -40,7 +40,7 @@ public class NodeTest extends TestCase {
      * Node state is green, parent is self, and parent in adjacent set
      */
     public void testColorRedCase1() {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
         members.put(0, selfChannel);
 
@@ -52,7 +52,7 @@ public class NodeTest extends TestCase {
         assertFalse(node.colorRed());
 
         verify(selfChannel, new Times(2)).isRed();
-        verify(selfChannel).getId();
+        verify(selfChannel, new Times(2)).getId();
 
         verifyNoMoreInteractions(selfChannel);
     }
@@ -62,7 +62,7 @@ public class NodeTest extends TestCase {
      * adjacent set
      */
     public void testColorRedCase2() throws Exception {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel parentChannel = mock(Channel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
@@ -81,6 +81,7 @@ public class NodeTest extends TestCase {
         assertFalse(node.colorRed());
 
         verify(selfChannel).isRed();
+        verify(selfChannel).getId();
         verify(parentChannel).isRed();
         verify(parentChannel).getId();
 
@@ -92,7 +93,7 @@ public class NodeTest extends TestCase {
      * adjacent set
      */
     public void testColorRedCase3() throws Exception {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel parentChannel = mock(Channel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
@@ -111,6 +112,7 @@ public class NodeTest extends TestCase {
 
         verify(selfChannel).isRed();
         verify(selfChannel).markRed();
+        verify(selfChannel).getId();
         verify(parentChannel).isRed();
 
         verifyNoMoreInteractions(selfChannel, parentChannel);
@@ -121,7 +123,7 @@ public class NodeTest extends TestCase {
      * in adjacent set
      */
     public void testColorRedCase4() throws Exception {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel parentChannel = mock(Channel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
@@ -139,6 +141,7 @@ public class NodeTest extends TestCase {
         assertTrue(node.colorRed());
 
         verify(selfChannel).isRed();
+        verify(selfChannel).getId();
         verify(selfChannel).markRed();
         verify(parentChannel).isRed();
 
@@ -149,7 +152,7 @@ public class NodeTest extends TestCase {
      * Node state is green, no children
      */
     public void testDisownParentCase1() throws Exception {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
         members.put(0, selfChannel);
@@ -161,6 +164,7 @@ public class NodeTest extends TestCase {
         assertFalse(node.disownParent());
 
         verify(selfChannel).isGreen();
+        verify(selfChannel).getId();
 
         verifyNoMoreInteractions(selfChannel);
     }
@@ -169,19 +173,22 @@ public class NodeTest extends TestCase {
      * Node state is red, no children
      */
     public void testDisownParentCase2() throws Exception {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
         members.put(0, selfChannel);
 
         when(selfChannel.isGreen()).thenReturn(false);
+        when(selfChannel.getId()).thenReturn(0);
 
         Node node = new Node(selfChannel, members);
 
         assertTrue(node.disownParent());
 
         verify(selfChannel).isGreen();
+        verify(selfChannel, new Times(2)).getId();
         verify(selfChannel).markGreen();
+        verify(selfChannel).setRoot(0);
 
         verifyNoMoreInteractions(selfChannel);
     }
@@ -190,13 +197,14 @@ public class NodeTest extends TestCase {
      * Node state is red, node has children
      */
     public void testDisownParentCase3() throws Exception {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel childChannel = mock(Channel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
         members.put(0, selfChannel);
 
         when(selfChannel.isGreen()).thenReturn(false);
+        when(selfChannel.getId()).thenReturn(0);
 
         Node node = new Node(selfChannel, members);
         node.addChild(childChannel);
@@ -204,6 +212,7 @@ public class NodeTest extends TestCase {
         assertFalse(node.disownParent());
 
         verify(selfChannel).isGreen();
+        verify(selfChannel).getId();
 
         verifyNoMoreInteractions(selfChannel, childChannel);
     }
@@ -212,18 +221,20 @@ public class NodeTest extends TestCase {
      * Node state is red
      */
     public void testMergeCase1() {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
         members.put(0, selfChannel);
 
         when(selfChannel.isRed()).thenReturn(true);
+        when(selfChannel.getId()).thenReturn(0);
 
         Node node = new Node(selfChannel, members);
 
         assertFalse(node.merge());
 
         verify(selfChannel).isRed();
+        verify(selfChannel).getId();
 
         verifyNoMoreInteractions(selfChannel);
     }
@@ -232,7 +243,7 @@ public class NodeTest extends TestCase {
      * Node state is green, no members in adjacent set
      */
     public void testMergeCase2() {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
 
         Map<Integer, Channel> members = new HashMap<Integer, Channel>();
         members.put(0, selfChannel);
@@ -259,7 +270,7 @@ public class NodeTest extends TestCase {
      * root > all other members
      */
     public void testMergeCase3() {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
@@ -283,7 +294,7 @@ public class NodeTest extends TestCase {
 
         verify(selfChannel).isRed();
         verify(selfChannel).isGreen();
-        verify(selfChannel, new Times(3)).getId();
+        verify(selfChannel).getId();
         verify(selfChannel).getRoot();
         verify(member1).isGreen();
         verify(member2).isGreen();
@@ -298,7 +309,7 @@ public class NodeTest extends TestCase {
      * root is not less than member1's root
      */
     public void testMergeCase4() {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
@@ -324,10 +335,10 @@ public class NodeTest extends TestCase {
 
         verify(selfChannel).isRed();
         verify(selfChannel).isGreen();
-        verify(selfChannel, new Times(2)).getId();
+        verify(selfChannel).getId();
         verify(selfChannel).getRoot();
         verify(selfChannel).removeChild(selfChannel);
-        verify(member1).getId();
+        verify(selfChannel).setRoot(2);
         verify(member1).isGreen();
         verify(member2).isGreen();
         verify(member1, new Times(2)).getRoot();
@@ -342,7 +353,7 @@ public class NodeTest extends TestCase {
      * than member1's root, state of member with highest root is red
      */
     public void testMergeCase5() {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
@@ -368,9 +379,10 @@ public class NodeTest extends TestCase {
 
         verify(selfChannel).isRed();
         verify(selfChannel).isGreen();
-        verify(selfChannel, new Times(2)).getId();
+        verify(selfChannel).getId();
         verify(selfChannel).getRoot();
         verify(selfChannel).removeChild(selfChannel);
+        verify(selfChannel).setRoot(1);
         verify(member1).isGreen();
         verify(member2).isGreen();
         verify(member1, new Times(2)).getRoot();
@@ -384,7 +396,7 @@ public class NodeTest extends TestCase {
      * than member2's root, member1's root is higher, but member1's state is red
      */
     public void testMergeCase6() {
-        Channel selfChannel = mock(Channel.class);
+        ThisChannel selfChannel = mock(ThisChannel.class);
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
@@ -410,9 +422,10 @@ public class NodeTest extends TestCase {
 
         verify(selfChannel).isRed();
         verify(selfChannel).isGreen();
-        verify(selfChannel, new Times(2)).getId();
+        verify(selfChannel, new Times(1)).getId();
         verify(selfChannel).getRoot();
         verify(selfChannel).removeChild(selfChannel);
+        verify(selfChannel).setRoot(2);
         verify(member1).isGreen();
         verify(member2).isGreen();
         verify(member2, new Times(2)).getRoot();

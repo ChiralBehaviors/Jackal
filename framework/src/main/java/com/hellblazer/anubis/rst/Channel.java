@@ -40,10 +40,10 @@ public interface Channel {
     int getId();
 
     /**
-     * Answer the index of member the node associated with the channel believes
-     * is the root of the tree.
+     * Answer the id of member the node associated with the channel believes is
+     * the root of the tree.
      * 
-     * @return the root value of the associated node
+     * @return the root id of the associated node
      */
     int getRoot();
 
@@ -60,19 +60,10 @@ public interface Channel {
     boolean isRed();
 
     /**
-     * Mark the color of this channel to green
-     */
-    void markGreen();
-
-    /**
-     * Mark the color of this channel to red
-     */
-    void markRed();
-
-    /**
      * Remove the child from the node associated with the channel
      * 
      * @param child
+     *            - the child to be removed.
      */
     void removeChild(Channel child);
 }
