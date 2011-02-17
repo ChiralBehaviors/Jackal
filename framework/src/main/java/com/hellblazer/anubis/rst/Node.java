@@ -16,9 +16,8 @@
  */
 package com.hellblazer.anubis.rst;
 
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -36,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Node {
     private final List<Channel> children = new CopyOnWriteArrayList<Channel>();
-    private final Map<Integer, Channel> members;
+    private final Channel[] members;
     private final ThisChannel myChannel;
     private Channel parent;
     private int root;
@@ -44,10 +43,9 @@ public class Node {
     private final AtomicBoolean running = new AtomicBoolean();
     private final Semaphore stateModified = new Semaphore(0);
 
-    public Node(ThisChannel channel, Map<Integer, Channel> M) {
+    public Node(ThisChannel channel, Channel[] M) {
         myChannel = channel;
-        members = new HashMap<Integer, Channel>(M.size());
-        members.putAll(M);
+        members = Arrays.copyOf(M, M.length);
         parent = myChannel;
         root = myChannel.getId();
     }
@@ -110,7 +108,7 @@ public class Node {
         if (myChannel.isRed()) {
             return false;
         }
-        if (parent.isRed() || !members.containsKey(parent.getId())) {
+        if (parent.isRed() || parent.getId() >= members.length) {
             myChannel.markRed();
             return true;
         }
@@ -184,8 +182,8 @@ public class Node {
         }
         Channel newParent = parent;
         int newRoot = root;
-        for (Channel channel : members.values()) {
-            if (channel.isGreen()) {
+        for (Channel channel : members) {
+            if (channel != null && channel.isGreen()) {
                 if (newRoot < channel.getRoot()) {
                     newRoot = channel.getRoot();
                     newParent = channel;

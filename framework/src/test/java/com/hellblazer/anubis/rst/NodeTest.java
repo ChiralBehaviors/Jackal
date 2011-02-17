@@ -22,8 +22,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 
 import junit.framework.TestCase;
 
@@ -41,8 +39,8 @@ public class NodeTest extends TestCase {
      */
     public void testColorRedCase1() {
         ThisChannel selfChannel = mock(ThisChannel.class);
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
+        Channel[] members = new Channel[1];
+        members[0] = selfChannel;
 
         when(selfChannel.isRed()).thenReturn(false);
         when(selfChannel.getId()).thenReturn(0);
@@ -65,9 +63,9 @@ public class NodeTest extends TestCase {
         ThisChannel selfChannel = mock(ThisChannel.class);
         Channel parentChannel = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
-        members.put(1, parentChannel);
+        Channel[] members = new Channel[2];
+        members[0] = selfChannel;
+        members[1] = parentChannel;
 
         when(parentChannel.isRed()).thenReturn(false);
         when(parentChannel.getId()).thenReturn(1);
@@ -96,9 +94,9 @@ public class NodeTest extends TestCase {
         ThisChannel selfChannel = mock(ThisChannel.class);
         Channel parentChannel = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
-        members.put(1, parentChannel);
+        Channel[] members = new Channel[2];
+        members[0] = selfChannel;
+        members[1] = parentChannel;
 
         when(parentChannel.isRed()).thenReturn(true);
 
@@ -126,8 +124,8 @@ public class NodeTest extends TestCase {
         ThisChannel selfChannel = mock(ThisChannel.class);
         Channel parentChannel = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
+        Channel[] members = new Channel[1];
+        members[0] = selfChannel;
 
         when(parentChannel.isRed()).thenReturn(true);
         when(parentChannel.getId()).thenReturn(1);
@@ -154,8 +152,8 @@ public class NodeTest extends TestCase {
     public void testDisownParentCase1() throws Exception {
         ThisChannel selfChannel = mock(ThisChannel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
+        Channel[] members = new Channel[1];
+        members[0] = selfChannel;
 
         when(selfChannel.isGreen()).thenReturn(true);
 
@@ -175,8 +173,8 @@ public class NodeTest extends TestCase {
     public void testDisownParentCase2() throws Exception {
         ThisChannel selfChannel = mock(ThisChannel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
+        Channel[] members = new Channel[1];
+        members[0] = selfChannel;
 
         when(selfChannel.isGreen()).thenReturn(false);
         when(selfChannel.getId()).thenReturn(0);
@@ -200,8 +198,8 @@ public class NodeTest extends TestCase {
         ThisChannel selfChannel = mock(ThisChannel.class);
         Channel childChannel = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
+        Channel[] members = new Channel[1];
+        members[0] = selfChannel;
 
         when(selfChannel.isGreen()).thenReturn(false);
         when(selfChannel.getId()).thenReturn(0);
@@ -223,8 +221,8 @@ public class NodeTest extends TestCase {
     public void testMergeCase1() {
         ThisChannel selfChannel = mock(ThisChannel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
+        Channel[] members = new Channel[1];
+        members[0] = selfChannel;
 
         when(selfChannel.isRed()).thenReturn(true);
         when(selfChannel.getId()).thenReturn(0);
@@ -245,8 +243,8 @@ public class NodeTest extends TestCase {
     public void testMergeCase2() {
         ThisChannel selfChannel = mock(ThisChannel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
+        Channel[] members = new Channel[1];
+        members[0] = selfChannel;
 
         when(selfChannel.isRed()).thenReturn(false);
         when(selfChannel.isGreen()).thenReturn(true);
@@ -274,19 +272,19 @@ public class NodeTest extends TestCase {
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(5, selfChannel);
-        members.put(4, member1);
-        members.put(3, member2);
+        Channel[] members = new Channel[3];
+        members[2] = selfChannel;
+        members[1] = member1;
+        members[0] = member2;
 
         when(selfChannel.isRed()).thenReturn(false);
         when(selfChannel.isGreen()).thenReturn(true);
-        when(selfChannel.getId()).thenReturn(5);
-        when(selfChannel.getRoot()).thenReturn(5);
+        when(selfChannel.getId()).thenReturn(2);
+        when(selfChannel.getRoot()).thenReturn(2);
         when(member1.isGreen()).thenReturn(true);
         when(member2.isGreen()).thenReturn(true);
-        when(member1.getRoot()).thenReturn(4);
-        when(member2.getRoot()).thenReturn(3);
+        when(member1.getRoot()).thenReturn(1);
+        when(member2.getRoot()).thenReturn(0);
 
         Node node = new Node(selfChannel, members);
 
@@ -313,10 +311,10 @@ public class NodeTest extends TestCase {
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
-        members.put(1, member1);
-        members.put(2, member2);
+        Channel[] members = new Channel[3];
+        members[0] = selfChannel;
+        members[1] = member1;
+        members[2] = member2;
 
         when(selfChannel.isRed()).thenReturn(false);
         when(selfChannel.isGreen()).thenReturn(true);
@@ -357,10 +355,10 @@ public class NodeTest extends TestCase {
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
-        members.put(1, member1);
-        members.put(2, member2);
+        Channel[] members = new Channel[3];
+        members[0] = selfChannel;
+        members[1] = member1;
+        members[2] = member2;
 
         when(selfChannel.isRed()).thenReturn(false);
         when(selfChannel.isGreen()).thenReturn(true);
@@ -400,10 +398,10 @@ public class NodeTest extends TestCase {
         Channel member1 = mock(Channel.class);
         Channel member2 = mock(Channel.class);
 
-        Map<Integer, Channel> members = new HashMap<Integer, Channel>();
-        members.put(0, selfChannel);
-        members.put(1, member1);
-        members.put(2, member2);
+        Channel[] members = new Channel[3];
+        members[0] = selfChannel;
+        members[1] = member1;
+        members[2] = member2;
 
         when(selfChannel.isRed()).thenReturn(false);
         when(selfChannel.isGreen()).thenReturn(true);

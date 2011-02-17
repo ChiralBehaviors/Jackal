@@ -22,13 +22,14 @@ import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
-import java.nio.channels.Selector;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +47,6 @@ import com.hellblazer.anubis.util.HexDump;
  * 
  */
 public class UdpService {
-    private static final int SELECT_TIMEOUT = 1000;
     private static final Logger log = Logger.getLogger(UdpService.class.getCanonicalName());
     /**
      * MAX_SEG_SIZE is a default maximum packet size. This may be small, but any
@@ -68,11 +68,10 @@ public class UdpService {
     private final AtomicBoolean running = new AtomicBoolean();
     private final Executor serviceEvaluator = Executors.newSingleThreadExecutor();
     private final Node self;
+    private final MemberChannel[] members;
 
-    private final Map<Integer, MemberChannel> members;
-
-    public UdpService(int id, InetSocketAddress myAddress,
-                      Map<Integer, InetSocketAddress> M) throws SocketException {
+    public UdpService(int id, InetSocketAddress myAddress, InetSocketAddress[] M)
+                                                                                 throws SocketException {
         super();
         address = myAddress;
         DatagramSocket socket = new DatagramSocket();
@@ -81,10 +80,10 @@ public class UdpService {
         socket.setSendBufferSize(MAX_SEG_SIZE);
         socketChannel = socket.getChannel();
         members = getMembership(M);
-        HashMap<Integer, Channel> channels = new HashMap<Integer, Channel>();
-        channels.putAll(members);
+        Channel[] channels = Arrays.copyOf(members,
+                                           Math.max(members.length, id));
         LocalChannel myChannel = new LocalChannel(id, this, address);
-        channels.put(id, myChannel);
+        channels[id] = myChannel;
         self = new Node(myChannel, channels);
     }
 
@@ -106,12 +105,11 @@ public class UdpService {
         }
     }
 
-    Map<Integer, MemberChannel> getMembership(Map<Integer, InetSocketAddress> members) {
-        HashMap<Integer, MemberChannel> channels = new HashMap<Integer, MemberChannel>();
-        for (Entry<Integer, InetSocketAddress> member : members.entrySet()) {
-            channels.put(member.getKey(),
-                         new MemberChannel(member.getKey(), this,
-                                           member.getValue()));
+    MemberChannel[] getMembership(InetSocketAddress[] members) {
+        MemberChannel[] channels = new MemberChannel[members.length];
+        int index = 0;
+        for (InetSocketAddress member : members) {
+            channels[index] = new MemberChannel(index, this, member);
         }
         return channels;
     }
@@ -135,37 +133,36 @@ public class UdpService {
         return new Runnable() {
             @Override
             public void run() {
-                Selector selector;
                 try {
                     socketChannel.connect(address);
-                    selector = Selector.open();
-                } catch (Throwable e) {
-                    log.log(Level.SEVERE, "Cannot connect", e);
+                } catch (IOException e) {
+                    log.log(Level.SEVERE,
+                            "Cannot connect to socket, shutting down", e);
                     running.set(false);
                     return;
                 }
+                byte[] inBytes = new byte[MAX_SEG_SIZE];
                 while (running.get()) {
                     try {
-                        selector.select(SELECT_TIMEOUT);
-                        /*
                         Arrays.fill(inBytes, (byte) 0);
+                        ByteBuffer buffer = ByteBuffer.wrap(inBytes);
+                        buffer.order(ByteOrder.BIG_ENDIAN);
+                        SocketAddress inAddress = socketChannel.receive(buffer);
+                        buffer.flip();
                         if (log.isLoggable(Level.FINEST)) {
                             final StringBuilder sb = new StringBuilder();
                             sb.append(new SimpleDateFormat().format(new Date()));
                             sb.append(" - ");
-                            sb.append(packet.getAddress().getHostAddress());
+                            sb.append(inAddress);
                             sb.append(" - ");
                             sb.append('\n');
-                            sb.append(toHex(packet.getData(),
-                                            packet.getOffset(),
-                                            packet.getLength()));
+                            sb.append(toHex(buffer.array(), 0,
+                                            buffer.remaining() - 1));
                             log.finest(sb.toString());
                         } else if (log.isLoggable(Level.FINE)) {
-                            log.fine("Received packet from: "
-                                     + packet.getSocketAddress());
+                            log.fine("Received packet from: " + inAddress);
                         }
-                        serviceInbound(ByteBuffer.wrap(packet.getData()));
-                        */
+                        serviceInbound(buffer);
                     } catch (Throwable e) {
                         if (log.isLoggable(Level.WARNING)) {
                             log.log(Level.WARNING,
