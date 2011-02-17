@@ -19,7 +19,6 @@ package com.hellblazer.anubis.rst.udp;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -53,7 +52,8 @@ public class UdpService {
      * network will be capable of handling this size so its transfer semantics
      * are atomic (no fragmentation in the network).
      */
-    public static final int MAX_SEG_SIZE = 1500; // Ethernet standard MTU
+    private static final int MAX_SEG_SIZE = 1500; // Ethernet standard MTU
+    private static final int MAGIC_NUMBER = 24051967;
 
     private static String toHex(byte[] data, int offset, int length) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
@@ -90,8 +90,16 @@ public class UdpService {
     /**
      * Start the service
      */
-    public void start() {
+    public void start() throws IOException {
         if (running.compareAndSet(false, true)) {
+            try {
+                socketChannel.connect(address);
+            } catch (IOException e) {
+                log.log(Level.SEVERE,
+                        "Cannot connect to socket, shutting down", e);
+                running.set(false);
+                throw e;
+            }
             serviceEvaluator.execute(service());
         }
     }
@@ -101,7 +109,11 @@ public class UdpService {
      */
     public void stop() {
         if (running.compareAndSet(true, false)) {
-
+            try {
+                socketChannel.close();
+            } catch (IOException e) {
+                log.log(Level.FINEST, "Exception closing the socket", e);
+            }
         }
     }
 
@@ -117,11 +129,13 @@ public class UdpService {
     /**
      * Send the datagram across the net
      * 
-     * @param packet
+     * @param buffer
+     * @param target
      * @throws IOException
      */
-    void send(DatagramPacket packet) throws IOException {
-        // socket.send(packet);
+    void send(ByteBuffer buffer, SocketAddress target) throws IOException {
+        buffer.putInt(0, MAGIC_NUMBER);
+        socketChannel.send(buffer, target);
     }
 
     /**
@@ -133,49 +147,63 @@ public class UdpService {
         return new Runnable() {
             @Override
             public void run() {
-                try {
-                    socketChannel.connect(address);
-                } catch (IOException e) {
-                    log.log(Level.SEVERE,
-                            "Cannot connect to socket, shutting down", e);
-                    running.set(false);
-                    return;
-                }
                 byte[] inBytes = new byte[MAX_SEG_SIZE];
+                ByteBuffer buffer = ByteBuffer.wrap(inBytes);
+                buffer.order(ByteOrder.BIG_ENDIAN);
                 while (running.get()) {
                     try {
                         Arrays.fill(inBytes, (byte) 0);
-                        ByteBuffer buffer = ByteBuffer.wrap(inBytes);
-                        buffer.order(ByteOrder.BIG_ENDIAN);
-                        SocketAddress inAddress = socketChannel.receive(buffer);
-                        buffer.flip();
-                        if (log.isLoggable(Level.FINEST)) {
-                            final StringBuilder sb = new StringBuilder();
-                            sb.append(new SimpleDateFormat().format(new Date()));
-                            sb.append(" - ");
-                            sb.append(inAddress);
-                            sb.append(" - ");
-                            sb.append('\n');
-                            sb.append(toHex(buffer.array(), 0,
-                                            buffer.remaining() - 1));
-                            log.finest(sb.toString());
-                        } else if (log.isLoggable(Level.FINE)) {
-                            log.fine("Received packet from: " + inAddress);
-                        }
-                        serviceInbound(buffer);
+                        buffer.clear();
+                        service(buffer);
                     } catch (Throwable e) {
                         if (log.isLoggable(Level.WARNING)) {
                             log.log(Level.WARNING,
                                     "Exception processing inbound message", e);
                         }
-
                     }
                 }
             }
         };
     }
 
-    private void serviceInbound(ByteBuffer buffer) {
+    /**
+     * Service the next inbound datagram
+     * 
+     * @param buffer
+     *            - the buffer to use to receive the datagram
+     * @throws IOException
+     */
+    private void service(ByteBuffer buffer) throws IOException {
+        SocketAddress sender = socketChannel.receive(buffer);
+        buffer.flip();
+        if (log.isLoggable(Level.FINEST)) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append(new SimpleDateFormat().format(new Date()));
+            sb.append(" - ");
+            sb.append(sender);
+            sb.append(" - ");
+            sb.append('\n');
+            sb.append(toHex(buffer.array(), 0, buffer.remaining() - 1));
+            log.finest(sb.toString());
+        } else if (log.isLoggable(Level.FINE)) {
+            log.fine("Received packet from: " + sender);
+        }
+        int magic = buffer.getInt();
+        if (MAGIC_NUMBER == magic) {
+            processInbound(buffer);
+        } else {
+            log.fine(String.format("Msg with invalid MAGIC header [%s] discarded",
+                                   magic));
+        }
+    }
+
+    /**
+     * Process the inbound message
+     * 
+     * @param buffer
+     *            - the message bytes
+     */
+    private void processInbound(ByteBuffer buffer) {
         self.evaluateProtocol();
     }
 }
