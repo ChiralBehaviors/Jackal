@@ -133,16 +133,139 @@ public class UdpService {
         return channels;
     }
 
+    void sendAddChild(int id, MemberChannel parent) {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[4]);
+        buffer.putInt(MAGIC_NUMBER);
+        buffer.put(ADD_CHILD);
+        buffer.putInt(id);
+        buffer.flip();
+        try {
+            socketChannel.send(buffer, parent.getAddress());
+        } catch (IOException e) {
+            parent.markRed();
+        }
+    }
+
+    void sendRemoveChild(int id, MemberChannel parent) {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[4]);
+        buffer.putInt(MAGIC_NUMBER);
+        buffer.put(REMOVE_CHILD);
+        buffer.putInt(id);
+        buffer.flip();
+        try {
+            socketChannel.send(buffer, parent.getAddress());
+        } catch (IOException e) {
+            if (log.isLoggable(Level.INFO)) {
+                log.info(format("Error removing self as a child from: %s",
+                                parent));
+            }
+            parent.markRed();
+            self.evaluateProtocol();
+        }
+    }
+
+    void updateRootValue(int id, int root) {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[4]);
+        buffer.putInt(MAGIC_NUMBER);
+        buffer.put(SET_ROOT);
+        buffer.putInt(root);
+        buffer.flip();
+        boolean failures = false;
+        for (MemberChannel member : members) {
+            try {
+                socketChannel.send(buffer, member.getAddress());
+            } catch (IOException e) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.warning(format("Error updating root value for: %s",
+                                       member.getAddress()));
+                }
+                member.markRed();
+                failures = true;
+            }
+        }
+        if (failures) {
+            self.evaluateProtocol();
+        }
+    }
+
+    void updateToGreen(int id) {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[4]);
+        buffer.putInt(MAGIC_NUMBER);
+        buffer.put(SET_COLOR);
+        buffer.putInt(1);
+        buffer.flip();
+        boolean failures = false;
+        for (MemberChannel member : members) {
+            try {
+                socketChannel.send(buffer, member.getAddress());
+            } catch (IOException e) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.warning(format("Error updating color value for: %s",
+                                       member.getAddress()));
+                }
+                member.markRed();
+                failures = true;
+            }
+        }
+        if (failures) {
+            self.evaluateProtocol();
+        }
+    }
+
+    private String prettyPrint(SocketAddress sender, byte[] bytes) {
+        final StringBuilder sb = new StringBuilder(bytes.length * 2);
+        sb.append(new SimpleDateFormat().format(new Date()));
+        sb.append(" - ");
+        sb.append(sender);
+        sb.append(" - ");
+        sb.append('\n');
+        sb.append(toHex(bytes, 0, bytes.length));
+        return sb.toString();
+    }
+
     /**
-     * Send the datagram across the net
+     * Process the inbound message
      * 
      * @param buffer
-     * @param target
-     * @throws IOException
+     *            - the message bytes
      */
-    void send(ByteBuffer buffer, SocketAddress target) throws IOException {
-        buffer.putInt(0, MAGIC_NUMBER);
-        socketChannel.send(buffer, target);
+    private void processInbound(ByteBuffer buffer) {
+        byte msgType = buffer.get();
+        int nodeId = buffer.getInt();
+        if (nodeId >= members.length || nodeId < 0) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.warning(format("Unknown member: %s", nodeId));
+            }
+            return;
+        }
+        MemberChannel sender = members[nodeId];
+        if (sender == null) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.warning(format("No corresponding channelfor member: %s",
+                                   nodeId));
+                return;
+            }
+        }
+        switch (msgType) {
+            case ADD_CHILD:
+                self.addChild(sender);
+                break;
+            case REMOVE_CHILD:
+                self.removeChild(sender);
+                break;
+            case SET_ROOT:
+                sender.setRoot(buffer.getInt());
+                break;
+            case SET_COLOR:
+                sender.setColor(buffer.get());
+                break;
+            default:
+                if (log.isLoggable(Level.WARNING)) {
+                    log.warning(format("Invalid message type: %s", msgType));
+                }
+                return;
+        }
+        self.evaluateProtocol();
     }
 
     /**
@@ -203,49 +326,5 @@ public class UdpService {
                                   magic));
             }
         }
-    }
-
-    private String prettyPrint(SocketAddress sender, byte[] bytes) {
-        final StringBuilder sb = new StringBuilder(bytes.length * 2);
-        sb.append(new SimpleDateFormat().format(new Date()));
-        sb.append(" - ");
-        sb.append(sender);
-        sb.append(" - ");
-        sb.append('\n');
-        sb.append(toHex(bytes, 0, bytes.length));
-        return sb.toString();
-    }
-
-    /**
-     * Process the inbound message
-     * 
-     * @param buffer
-     *            - the message bytes
-     */
-    private void processInbound(ByteBuffer buffer) {
-        byte msgType = buffer.get();
-        int nodeId = buffer.getInt();
-        if (nodeId >= members.length || nodeId < 0) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.warning(format("Unknown member: %s", nodeId));
-            }
-            return;
-        }
-        switch (msgType) {
-            case ADD_CHILD:
-                break;
-            case REMOVE_CHILD:
-                break;
-            case SET_ROOT:
-                break;
-            case SET_COLOR:
-                break;
-            default:
-                if (log.isLoggable(Level.WARNING)) {
-                    log.warning(format("Invalid message type: %s", msgType));
-                }
-                return;
-        }
-        self.evaluateProtocol();
     }
 }

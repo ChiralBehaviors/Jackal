@@ -17,8 +17,10 @@
 package com.hellblazer.anubis.rst.udp;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import com.hellblazer.anubis.rst.Channel;
+import static com.hellblazer.anubis.rst.udp.AbstractChannel.Color.*;
 
 /**
  * The representation of a node representing a remote member.
@@ -45,4 +47,23 @@ public class MemberChannel extends AbstractChannel implements Channel {
 
     }
 
+    void setRoot(int id) {
+        root = id;
+    }
+
+    void setColor(byte c) {
+        if (c == 0) {
+            color = RED;
+        } else {
+            color = GREEN;
+        }
+    }
+
+    SocketAddress getAddress() {
+        return address;
+    }
+
+    void markRed() {
+        color = RED;
+    }
 }

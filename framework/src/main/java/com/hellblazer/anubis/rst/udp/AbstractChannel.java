@@ -16,8 +16,8 @@
  */
 package com.hellblazer.anubis.rst.udp;
 
-import static com.hellblazer.anubis.rst.udp.Color.GREEN;
-import static com.hellblazer.anubis.rst.udp.Color.RED;
+import static com.hellblazer.anubis.rst.udp.AbstractChannel.Color.GREEN;
+import static com.hellblazer.anubis.rst.udp.AbstractChannel.Color.RED;
 
 import java.net.InetSocketAddress;
 
@@ -30,12 +30,15 @@ import com.hellblazer.anubis.rst.Channel;
  * 
  */
 abstract public class AbstractChannel implements Channel {
+    static enum Color {
+        RED, GREEN;
+    }
 
     protected final UdpService service;
     protected final InetSocketAddress address;
-    private volatile Color color;
+    protected volatile Color color;
     protected final int id;
-    private volatile int root = -1;
+    protected volatile int root = -1;
 
     public AbstractChannel(int index, UdpService udpService,
                            InetSocketAddress memberAddress) {
