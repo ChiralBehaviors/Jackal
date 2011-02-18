@@ -16,6 +16,12 @@
  */
 package com.hellblazer.anubis.rst.udp;
 
+import static com.hellblazer.anubis.rst.udp.MsgTypes.ADD_CHILD;
+import static com.hellblazer.anubis.rst.udp.MsgTypes.REMOVE_CHILD;
+import static com.hellblazer.anubis.rst.udp.MsgTypes.SET_COLOR;
+import static com.hellblazer.anubis.rst.udp.MsgTypes.SET_ROOT;
+import static java.lang.String.format;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -23,6 +29,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
@@ -177,24 +184,36 @@ public class UdpService {
         SocketAddress sender = socketChannel.receive(buffer);
         buffer.flip();
         if (log.isLoggable(Level.FINEST)) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append(new SimpleDateFormat().format(new Date()));
-            sb.append(" - ");
-            sb.append(sender);
-            sb.append(" - ");
-            sb.append('\n');
-            sb.append(toHex(buffer.array(), 0, buffer.remaining() - 1));
-            log.finest(sb.toString());
+            log.finest(prettyPrint(sender, buffer.array()));
         } else if (log.isLoggable(Level.FINE)) {
             log.fine("Received packet from: " + sender);
         }
         int magic = buffer.getInt();
         if (MAGIC_NUMBER == magic) {
-            processInbound(buffer);
+            try {
+                processInbound(buffer);
+            } catch (BufferOverflowException e) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.warning(format("Invalid message: %s", buffer.array()));
+                }
+            }
         } else {
-            log.fine(String.format("Msg with invalid MAGIC header [%s] discarded",
-                                   magic));
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("Msg with invalid MAGIC header [%s] discarded",
+                                  magic));
+            }
         }
+    }
+
+    private String prettyPrint(SocketAddress sender, byte[] bytes) {
+        final StringBuilder sb = new StringBuilder(bytes.length * 2);
+        sb.append(new SimpleDateFormat().format(new Date()));
+        sb.append(" - ");
+        sb.append(sender);
+        sb.append(" - ");
+        sb.append('\n');
+        sb.append(toHex(bytes, 0, bytes.length));
+        return sb.toString();
     }
 
     /**
@@ -204,6 +223,29 @@ public class UdpService {
      *            - the message bytes
      */
     private void processInbound(ByteBuffer buffer) {
+        byte msgType = buffer.get();
+        int nodeId = buffer.getInt();
+        if (nodeId >= members.length || nodeId < 0) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.warning(format("Unknown member: %s", nodeId));
+            }
+            return;
+        }
+        switch (msgType) {
+            case ADD_CHILD:
+                break;
+            case REMOVE_CHILD:
+                break;
+            case SET_ROOT:
+                break;
+            case SET_COLOR:
+                break;
+            default:
+                if (log.isLoggable(Level.WARNING)) {
+                    log.warning(format("Invalid message type: %s", msgType));
+                }
+                return;
+        }
         self.evaluateProtocol();
     }
 }
