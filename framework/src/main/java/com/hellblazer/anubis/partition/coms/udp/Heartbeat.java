@@ -16,6 +16,8 @@
  */
 package com.hellblazer.anubis.partition.coms.udp;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -24,6 +26,9 @@ import java.net.SocketException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,13 +41,15 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
-/** 
+/**
  * A Unicast UDP heartbeat implementation.
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
 public class Heartbeat implements HeartbeatCommsIntf {
+    private static final String ANUBIS_UDP_HEARTBEAT_RECEIVER_THREAD = "Anubis: UDP Heartbeat receiver thread";
+    private static final String ANUBIS_UDP_HEARTBEAT_DELIVERY_THREAD = "Anubis: UDP Heartbeat delivery thread";
     private static final Logger log = Logger.getLogger(Heartbeat.class.getCanonicalName());
     /**
      * MAX_SEG_SIZE is a default maximum packet size. This may be small, but any
@@ -51,30 +58,46 @@ public class Heartbeat implements HeartbeatCommsIntf {
      */
     public static final int MAX_SEG_SIZE = 1500; // Ethernet standard MTU
 
-    private volatile boolean terminating;
+    private final AtomicBoolean running = new AtomicBoolean();
+    private final ExecutorService receptionService;
     private final HeartbeatReceiver connectionSet;
-    private View ignoring;
+    private volatile View ignoring;
     private final Object ingnoringMonitor = new Object();
     private final Identity me;
     private final WireSecurity wireSecurity;
-    private DatagramSocket socket;
+    private final DatagramSocket socket;
     private final List<InetSocketAddress> membership = new CopyOnWriteArrayList<InetSocketAddress>();
-    private Thread heartbeatThread;
     private final ExecutorService deliveryService;
     private final InetSocketAddress address;
 
     public Heartbeat(HeartbeatReceiver cs, Identity identity, WireSecurity ws,
-                     ExecutorService ds, InetSocketAddress sa)
-                                                              throws SocketException {
+                     InetSocketAddress sa) throws SocketException {
         connectionSet = cs;
         me = identity;
         wireSecurity = ws;
-        deliveryService = ds;
         address = sa;
         socket = new DatagramSocket(sa);
         socket.setReceiveBufferSize(MAX_SEG_SIZE);
         socket.setReuseAddress(true);
         socket.setSendBufferSize(MAX_SEG_SIZE);
+        deliveryService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           ANUBIS_UDP_HEARTBEAT_DELIVERY_THREAD);
+                daemon.setDaemon(true);
+                return daemon;
+            }
+        });
+        receptionService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           ANUBIS_UDP_HEARTBEAT_RECEIVER_THREAD);
+                daemon.setDaemon(true);
+                return daemon;
+            }
+        });
     }
 
     public void addMember(InetSocketAddress socketAddress) {
@@ -84,10 +107,14 @@ public class Heartbeat implements HeartbeatCommsIntf {
     @Override
     public String getThreadStatusString() {
         StringBuffer buffer = new StringBuffer();
-        buffer.append(heartbeatThread.getName()).append(" ............................ ").setLength(30);
-        buffer.append(heartbeatThread.isAlive() ? ".. is Alive "
-                                               : ".. is Dead ");
-        buffer.append(!terminating ? ".. running ....." : ".. terminated ..");
+        buffer.append(ANUBIS_UDP_HEARTBEAT_DELIVERY_THREAD).append(" ............................ ").setLength(30);
+        buffer.append(!deliveryService.isTerminated() ? ".. is Alive "
+                                                     : ".. is Dead ");
+        buffer.append(running.get() ? ".. running ....." : ".. terminated ..");
+        buffer.append(ANUBIS_UDP_HEARTBEAT_RECEIVER_THREAD).append(" ............................ ").setLength(30);
+        buffer.append(!receptionService.isTerminated() ? ".. is Alive "
+                                                      : ".. is Dead ");
+        buffer.append(running.get() ? ".. running ....." : ".. terminated ..");
         buffer.append(" address = ").append(address);
         return buffer.toString();
     }
@@ -110,7 +137,7 @@ public class Heartbeat implements HeartbeatCommsIntf {
             bytes = wireSecurity.toWireForm(msg);
         } catch (WireFormException e) {
             log.log(Level.SEVERE,
-                    String.format("Unable to create wire form of %s", msg), e);
+                    format("Unable to create wire form of %s", msg), e);
             return;
         }
         DatagramPacket heartbeat = new DatagramPacket(bytes, bytes.length);
@@ -120,8 +147,7 @@ public class Heartbeat implements HeartbeatCommsIntf {
                 socket.send(heartbeat);
             } catch (IOException e) {
                 log.log(Level.SEVERE,
-                        String.format("Unable to send heartbeat to %s", address),
-                        e);
+                        format("Unable to send heartbeat to %s", address), e);
                 return;
             }
         }
@@ -144,29 +170,17 @@ public class Heartbeat implements HeartbeatCommsIntf {
 
     @Override
     public void start() {
-        terminating = false;
-        heartbeatThread = new Thread(new Runnable() {
+        if (!running.compareAndSet(false, true)) {
+            return;
+        }
+        receptionService.execute(new Runnable() {
             @Override
             public void run() {
-                while (!terminating) {
+                while (running.get()) {
                     try {
-                        byte[] inBytes = new byte[MAX_SEG_SIZE];
-                        final DatagramPacket inPacket = new DatagramPacket(
-                                                                           inBytes,
-                                                                           inBytes.length);
-                        socket.receive(inPacket);
-                        if (log.isLoggable(Level.FINEST)) {
-                            log.finest("Received packet from: "
-                                       + inPacket.getSocketAddress());
-                        }
-                        deliveryService.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                deliver(inPacket.getData());
-                            }
-                        });
+                        receive();
                     } catch (Throwable e) {
-                        if (!terminating && log.isLoggable(Level.WARNING)) {
+                        if (running.get() && log.isLoggable(Level.WARNING)) {
                             log.log(Level.WARNING,
                                     "Exception processing inbound message", e);
                         }
@@ -174,21 +188,20 @@ public class Heartbeat implements HeartbeatCommsIntf {
                     }
                 }
             }
-        }, "Anubis: UDP Heartbeat communications");
-        heartbeatThread.start();
+        });
     }
 
     @Override
     public void terminate() {
-        terminating = true;
-        if (heartbeatThread != null) {
-            heartbeatThread.interrupt();
+        if (!running.compareAndSet(true, false)) {
+            return;
         }
+        receptionService.shutdownNow();
         deliveryService.shutdownNow();
     }
 
-    protected void deliver(byte[] data) {
-        HeartbeatMsg hb = unwrap(data);
+    private void deliver(byte[] data) {
+        final HeartbeatMsg hb = unwrap(data);
         if (hb == null) {
             return;
         }
@@ -197,8 +210,8 @@ public class Heartbeat implements HeartbeatCommsIntf {
          */
         if (!hb.getSender().equalMagic(me)) {
             if (log.isLoggable(Level.FINEST)) {
-                log.finest("heartbeat discarded due to invalid magic number: "
-                           + hb);
+                log.finest(format("heartbeat discarded due to invalid magic number: %s",
+                                  hb));
             }
             return;
         }
@@ -208,7 +221,7 @@ public class Heartbeat implements HeartbeatCommsIntf {
          */
         if (isIgnoring(hb.getSender())) {
             if (log.isLoggable(Level.FINEST)) {
-                log.finest("Ignoring heart beat sender: " + hb);
+                log.finest(format("Ignoring heart beat sender: %s", hb));
             }
             return;
         }
@@ -221,29 +234,52 @@ public class Heartbeat implements HeartbeatCommsIntf {
          * (i.e. it may be quiescing) if it is not active it is up to the
          * connection itself to deal with the heartbeat.
          */
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Delivering heart beat: " + hb);
-        }
-        connectionSet.receiveHeartbeat(hb);
+        deliveryService.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(format("Delivering heart beat: ", hb));
+                }
+                connectionSet.receiveHeartbeat(hb);
+            }
+        });
     }
 
-    protected HeartbeatMsg unwrap(byte[] data) {
+    private void receive() throws IOException {
+        byte[] inBytes = new byte[MAX_SEG_SIZE];
+        final DatagramPacket inPacket = new DatagramPacket(inBytes,
+                                                           inBytes.length);
+        socket.receive(inPacket);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Received packet from: %s"
+                              + inPacket.getSocketAddress()));
+        }
+        deliveryService.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(inPacket.getData());
+            }
+        });
+    }
+
+    private HeartbeatMsg unwrap(byte[] data) {
         Object obj = null;
         try {
             obj = wireSecurity.fromWireForm(data);
         } catch (WireSecurityException ex) {
-            log.severe(me
-                       + "multicast transport encountered security violation receiving message - ignoring the message ");
+            log.severe(format("%s multicast transport encountered security violation receiving message - ignoring the message",
+                              me));
             return null;
         } catch (Exception ex) {
             log.log(Level.SEVERE,
-                    me + " Error reading wire form message - ignoring", ex);
+                    format("%s Error reading wire form message - ignoring", me),
+                    ex);
             return null;
         }
         if (!(obj instanceof HeartbeatMsg)) {
             if (log.isLoggable(Level.FINE)) {
-                log.fine(String.format("%s Ignoring non-heartbeat message: %s",
-                                       me, obj));
+                log.fine(format("%s Ignoring non-heartbeat message: %s", me,
+                                obj));
             }
         }
         HeartbeatMsg hb = (HeartbeatMsg) obj;

@@ -45,11 +45,11 @@ public class HeartbeatTest extends TestCase {
         Identity id = new Identity(6, 6, 6);
         WireSecurity ws = new NoSecurityImpl();
         InetSocketAddress sa = new InetSocketAddress(2033);
-        Heartbeat heartbeat = new Heartbeat(hbReceiver, id, ws,
-                                            new RunImmediate(), sa);
+        Heartbeat heartbeat = new Heartbeat(hbReceiver, id, ws, sa);
         try {
             heartbeat.addMember(sa);
-            InetSocketAddress ca = new InetSocketAddress(sa.getAddress(), sa.getPort());
+            InetSocketAddress ca = new InetSocketAddress(sa.getAddress(),
+                                                         sa.getPort());
             HeartbeatMsg msg = new HeartbeatMsg(id, ca);
             msg.setCandidate(id);
             msg.setIsPreferred(false);
