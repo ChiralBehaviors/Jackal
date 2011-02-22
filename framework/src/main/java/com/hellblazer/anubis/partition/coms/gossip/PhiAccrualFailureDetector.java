@@ -1,4 +1,5 @@
-/** (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
+/** 
+ * (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -14,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.anubis.partition.coms.udp;
+package com.hellblazer.anubis.partition.coms.gossip;
 
 /**
  * Instead of providing information of a boolean nature (trust vs. suspect),
@@ -35,12 +36,12 @@ package com.hellblazer.anubis.partition.coms.udp;
  */
 public class PhiAccrualFailureDetector {
     private static final int WINDOW_SIZE = 1000;
-    private double last = -1D;
-    private double sum = 0D;
-    private final double[] samples = new double[WINDOW_SIZE];
-    private int head = 0;
-    private int tail = 0;
     private int count = 0;
+    private int head = 0;
+    private double last = -1D;
+    private final double[] samples = new double[WINDOW_SIZE];
+    private double sum = 0D;
+    private int tail = 0;
 
     /**
      * Answer the suspicion level of the detector.
@@ -50,6 +51,11 @@ public class PhiAccrualFailureDetector {
      * the decision will be contradicted in the future by the reception of a
      * late heartbeat) is about 10%. The likeliness is about 1% with sigma = 2,
      * 0.1% with sigma = 3, and so on.
+     * <p>
+     * Although the original paper suggests that the distribution is
+     * approximated by the Gaussian distribution the Cassandra group has
+     * reported that the Exponential Distribution to be a better approximation,
+     * because of the nature of the gossip channel and its impact on latency
      * 
      * @return - the suspicion level of the detector
      */

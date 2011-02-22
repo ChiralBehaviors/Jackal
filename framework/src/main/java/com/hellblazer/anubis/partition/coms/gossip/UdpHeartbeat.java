@@ -1,4 +1,5 @@
-/** (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
+/** 
+ * (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -14,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.anubis.partition.coms.udp;
+package com.hellblazer.anubis.partition.coms.gossip;
 
 import static java.lang.String.format;
 
@@ -47,31 +48,32 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurityExcepti
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class Heartbeat implements HeartbeatCommsIntf {
-    private static final String ANUBIS_UDP_HEARTBEAT_RECEIVER_THREAD = "Anubis: UDP Heartbeat receiver thread";
-    private static final String ANUBIS_UDP_HEARTBEAT_DELIVERY_THREAD = "Anubis: UDP Heartbeat delivery thread";
-    private static final Logger log = Logger.getLogger(Heartbeat.class.getCanonicalName());
+public class UdpHeartbeat implements HeartbeatCommsIntf {
     /**
      * MAX_SEG_SIZE is a default maximum packet size. This may be small, but any
      * network will be capable of handling this size so its transfer semantics
      * are atomic (no fragmentation in the network).
      */
     public static final int MAX_SEG_SIZE = 1500; // Ethernet standard MTU
+    private static final String ANUBIS_UDP_HEARTBEAT_DELIVERY_THREAD = "Anubis: UDP Heartbeat delivery thread";
+    private static final String ANUBIS_UDP_HEARTBEAT_RECEIVER_THREAD = "Anubis: UDP Heartbeat receiver thread";
+    private static final Logger log = Logger.getLogger(UdpHeartbeat.class.getCanonicalName());
 
-    private final AtomicBoolean running = new AtomicBoolean();
-    private final ExecutorService receptionService;
+    private final InetSocketAddress address;
     private final HeartbeatReceiver connectionSet;
+    private final ExecutorService deliveryService;
     private volatile View ignoring;
     private final Object ingnoringMonitor = new Object();
     private final Identity me;
-    private final WireSecurity wireSecurity;
-    private final DatagramSocket socket;
     private final List<InetSocketAddress> membership = new CopyOnWriteArrayList<InetSocketAddress>();
-    private final ExecutorService deliveryService;
-    private final InetSocketAddress address;
+    private final ExecutorService receptionService;
+    private final AtomicBoolean running = new AtomicBoolean();
+    private final DatagramSocket socket;
+    private final WireSecurity wireSecurity;
 
-    public Heartbeat(HeartbeatReceiver cs, Identity identity, WireSecurity ws,
-                     InetSocketAddress sa) throws SocketException {
+    public UdpHeartbeat(HeartbeatReceiver cs, Identity identity,
+                        WireSecurity ws, InetSocketAddress sa)
+                                                              throws SocketException {
         connectionSet = cs;
         me = identity;
         wireSecurity = ws;

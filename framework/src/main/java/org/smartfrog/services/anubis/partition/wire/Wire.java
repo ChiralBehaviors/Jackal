@@ -29,8 +29,6 @@ import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 
-import com.hellblazer.anubis.partition.coms.udp.MembershipMessage;
-
 /**
  * Static class with wire form message utilities
  * 
@@ -97,9 +95,6 @@ public class Wire {
 
             case WireMsg.WIRE_TYPE:
                 return new WireMsg(wireForm);
-
-            case MembershipMessage.MEMBERSHIP_MSG_WIRE_TYPE:
-                return new MembershipMessage(wireForm);
 
             default:
                 throw new WireFormException("Unknown message type (" + type
