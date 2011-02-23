@@ -17,7 +17,7 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 /**
  * Contains information about a specified list of Endpoints and the largest
@@ -26,11 +26,11 @@ import java.net.InetAddress;
 
 public class Digest implements Comparable<Digest> {
 
-    InetAddress endpoint;
+    InetSocketAddress endpoint;
     int generation;
     int maxVersion;
 
-    Digest(InetAddress ep, int gen, int version) {
+    Digest(InetSocketAddress ep, int gen, int version) {
         endpoint = ep;
         generation = gen;
         maxVersion = version;
@@ -55,7 +55,7 @@ public class Digest implements Comparable<Digest> {
         return sb.toString();
     }
 
-    InetAddress getEndpoint() {
+    InetSocketAddress getEndpoint() {
         return endpoint;
     }
 

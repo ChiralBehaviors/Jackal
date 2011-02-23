@@ -47,7 +47,7 @@ public class PhiAccrualFailureDetector {
      * Answer the suspicion level of the detector.
      * <p>
      * Given some threshold sigma, and assuming that we decide to suspect p when
-     * phi ³ sigma = 1, then the likeliness that we will make a mistake (i.e.,
+     * phi ï¿½ sigma = 1, then the likeliness that we will make a mistake (i.e.,
      * the decision will be contradicted in the future by the reception of a
      * late heartbeat) is about 10%. The likeliness is about 1% with sigma = 2,
      * 0.1% with sigma = 3, and so on.
@@ -57,24 +57,22 @@ public class PhiAccrualFailureDetector {
      * reported that the Exponential Distribution to be a better approximation,
      * because of the nature of the gossip channel and its impact on latency
      * 
+     * @param now
+     *            - the the time to calculate phi
      * @return - the suspicion level of the detector
      */
-    public double phi() {
-        double tnow = System.currentTimeMillis();
+    public double phi(long now) {
         if (count == 0) {
             return 0d;
-        } else {
-            return -1
-                   * Math.log10(Math.pow(Math.E, -1 * (tnow - last)
-                                                 / (sum / count)));
         }
+        return -1
+               * Math.log10(Math.pow(Math.E, -1 * (now - last) / (sum / count)));
     }
 
     /**
      * Record the inter arrival time of a heartbeat.
      */
-    public void record() {
-        double now = System.currentTimeMillis();
+    public void record(long now) {
         if (last > 0D) {
             double interArrivalTime = now - last;
             sum += interArrivalTime;

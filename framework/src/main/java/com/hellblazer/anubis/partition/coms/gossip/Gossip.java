@@ -19,7 +19,7 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import static java.lang.String.format;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,7 +51,7 @@ public class Gossip {
     private final static Logger log = Logger.getLogger(Gossip.class.getCanonicalName());
 
     private final double convictThreshold;
-    private final Map<InetAddress, EndpointState> endpointState = new ConcurrentHashMap<InetAddress, EndpointState>();
+    private final Map<InetSocketAddress, EndpointState> endpointState = new ConcurrentHashMap<InetSocketAddress, EndpointState>();
     private final Random entropy;
     private final EndpointState localState;
     private final AtomicInteger version = new AtomicInteger(0);
@@ -75,7 +75,7 @@ public class Gossip {
     /**
      * Add an endpoint we knew about previously, but whose state is unknown
      */
-    public void addSavedEndpoint(InetAddress endpoint) {
+    public void addSavedEndpoint(InetSocketAddress endpoint) {
         EndpointState state = endpointState.get(endpoint);
         if (state == null) {
             state = new EndpointState(0);
@@ -92,18 +92,18 @@ public class Gossip {
     public void checkStatus() {
         long now = System.currentTimeMillis();
 
-        for (Entry<InetAddress, EndpointState> entry : endpointState.entrySet()) {
-            InetAddress endpoint = entry.getKey();
+        for (Entry<InetSocketAddress, EndpointState> entry : endpointState.entrySet()) {
+            InetSocketAddress endpoint = entry.getKey();
             if (endpoint.equals(view.getLocalAddress())) {
                 continue;
             }
 
             EndpointState state = entry.getValue();
-            if (state.interpret(convictThreshold) && state.isAlive()) {
+            if (state.interpret(now, convictThreshold) && state.isAlive()) {
                 state.markDead();
                 view.markDead(endpoint);
                 if (log.isLoggable(Level.INFO)) {
-                    log.info(format("InetAddress %s is now dead.", endpoint));
+                    log.info(format("InetSocketAddress %s is now dead.", endpoint));
                 }
             }
             if (!state.isAlive()
@@ -119,7 +119,7 @@ public class Gossip {
      * 
      * @return the live member, or null if there are no live members
      */
-    public InetAddress getRandomLiveMember() {
+    public InetSocketAddress getRandomLiveMember() {
         return view.getRandomLiveMember();
     }
 
@@ -130,7 +130,7 @@ public class Gossip {
      *            - the member that has just been gossiped with
      * @return a random member of the seed set, if appropriate, or null
      */
-    public InetAddress getRandomSeedMember(InetAddress member) {
+    public InetSocketAddress getRandomSeedMember(InetSocketAddress member) {
         return view.getRandomSeedMember(member);
     }
 
@@ -140,27 +140,28 @@ public class Gossip {
      * @return the unreachable member selected, or null if none selected or
      *         available
      */
-    public InetAddress getRandomUnreachableMember() {
+    public InetSocketAddress getRandomUnreachableMember() {
         return view.getRandomUnreachableMember();
     }
 
-    public Ack2 handle(Ack ack, InetAddress from) {
+    public Ack2 handle(Ack ack, InetSocketAddress from) {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Received a GossipDigestAckMessage from %s", from));
         }
         List<Digest> gDigestList = ack.digests;
-        Map<InetAddress, EndpointState> remoteStates = ack.getEndpointStates();
+        Map<InetSocketAddress, EndpointState> remoteStates = ack.getEndpointStates();
 
         if (remoteStates.size() > 0) {
-            for (Entry<InetAddress, EndpointState> entry : remoteStates.entrySet()) {
-                endpointState.get(entry.getKey()).record(entry.getValue());
+            long now = System.currentTimeMillis();
+            for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
+                endpointState.get(entry.getKey()).record(entry.getValue(), now);
             }
             applyLocally(remoteStates);
         }
 
-        Map<InetAddress, EndpointState> deltaState = new HashMap<InetAddress, EndpointState>();
+        Map<InetSocketAddress, EndpointState> deltaState = new HashMap<InetSocketAddress, EndpointState>();
         for (Digest gDigest : gDigestList) {
-            InetAddress addr = gDigest.getEndpoint();
+            InetSocketAddress addr = gDigest.getEndpoint();
             EndpointState localState = getState(addr, gDigest.getMaxVersion());
             if (localState != null) {
                 deltaState.put(addr, localState);
@@ -172,19 +173,20 @@ public class Gossip {
         return new Ack2(deltaState);
     }
 
-    public void handle(Ack2 ack2, InetAddress from) {
+    public void handle(Ack2 ack2, InetSocketAddress from) {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Received a GossipDigestAck2Message from %s",
                               from));
         }
-        Map<InetAddress, EndpointState> remoteStates = ack2.getEndpointStates();
-        for (Entry<InetAddress, EndpointState> entry : remoteStates.entrySet()) {
-            endpointState.get(entry.getKey()).record(entry.getValue());
+        Map<InetSocketAddress, EndpointState> remoteStates = ack2.getEndpointStates();
+        long now = System.currentTimeMillis();
+        for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
+            endpointState.get(entry.getKey()).record(entry.getValue(), now);
         }
         applyLocally(remoteStates);
     }
 
-    public Ack handle(Syn syn, InetAddress from) {
+    public Ack handle(Syn syn, InetSocketAddress from) {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Received a GossipDigestSynMessage from %s", from));
         }
@@ -198,8 +200,10 @@ public class Gossip {
             }
             log.finest(format("Gossip syn digests are : %s" + sb.toString()));
         }
+        long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
-            endpointState.get(gDigest.endpoint).record(endpointState.get(gDigest.endpoint));
+            endpointState.get(gDigest.endpoint).record(endpointState.get(gDigest.endpoint),
+                                                       now);
         }
 
         sort(digests);
@@ -211,7 +215,7 @@ public class Gossip {
         return examine(digests);
     }
 
-    public boolean isKnown(InetAddress endpoint) {
+    public boolean isKnown(InetSocketAddress endpoint) {
         return endpointState.containsKey(endpoint);
     }
 
@@ -232,10 +236,10 @@ public class Gossip {
         int generation = 0;
         int maxVersion = 0;
 
-        List<InetAddress> endpoints = new ArrayList<InetAddress>(
+        List<InetSocketAddress> endpoints = new ArrayList<InetSocketAddress>(
                                                                  endpointState.keySet());
         Collections.shuffle(endpoints, entropy);
-        for (InetAddress endpoint : endpoints) {
+        for (InetSocketAddress endpoint : endpoints) {
             epState = endpointState.get(endpoint);
             if (epState != null) {
                 generation = epState.getGeneration();
@@ -255,7 +259,7 @@ public class Gossip {
         return digests;
     }
 
-    private void apply(InetAddress endpoint, EndpointState localState,
+    private void apply(InetSocketAddress endpoint, EndpointState localState,
                        EndpointState remoteState) {
         int oldVersion = localState.getHeartbeatVersion();
         localState.setHeartBeatState(remoteState.getHeartBeatState());
@@ -266,9 +270,9 @@ public class Gossip {
         }
     }
 
-    private void applyLocally(Map<InetAddress, EndpointState> remoteStates) {
-        for (Entry<InetAddress, EndpointState> entry : remoteStates.entrySet()) {
-            InetAddress endpoint = entry.getKey();
+    private void applyLocally(Map<InetSocketAddress, EndpointState> remoteStates) {
+        for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
+            InetSocketAddress endpoint = entry.getKey();
             if (endpoint.equals(view.getLocalAddress())) {
                 continue;
             }
@@ -321,7 +325,7 @@ public class Gossip {
 
     private Ack examine(List<Digest> digests) {
         List<Digest> deltaDigests = new ArrayList<Digest>();
-        Map<InetAddress, EndpointState> deltaState = new HashMap<InetAddress, EndpointState>();
+        Map<InetSocketAddress, EndpointState> deltaState = new HashMap<InetSocketAddress, EndpointState>();
         for (Digest digest : digests) {
             int remoteGeneration = digest.getGeneration();
             int maxRemoteVersion = digest.getMaxVersion();
@@ -354,7 +358,7 @@ public class Gossip {
         return new Ack(deltaDigests, deltaState);
     }
 
-    private EndpointState getState(InetAddress endpoint, int version) {
+    private EndpointState getState(InetSocketAddress endpoint, int version) {
         EndpointState epState = endpointState.get(endpoint);
         EndpointState reqdEndpointState = null;
 
@@ -378,7 +382,7 @@ public class Gossip {
      * @param state
      *            EndpointState for the endpoint
      */
-    private void handleMajorStateChange(InetAddress endpoint,
+    private void handleMajorStateChange(InetSocketAddress endpoint,
                                         EndpointState state) {
         if (endpointState.get(endpoint) != null) {
             log.info(format("Node %s has restarted, now UP again", endpoint));
@@ -392,7 +396,7 @@ public class Gossip {
         state.markAlive();
         view.markAlive(endpoint);
         if (log.isLoggable(Level.INFO)) {
-            log.info(format("InetAddress %s is now UP", endpoint));
+            log.info(format("InetSocketAddress %s is now UP", endpoint));
         }
     }
 
@@ -404,7 +408,7 @@ public class Gossip {
         }
     }
 
-    private void sendAll(Digest digest, Map<InetAddress, EndpointState> delta,
+    private void sendAll(Digest digest, Map<InetSocketAddress, EndpointState> delta,
                          int maxRemoteVersion) {
         EndpointState localState = getState(digest.getEndpoint(),
                                             maxRemoteVersion);
@@ -417,20 +421,20 @@ public class Gossip {
      * First construct a map whose key is the endpoint in the GossipDigest and
      * the value is the GossipDigest itself. Then build a list of version
      * differences i.e difference between the version in the GossipDigest and
-     * the version in the local state for a given InetAddress. Sort this list.
+     * the version in the local state for a given InetSocketAddress. Sort this list.
      * Now loop through the sorted list and retrieve the GossipDigest
      * corresponding to the endpoint from the map that was initially
      * constructed.
      */
     private void sort(List<Digest> digests) {
-        Map<InetAddress, Digest> endpoint2digest = new HashMap<InetAddress, Digest>();
+        Map<InetSocketAddress, Digest> endpoint2digest = new HashMap<InetSocketAddress, Digest>();
         for (Digest gDigest : digests) {
             endpoint2digest.put(gDigest.getEndpoint(), gDigest);
         }
 
         List<Digest> diffDigests = new ArrayList<Digest>();
         for (Digest gDigest : digests) {
-            InetAddress ep = gDigest.getEndpoint();
+            InetSocketAddress ep = gDigest.getEndpoint();
             EndpointState epState = endpointState.get(ep);
             int version = epState != null ? epState.getHeartbeatVersion() : 0;
             int diffVersion = Math.abs(version - gDigest.getMaxVersion());

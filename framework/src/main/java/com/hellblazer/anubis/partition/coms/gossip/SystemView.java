@@ -19,7 +19,7 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import static java.lang.String.format;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -50,28 +50,40 @@ import java.util.logging.Logger;
  */
 public class SystemView {
     private static final long A_VERY_LONG_TIME = 259200 * 1000; // 3 days
-    private static final Comparator<InetAddress> ADDRESS_COMPARATOR = new Comparator<InetAddress>() {
+    private static final Comparator<InetSocketAddress> ADDRESS_COMPARATOR = new Comparator<InetSocketAddress>() {
         @Override
-        public int compare(InetAddress addr1, InetAddress addr2) {
-            return addr1.getHostAddress().compareTo(addr2.getHostAddress());
+        public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
+            int hostCompare = addr1.getAddress().getHostAddress().compareTo(addr2.getAddress().getHostAddress());
+            if (hostCompare == 0) {
+                int port1 = addr1.getPort();
+                int port2 = addr2.getPort();
+                if (port1 == port2) {
+                    return 0;
+                }
+                if (port1 > port2) {
+                    return 1;
+                }
+                return -1;
+            }
+            return hostCompare;
         }
     };
     private static final Logger log = Logger.getLogger(SystemView.class.getCanonicalName());
     private static final int QUARANTINE_DELAY = 30 * 1000;
     private final Random entropy;
-    private final Set<InetAddress> live = new ConcurrentSkipListSet<InetAddress>(
-                                                                                 ADDRESS_COMPARATOR);
-    private final InetAddress localAddress;
-    private final Map<InetAddress, Long> quarantined = new ConcurrentHashMap<InetAddress, Long>();
-    private final Set<InetAddress> seeds = new ConcurrentSkipListSet<InetAddress>(
-                                                                                  ADDRESS_COMPARATOR);
-    private final Map<InetAddress, Long> unreachable = new ConcurrentHashMap<InetAddress, Long>();
+    private final Set<InetSocketAddress> live = new ConcurrentSkipListSet<InetSocketAddress>(
+                                                                                             ADDRESS_COMPARATOR);
+    private final InetSocketAddress localAddress;
+    private final Map<InetSocketAddress, Long> quarantined = new ConcurrentHashMap<InetSocketAddress, Long>();
+    private final Set<InetSocketAddress> seeds = new ConcurrentSkipListSet<InetSocketAddress>(
+                                                                                              ADDRESS_COMPARATOR);
+    private final Map<InetSocketAddress, Long> unreachable = new ConcurrentHashMap<InetSocketAddress, Long>();
 
-    public SystemView(Random random, InetAddress local,
-                      Collection<InetAddress> seedHosts) {
+    public SystemView(Random random, InetSocketAddress local,
+                      Collection<InetSocketAddress> seedHosts) {
         entropy = random;
         localAddress = local;
-        for (InetAddress seed : seedHosts) {
+        for (InetSocketAddress seed : seedHosts) {
             if (!seed.equals(localAddress)) {
                 seeds.add(seed);
             }
@@ -87,7 +99,7 @@ public class SystemView {
      */
     public void cullQuarantined(long now) {
         if (!quarantined.isEmpty()) {
-            for (Map.Entry<InetAddress, Long> entry : quarantined.entrySet()) {
+            for (Map.Entry<InetSocketAddress, Long> entry : quarantined.entrySet()) {
                 if (now - entry.getValue() > QUARANTINE_DELAY) {
                     if (log.isLoggable(Level.FINE)) {
                         log.fine(QUARANTINE_DELAY + " elapsed, "
@@ -99,7 +111,7 @@ public class SystemView {
         }
     }
 
-    public boolean cullUnreachable(InetAddress endpoint, long now) {
+    public boolean cullUnreachable(InetSocketAddress endpoint, long now) {
         if (now > A_VERY_LONG_TIME) {
             unreachable.remove(endpoint);
             return true;
@@ -114,13 +126,12 @@ public class SystemView {
      * @return the number of milliseconds the endpoint has been unreachable, or
      *         0, if the endpoint is not in the set of unreachable endpoints
      */
-    public long getEndpointDowntime(InetAddress endpoint) {
+    public long getEndpointDowntime(InetSocketAddress endpoint) {
         Long downtime = unreachable.get(endpoint);
         if (downtime != null) {
             return System.currentTimeMillis() - downtime;
-        } else {
-            return 0L;
         }
+        return 0L;
     }
 
     /**
@@ -128,7 +139,7 @@ public class SystemView {
      * 
      * @return the collection of endpoints that are considered live
      */
-    public Collection<InetAddress> getLiveMembers() {
+    public Collection<InetSocketAddress> getLiveMembers() {
         return Collections.unmodifiableCollection(live);
     }
 
@@ -137,7 +148,7 @@ public class SystemView {
      * 
      * @return the address of the view
      */
-    public InetAddress getLocalAddress() {
+    public InetSocketAddress getLocalAddress() {
         return localAddress;
     }
 
@@ -146,7 +157,7 @@ public class SystemView {
      * 
      * @return the live member, or null if there are no live members
      */
-    public InetAddress getRandomLiveMember() {
+    public InetSocketAddress getRandomLiveMember() {
         return getRandomMember(live);
     }
 
@@ -162,7 +173,7 @@ public class SystemView {
      *            - the member that has been gossiped with
      * @return a random member of the seed set, if appropriate, or null
      */
-    public InetAddress getRandomSeedMember(InetAddress member) {
+    public InetSocketAddress getRandomSeedMember(InetSocketAddress member) {
         if (member == null) {
             return getRandomMember(seeds);
         }
@@ -178,11 +189,10 @@ public class SystemView {
 
                 if (live.size() == 0) {
                     return getRandomMember(seeds);
-                } else {
-                    if (entropy.nextDouble() <= seeds.size()
-                                                / (double) (live.size() + unreachable.size())) {
-                        return getRandomMember(seeds);
-                    }
+                }
+                if (entropy.nextDouble() <= seeds.size()
+                                            / (double) (live.size() + unreachable.size())) {
+                    return getRandomMember(seeds);
                 }
             }
         }
@@ -197,7 +207,7 @@ public class SystemView {
      * @return the unreachable member selected, or null if none selected or
      *         available
      */
-    public InetAddress getRandomUnreachableMember() {
+    public InetSocketAddress getRandomUnreachableMember() {
         if (entropy.nextDouble() < unreachable.size()
                                    / ((double) live.size() + 1)) {
             return getRandomMember(unreachable.keySet());
@@ -210,7 +220,7 @@ public class SystemView {
      * 
      * @return the set of unreachable endpoints.
      */
-    public Collection<InetAddress> getUnreachableMembers() {
+    public Collection<InetSocketAddress> getUnreachableMembers() {
         return Collections.unmodifiableCollection(unreachable.keySet());
     }
 
@@ -221,7 +231,7 @@ public class SystemView {
      *            - the endpoint to query
      * @return true if the endpoint is currently quarantined
      */
-    public boolean isQuarantined(InetAddress ep) {
+    public boolean isQuarantined(InetSocketAddress ep) {
         return quarantined.containsKey(ep);
     }
 
@@ -231,7 +241,7 @@ public class SystemView {
      * @param endpoint
      *            - the endpoint to mark as live
      */
-    public void markAlive(InetAddress endpoint) {
+    public void markAlive(InetSocketAddress endpoint) {
         live.add(endpoint);
         unreachable.remove(endpoint);
     }
@@ -242,13 +252,13 @@ public class SystemView {
      * @param endpoint
      *            - the endpoint to mark as dead
      */
-    public void markDead(InetAddress endpoint) {
+    public void markDead(InetSocketAddress endpoint) {
         live.remove(endpoint);
         unreachable.put(endpoint, System.currentTimeMillis());
         quarantined.put(endpoint, System.currentTimeMillis());
     }
 
-    public void markUnreachable(InetAddress ep) {
+    public void markUnreachable(InetSocketAddress ep) {
         unreachable.put(ep, System.currentTimeMillis());
     }
 
@@ -259,14 +269,14 @@ public class SystemView {
      *            - the endpoints to sample
      * @return the selected member
      */
-    private InetAddress getRandomMember(Collection<InetAddress> endpoints) {
+    private InetSocketAddress getRandomMember(Collection<InetSocketAddress> endpoints) {
         if (endpoints.isEmpty()) {
             return null;
         }
         int size = endpoints.size();
         int index = size == 1 ? 0 : entropy.nextInt(size);
         int i = 0;
-        for (InetAddress address : endpoints) {
+        for (InetSocketAddress address : endpoints) {
             if (i++ == index) {
                 return address;
             }

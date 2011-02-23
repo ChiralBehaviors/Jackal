@@ -21,7 +21,7 @@ import static java.lang.String.format;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
@@ -160,17 +160,17 @@ public class Heartbeat {
         List<Digest> digests = gossip.randomDigests();
         if (digests.size() > 0) {
             Syn message = new Syn(digests);
-            InetAddress member = gossip.getRandomLiveMember();
+            InetSocketAddress member = gossip.getRandomLiveMember();
             if (member != null) {
                 send(message, member);
             }
 
-            InetAddress unreachableMember = gossip.getRandomUnreachableMember();
+            InetSocketAddress unreachableMember = gossip.getRandomUnreachableMember();
             if (unreachableMember != null) {
                 send(message, unreachableMember);
             }
 
-            InetAddress seedMember = gossip.getRandomSeedMember(member);
+            InetSocketAddress seedMember = gossip.getRandomSeedMember(member);
             if (seedMember != null) {
                 send(message, seedMember);
             }
@@ -185,7 +185,7 @@ public class Heartbeat {
     private void receive(DatagramPacket packet) {
 
         ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
-        InetAddress from = packet.getAddress();
+        InetSocketAddress from = (InetSocketAddress) packet.getSocketAddress();
         int magicCookie = buffer.getInt();
         if (magic != magicCookie) {
             log.warning(format("Magic number mismatch from %s; received: %s != %s",
@@ -230,7 +230,7 @@ public class Heartbeat {
         }
     }
 
-    private void send(Message message, InetAddress to) {
+    private void send(Message message, InetSocketAddress to) {
         // TODO Auto-generated method stub
 
     }

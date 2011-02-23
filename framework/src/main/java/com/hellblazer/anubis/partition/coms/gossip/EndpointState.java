@@ -62,17 +62,17 @@ public class EndpointState {
         return heartbeat.version;
     }
 
-    public boolean interpret(double convictThreshold) {
-        return fd.phi() > convictThreshold;
+    public boolean interpret(long now, double convictThreshold) {
+        return fd.phi(now) > convictThreshold;
     }
 
     public boolean isAlive() {
         return isAlive;
     }
 
-    public void record(EndpointState remote) {
+    public void record(EndpointState remote, long now) {
         if (heartbeat.record(remote.heartbeat)) {
-            fd.record();
+            fd.record(now);
         }
     }
 

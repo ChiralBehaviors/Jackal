@@ -17,7 +17,7 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 
 /**
@@ -26,9 +26,9 @@ import java.util.Map;
  */
 
 public class Ack2 extends Message {
-    final Map<InetAddress, EndpointState> state;
+    final Map<InetSocketAddress, EndpointState> state;
 
-    Ack2(Map<InetAddress, EndpointState> state) {
+    Ack2(Map<InetSocketAddress, EndpointState> state) {
         this.state = state;
     }
 
@@ -38,7 +38,7 @@ public class Ack2 extends Message {
         return null;
     }
 
-    Map<InetAddress, EndpointState> getEndpointStates() {
+    Map<InetSocketAddress, EndpointState> getEndpointStates() {
         return state;
     }
 }
