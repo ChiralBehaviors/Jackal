@@ -21,6 +21,7 @@ import static java.lang.String.format;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,17 +33,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.hellblazer.anubis.util.Pair;
+
 /**
- * A gossip protocol to replicate Anubis heartbeat state. Periodically, the
- * protocol chooses a random member from the system view and initiates a round
- * of gossip with it. A round of gossip is push/pull and involves 3 messages.
- * For instance if node A wants to initiate a round of gossip with node B it
- * starts off by sending node B a Syn. Node B on receipt of this message sends
- * node A an Ack. On receipt of this message node A sends node B an Ack2 which
- * completes a round of gossip. When messages are recived, the protocol updates
- * the endpoint's failure detector with the liveness information. If the
- * endpoint's failure detector predicts that the endpoint has failed, the
- * endpoint is marked dead.
+ * The embodiment of the gossip protocol. This protocol replicate Anubis
+ * heartbeat state and forms both a member discovery and failure detection
+ * service. Periodically, the protocol chooses a random member from the system
+ * view and initiates a round of gossip with it. A round of gossip is push/pull
+ * and involves 3 messages. For instance if node A wants to initiate a round of
+ * gossip with node B it starts off by sending node B a Syn. Node B on receipt
+ * of this message sends node A an Ack. On receipt of this message node A sends
+ * node B an Ack2 which completes a round of gossip. When messages are recived,
+ * the protocol updates the endpoint's failure detector with the liveness
+ * information. If the endpoint's failure detector predicts that the endpoint
+ * has failed, the endpoint is marked dead.
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
@@ -73,6 +77,54 @@ public class Gossip {
     }
 
     /**
+     * The second message of the gossip protocol.
+     * 
+     * @param remoteStates
+     * @param from
+     */
+    public void ack(Map<InetSocketAddress, EndpointState> remoteStates,
+                    InetSocketAddress from) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Received a GossipDigestAck2Message from %s",
+                              from));
+        }
+        long now = System.currentTimeMillis();
+        for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
+            endpointState.get(entry.getKey()).record(entry.getValue(), now);
+        }
+        applyLocally(remoteStates);
+    }
+
+    public Map<InetSocketAddress, EndpointState> ack2(List<Digest> digests,
+                                                      Map<InetSocketAddress, EndpointState> remoteStates,
+                                                      InetSocketAddress from) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Received a GossipDigestAckMessage from %s", from));
+        }
+
+        if (remoteStates.size() > 0) {
+            long now = System.currentTimeMillis();
+            for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
+                endpointState.get(entry.getKey()).record(entry.getValue(), now);
+            }
+            applyLocally(remoteStates);
+        }
+
+        Map<InetSocketAddress, EndpointState> deltaState = new HashMap<InetSocketAddress, EndpointState>();
+        for (Digest gDigest : digests) {
+            InetSocketAddress addr = gDigest.getEndpoint();
+            EndpointState localState = getState(addr, gDigest.getMaxVersion());
+            if (localState != null) {
+                deltaState.put(addr, localState);
+            }
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Sending a GossipDigestAck2Message to %s", from));
+        }
+        return deltaState;
+    }
+
+    /**
      * Add an endpoint we knew about previously, but whose state is unknown
      */
     public void addSavedEndpoint(InetSocketAddress endpoint) {
@@ -83,8 +135,8 @@ public class Gossip {
             endpointState.put(endpoint, state);
             view.markUnreachable(endpoint);
             if (log.isLoggable(Level.FINEST)) {
-                log.finest("Adding saved endpoint " + endpoint + " "
-                           + state.getGeneration());
+                log.finest(format("Adding saved endpoint %s %s", endpoint,
+                                  state.getGeneration()));
             }
         }
     }
@@ -103,7 +155,8 @@ public class Gossip {
                 state.markDead();
                 view.markDead(endpoint);
                 if (log.isLoggable(Level.INFO)) {
-                    log.info(format("InetSocketAddress %s is now dead.", endpoint));
+                    log.info(format("InetSocketAddress %s is now dead.",
+                                    endpoint));
                 }
             }
             if (!state.isAlive()
@@ -144,54 +197,53 @@ public class Gossip {
         return view.getRandomUnreachableMember();
     }
 
-    public Ack2 handle(Ack ack, InetSocketAddress from) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received a GossipDigestAckMessage from %s", from));
-        }
-        List<Digest> gDigestList = ack.digests;
-        Map<InetSocketAddress, EndpointState> remoteStates = ack.getEndpointStates();
-
-        if (remoteStates.size() > 0) {
-            long now = System.currentTimeMillis();
-            for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
-                endpointState.get(entry.getKey()).record(entry.getValue(), now);
-            }
-            applyLocally(remoteStates);
-        }
-
-        Map<InetSocketAddress, EndpointState> deltaState = new HashMap<InetSocketAddress, EndpointState>();
-        for (Digest gDigest : gDigestList) {
-            InetSocketAddress addr = gDigest.getEndpoint();
-            EndpointState localState = getState(addr, gDigest.getMaxVersion());
-            if (localState != null) {
-                deltaState.put(addr, localState);
-            }
-        }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Sending a GossipDigestAck2Message to %s", from));
-        }
-        return new Ack2(deltaState);
+    public boolean isKnown(InetSocketAddress endpoint) {
+        return endpointState.containsKey(endpoint);
     }
 
-    public void handle(Ack2 ack2, InetSocketAddress from) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received a GossipDigestAck2Message from %s",
-                              from));
-        }
-        Map<InetSocketAddress, EndpointState> remoteStates = ack2.getEndpointStates();
-        long now = System.currentTimeMillis();
-        for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
-            endpointState.get(entry.getKey()).record(entry.getValue(), now);
-        }
-        applyLocally(remoteStates);
+    public void nextVersion() {
+        localState.updateHeartbeatVersion(version.incrementAndGet());
     }
 
-    public Ack handle(Syn syn, InetSocketAddress from) {
+    /**
+     * The gossip digest is built based on randomization rather than just
+     * looping through the collection of live endpoints.
+     * 
+     * @param digests
+     *            list of Gossip Digests.
+     */
+    public List<Digest> randomDigests() {
+        ArrayList<Digest> digests = new ArrayList<Digest>();
+        for (Entry<InetSocketAddress, EndpointState> entry : endpointState.entrySet()) {
+            digests.add(new Digest(entry.getKey(),
+                                   entry.getValue().getGeneration(),
+                                   entry.getValue().getHeartbeatVersion()));
+        }
+        Collections.shuffle(digests, entropy);
+        if (log.isLoggable(Level.FINEST)) {
+            StringBuilder sb = new StringBuilder();
+            for (Digest gDigest : digests) {
+                sb.append(gDigest);
+                sb.append(" ");
+            }
+            log.finest(format("Gossip Digests are : %s" + sb.toString()));
+        }
+        return digests;
+    }
+
+    /**
+     * The first message of the gossip protocol.
+     * 
+     * @param digests
+     * @param from
+     * @return
+     */
+    public Pair<List<Digest>, Map<InetSocketAddress, EndpointState>> synchronize(Digest[] digests,
+                                                                                 InetSocketAddress from) {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Received a GossipDigestSynMessage from %s", from));
         }
 
-        List<Digest> digests = syn.getGossipDigests();
         if (log.isLoggable(Level.FINEST)) {
             StringBuilder sb = new StringBuilder();
             for (Digest gDigest : digests) {
@@ -215,61 +267,6 @@ public class Gossip {
         return examine(digests);
     }
 
-    public boolean isKnown(InetSocketAddress endpoint) {
-        return endpointState.containsKey(endpoint);
-    }
-
-    public void nextVersion() {
-        localState.updateHeartbeatVersion(version.incrementAndGet());
-    }
-
-    /**
-     * The gossip digest is built based on randomization rather than just
-     * looping through the collection of live endpoints.
-     * 
-     * @param digests
-     *            list of Gossip Digests.
-     */
-    public List<Digest> randomDigests() {
-        ArrayList<Digest> digests = new ArrayList<Digest>();
-        EndpointState epState;
-        int generation = 0;
-        int maxVersion = 0;
-
-        List<InetSocketAddress> endpoints = new ArrayList<InetSocketAddress>(
-                                                                 endpointState.keySet());
-        Collections.shuffle(endpoints, entropy);
-        for (InetSocketAddress endpoint : endpoints) {
-            epState = endpointState.get(endpoint);
-            if (epState != null) {
-                generation = epState.getGeneration();
-                maxVersion = epState.getHeartbeatVersion();
-            }
-            digests.add(new Digest(endpoint, generation, maxVersion));
-        }
-
-        if (log.isLoggable(Level.FINEST)) {
-            StringBuilder sb = new StringBuilder();
-            for (Digest gDigest : digests) {
-                sb.append(gDigest);
-                sb.append(" ");
-            }
-            log.finest(format("Gossip Digests are : %s" + sb.toString()));
-        }
-        return digests;
-    }
-
-    private void apply(InetSocketAddress endpoint, EndpointState localState,
-                       EndpointState remoteState) {
-        int oldVersion = localState.getHeartbeatVersion();
-        localState.setHeartBeatState(remoteState.getHeartBeatState());
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Updating heartbeat state version to "
-                       + localState.getHeartbeatVersion() + " from "
-                       + oldVersion + " for " + endpoint + " ...");
-        }
-    }
-
     private void applyLocally(Map<InetSocketAddress, EndpointState> remoteStates) {
         for (Entry<InetSocketAddress, EndpointState> entry : remoteStates.entrySet()) {
             InetSocketAddress endpoint = entry.getKey();
@@ -278,8 +275,8 @@ public class Gossip {
             }
             if (view.isQuarantined(endpoint)) {
                 if (log.isLoggable(Level.FINEST)) {
-                    log.finest("Ignoring gossip for " + endpoint
-                               + " because it is quarantined");
+                    log.finest(format("Ignoring gossip for %s because it is quarantined",
+                                      endpoint));
                 }
                 continue;
             }
@@ -290,31 +287,37 @@ public class Gossip {
                 int localGeneration = localState.getGeneration();
                 int remoteGeneration = remoteState.getGeneration();
                 if (log.isLoggable(Level.FINEST)) {
-                    log.finest(endpoint + "local generation " + localGeneration
-                               + ", remote generation " + remoteGeneration);
+                    log.finest(format("%s local generation %s, remote generation %s",
+                                      endpoint, localGeneration,
+                                      remoteGeneration));
                 }
 
                 if (remoteGeneration > localGeneration) {
                     if (log.isLoggable(Level.FINEST)) {
-                        log.finest("Updating heartbeat state generation to "
-                                   + remoteGeneration + " from "
-                                   + localGeneration + " for " + endpoint);
+                        log.finest(format("Updating heartbeat state generation to %s from %s for %s",
+                                          remoteGeneration, localGeneration,
+                                          endpoint));
                     }
                     handleMajorStateChange(endpoint, remoteState);
                 } else if (remoteGeneration == localGeneration) {
-                    int localMaxVersion = localState.getHeartbeatVersion();
-                    int remoteMaxVersion = remoteState.getHeartbeatVersion();
-                    if (remoteMaxVersion > localMaxVersion) {
-                        apply(endpoint, localState, remoteState);
+                    if (remoteState.getHeartbeatVersion() > localState.getHeartbeatVersion()) {
+                        int oldVersion = localState.getHeartbeatVersion();
+                        localState.setHeartBeatState(remoteState.getHeartBeatState());
+                        if (log.isLoggable(Level.FINEST)) {
+                            log.finest(format("Updating heartbeat state version to %s from %s for %s  ...",
+                                              localState.getHeartbeatVersion(),
+                                              oldVersion, endpoint));
+                        }
                     } else if (log.isLoggable(Level.FINEST)) {
-                        log.finest("Ignoring remote version "
-                                   + remoteMaxVersion + " <= "
-                                   + localMaxVersion + " for " + endpoint);
+                        log.finest(format("Ignoring remote version %s <= %s for %s",
+                                          remoteState.getHeartbeatVersion(),
+                                          localState.getHeartbeatVersion(),
+                                          endpoint));
                     }
                 } else {
                     if (log.isLoggable(Level.FINEST)) {
-                        log.finest("Ignoring remote generation "
-                                   + remoteGeneration + " < " + localGeneration);
+                        log.finest(format("Ignoring remote generation %s < %s"
+                                          + remoteGeneration, localGeneration));
                     }
                 }
             } else {
@@ -323,7 +326,7 @@ public class Gossip {
         }
     }
 
-    private Ack examine(List<Digest> digests) {
+    private Pair<List<Digest>, Map<InetSocketAddress, EndpointState>> examine(Digest[] digests) {
         List<Digest> deltaDigests = new ArrayList<Digest>();
         Map<InetSocketAddress, EndpointState> deltaState = new HashMap<InetSocketAddress, EndpointState>();
         for (Digest digest : digests) {
@@ -355,7 +358,9 @@ public class Gossip {
                 requestAll(digest, deltaDigests, remoteGeneration);
             }
         }
-        return new Ack(deltaDigests, deltaState);
+        return new Pair<List<Digest>, Map<InetSocketAddress, EndpointState>>(
+                                                                             deltaDigests,
+                                                                             deltaState);
     }
 
     private EndpointState getState(InetSocketAddress endpoint, int version) {
@@ -365,9 +370,9 @@ public class Gossip {
         if (epState != null && epState.getHeartbeatVersion() > version) {
             reqdEndpointState = new EndpointState(epState.getHeartBeatState());
             if (log.isLoggable(Level.FINEST)) {
-                log.finest("local heartbeat version "
-                           + epState.getHeartbeatVersion() + " greater than "
-                           + version + " for " + endpoint);
+                log.finest(format("local heartbeat version %s greater than %s for %s ",
+                                  epState.getHeartbeatVersion(), version,
+                                  endpoint));
             }
         }
         return reqdEndpointState;
@@ -390,7 +395,7 @@ public class Gossip {
             log.info(format("Node %s is now part of the cluster", endpoint));
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("Adding endpoint state for " + endpoint);
+            log.finest(format("Adding endpoint state for %s", endpoint));
         }
         endpointState.put(endpoint, state);
         state.markAlive();
@@ -404,11 +409,12 @@ public class Gossip {
                             int remoteGeneration) {
         delta.add(new Digest(digest.getEndpoint(), remoteGeneration, 0));
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("requestAll for " + digest.getEndpoint());
+            log.finest(format("requestAll for %s", digest.getEndpoint()));
         }
     }
 
-    private void sendAll(Digest digest, Map<InetSocketAddress, EndpointState> delta,
+    private void sendAll(Digest digest,
+                         Map<InetSocketAddress, EndpointState> delta,
                          int maxRemoteVersion) {
         EndpointState localState = getState(digest.getEndpoint(),
                                             maxRemoteVersion);
@@ -421,31 +427,32 @@ public class Gossip {
      * First construct a map whose key is the endpoint in the GossipDigest and
      * the value is the GossipDigest itself. Then build a list of version
      * differences i.e difference between the version in the GossipDigest and
-     * the version in the local state for a given InetSocketAddress. Sort this list.
-     * Now loop through the sorted list and retrieve the GossipDigest
+     * the version in the local state for a given InetSocketAddress. Sort this
+     * list. Now loop through the sorted list and retrieve the GossipDigest
      * corresponding to the endpoint from the map that was initially
      * constructed.
      */
-    private void sort(List<Digest> digests) {
+    private void sort(Digest[] digests) {
         Map<InetSocketAddress, Digest> endpoint2digest = new HashMap<InetSocketAddress, Digest>();
-        for (Digest gDigest : digests) {
-            endpoint2digest.put(gDigest.getEndpoint(), gDigest);
+        for (Digest digest : digests) {
+            endpoint2digest.put(digest.getEndpoint(), digest);
         }
 
-        List<Digest> diffDigests = new ArrayList<Digest>();
+        Digest[] diffDigests = new Digest[digests.length];
+        int i = 0;
         for (Digest gDigest : digests) {
             InetSocketAddress ep = gDigest.getEndpoint();
             EndpointState epState = endpointState.get(ep);
             int version = epState != null ? epState.getHeartbeatVersion() : 0;
             int diffVersion = Math.abs(version - gDigest.getMaxVersion());
-            diffDigests.add(new Digest(ep, gDigest.getGeneration(), diffVersion));
+            diffDigests[i++] = new Digest(ep, gDigest.getGeneration(),
+                                          diffVersion);
         }
 
-        digests.clear();
-        Collections.sort(diffDigests);
-        int size = diffDigests.size();
-        for (int i = size - 1; i >= 0; --i) {
-            digests.add(endpoint2digest.get(diffDigests.get(i).getEndpoint()));
+        Arrays.sort(diffDigests);
+        int j = 0;
+        for (i = diffDigests.length - 1; i >= 0; --i) {
+            digests[j++] = endpoint2digest.get(diffDigests[i].getEndpoint());
         }
     }
 }

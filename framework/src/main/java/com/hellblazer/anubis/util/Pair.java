@@ -15,33 +15,22 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.anubis.partition.coms.gossip;
-
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Map;
+package com.hellblazer.anubis.util;
 
 /**
- * This message gets sent out as a result of the receipt of a Syn by an
- * endpoint. This is the 2 stage of the 3 way messaging in the Gossip protocol.
+ * 
+ * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
+ * 
+ * @param <A>
+ * @param <B>
  */
+public class Pair<A, B> {
+    final public A a;
+    final public B b;
 
-public class Ack extends Message {
-    final List<Digest> digests;
-    final Map<InetSocketAddress, EndpointState> states;
-
-    Ack(List<Digest> digests, Map<InetSocketAddress, EndpointState> states) {
-        this.digests = digests;
-        this.states = states;
-    }
-
-    @Override
-    public byte[] getMessageBody() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    Map<InetSocketAddress, EndpointState> getEndpointStates() {
-        return states;
+    public Pair(A a, B b) {
+        super();
+        this.a = a;
+        this.b = b;
     }
 }

@@ -240,7 +240,7 @@ public class UdpHeartbeat implements HeartbeatCommsIntf {
             @Override
             public void run() {
                 if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("Delivering heart beat: ", hb));
+                    log.finest(format("Delivering heart beat: %s", hb));
                 }
                 connectionSet.receiveHeartbeat(hb);
             }

@@ -47,10 +47,10 @@ public class PhiAccrualFailureDetector {
      * Answer the suspicion level of the detector.
      * <p>
      * Given some threshold sigma, and assuming that we decide to suspect p when
-     * phi � sigma = 1, then the likeliness that we will make a mistake (i.e.,
-     * the decision will be contradicted in the future by the reception of a
-     * late heartbeat) is about 10%. The likeliness is about 1% with sigma = 2,
-     * 0.1% with sigma = 3, and so on.
+     * phi >= sigma, when sigma = 1, then the likeliness that we will make a
+     * mistake (i.e., the decision will be contradicted in the future by the
+     * reception of a late heartbeat) is about 10%. The likeliness is about 1%
+     * with sigma = 2, 0.1% with sigma = 3, and so on.
      * <p>
      * Although the original paper suggests that the distribution is
      * approximated by the Gaussian distribution the Cassandra group has
@@ -61,7 +61,7 @@ public class PhiAccrualFailureDetector {
      *            - the the time to calculate phi
      * @return - the suspicion level of the detector
      */
-    public double phi(long now) {
+    public synchronized double phi(long now) {
         if (count == 0) {
             return 0d;
         }
@@ -72,7 +72,7 @@ public class PhiAccrualFailureDetector {
     /**
      * Record the inter arrival time of a heartbeat.
      */
-    public void record(long now) {
+    public synchronized void record(long now) {
         if (last > 0D) {
             double interArrivalTime = now - last;
             sum += interArrivalTime;

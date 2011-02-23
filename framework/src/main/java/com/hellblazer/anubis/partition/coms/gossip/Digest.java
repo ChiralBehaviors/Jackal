@@ -37,11 +37,41 @@ public class Digest implements Comparable<Digest> {
     }
 
     @Override
-    public int compareTo(Digest gDigest) {
-        if (generation != gDigest.generation) {
-            return generation - gDigest.generation;
+    public int compareTo(Digest digest) {
+        if (generation != digest.generation) {
+            return generation - digest.generation;
         }
-        return maxVersion - gDigest.maxVersion;
+        return maxVersion - digest.maxVersion;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Digest other = (Digest) obj;
+        if (generation != other.generation) {
+            return false;
+        }
+        if (maxVersion != other.maxVersion) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + generation;
+        result = prime * result + maxVersion;
+        return result;
     }
 
     @Override
