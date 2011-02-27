@@ -48,10 +48,10 @@ import com.hellblazer.anubis.util.Pair;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  */
 
-public class Heartbeat {
+public class Communications implements GossipCommunications {
     private static final byte ACK = 1;
     private static final byte ACK2 = 2;
-    private static final Logger log = Logger.getLogger(Heartbeat.class.getCanonicalName());
+    private static final Logger log = Logger.getLogger(Communications.class.getCanonicalName());
     private static final int MTU = 1500;
     private static final byte SYN = 0;
 
@@ -66,9 +66,9 @@ public class Heartbeat {
     private final ScheduledExecutorService scheduler;
     private final DatagramSocket socket;
 
-    public Heartbeat(SocketAddress listeningAddress, int magicCookie,
-                     Gossip gossiper, int gossipInterval, TimeUnit unit)
-                                                                        throws SocketException {
+    public Communications(SocketAddress listeningAddress, int magicCookie,
+                          Gossip gossiper, int gossipInterval, TimeUnit unit)
+                                                                             throws SocketException {
         interval = gossipInterval;
         intervalUnit = unit;
         magic = magicCookie;
@@ -95,6 +95,35 @@ public class Heartbeat {
         socket.setReceiveBufferSize(MTU);
         socket.setReuseAddress(true);
         socket.setSendBufferSize(MTU);
+    }
+
+    /* (non-Javadoc)
+     * @see com.hellblazer.anubis.partition.coms.gossip.GossipCommunications#send(java.util.List, java.net.InetSocketAddress)
+     */
+    @Override
+    public void send(List<Digest> digests, InetSocketAddress member) {
+        // TODO Auto-generated method stub
+
+    }
+
+    /* (non-Javadoc)
+     * @see com.hellblazer.anubis.partition.coms.gossip.GossipCommunications#send(java.util.Map, java.net.InetSocketAddress)
+     */
+    @Override
+    public void send(Map<InetSocketAddress, Endpoint> deltaState,
+                     InetSocketAddress to) {
+        // TODO Auto-generated method stub
+
+    }
+
+    /* (non-Javadoc)
+     * @see com.hellblazer.anubis.partition.coms.gossip.GossipCommunications#send(com.hellblazer.anubis.util.Pair, java.net.InetSocketAddress)
+     */
+    @Override
+    public void send(Pair<List<Digest>, Map<InetSocketAddress, Endpoint>> ack,
+                     InetSocketAddress from) {
+        // TODO Auto-generated method stub
+
     }
 
     /**
@@ -131,7 +160,7 @@ public class Heartbeat {
             @Override
             public void run() {
                 try {
-                    gossip();
+                    gossip.gossip(Communications.this);
                 } catch (Throwable e) {
                     log.log(Level.WARNING, "Exception while performing gossip",
                             e);
@@ -159,31 +188,6 @@ public class Heartbeat {
         };
     }
 
-    private void gossip() {
-        List<Digest> digests = gossip.randomDigests();
-        if (digests.size() > 0) {
-            InetSocketAddress member = gossip.getRandomLiveMember();
-            if (member != null) {
-                send(digests, member);
-            }
-
-            InetSocketAddress unreachableMember = gossip.getRandomUnreachableMember();
-            if (unreachableMember != null) {
-                send(digests, unreachableMember);
-            }
-
-            InetSocketAddress seedMember = gossip.getRandomSeedMember(member);
-            if (seedMember != null) {
-                send(digests, seedMember);
-            }
-
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Performing status check ...");
-            }
-            gossip.checkStatus();
-        }
-    }
-
     private void receive(DatagramPacket packet) {
         ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
         InetSocketAddress from = (InetSocketAddress) packet.getSocketAddress();
@@ -197,25 +201,26 @@ public class Heartbeat {
         switch (msgType) {
             case SYN: {
                 Digest[] digests = null;
-                Pair<List<Digest>, Map<InetSocketAddress, EndpointState>> ack = gossip.synchronize(digests,
-                                                                                                   from);
+                Pair<List<Digest>, Map<InetSocketAddress, Endpoint>> ack = gossip.synchronize(digests,
+                                                                                              from);
                 if (ack != null) {
                     send(ack, from);
                 }
                 break;
             }
             case ACK: {
-                Pair<List<Digest>, Map<InetSocketAddress, EndpointState>> ack = null;
-                Map<InetSocketAddress, EndpointState> deltaState = gossip.ack2(ack.a,
-                                                                               ack.b,
-                                                                               from);
+                List<Digest> digests = null;
+                Map<InetSocketAddress, Endpoint> remoteStates = null;
+                Map<InetSocketAddress, Endpoint> deltaState = gossip.ack2(digests,
+                                                                          remoteStates,
+                                                                          from);
                 if (deltaState != null) {
                     send(deltaState, from);
                 }
                 break;
             }
             case ACK2: {
-                Map<InetSocketAddress, EndpointState> remoteStates = null;
+                Map<InetSocketAddress, Endpoint> remoteStates = null;
                 gossip.ack(remoteStates, from);
                 break;
             }
@@ -226,42 +231,5 @@ public class Heartbeat {
                 }
             }
         }
-    }
-
-    /**
-     * The first message of the gossip protocol. Send a list of the shuffled
-     * digests of the receiver's view of the endpoint state
-     * 
-     * @param digests
-     * @param member
-     */
-    private void send(List<Digest> digests, InetSocketAddress member) {
-        // TODO Auto-generated method stub
-
-    }
-
-    /**
-     * Send the required delta state to the gossip member. This is the 3rd
-     * message in the gossip protocol
-     * 
-     * @param deltaState
-     * @param to
-     */
-    private void send(Map<InetSocketAddress, EndpointState> deltaState,
-                      InetSocketAddress to) {
-        // TODO Auto-generated method stub
-
-    }
-
-    /**
-     * The 3rd message in the gossip protocol
-     * 
-     * @param ack
-     * @param from
-     */
-    private void send(Pair<List<Digest>, Map<InetSocketAddress, EndpointState>> ack,
-                      InetSocketAddress from) {
-        // TODO Auto-generated method stub
-
     }
 }

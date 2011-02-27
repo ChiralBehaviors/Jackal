@@ -28,7 +28,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class LeaderProtocolFactory {
     public Candidate createCandidate(Heartbeat hb) {
         return new CandidateImpl(hb.getSender(), hb.getCandidate(),
-                                 hb.getIsPreferred());
+                                 hb.isPreferred());
     }
 
     public Candidate createCandidate(Identity id, Identity vote,

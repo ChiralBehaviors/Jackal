@@ -28,7 +28,7 @@ import org.smartfrog.services.anubis.partition.views.NumberedView;
 public interface Heartbeat extends Sender, Timed, NumberedView {
     public Identity getCandidate();
 
-    public boolean getIsPreferred();
+    public boolean isPreferred();
 
     public NodeIdSet getMsgLinks();
 

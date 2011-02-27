@@ -17,49 +17,39 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * This abstraction represents the HeartBeatState in an EndpointState instance.
  */
 
-public class EndpointState {
+public class Endpoint {
 
-    static class HeartBeat {
-        private int generation;
-        private int version;
-
-        public HeartBeat(int gen) {
-            generation = gen;
-        }
-
-        public boolean record(HeartBeat remote) {
-            return remote.generation > generation || remote.version > version;
-        }
-    }
-
-    protected static Logger logger = Logger.getLogger(EndpointState.class.getCanonicalName());
+    protected static Logger logger = Logger.getLogger(Endpoint.class.getCanonicalName());
 
     private final PhiAccrualFailureDetector fd = new PhiAccrualFailureDetector();
-    private volatile HeartBeat heartbeat;
+    private volatile HeartbeatState heartbeat;
     private volatile boolean isAlive = true;
     private volatile long update = System.currentTimeMillis();
 
-    public EndpointState(HeartBeat heartBeatState) {
+    public Endpoint() {
+        this(new HeartbeatState());
+    }
+
+    public Endpoint(HeartbeatState heartBeatState) {
         heartbeat = heartBeatState;
     }
 
-    EndpointState(int generation) {
-        this(new HeartBeat(generation));
+    public long getEpoch() {
+        return heartbeat.getSender().epoch;
     }
 
-    public int getGeneration() {
-        return heartbeat.generation;
+    public long getGeneration() {
+        return heartbeat.getSender().epoch;
     }
 
-    public int getHeartbeatVersion() {
-        return heartbeat.version;
+    public long getHeartbeatVersion() {
+        return heartbeat.getViewNumber();
     }
 
     public boolean interpret(long now, double convictThreshold) {
@@ -70,13 +60,11 @@ public class EndpointState {
         return isAlive;
     }
 
-    public void record(EndpointState remote, long now) {
-        if (heartbeat.record(remote.heartbeat)) {
-            fd.record(now);
-        }
+    public void record(long now) {
+        fd.record(now);
     }
 
-    HeartBeat getHeartBeatState() {
+    HeartbeatState getState() {
         return heartbeat;
     }
 
@@ -92,19 +80,8 @@ public class EndpointState {
         isAlive = false;
     }
 
-    void setHeartBeatState(HeartBeat newHbState) {
-        update();
+    void updateState(long now, HeartbeatState newHbState) {
+        update = now;
         heartbeat = newHbState;
-    }
-
-    void updateHeartbeatVersion(int newVersion) {
-        heartbeat.version = newVersion;
-        if (logger.isLoggable(Level.FINEST)) {
-            logger.finest("My heartbeat is now " + heartbeat.version);
-        }
-    }
-
-    private void update() {
-        update = System.currentTimeMillis();
     }
 }

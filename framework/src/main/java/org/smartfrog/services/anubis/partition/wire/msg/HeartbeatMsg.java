@@ -96,7 +96,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
     public HeartbeatMsg(HeartbeatMsg hb) {
         super(hb.getSender(), hb.getSenderAddress());
-        setIsPreferred(hb.getIsPreferred());
+        setIsPreferred(hb.isPreferred());
         setCandidate(hb.getCandidate());
         setTime(hb.getTime());
         setView(hb.getView());
@@ -137,7 +137,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     @Override
-    public boolean getIsPreferred() {
+    public boolean isPreferred() {
         return preferred;
     }
 

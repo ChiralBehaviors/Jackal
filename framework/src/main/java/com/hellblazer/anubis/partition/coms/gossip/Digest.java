@@ -26,22 +26,28 @@ import java.net.InetSocketAddress;
 
 public class Digest implements Comparable<Digest> {
 
-    InetSocketAddress endpoint;
-    int generation;
-    int maxVersion;
+    InetSocketAddress epAddress;
+    long epoch;
+    long maxVersion;
 
-    Digest(InetSocketAddress ep, int gen, int version) {
-        endpoint = ep;
-        generation = gen;
-        maxVersion = version;
+    public Digest(InetSocketAddress ep, long diffEpoch, long diffVersion) {
+        epAddress = ep;
+        epoch = diffEpoch;
+        maxVersion = diffVersion;
+    }
+
+    Digest(InetSocketAddress address, Endpoint ep) {
+        epAddress = address;
+        epoch = ep.getEpoch();
+        maxVersion = ep.getHeartbeatVersion();
     }
 
     @Override
     public int compareTo(Digest digest) {
-        if (generation != digest.generation) {
-            return generation - digest.generation;
+        if (epoch != digest.epoch) {
+            return (int) (epoch - digest.epoch);
         }
-        return maxVersion - digest.maxVersion;
+        return (int) (maxVersion - digest.maxVersion);
     }
 
     @Override
@@ -56,7 +62,7 @@ public class Digest implements Comparable<Digest> {
             return false;
         }
         Digest other = (Digest) obj;
-        if (generation != other.generation) {
+        if (epoch != other.epoch) {
             return false;
         }
         if (maxVersion != other.maxVersion) {
@@ -69,31 +75,31 @@ public class Digest implements Comparable<Digest> {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + generation;
-        result = prime * result + maxVersion;
+        result = prime * result + (int) (epoch ^ epoch >>> 32);
+        result = prime * result + (int) (maxVersion ^ maxVersion >>> 32);
         return result;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(endpoint);
+        sb.append(epAddress);
         sb.append(":");
-        sb.append(generation);
+        sb.append(epoch);
         sb.append(":");
         sb.append(maxVersion);
         return sb.toString();
     }
 
-    InetSocketAddress getEndpoint() {
-        return endpoint;
+    InetSocketAddress getEpAddress() {
+        return epAddress;
     }
 
-    int getGeneration() {
-        return generation;
+    long getEpoch() {
+        return epoch;
     }
 
-    int getMaxVersion() {
+    long getMaxVersion() {
         return maxVersion;
     }
 }
