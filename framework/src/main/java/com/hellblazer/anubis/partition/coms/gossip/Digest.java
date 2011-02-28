@@ -22,8 +22,10 @@ import java.net.InetSocketAddress;
 /**
  * Contains information about a specified list of Endpoints and the largest
  * version of the state they have generated as known by the local endpoint.
+ * 
+ * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
+ * 
  */
-
 public class Digest implements Comparable<Digest> {
 
     InetSocketAddress epAddress;

@@ -20,11 +20,14 @@ package com.hellblazer.anubis.partition.coms.gossip;
 import java.util.logging.Logger;
 
 /**
- * This abstraction represents the HeartBeatState in an EndpointState instance.
+ * The Endpoint keeps track of the heartbeat state and the failure detector for
+ * remote clients
+ * 
+ * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
+ * 
  */
 
 public class Endpoint {
-
     protected static Logger logger = Logger.getLogger(Endpoint.class.getCanonicalName());
 
     private final PhiAccrualFailureDetector fd = new PhiAccrualFailureDetector();
@@ -41,10 +44,6 @@ public class Endpoint {
     }
 
     public long getEpoch() {
-        return heartbeat.getSender().epoch;
-    }
-
-    public long getGeneration() {
         return heartbeat.getSender().epoch;
     }
 

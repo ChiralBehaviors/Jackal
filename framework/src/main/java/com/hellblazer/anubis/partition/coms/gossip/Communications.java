@@ -42,8 +42,7 @@ import java.util.logging.Logger;
 import com.hellblazer.anubis.util.Pair;
 
 /**
- * A heartbeat protocol based on gossip, using a failure detector to determine
- * the liveness of an endpoint.
+ * The communciations implementation for the gossip protocol
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  */
@@ -101,7 +100,7 @@ public class Communications implements GossipCommunications {
      * @see com.hellblazer.anubis.partition.coms.gossip.GossipCommunications#send(java.util.List, java.net.InetSocketAddress)
      */
     @Override
-    public void send(List<Digest> digests, InetSocketAddress member) {
+    public void send(List<Digest> digests, InetSocketAddress to) {
         // TODO Auto-generated method stub
 
     }
@@ -121,7 +120,7 @@ public class Communications implements GossipCommunications {
      */
     @Override
     public void send(Pair<List<Digest>, Map<InetSocketAddress, Endpoint>> ack,
-                     InetSocketAddress from) {
+                     InetSocketAddress to) {
         // TODO Auto-generated method stub
 
     }

@@ -59,7 +59,7 @@ public class Gossip {
     private final Endpoint localState;
     private final SystemView view;
 
-    public Gossip(int generation, SystemView systemView, Random random,
+    public Gossip(SystemView systemView, Random random,
                   double phiConvictThreshold, HeartbeatState initialState) {
         if (phiConvictThreshold < 5 || phiConvictThreshold > 16) {
             throw new IllegalArgumentException(
@@ -177,30 +177,6 @@ public class Gossip {
     }
 
     /**
-     * The gossip digest is built based on randomization rather than just
-     * looping through the collection of live endpoints.
-     * 
-     * @param digests
-     *            list of Gossip Digests.
-     */
-    public List<Digest> randomDigests() {
-        ArrayList<Digest> digests = new ArrayList<Digest>();
-        for (Entry<InetSocketAddress, Endpoint> entry : endpointState.entrySet()) {
-            digests.add(new Digest(entry.getKey(), entry.getValue()));
-        }
-        Collections.shuffle(digests, entropy);
-        if (log.isLoggable(Level.FINEST)) {
-            StringBuilder sb = new StringBuilder();
-            for (Digest gDigest : digests) {
-                sb.append(gDigest);
-                sb.append(" ");
-            }
-            log.finest(format("Gossip Digests are : %s" + sb.toString()));
-        }
-        return digests;
-    }
-
-    /**
      * The first message of the gossip protocol.
      * 
      * @param digests
@@ -263,22 +239,17 @@ public class Gossip {
             Endpoint localState = endpointState.get(endpoint);
             Endpoint remoteState = entry.getValue();
             if (localState != null) {
-                long localGeneration = localState.getGeneration();
-                long remoteGeneration = remoteState.getGeneration();
+                long localEpoch = localState.getEpoch();
+                long remoteEpoch = remoteState.getEpoch();
                 if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("%s local generation %s, remote generation %s",
-                                      endpoint, localGeneration,
-                                      remoteGeneration));
+                    log.finest(format("%s local epoch %s, remote epoch %s",
+                                      endpoint, localEpoch,
+                                      remoteEpoch));
                 }
 
-                if (remoteGeneration > localGeneration) {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(format("Updating heartbeat state generation to %s from %s for %s",
-                                          remoteGeneration, localGeneration,
-                                          endpoint));
-                    }
+                if (remoteEpoch > localEpoch) {
                     handleMajorStateChange(endpoint, remoteState);
-                } else if (remoteGeneration == localGeneration) {
+                } else if (remoteEpoch == localEpoch) {
                     if (remoteState.getHeartbeatVersion() > localState.getHeartbeatVersion()) {
                         long oldVersion = localState.getHeartbeatVersion();
                         localState.updateState(now, remoteState.getState());
@@ -295,8 +266,8 @@ public class Gossip {
                     }
                 } else {
                     if (log.isLoggable(Level.FINEST)) {
-                        log.finest(format("Ignoring remote generation %s < %s"
-                                          + remoteGeneration, localGeneration));
+                        log.finest(format("Ignoring remote epoch %s < %s"
+                                          + remoteEpoch, localEpoch));
                     }
                 }
             } else {
@@ -309,32 +280,38 @@ public class Gossip {
         List<Digest> deltaDigests = new ArrayList<Digest>();
         Map<InetSocketAddress, Endpoint> deltaState = new HashMap<InetSocketAddress, Endpoint>();
         for (Digest digest : digests) {
-            long remoteGeneration = digest.getEpoch();
+            long remoteEpoch = digest.getEpoch();
             long maxRemoteVersion = digest.getMaxVersion();
             Endpoint state = endpointState.get(digest.getEpAddress());
             if (state != null) {
-                long localGeneration = state.getGeneration();
+                long localEpoch = state.getEpoch();
                 long maxLocalVersion = state.getHeartbeatVersion();
-                if (remoteGeneration == localGeneration
+                if (remoteEpoch == localEpoch
                     && maxRemoteVersion == maxLocalVersion) {
                     continue;
                 }
 
-                if (remoteGeneration > localGeneration) {
-                    requestAll(digest, deltaDigests, remoteGeneration);
-                } else if (remoteGeneration < localGeneration) {
-                    sendAll(digest, deltaState, 0);
-                } else if (remoteGeneration == localGeneration) {
+                if (remoteEpoch > localEpoch) {
+                    deltaDigests.add(new Digest(digest.getEpAddress(), remoteEpoch, 0));
+                } else if (remoteEpoch < localEpoch) {
+                    Endpoint localState = getState(digest.getEpAddress(), 0);
+                    if (localState != null) {
+                        deltaState.put(digest.getEpAddress(), localState);
+                    }
+                } else if (remoteEpoch == localEpoch) {
                     if (maxRemoteVersion > maxLocalVersion) {
                         deltaDigests.add(new Digest(digest.getEpAddress(),
-                                                    remoteGeneration,
+                                                    remoteEpoch,
                                                     maxLocalVersion));
                     } else if (maxRemoteVersion < maxLocalVersion) {
-                        sendAll(digest, deltaState, maxRemoteVersion);
+                        Endpoint localState = getState(digest.getEpAddress(), maxRemoteVersion);
+                        if (localState != null) {
+                            deltaState.put(digest.getEpAddress(), localState);
+                        }
                     }
                 }
             } else {
-                requestAll(digest, deltaDigests, remoteGeneration);
+                deltaDigests.add(new Digest(digest.getEpAddress(), remoteEpoch, 0));
             }
         }
         return new Pair<List<Digest>, Map<InetSocketAddress, Endpoint>>(
@@ -359,7 +336,7 @@ public class Gossip {
 
     /**
      * This method is called whenever there is a "big" change in ep state (a
-     * generation change for a known node).
+     * epoch change for a known node).
      * 
      * @param endpoint
      *            endpoint
@@ -384,19 +361,28 @@ public class Gossip {
         }
     }
 
-    private void requestAll(Digest digest, List<Digest> delta, long remoteEpoch) {
-        delta.add(new Digest(digest.getEpAddress(), remoteEpoch, 0));
+    /**
+     * The gossip digest is built based on randomization rather than just
+     * looping through the collection of live endpoints.
+     * 
+     * @param digests
+     *            list of Gossip Digests.
+     */
+    private List<Digest> randomDigests() {
+        ArrayList<Digest> digests = new ArrayList<Digest>();
+        for (Entry<InetSocketAddress, Endpoint> entry : endpointState.entrySet()) {
+            digests.add(new Digest(entry.getKey(), entry.getValue()));
+        }
+        Collections.shuffle(digests, entropy);
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("requestAll for %s", digest.getEpAddress()));
+            StringBuilder sb = new StringBuilder();
+            for (Digest gDigest : digests) {
+                sb.append(gDigest);
+                sb.append(" ");
+            }
+            log.finest(format("Gossip Digests are : %s" + sb.toString()));
         }
-    }
-
-    private void sendAll(Digest digest, Map<InetSocketAddress, Endpoint> delta,
-                         long maxRemoteVersion) {
-        Endpoint localState = getState(digest.getEpAddress(), maxRemoteVersion);
-        if (localState != null) {
-            delta.put(digest.getEpAddress(), localState);
-        }
+        return digests;
     }
 
     /**
