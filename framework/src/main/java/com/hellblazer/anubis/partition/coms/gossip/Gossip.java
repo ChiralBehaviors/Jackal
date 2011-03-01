@@ -128,34 +128,30 @@ public class Gossip {
      * @return the pair of digests and heartbeat states to return to the sender
      */
     public Pair<List<Digest>, List<HeartbeatState>> gossip(Digest[] digests,
-                                                           InetSocketAddress from) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received a GossipDigestSynMessage from %s", from));
-        }
-
+                                                           InetSocketAddress from) { 
         if (log.isLoggable(Level.FINEST)) {
             StringBuilder sb = new StringBuilder();
             for (Digest gDigest : digests) {
                 sb.append(gDigest);
                 sb.append(" ");
             }
-            log.finest(format("Gossip syn digests are : %s" + sb.toString()));
+            log.finest(format("Gossip digests from %s are : %s", from, sb.toString()));
         }
         long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
             endpointState.get(gDigest.epAddress).record(now);
-        }
-
-        sort(digests);
-
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Sending a GossipDigestAckMessage to %s", from));
-        }
-
+        } 
+        sort(digests); 
         return examine(digests);
     }
 
-    public void gossip(GossipCommunications communications) {
+    /**
+     * Perform the periodic gossip.
+     * 
+     * @param communications
+     *            - the mechanism to send the gossip message to a peer
+     */
+    public void gossipWith(GossipCommunications communications) {
         List<Digest> digests = randomDigests();
         if (digests.size() > 0) {
             InetSocketAddress member = view.getRandomLiveMember();
@@ -178,10 +174,6 @@ public class Gossip {
             }
             checkStatus();
         }
-    }
-
-    public boolean isKnown(InetSocketAddress endpoint) {
-        return endpointState.containsKey(endpoint);
     }
 
     /**
@@ -230,16 +222,6 @@ public class Gossip {
     }
 
     /**
-     * Update the local heartbeat state vector.
-     * 
-     * @param updatedState
-     *            - the new heartbeat state
-     */
-    public void update(HeartbeatState updatedState) {
-        localState.updateState(System.currentTimeMillis(), updatedState);
-    }
-
-    /**
      * The third message of the gossip protocol.
      * 
      * @param remoteStates
@@ -258,6 +240,16 @@ public class Gossip {
             endpointState.get(state.getSenderAddress()).record(now);
         }
         applyLocally(now, remoteStates);
+    }
+
+    /**
+     * Update the local heartbeat state vector.
+     * 
+     * @param updatedState
+     *            - the new heartbeat state
+     */
+    public void updateLocalState(HeartbeatState updatedState) {
+        localState.updateState(System.currentTimeMillis(), updatedState);
     }
 
     private void applyLocally(long now, HeartbeatState[] remoteStates) {

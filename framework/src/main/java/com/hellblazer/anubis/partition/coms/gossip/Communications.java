@@ -20,7 +20,6 @@ package com.hellblazer.anubis.partition.coms.gossip;
 import static java.lang.String.format;
 
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
@@ -66,8 +65,7 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
     private final int magic;
     private Future<?> receiveTask;
     private final AtomicBoolean running = new AtomicBoolean();
-    private final ScheduledExecutorService scheduler;
-    private final DatagramSocket socket;
+    private final ScheduledExecutorService scheduler; 
 
     public Communications(SocketAddress listeningAddress, int magicCookie,
                           Gossip gossiper, int gossipInterval, TimeUnit unit)
@@ -94,10 +92,6 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
                 return daemon;
             }
         });
-        socket = new DatagramSocket(listeningAddress);
-        socket.setReceiveBufferSize(MTU);
-        socket.setReuseAddress(true);
-        socket.setSendBufferSize(MTU);
     }
 
     @Override
@@ -133,7 +127,7 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
 
     @Override
     public void sendHeartbeat(HeartbeatMsg msg) {
-        gossip.update(new HeartbeatState(msg));
+        gossip.updateLocalState(new HeartbeatState(msg));
     }
 
     @Override
@@ -150,10 +144,10 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
         if (!running.compareAndSet(false, true)) {
             return;
         }
-        gossipTask = scheduler.scheduleWithFixedDelay(getGossipTask(),
+        gossipTask = scheduler.scheduleWithFixedDelay(gossipTask(),
                                                       interval, interval,
                                                       intervalUnit);
-        receiveTask = inboundService.submit(getReceiveTask());
+        receiveTask = inboundService.submit(receiveTask());
     }
 
     @Override
@@ -173,12 +167,12 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
         }
     }
 
-    private Runnable getGossipTask() {
+    private Runnable gossipTask() {
         return new Runnable() {
             @Override
             public void run() {
                 try {
-                    gossip.gossip(Communications.this);
+                    gossip.gossipWith(Communications.this);
                 } catch (Throwable e) {
                     log.log(Level.WARNING, "Exception while performing gossip",
                             e);
@@ -187,7 +181,7 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
         };
     }
 
-    private Runnable getReceiveTask() {
+    private Runnable receiveTask() {
         return new Runnable() {
             @Override
             public void run() {
