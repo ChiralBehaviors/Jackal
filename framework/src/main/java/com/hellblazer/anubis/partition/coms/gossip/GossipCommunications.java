@@ -19,7 +19,6 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
 
 import com.hellblazer.anubis.util.Pair;
 
@@ -32,30 +31,39 @@ import com.hellblazer.anubis.util.Pair;
 public interface GossipCommunications {
 
     /**
-     * The first message (SYN) of the gossip protocol. Send a list of the
-     * shuffled digests of the receiver's view of the endpoint state
+     * The first message of the gossip protocol. Send a list of the shuffled
+     * digests of the receiver's view of the endpoint state
      * 
      * @param digests
+     *            - the list of heartbeat digests the receiver knows about
      * @param to
+     *            - the partner we're gossiping with
      */
-    void send(List<Digest> digests, InetSocketAddress to);
+    void gossip(List<Digest> digests, InetSocketAddress to);
 
     /**
-     * Send the required delta state to the gossip member. This is the 2nd
-     * message (ACK) in the gossip protocol
+     * The third message of the gossip protocol. Send a list of updated
+     * heartbeat states to the node requesting the updates.
      * 
      * @param deltaState
+     *            - the list of heartbeat states requested.
      * @param to
+     *            - the requesting node
      */
-    void send(Map<InetSocketAddress, Endpoint> deltaState, InetSocketAddress to);
+    void reply(List<HeartbeatState> deltaState, InetSocketAddress to);
 
     /**
-     * The 3rd message (ACK2) in the gossip protocol
+     * The second message in the gossip protocol. Send a list of digests the
+     * receiver would like heartbeat state updates for, along with the list of
+     * heartbeat state the receiver believes is out of date on the gossiping
+     * node.
      * 
      * @param ack
+     *            - the pair of state updates and requested state
      * @param to
+     *            - the gossiping node to reply to
      */
-    void send(Pair<List<Digest>, Map<InetSocketAddress, Endpoint>> ack,
-              InetSocketAddress to);
+    void reply(Pair<List<Digest>, List<HeartbeatState>> ack,
+               InetSocketAddress to);
 
 }

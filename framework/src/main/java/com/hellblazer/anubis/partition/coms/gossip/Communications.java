@@ -27,7 +27,6 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -39,6 +38,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
+import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.views.View;
+import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+
 import com.hellblazer.anubis.util.Pair;
 
 /**
@@ -47,12 +51,12 @@ import com.hellblazer.anubis.util.Pair;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  */
 
-public class Communications implements GossipCommunications {
-    private static final byte ACK = 1;
-    private static final byte ACK2 = 2;
+public class Communications implements GossipCommunications, HeartbeatCommsIntf {
+    private static final byte REPLY = 1;
+    private static final byte UPDATE = 2;
     private static final Logger log = Logger.getLogger(Communications.class.getCanonicalName());
     private static final int MTU = 1500;
-    private static final byte SYN = 0;
+    private static final byte GOSSIP = 0;
 
     private final Gossip gossip;
     private ScheduledFuture<?> gossipTask;
@@ -96,31 +100,44 @@ public class Communications implements GossipCommunications {
         socket.setSendBufferSize(MTU);
     }
 
-    /* (non-Javadoc)
-     * @see com.hellblazer.anubis.partition.coms.gossip.GossipCommunications#send(java.util.List, java.net.InetSocketAddress)
-     */
     @Override
-    public void send(List<Digest> digests, InetSocketAddress to) {
+    public String getThreadStatusString() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void gossip(List<Digest> digests, InetSocketAddress to) {
         // TODO Auto-generated method stub
 
     }
 
-    /* (non-Javadoc)
-     * @see com.hellblazer.anubis.partition.coms.gossip.GossipCommunications#send(java.util.Map, java.net.InetSocketAddress)
-     */
     @Override
-    public void send(Map<InetSocketAddress, Endpoint> deltaState,
-                     InetSocketAddress to) {
+    public boolean isIgnoring(Identity id) {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void reply(List<HeartbeatState> deltaState, InetSocketAddress to) {
         // TODO Auto-generated method stub
 
     }
 
-    /* (non-Javadoc)
-     * @see com.hellblazer.anubis.partition.coms.gossip.GossipCommunications#send(com.hellblazer.anubis.util.Pair, java.net.InetSocketAddress)
-     */
     @Override
-    public void send(Pair<List<Digest>, Map<InetSocketAddress, Endpoint>> ack,
-                     InetSocketAddress to) {
+    public void reply(Pair<List<Digest>, List<HeartbeatState>> ack,
+                      InetSocketAddress to) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void sendHeartbeat(HeartbeatMsg msg) {
+        gossip.update(new HeartbeatState(msg));
+    }
+
+    @Override
+    public void setIgnoring(View ignoringUpdate) {
         // TODO Auto-generated method stub
 
     }
@@ -128,6 +145,7 @@ public class Communications implements GossipCommunications {
     /**
      * Start the gossiper
      */
+    @Override
     public void start() {
         if (!running.compareAndSet(false, true)) {
             return;
@@ -138,7 +156,8 @@ public class Communications implements GossipCommunications {
         receiveTask = inboundService.submit(getReceiveTask());
     }
 
-    public void stop() {
+    @Override
+    public void terminate() {
         if (running.compareAndSet(true, false)) {
             scheduler.shutdownNow();
             inboundService.shutdownNow();
@@ -198,29 +217,29 @@ public class Communications implements GossipCommunications {
         }
         byte msgType = buffer.get();
         switch (msgType) {
-            case SYN: {
+            case GOSSIP: {
                 Digest[] digests = null;
-                Pair<List<Digest>, Map<InetSocketAddress, Endpoint>> ack = gossip.synchronize(digests,
-                                                                                              from);
+                Pair<List<Digest>, List<HeartbeatState>> ack = gossip.gossip(digests,
+                                                                             from);
                 if (ack != null) {
-                    send(ack, from);
+                    reply(ack, from);
                 }
                 break;
             }
-            case ACK: {
-                List<Digest> digests = null;
-                Map<InetSocketAddress, Endpoint> remoteStates = null;
-                Map<InetSocketAddress, Endpoint> deltaState = gossip.ack2(digests,
-                                                                          remoteStates,
-                                                                          from);
+            case REPLY: {
+                Digest[] digests = null;
+                HeartbeatState[] remoteStates = null;
+                List<HeartbeatState> deltaState = gossip.reply(digests,
+                                                               remoteStates,
+                                                               from);
                 if (deltaState != null) {
-                    send(deltaState, from);
+                    reply(deltaState, from);
                 }
                 break;
             }
-            case ACK2: {
-                Map<InetSocketAddress, Endpoint> remoteStates = null;
-                gossip.ack(remoteStates, from);
+            case UPDATE: {
+                HeartbeatState[] remoteStates = null;
+                gossip.update(remoteStates, from);
                 break;
             }
             default: {

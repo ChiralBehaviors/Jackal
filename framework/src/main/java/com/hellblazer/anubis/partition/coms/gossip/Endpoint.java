@@ -35,10 +35,6 @@ public class Endpoint {
     private volatile boolean isAlive = true;
     private volatile long update = System.currentTimeMillis();
 
-    public Endpoint() {
-        this(new HeartbeatState());
-    }
-
     public Endpoint(HeartbeatState heartBeatState) {
         heartbeat = heartBeatState;
     }
@@ -82,5 +78,9 @@ public class Endpoint {
     void updateState(long now, HeartbeatState newHbState) {
         update = now;
         heartbeat = newHbState;
+    }
+
+    public long getViewNumber() {
+        return heartbeat.getViewNumber();
     }
 }

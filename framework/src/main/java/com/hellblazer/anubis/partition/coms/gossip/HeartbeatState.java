@@ -24,7 +24,7 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-
+import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 /**
  * The implementation of the heartbeat state replicated by the gossip protocol
@@ -43,6 +43,16 @@ public class HeartbeatState implements Heartbeat {
     private NodeIdSet view;
     private long viewNumber;
     private long viewTimeStamp = View.undefinedTimeStamp;
+
+    public HeartbeatState(HeartbeatMsg heartbeatMsg) {
+        candidate = heartbeatMsg.getCandidate();
+        msgLinks = heartbeatMsg.getMsgLinks();
+        preferred = heartbeatMsg.isPreferred();
+        sender = heartbeatMsg.getSender();
+        senderAddress = heartbeatMsg.getSenderAddress();
+        testInterface = heartbeatMsg.getTestInterface();
+        setView(heartbeatMsg.getView());
+    }
 
     @Override
     public Identity getCandidate() {
@@ -88,6 +98,12 @@ public class HeartbeatState implements Heartbeat {
         return preferred;
     }
 
+    public boolean record(HeartbeatState remoteState) {
+        assert sender.equalId(remoteState.sender);
+        return remoteState.sender.epoch > sender.epoch
+               || remoteState.viewNumber > viewNumber;
+    }
+
     @Override
     public void setCandidate(Identity id) {
         candidate = id;
@@ -119,9 +135,7 @@ public class HeartbeatState implements Heartbeat {
         viewNumber = n;
     }
 
-    public boolean record(HeartbeatState remoteState) {
-        assert sender.equalId(remoteState.sender);
-        return remoteState.sender.epoch > sender.epoch
-               || remoteState.viewNumber > viewNumber;
+    public long getEpoch() {
+        return sender.epoch;
     }
 }

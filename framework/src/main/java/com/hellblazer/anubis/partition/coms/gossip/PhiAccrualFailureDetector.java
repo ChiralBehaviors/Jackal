@@ -29,7 +29,7 @@ package com.hellblazer.anubis.partition.coms.gossip;
  * scale that changes dynamically to match recent network conditions.
  * 
  * Based on the paper, "The phi Accrual Failure Detector", by Naohiro
- * Hayashibara, Xavier Defago, Rami Yared1, and Takuya Katayama1
+ * Hayashibara, Xavier Defago, Rami Yared, and Takuya Katayama
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
