@@ -47,7 +47,7 @@ public class PhiAccrualFailureDetector {
      * Answer the suspicion level of the detector.
      * <p>
      * Given some threshold sigma, and assuming that we decide to suspect p when
-     * phi >= sigma, when sigma = 1, then the likeliness that we will make a
+     * phi >= sigma, when sigma = 1 then the likeliness that we will make a
      * mistake (i.e., the decision will be contradicted in the future by the
      * reception of a late heartbeat) is about 10%. The likeliness is about 1%
      * with sigma = 2, 0.1% with sigma = 3, and so on.

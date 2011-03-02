@@ -22,7 +22,6 @@ import static java.lang.String.format;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -68,8 +67,7 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
     private final ScheduledExecutorService scheduler; 
 
     public Communications(SocketAddress listeningAddress, int magicCookie,
-                          Gossip gossiper, int gossipInterval, TimeUnit unit)
-                                                                             throws SocketException {
+                          Gossip gossiper, int gossipInterval, TimeUnit unit) {
         interval = gossipInterval;
         intervalUnit = unit;
         magic = magicCookie;
