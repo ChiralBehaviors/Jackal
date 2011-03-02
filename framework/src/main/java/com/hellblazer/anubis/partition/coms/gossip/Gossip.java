@@ -123,25 +123,14 @@ public class Gossip {
      * 
      * @param digests
      *            - the list of heartbeat state digests
-     * @param from
-     *            - the address of the gossiper
      * @return the pair of digests and heartbeat states to return to the sender
      */
-    public Pair<List<Digest>, List<HeartbeatState>> gossip(Digest[] digests,
-                                                           InetSocketAddress from) { 
-        if (log.isLoggable(Level.FINEST)) {
-            StringBuilder sb = new StringBuilder();
-            for (Digest gDigest : digests) {
-                sb.append(gDigest);
-                sb.append(" ");
-            }
-            log.finest(format("Gossip digests from %s are : %s", from, sb.toString()));
-        }
+    public Pair<List<Digest>, List<HeartbeatState>> gossip(Digest[] digests) {
         long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
             endpointState.get(gDigest.epAddress).record(now);
-        } 
-        sort(digests); 
+        }
+        sort(digests);
         return examine(digests);
     }
 
@@ -151,22 +140,22 @@ public class Gossip {
      * @param communications
      *            - the mechanism to send the gossip message to a peer
      */
-    public void gossipWith(GossipCommunications communications) {
+    public void gossip() {
         List<Digest> digests = randomDigests();
         if (digests.size() > 0) {
-            InetSocketAddress member = view.getRandomLiveMember();
+            GossipHandler member = getHandler(view.getRandomLiveMember());
             if (member != null) {
-                communications.gossip(digests, member);
+                member.gossip(digests);
             }
 
-            InetSocketAddress unreachableMember = view.getRandomUnreachableMember();
+            GossipHandler unreachableMember = getHandler(view.getRandomUnreachableMember());
             if (unreachableMember != null) {
-                communications.gossip(digests, unreachableMember);
+                unreachableMember.gossip(digests);
             }
 
-            InetSocketAddress seedMember = view.getRandomSeedMember(member);
+            GossipHandler seedMember = getHandler(view.getRandomSeedMember(member.getAddress()));
             if (seedMember != null) {
-                communications.gossip(digests, seedMember);
+                seedMember.gossip(digests);
             }
 
             if (log.isLoggable(Level.FINEST)) {
@@ -174,6 +163,10 @@ public class Gossip {
             }
             checkStatus();
         }
+    }
+
+    private GossipHandler getHandler(InetSocketAddress randomLiveMember) {
+        return null;
     }
 
     /**
@@ -184,18 +177,11 @@ public class Gossip {
      * @param remoteStates
      *            - the list of heartbeat states the gossiper things is out of
      *            date on the receiver
-     * @param from
-     *            - the gossiper's address
      * @return a list of heartbeat states that the gossiper would like to hear
      *         about
      */
     public List<HeartbeatState> reply(Digest[] digests,
-                                      HeartbeatState[] remoteStates,
-                                      InetSocketAddress from) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received a GossipDigestAckMessage from %s", from));
-        }
-
+                                      HeartbeatState[] remoteStates) {
         if (remoteStates.length > 0) {
             long now = System.currentTimeMillis();
             for (HeartbeatState state : remoteStates) {
@@ -215,9 +201,6 @@ public class Gossip {
                 deltaState.add(localState);
             }
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Sending a GossipDigestAck2Message to %s", from));
-        }
         return deltaState;
     }
 
@@ -227,14 +210,8 @@ public class Gossip {
      * @param remoteStates
      *            - the list of updated heartbeat states we requested from our
      *            partner
-     * @param from
-     *            - the gossiper sending the update
      */
-    public void update(HeartbeatState[] remoteStates, InetSocketAddress from) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received a GossipDigestAck2Message from %s",
-                              from));
-        }
+    public void update(HeartbeatState[] remoteStates) {
         long now = System.currentTimeMillis();
         for (HeartbeatState state : remoteStates) {
             endpointState.get(state.getSenderAddress()).record(now);

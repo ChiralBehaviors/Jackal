@@ -17,22 +17,14 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import static java.lang.String.format;
-
-import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,7 +33,9 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
-import com.hellblazer.anubis.util.Pair;
+import com.hellblazer.anubis.basiccomms.nio.CommunicationsHandler;
+import com.hellblazer.anubis.basiccomms.nio.ServerChannelHandler;
+import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
 
 /**
  * The communciations implementation for the gossip protocol
@@ -49,43 +43,30 @@ import com.hellblazer.anubis.util.Pair;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  */
 
-public class Communications implements GossipCommunications, HeartbeatCommsIntf {
-    private static final byte REPLY = 1;
-    private static final byte UPDATE = 2;
+public class Communications extends ServerChannelHandler implements
+        HeartbeatCommsIntf {
     private static final Logger log = Logger.getLogger(Communications.class.getCanonicalName());
-    private static final int MTU = 1500;
-    private static final byte GOSSIP = 0;
 
     private final Gossip gossip;
     private ScheduledFuture<?> gossipTask;
-    private final ExecutorService inboundService;
     private final int interval;
     private final TimeUnit intervalUnit;
-    private final int magic;
-    private Future<?> receiveTask;
-    private final AtomicBoolean running = new AtomicBoolean();
-    private final ScheduledExecutorService scheduler; 
+    private final ScheduledExecutorService scheduler;
 
-    public Communications(SocketAddress listeningAddress, int magicCookie,
-                          Gossip gossiper, int gossipInterval, TimeUnit unit) {
+    public Communications(Gossip gossiper, int gossipInterval, TimeUnit unit,
+                          InetSocketAddress endpointAddress,
+                          SocketOptions socketOptions,
+                          ExecutorService commsExec,
+                          ExecutorService dispatchExec) {
+        super(endpointAddress, socketOptions, commsExec, dispatchExec);
         interval = gossipInterval;
         intervalUnit = unit;
-        magic = magicCookie;
         gossip = gossiper;
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
                                            "Anubis: Gossip heartbeat servicing thread");
-                daemon.setDaemon(true);
-                return daemon;
-            }
-        });
-        inboundService = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r,
-                                           "Anubis: Gossip heartbeat receive thread");
                 daemon.setDaemon(true);
                 return daemon;
             }
@@ -99,28 +80,9 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
     }
 
     @Override
-    public void gossip(List<Digest> digests, InetSocketAddress to) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     public boolean isIgnoring(Identity id) {
         // TODO Auto-generated method stub
         return false;
-    }
-
-    @Override
-    public void reply(List<HeartbeatState> deltaState, InetSocketAddress to) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void reply(Pair<List<Digest>, List<HeartbeatState>> ack,
-                      InetSocketAddress to) {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -139,29 +101,19 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
      */
     @Override
     public void start() {
-        if (!running.compareAndSet(false, true)) {
+        if (gossipTask != null) {
             return;
         }
-        gossipTask = scheduler.scheduleWithFixedDelay(gossipTask(),
-                                                      interval, interval,
-                                                      intervalUnit);
-        receiveTask = inboundService.submit(receiveTask());
+        gossipTask = scheduler.scheduleWithFixedDelay(gossipTask(), interval,
+                                                      interval, intervalUnit);
     }
 
     @Override
     public void terminate() {
-        if (running.compareAndSet(true, false)) {
+        if (gossipTask != null) {
             scheduler.shutdownNow();
-            inboundService.shutdownNow();
-
-            if (gossipTask != null) {
-                gossipTask.cancel(true);
-                gossipTask = null;
-            }
-            if (receiveTask != null) {
-                receiveTask.cancel(true);
-                receiveTask = null;
-            }
+            gossipTask.cancel(true);
+            gossipTask = null;
         }
     }
 
@@ -170,7 +122,7 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
             @Override
             public void run() {
                 try {
-                    gossip.gossipWith(Communications.this);
+                    gossip.gossip();
                 } catch (Throwable e) {
                     log.log(Level.WARNING, "Exception while performing gossip",
                             e);
@@ -179,67 +131,9 @@ public class Communications implements GossipCommunications, HeartbeatCommsIntf 
         };
     }
 
-    private Runnable receiveTask() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                byte[] bytes = new byte[MTU];
-                DatagramPacket packet = new DatagramPacket(bytes, MTU);
-                while (running.get()) {
-                    try {
-                        Arrays.fill(bytes, (byte) 0);
-                        receive(packet);
-                    } catch (Throwable e) {
-                        log.log(Level.WARNING,
-                                "Exception while performing gossip", e);
-                    }
-                }
-            }
-        };
-    }
-
-    private void receive(DatagramPacket packet) {
-        ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
-        InetSocketAddress from = (InetSocketAddress) packet.getSocketAddress();
-        int magicCookie = buffer.getInt();
-        if (magic != magicCookie) {
-            log.warning(format("Magic number mismatch from %s; received: %s != %s",
-                               from, magicCookie, magic));
-            return;
-        }
-        byte msgType = buffer.get();
-        switch (msgType) {
-            case GOSSIP: {
-                Digest[] digests = null;
-                Pair<List<Digest>, List<HeartbeatState>> ack = gossip.gossip(digests,
-                                                                             from);
-                if (ack != null) {
-                    reply(ack, from);
-                }
-                break;
-            }
-            case REPLY: {
-                Digest[] digests = null;
-                HeartbeatState[] remoteStates = null;
-                List<HeartbeatState> deltaState = gossip.reply(digests,
-                                                               remoteStates,
-                                                               from);
-                if (deltaState != null) {
-                    reply(deltaState, from);
-                }
-                break;
-            }
-            case UPDATE: {
-                HeartbeatState[] remoteStates = null;
-                gossip.update(remoteStates, from);
-                break;
-            }
-            default: {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("invalid message type: %s from: %s",
-                                      msgType, from));
-                }
-            }
-        }
+    @Override
+    protected CommunicationsHandler createHandler(SocketChannel accepted) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

@@ -57,21 +57,21 @@ public abstract class ServerChannelHandler {
         return (T[]) java.lang.reflect.Array.newInstance(c, 2);
     }
 
-    private final InetSocketAddress endpoint;
-    private final SocketOptions options;
-    private final BlockingDeque<CommunicationsHandler> readQueue;
     private final ExecutorService commsExecutor;
     private final ExecutorService dispatchExecutor;
+    private final InetSocketAddress endpoint;
+    private InetSocketAddress localAddress;
+    private final Set<CommunicationsHandler> openHandlers = new HashSet<CommunicationsHandler>();
+    private final SocketOptions options;
+    private final BlockingDeque<CommunicationsHandler> readQueue;
+    private final AtomicBoolean run = new AtomicBoolean();
     private final Selector selector;
+    private final ExecutorService selectService;
+    private Future<?> selectTask;
     private final int selectTimeout = 1000;
     private ServerSocketChannel server;
     private ServerSocket serverSocket;
-    private final AtomicBoolean run = new AtomicBoolean();
     private final BlockingDeque<CommunicationsHandler> writeQueue;
-    private final Set<CommunicationsHandler> openHandlers = new HashSet<CommunicationsHandler>();
-    private InetSocketAddress localAddress;
-    private final ExecutorService selectService;
-    private Future<?> selectTask;
 
     public ServerChannelHandler(InetSocketAddress endpointAddress,
                                 SocketOptions socketOptions,

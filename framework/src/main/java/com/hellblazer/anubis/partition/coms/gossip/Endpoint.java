@@ -34,9 +34,14 @@ public class Endpoint {
     private volatile HeartbeatState heartbeat;
     private volatile boolean isAlive = true;
     private volatile long update = System.currentTimeMillis();
+    private GossipCommunications handler;
 
     public Endpoint(HeartbeatState heartBeatState) {
         heartbeat = heartBeatState;
+    }
+
+    public GossipCommunications getHandler() {
+        return handler;
     }
 
     public long getEpoch() {

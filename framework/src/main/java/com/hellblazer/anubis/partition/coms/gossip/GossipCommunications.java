@@ -17,7 +17,6 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
 import com.hellblazer.anubis.util.Pair;
@@ -36,34 +35,28 @@ public interface GossipCommunications {
      * 
      * @param digests
      *            - the list of heartbeat digests the receiver knows about
-     * @param to
-     *            - the partner we're gossiping with
      */
-    void gossip(List<Digest> digests, InetSocketAddress to);
+    void gossip(List<Digest> digests);
 
     /**
      * The third message of the gossip protocol. Send a list of updated
-     * heartbeat states to the node requesting the updates.
+     * heartbeat states to the node this handler represents, which is requesting
+     * the updates.
      * 
      * @param deltaState
      *            - the list of heartbeat states requested.
-     * @param to
-     *            - the requesting node
      */
-    void reply(List<HeartbeatState> deltaState, InetSocketAddress to);
+    void update(List<HeartbeatState> deltaState);
 
     /**
      * The second message in the gossip protocol. Send a list of digests the
-     * receiver would like heartbeat state updates for, along with the list of
-     * heartbeat state the receiver believes is out of date on the gossiping
-     * node.
+     * node this handler represents, that would like heartbeat state updates
+     * for, along with the list of heartbeat state this node believes is out of
+     * date on the node this handler represents.
      * 
      * @param ack
      *            - the pair of state updates and requested state
-     * @param to
-     *            - the gossiping node to reply to
      */
-    void reply(Pair<List<Digest>, List<HeartbeatState>> ack,
-               InetSocketAddress to);
+    void reply(Pair<List<Digest>, List<HeartbeatState>> ack);
 
 }
