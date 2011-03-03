@@ -44,10 +44,15 @@ import com.hellblazer.anubis.util.Pair;
  * heartbeat state and forms both a member discovery and failure detection
  * service. Periodically, the protocol chooses a random member from the system
  * view and initiates a round of gossip with it. A round of gossip is push/pull
- * and involves 3 messages. For instance if node A wants to initiate a round of
- * gossip with node B it starts off by sending node B a Syn. Node B on receipt
- * of this message sends node A an Ack. On receipt of this message node A sends
- * node B an Ack2 which completes a round of gossip. When messages are recived,
+ * and involves 3 messages. For example, if node A wants to initiate a round of
+ * gossip with node B it starts off by sending node B a gossip message
+ * containing a digest of the version state of the local view of the heartbeat
+ * state. Node B on receipt of this message sends node A a reply containing a
+ * list of digests representing the updated heartbeat state required, based on
+ * the received digests. In addition, the node also sends along a list of
+ * updated heartbeat state that is more recent, based on the initial list of
+ * digests. On receipt of this message node A sends node B the requested
+ * heartbeat state that completes a round of gossip. When messages are received,
  * the protocol updates the endpoint's failure detector with the liveness
  * information. If the endpoint's failure detector predicts that the endpoint
  * has failed, the endpoint is marked dead.
@@ -119,7 +124,12 @@ public class Gossip {
     }
 
     /**
-     * The first message of the gossip protocol.
+     * The first message of the gossip protocol. The gossiping node sends a set
+     * of digests of it's view of the heartbeat state. The receiver replies with
+     * a list of digests indicating the heartbeat state that needs to be updated
+     * on the receiver. The receiver of the gossip also sends along any
+     * heartbeat states which are more recent than what the gossiper sent, based
+     * on the digests provided by the gossiper.
      * 
      * @param digests
      *            - the list of heartbeat state digests
@@ -170,7 +180,11 @@ public class Gossip {
     }
 
     /**
-     * The second message in the gossip protocol.
+     * The second message in the gossip protocol. This message is sent in reply
+     * to the initial gossip message sent by this node. The response is a list
+     * of digests that represent the heartbeat state that is out of date on the
+     * sender. In addition, the sender also supplies heartbeat state that is
+     * more recent than the digests supplied in the initial gossip message.
      * 
      * @param digests
      *            - the list of digests the gossiper would like to hear about
@@ -205,7 +219,10 @@ public class Gossip {
     }
 
     /**
-     * The third message of the gossip protocol.
+     * The third message of the gossip protocol. This is the final message in
+     * the gossip protocol. The supplied heartbeat state is the updated state
+     * requested by the receiver in response to the digests in the original
+     * gossip message.
      * 
      * @param remoteStates
      *            - the list of updated heartbeat states we requested from our

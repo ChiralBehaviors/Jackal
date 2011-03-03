@@ -142,8 +142,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     private void handleUpdate(ByteBuffer msg) {
         HeartbeatState[] remoteStates = new HeartbeatState[msg.getInt()];
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received a GossipDigestAck2Message from %s",
-                              this));
+            log.finest(format("Received an update from %s", this));
         }
         gossip.update(remoteStates);
     }
