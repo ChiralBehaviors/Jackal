@@ -34,10 +34,12 @@ public class Endpoint {
     private volatile HeartbeatState heartbeat;
     private volatile boolean isAlive = true;
     private volatile long update = System.currentTimeMillis();
-    private GossipCommunications handler;
+    private final GossipCommunications handler;
 
-    public Endpoint(HeartbeatState heartBeatState) {
+    public Endpoint(HeartbeatState heartBeatState,
+                    GossipCommunications communications) {
         heartbeat = heartBeatState;
+        handler = communications;
     }
 
     public GossipCommunications getHandler() {

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -47,16 +48,16 @@ import com.hellblazer.anubis.util.Pair;
  * view and initiates a round of gossip with it. A round of gossip is push/pull
  * and involves 3 messages. For example, if node A wants to initiate a round of
  * gossip with node B it starts off by sending node B a gossip message
- * containing a digest of the version state of the local view of the heartbeat
- * state. Node B on receipt of this message sends node A a reply containing a
- * list of digests representing the updated heartbeat state required, based on
- * the received digests. In addition, the node also sends along a list of
- * updated heartbeat state that is more recent, based on the initial list of
- * digests. On receipt of this message node A sends node B the requested
- * heartbeat state that completes a round of gossip. When messages are received,
- * the protocol updates the endpoint's failure detector with the liveness
- * information. If the endpoint's failure detector predicts that the endpoint
- * has failed, the endpoint is marked dead.
+ * containing a digest of the view number state of the local view of the
+ * heartbeat state. Node B on receipt of this message sends node A a reply
+ * containing a list of digests representing the updated heartbeat state
+ * required, based on the received digests. In addition, the node also sends
+ * along a list of updated heartbeat state that is more recent, based on the
+ * initial list of digests. On receipt of this message node A sends node B the
+ * requested heartbeat state that completes a round of gossip. When messages are
+ * received, the protocol updates the endpoint's failure detector with the
+ * liveness information. If the endpoint's failure detector predicts that the
+ * endpoint has failed, the endpoint is marked dead.
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
@@ -65,7 +66,7 @@ public class Gossip {
     private final static Logger log = Logger.getLogger(Gossip.class.getCanonicalName());
 
     private final double convictThreshold;
-    private final Map<InetSocketAddress, Endpoint> endpointState = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
+    private final ConcurrentMap<InetSocketAddress, Endpoint> endpointState = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
     private final Random entropy;
     private final Endpoint localState;
     private final SystemView view;
@@ -83,7 +84,7 @@ public class Gossip {
         convictThreshold = phiConvictThreshold;
         entropy = random;
         view = systemView;
-        localState = new Endpoint(initialState);
+        localState = new Endpoint(initialState, null);
         localState.markAlive();
         endpointState.put(view.getLocalAddress(), localState);
         notificationService = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -100,7 +101,9 @@ public class Gossip {
 
     public void checkStatus() {
         long now = System.currentTimeMillis();
-
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Checking the status of the living...");
+        }
         for (Entry<InetSocketAddress, Endpoint> entry : endpointState.entrySet()) {
             InetSocketAddress endpoint = entry.getKey();
             if (endpoint.equals(view.getLocalAddress())) {
@@ -108,18 +111,23 @@ public class Gossip {
             }
 
             Endpoint state = entry.getValue();
-            if (state.interpret(now, convictThreshold) && state.isAlive()) {
+            if (state.isAlive() && state.interpret(now, convictThreshold)) {
                 state.markDead();
                 view.markDead(endpoint);
                 if (log.isLoggable(Level.INFO)) {
-                    log.info(format("InetSocketAddress %s is now dead.",
-                                    endpoint));
+                    log.info(format("Endpoint %s is now dead.", endpoint));
                 }
-            }
-            if (!state.isAlive()
-                && view.cullUnreachable(endpoint, now - state.getUpdate())) {
+            } else if (!state.isAlive()
+                       && view.cullUnreachable(endpoint,
+                                               now - state.getUpdate())) {
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(format("Culling unreachable endpoint %s", endpoint));
+                }
                 endpointState.remove(endpoint);
             }
+        }
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Culling the quarantined...");
         }
         view.cullQuarantined(now);
     }
@@ -133,24 +141,9 @@ public class Gossip {
     public void gossip() {
         List<Digest> digests = randomDigests();
         if (digests.size() > 0) {
-            GossipHandler member = getHandler(view.getRandomLiveMember());
-            if (member != null) {
-                member.gossip(digests);
-            }
-
-            GossipHandler unreachableMember = getHandler(view.getRandomUnreachableMember());
-            if (unreachableMember != null) {
-                unreachableMember.gossip(digests);
-            }
-
-            GossipHandler seedMember = getHandler(view.getRandomSeedMember(member.getAddress()));
-            if (seedMember != null) {
-                seedMember.gossip(digests);
-            }
-
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Performing status check ...");
-            }
+            GossipHandler member = gossipWithTheLiving(digests);
+            gossipWithTheDead(digests);
+            gossipWithSeeds(digests, member);
             checkStatus();
         }
     }
@@ -189,10 +182,10 @@ public class Gossip {
      * @param digests
      *            - the list of digests the gossiper would like to hear about
      * @param remoteStates
-     *            - the list of heartbeat states the gossiper things is out of
+     *            - the list of heartbeat states the gossiper thinks is out of
      *            date on the receiver
-     * @return a list of heartbeat states that the gossiper would like to hear
-     *         about
+     * @return a list of heartbeat states that the gossiper would like updates
+     *         for
      */
     public List<HeartbeatState> reply(Digest[] digests,
                                       HeartbeatState[] remoteStates) {
@@ -210,10 +203,7 @@ public class Gossip {
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
             InetSocketAddress addr = digest.getEpAddress();
-            HeartbeatState localState = getState(addr, digest.getViewNumber());
-            if (localState != null) {
-                deltaState.add(localState);
-            }
+            addUpdatedState(deltaState, addr, digest.getViewNumber());
         }
         return deltaState;
     }
@@ -246,6 +236,18 @@ public class Gossip {
         localState.updateState(System.currentTimeMillis(), updatedState);
     }
 
+    private void addUpdatedState(List<HeartbeatState> deltaState,
+                                 InetSocketAddress endpoint, long viewNumber) {
+        Endpoint epState = endpointState.get(endpoint);
+        if (epState != null && epState.getViewNumber() > viewNumber) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("local heartbeat view number %s greater than %s for %s ",
+                                  epState.getViewNumber(), viewNumber, endpoint));
+            }
+            deltaState.add(epState.getState());
+        }
+    }
+
     private void apply(long now, HeartbeatState[] remoteStates) {
         for (HeartbeatState remoteState : remoteStates) {
             InetSocketAddress endpoint = remoteState.getSenderAddress();
@@ -269,17 +271,15 @@ public class Gossip {
                                       endpoint, localEpoch, remoteEpoch));
                 }
 
-                if (remoteEpoch > localEpoch) {
-                    handleStateChange(remoteState);
-                } else if (remoteEpoch == localEpoch) {
+                if (remoteEpoch >= localEpoch) {
                     if (remoteState.getViewNumber() > localState.getViewNumber()) {
-                        long oldVersion = localState.getViewNumber();
+                        long oldViewNumber = localState.getViewNumber();
                         localState.updateState(now, remoteState);
                         notifyReceiver(localState.getState());
                         if (log.isLoggable(Level.FINEST)) {
                             log.finest(format("Updating heartbeat state view number to %s from %s for %s  ...",
                                               localState.getViewNumber(),
-                                              oldVersion, endpoint));
+                                              oldViewNumber, endpoint));
                         }
                     } else if (log.isLoggable(Level.FINEST)) {
                         log.finest(format("Ignoring remote view number %s <= %s for %s",
@@ -293,8 +293,29 @@ public class Gossip {
                     }
                 }
             } else {
-                handleStateChange(remoteState);
+                discover(remoteState);
             }
+        }
+    }
+
+    private GossipCommunications connect(InetSocketAddress senderAddress) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    private void discover(HeartbeatState state) {
+        log.info(format("Node %s is now part of the partition",
+                        state.getSenderAddress()));
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Adding endpoint state for %s",
+                              state.getSenderAddress()));
+        }
+        Endpoint endpoint = new Endpoint(state,
+                                         connect(state.getSenderAddress()));
+        endpointState.put(state.getSenderAddress(), endpoint);
+        view.markAlive(state.getSenderAddress());
+        if (log.isLoggable(Level.INFO)) {
+            log.info(format("Member %s is now UP", endpoint));
         }
     }
 
@@ -303,36 +324,29 @@ public class Gossip {
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
             long remoteEpoch = digest.getEpoch();
-            long maxRemoteVersion = digest.getViewNumber();
+            long remoteViewNumber = digest.getViewNumber();
             Endpoint state = endpointState.get(digest.getEpAddress());
             if (state != null) {
                 long localEpoch = state.getEpoch();
-                long maxLocalVersion = state.getViewNumber();
+                long localViewNumber = state.getViewNumber();
                 if (remoteEpoch == localEpoch
-                    && maxRemoteVersion == maxLocalVersion) {
+                    && remoteViewNumber == localViewNumber) {
                     continue;
                 }
 
                 if (remoteEpoch > localEpoch) {
                     deltaDigests.add(new Digest(digest.getEpAddress(),
-                                                remoteEpoch, 0));
+                                                remoteEpoch, 0L));
                 } else if (remoteEpoch < localEpoch) {
-                    HeartbeatState localState = getState(digest.getEpAddress(),
-                                                         0);
-                    if (localState != null) {
-                        deltaState.add(localState);
-                    }
+                    addUpdatedState(deltaState, digest.getEpAddress(), 0L);
                 } else if (remoteEpoch == localEpoch) {
-                    if (maxRemoteVersion > maxLocalVersion) {
+                    if (remoteViewNumber > localViewNumber) {
                         deltaDigests.add(new Digest(digest.getEpAddress(),
                                                     remoteEpoch,
-                                                    maxLocalVersion));
-                    } else if (maxRemoteVersion < maxLocalVersion) {
-                        HeartbeatState localState = getState(digest.getEpAddress(),
-                                                             maxRemoteVersion);
-                        if (localState != null) {
-                            deltaState.add(localState);
-                        }
+                                                    localViewNumber));
+                    } else if (remoteViewNumber < localViewNumber) {
+                        addUpdatedState(deltaState, digest.getEpAddress(),
+                                        remoteViewNumber);
                     }
                 }
             } else {
@@ -348,37 +362,26 @@ public class Gossip {
         return null;
     }
 
-    private HeartbeatState getState(InetSocketAddress endpoint, long viewNumber) {
-        Endpoint epState = endpointState.get(endpoint);
-        if (epState != null && epState.getViewNumber() > viewNumber) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("local heartbeat view number %s greater than %s for %s ",
-                                  epState.getViewNumber(), viewNumber, endpoint));
-            }
-            return epState.getState();
+    private void gossipWithSeeds(List<Digest> digests, GossipHandler member) {
+        GossipHandler seedMember = getHandler(view.getRandomSeedMember(member.getAddress()));
+        if (seedMember != null) {
+            seedMember.gossip(digests);
         }
-        return null;
     }
 
-    private void handleStateChange(HeartbeatState state) {
-        if (endpointState.get(state.getSenderAddress()) != null) {
-            log.info(format("Node %s has restarted, now up again",
-                            state.getSenderAddress()));
-        } else {
-            log.info(format("Node %s is now part of the cluster",
-                            state.getSenderAddress()));
+    private void gossipWithTheDead(List<Digest> digests) {
+        GossipHandler unreachableMember = getHandler(view.getRandomUnreachableMember());
+        if (unreachableMember != null) {
+            unreachableMember.gossip(digests);
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Adding endpoint state for %s",
-                              state.getSenderAddress()));
+    }
+
+    private GossipHandler gossipWithTheLiving(List<Digest> digests) {
+        GossipHandler member = getHandler(view.getRandomLiveMember());
+        if (member != null) {
+            member.gossip(digests);
         }
-        Endpoint endpoint = new Endpoint(state);
-        endpointState.put(state.getSenderAddress(), endpoint);
-        endpoint.markAlive();
-        view.markAlive(state.getSenderAddress());
-        if (log.isLoggable(Level.INFO)) {
-            log.info(format("InetSocketAddress %s is now UP", endpoint));
-        }
+        return member;
     }
 
     private void notifyReceiver(final HeartbeatState state) {

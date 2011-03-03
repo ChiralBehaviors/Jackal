@@ -17,6 +17,7 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
@@ -133,7 +134,14 @@ public class Communications extends ServerChannelHandler implements
 
     @Override
     protected CommunicationsHandler createHandler(SocketChannel accepted) {
-        // TODO Auto-generated method stub
-        return null;
+        return new GossipHandler(gossip, this, accepted);
+    }
+
+    protected GossipHandler connect(InetSocketAddress address,
+                                    Runnable connectAction) throws IOException {
+        SocketChannel channel = SocketChannel.open(address);
+        GossipHandler handler = new GossipHandler(gossip, this, channel);
+
+        return handler;
     }
 }

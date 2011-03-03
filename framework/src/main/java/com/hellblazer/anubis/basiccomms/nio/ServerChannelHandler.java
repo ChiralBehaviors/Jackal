@@ -65,7 +65,7 @@ public abstract class ServerChannelHandler {
     private final SocketOptions options;
     private final BlockingDeque<CommunicationsHandler> readQueue;
     private final AtomicBoolean run = new AtomicBoolean();
-    private final Selector selector;
+    protected final Selector selector;
     private final ExecutorService selectService;
     private Future<?> selectTask;
     private final int selectTimeout = 1000;
