@@ -37,6 +37,7 @@ import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 
+import com.hellblazer.anubis.partition.coms.gossip.Digest.DigestComparator;
 import com.hellblazer.anubis.util.Pair;
 
 /**
@@ -124,27 +125,6 @@ public class Gossip {
     }
 
     /**
-     * The first message of the gossip protocol. The gossiping node sends a set
-     * of digests of it's view of the heartbeat state. The receiver replies with
-     * a list of digests indicating the heartbeat state that needs to be updated
-     * on the receiver. The receiver of the gossip also sends along any
-     * heartbeat states which are more recent than what the gossiper sent, based
-     * on the digests provided by the gossiper.
-     * 
-     * @param digests
-     *            - the list of heartbeat state digests
-     * @return the pair of digests and heartbeat states to return to the sender
-     */
-    public Pair<List<Digest>, List<HeartbeatState>> gossip(Digest[] digests) {
-        long now = System.currentTimeMillis();
-        for (Digest gDigest : digests) {
-            endpointState.get(gDigest.epAddress).record(now);
-        }
-        sort(digests);
-        return examine(digests);
-    }
-
-    /**
      * Perform the periodic gossip.
      * 
      * @param communications
@@ -175,8 +155,28 @@ public class Gossip {
         }
     }
 
-    private GossipHandler getHandler(InetSocketAddress randomLiveMember) {
-        return null;
+    /**
+     * The first message of the gossip protocol. The gossiping node sends a set
+     * of digests of it's view of the heartbeat state. The receiver replies with
+     * a list of digests indicating the heartbeat state that needs to be updated
+     * on the receiver. The receiver of the gossip also sends along any
+     * heartbeat states which are more recent than what the gossiper sent, based
+     * on the digests provided by the gossiper.
+     * 
+     * @param digests
+     *            - the list of heartbeat state digests
+     * @return the pair of digests and heartbeat states to return to the sender
+     */
+    public Pair<List<Digest>, List<HeartbeatState>> gossip(Digest[] digests) {
+        long now = System.currentTimeMillis();
+        for (Digest gDigest : digests) {
+            Endpoint endpoint = endpointState.get(gDigest.getEpAddress());
+            if (endpoint != null) {
+                endpoint.record(now);
+            }
+        }
+        sort(digests);
+        return examine(digests);
     }
 
     /**
@@ -204,13 +204,13 @@ public class Gossip {
                     endpoint.record(now);
                 }
             }
-            applyLocally(now, remoteStates);
+            apply(now, remoteStates);
         }
 
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
             InetSocketAddress addr = digest.getEpAddress();
-            HeartbeatState localState = getState(addr, digest.getMaxVersion());
+            HeartbeatState localState = getState(addr, digest.getViewNumber());
             if (localState != null) {
                 deltaState.add(localState);
             }
@@ -233,7 +233,7 @@ public class Gossip {
         for (HeartbeatState state : remoteStates) {
             endpointState.get(state.getSenderAddress()).record(now);
         }
-        applyLocally(now, remoteStates);
+        apply(now, remoteStates);
     }
 
     /**
@@ -246,7 +246,7 @@ public class Gossip {
         localState.updateState(System.currentTimeMillis(), updatedState);
     }
 
-    private void applyLocally(long now, HeartbeatState[] remoteStates) {
+    private void apply(long now, HeartbeatState[] remoteStates) {
         for (HeartbeatState remoteState : remoteStates) {
             InetSocketAddress endpoint = remoteState.getSenderAddress();
             if (endpoint.equals(view.getLocalAddress())) {
@@ -273,16 +273,16 @@ public class Gossip {
                     handleStateChange(remoteState);
                 } else if (remoteEpoch == localEpoch) {
                     if (remoteState.getViewNumber() > localState.getViewNumber()) {
-                        long oldVersion = localState.getHeartbeatVersion();
+                        long oldVersion = localState.getViewNumber();
                         localState.updateState(now, remoteState);
                         notifyReceiver(localState.getState());
                         if (log.isLoggable(Level.FINEST)) {
-                            log.finest(format("Updating heartbeat state version to %s from %s for %s  ...",
-                                              localState.getHeartbeatVersion(),
+                            log.finest(format("Updating heartbeat state view number to %s from %s for %s  ...",
+                                              localState.getViewNumber(),
                                               oldVersion, endpoint));
                         }
                     } else if (log.isLoggable(Level.FINEST)) {
-                        log.finest(format("Ignoring remote version %s <= %s for %s",
+                        log.finest(format("Ignoring remote view number %s <= %s for %s",
                                           remoteState.getViewNumber(),
                                           localState.getViewNumber(), endpoint));
                     }
@@ -303,11 +303,11 @@ public class Gossip {
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
             long remoteEpoch = digest.getEpoch();
-            long maxRemoteVersion = digest.getMaxVersion();
+            long maxRemoteVersion = digest.getViewNumber();
             Endpoint state = endpointState.get(digest.getEpAddress());
             if (state != null) {
                 long localEpoch = state.getEpoch();
-                long maxLocalVersion = state.getHeartbeatVersion();
+                long maxLocalVersion = state.getViewNumber();
                 if (remoteEpoch == localEpoch
                     && maxRemoteVersion == maxLocalVersion) {
                     continue;
@@ -342,6 +342,10 @@ public class Gossip {
         }
         return new Pair<List<Digest>, List<HeartbeatState>>(deltaDigests,
                                                             deltaState);
+    }
+
+    private GossipHandler getHandler(InetSocketAddress randomLiveMember) {
+        return null;
     }
 
     private HeartbeatState getState(InetSocketAddress endpoint, long viewNumber) {
@@ -386,13 +390,6 @@ public class Gossip {
         });
     }
 
-    /**
-     * The gossip digest is built based on randomization rather than just
-     * looping through the collection of live endpoints.
-     * 
-     * @param digests
-     *            list of Gossip Digests.
-     */
     private List<Digest> randomDigests() {
         ArrayList<Digest> digests = new ArrayList<Digest>();
         for (Entry<InetSocketAddress, Endpoint> entry : endpointState.entrySet()) {
@@ -410,15 +407,6 @@ public class Gossip {
         return digests;
     }
 
-    /**
-     * First construct a map whose key is the endpoint in the GossipDigest and
-     * the value is the GossipDigest itself. Then build a list of version
-     * differences i.e difference between the version in the GossipDigest and
-     * the version in the local state for a given InetSocketAddress. Sort this
-     * list. Now loop through the sorted list and retrieve the GossipDigest
-     * corresponding to the endpoint from the map that was initially
-     * constructed.
-     */
     private void sort(Digest[] digests) {
         Map<InetSocketAddress, Digest> endpoint2digest = new HashMap<InetSocketAddress, Digest>();
         for (Digest digest : digests) {
@@ -430,15 +418,16 @@ public class Gossip {
         for (Digest gDigest : digests) {
             InetSocketAddress ep = gDigest.getEpAddress();
             Endpoint epState = endpointState.get(ep);
-            long version = epState != null ? epState.getHeartbeatVersion() : 0;
-            long diffVersion = Math.abs(version - gDigest.getMaxVersion());
-            diffDigests[i++] = new Digest(ep, gDigest.getEpoch(), diffVersion);
+            long viewNumber = epState != null ? epState.getViewNumber() : 0;
+            long diffViewNumber = Math.abs(viewNumber - gDigest.getViewNumber());
+            diffDigests[i++] = new Digest(ep, gDigest.getEpoch(),
+                                          diffViewNumber);
         }
 
-        Arrays.sort(diffDigests);
-        int j = 0;
-        for (i = diffDigests.length - 1; i >= 0; --i) {
-            digests[j++] = endpoint2digest.get(diffDigests[i].getEpAddress());
+        Arrays.sort(diffDigests, new DigestComparator());
+        i = 0;
+        for (int j = diffDigests.length - 1; j >= 0; --j) {
+            digests[i++] = endpoint2digest.get(diffDigests[j].getEpAddress());
         }
     }
 }

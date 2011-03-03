@@ -18,6 +18,7 @@
 package com.hellblazer.anubis.partition.coms.gossip;
 
 import java.net.InetSocketAddress;
+import java.util.Comparator;
 
 /**
  * Contains information about a specified list of Endpoints and the largest
@@ -26,82 +27,54 @@ import java.net.InetSocketAddress;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class Digest implements Comparable<Digest> {
+public class Digest {
 
-    InetSocketAddress epAddress;
-    long epoch;
-    long maxVersion;
+    public static class DigestComparator implements Comparator<Digest> {
+        @Override
+        public int compare(Digest digest1, Digest digest2) {
+            if (digest1.epoch != digest2.epoch) {
+                return (int) (digest1.epoch - digest2.epoch);
+            }
+            return (int) (digest1.viewNumber - digest2.viewNumber);
+        }
+    }
 
-    public Digest(InetSocketAddress ep, long diffEpoch, long diffVersion) {
-        epAddress = ep;
+    private final InetSocketAddress address;
+    private final long epoch;
+    private final long viewNumber;
+
+    public Digest(InetSocketAddress ep, long diffEpoch, long diffViewNumber) {
+        address = ep;
         epoch = diffEpoch;
-        maxVersion = diffVersion;
+        viewNumber = diffViewNumber;
     }
 
-    Digest(InetSocketAddress address, Endpoint ep) {
-        epAddress = address;
+    Digest(InetSocketAddress socketAddress, Endpoint ep) {
+        address = socketAddress;
         epoch = ep.getEpoch();
-        maxVersion = ep.getHeartbeatVersion();
-    }
-
-    @Override
-    public int compareTo(Digest digest) {
-        if (epoch != digest.epoch) {
-            return (int) (epoch - digest.epoch);
-        }
-        return (int) (maxVersion - digest.maxVersion);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        Digest other = (Digest) obj;
-        if (epoch != other.epoch) {
-            return false;
-        }
-        if (maxVersion != other.maxVersion) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (epoch ^ epoch >>> 32);
-        result = prime * result + (int) (maxVersion ^ maxVersion >>> 32);
-        return result;
+        viewNumber = ep.getViewNumber();
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(epAddress);
+        sb.append(address);
         sb.append(":");
         sb.append(epoch);
         sb.append(":");
-        sb.append(maxVersion);
+        sb.append(viewNumber);
         return sb.toString();
     }
 
     InetSocketAddress getEpAddress() {
-        return epAddress;
+        return address;
     }
 
     long getEpoch() {
         return epoch;
     }
 
-    long getMaxVersion() {
-        return maxVersion;
+    long getViewNumber() {
+        return viewNumber;
     }
 }

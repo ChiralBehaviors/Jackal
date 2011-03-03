@@ -48,10 +48,6 @@ public class Endpoint {
         return heartbeat.getSender().epoch;
     }
 
-    public long getHeartbeatVersion() {
-        return heartbeat.getViewNumber();
-    }
-
     public boolean interpret(long now, double convictThreshold) {
         return fd.phi(now) > convictThreshold;
     }
