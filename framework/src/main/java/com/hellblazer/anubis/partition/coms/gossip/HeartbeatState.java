@@ -59,6 +59,10 @@ public class HeartbeatState implements Heartbeat {
         return candidate;
     }
 
+    public long getEpoch() {
+        return sender.epoch;
+    }
+
     @Override
     public NodeIdSet getMsgLinks() {
         return msgLinks;
@@ -133,9 +137,5 @@ public class HeartbeatState implements Heartbeat {
     @Override
     public void setViewNumber(long n) {
         viewNumber = n;
-    }
-
-    public long getEpoch() {
-        return sender.epoch;
     }
 }

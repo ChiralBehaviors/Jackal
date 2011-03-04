@@ -132,16 +132,16 @@ public class Communications extends ServerChannelHandler implements
         };
     }
 
-    @Override
-    protected CommunicationsHandler createHandler(SocketChannel accepted) {
-        return new GossipHandler(gossip, this, accepted);
-    }
-
     protected GossipHandler connect(InetSocketAddress address,
                                     Runnable connectAction) throws IOException {
         SocketChannel channel = SocketChannel.open(address);
         GossipHandler handler = new GossipHandler(gossip, this, channel);
-
+        selectForConnect(handler, connectAction);
         return handler;
+    }
+
+    @Override
+    protected CommunicationsHandler createHandler(SocketChannel accepted) {
+        return new GossipHandler(gossip, this, accepted);
     }
 }

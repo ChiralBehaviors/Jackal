@@ -74,39 +74,6 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
 
     }
 
-    @Override
-    protected void closing() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    protected void deliver(byte[] msg) {
-        ByteBuffer buffer = ByteBuffer.wrap(msg);
-        buffer.position(HEADER_SIZE);
-        byte msgType = buffer.get();
-        switch (msgType) {
-            case GOSSIP: {
-                handleGossip(buffer);
-                break;
-            }
-            case REPLY: {
-                handleReply(buffer);
-                break;
-            }
-            case UPDATE: {
-                handleUpdate(buffer);
-                break;
-            }
-            default: {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("invalid message type: %s from: %s",
-                                      msgType, this));
-                }
-            }
-        }
-    }
-
     private void handleGossip(ByteBuffer msg) {
         Digest[] digests = new Digest[msg.getInt()];
         if (log.isLoggable(Level.FINEST)) {
@@ -145,6 +112,39 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             log.finest(format("Received an update from %s", this));
         }
         gossip.update(remoteStates);
+    }
+
+    @Override
+    protected void closing() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    protected void deliver(byte[] msg) {
+        ByteBuffer buffer = ByteBuffer.wrap(msg);
+        buffer.position(HEADER_SIZE);
+        byte msgType = buffer.get();
+        switch (msgType) {
+            case GOSSIP: {
+                handleGossip(buffer);
+                break;
+            }
+            case REPLY: {
+                handleReply(buffer);
+                break;
+            }
+            case UPDATE: {
+                handleUpdate(buffer);
+                break;
+            }
+            default: {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(format("invalid message type: %s from: %s",
+                                      msgType, this));
+                }
+            }
+        }
     }
 
 }

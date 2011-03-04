@@ -19,6 +19,7 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import static java.lang.String.format;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,19 +73,22 @@ public class Gossip {
     private final SystemView view;
     private final HeartbeatReceiver receiver;
     private final ExecutorService notificationService;
+    private final Communications communications;
 
-    public Gossip(HeartbeatReceiver heartbeatReceiver, SystemView systemView,
+    public Gossip(Communications gossipCommunications,
+                  HeartbeatReceiver heartbeatReceiver, SystemView systemView,
                   Random random, double phiConvictThreshold,
                   HeartbeatState initialState) {
         if (phiConvictThreshold < 5 || phiConvictThreshold > 16) {
             throw new IllegalArgumentException(
                                                "Phi conviction threshold must be between 5 and 16, inclusively");
         }
+        communications = gossipCommunications;
         receiver = heartbeatReceiver;
         convictThreshold = phiConvictThreshold;
         entropy = random;
         view = systemView;
-        localState = new Endpoint(initialState, null);
+        localState = new Endpoint(initialState);
         localState.markAlive();
         endpointState.put(view.getLocalAddress(), localState);
         notificationService = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -298,24 +302,40 @@ public class Gossip {
         }
     }
 
-    private GossipCommunications connect(InetSocketAddress senderAddress) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    private void discover(HeartbeatState state) {
-        log.info(format("Node %s is now part of the partition",
-                        state.getSenderAddress()));
+    private void discover(final HeartbeatState state) {
+        final InetSocketAddress address = state.getSenderAddress();
+        log.info(format("Node %s is now part of the partition", address));
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Adding endpoint state for %s",
-                              state.getSenderAddress()));
+            log.finest(format("Adding endpoint state for %s", address));
         }
-        Endpoint endpoint = new Endpoint(state,
-                                         connect(state.getSenderAddress()));
-        endpointState.put(state.getSenderAddress(), endpoint);
-        view.markAlive(state.getSenderAddress());
-        if (log.isLoggable(Level.INFO)) {
-            log.info(format("Member %s is now UP", endpoint));
+        final Endpoint endpoint = new Endpoint(state);
+        Runnable connectAction = new Runnable() {
+            @Override
+            public void run() {
+                Endpoint previous = endpointState.putIfAbsent(address, endpoint);
+                if (previous != null) {
+                    endpoint.getHandler().close();
+                    if (log.isLoggable(Level.INFO)) {
+                        log.info(format("Endpoint already established for %s",
+                                        endpoint));
+                    }
+                    return;
+                }
+                view.markAlive(address);
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(format("Member %s is now UP", endpoint));
+                }
+            }
+
+        };
+        try {
+            endpoint.setCommunications(communications.connect(address,
+                                                              connectAction));
+        } catch (IOException e) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.log(Level.WARNING,
+                        format("Cannot connect to endpoint %s", address), e);
+            }
         }
     }
 

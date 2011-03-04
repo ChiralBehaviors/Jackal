@@ -269,6 +269,7 @@ public abstract class ServerChannelHandler {
     protected void handleRead(SelectionKey key, Iterator<SelectionKey> selected) {
         if (!run.get()) {
             log.info("Ignoring read ready as handler is not started");
+            return;
         }
         if (log.isLoggable(Level.FINEST)) {
             log.finest("Handling read");
@@ -287,6 +288,7 @@ public abstract class ServerChannelHandler {
     protected void handleWrite(SelectionKey key, Iterator<SelectionKey> selected) {
         if (!run.get()) {
             log.info("Ignoring write ready as handler is not started");
+            return;
         }
         if (log.isLoggable(Level.FINEST)) {
             log.finest("Handling write");
@@ -327,10 +329,29 @@ public abstract class ServerChannelHandler {
                 handleRead(key, selected);
             } else if (key.isWritable()) {
                 handleWrite(key, selected);
+            } else if (key.isConnectable()) {
+                handleConnect(key, selected);
             } else {
                 log.warning("Unhandled key: " + key);
             }
         }
+    }
+
+    protected void handleConnect(SelectionKey key,
+                                 Iterator<SelectionKey> selected) {
+        if (!run.get()) {
+            log.info("Ignoring connect as handler is not started");
+            return;
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Handling read");
+        }
+        selected.remove();
+        key.cancel();
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Dispatching connected action");
+        }
+        dispatch((Runnable) key.attachment());
     }
 
     protected void selectForRead(CommunicationsHandler handler) {
@@ -346,6 +367,28 @@ public abstract class ServerChannelHandler {
     protected void selectForWrite(CommunicationsHandler handler) {
         writeQueue.add(handler);
         selector.wakeup();
+    }
+
+    protected void selectForConnect(CommunicationsHandler handler,
+                                    Runnable connectAction) {
+        try {
+            handler.getChannel().register(selector, SelectionKey.OP_CONNECT,
+                                          connectAction);
+        } catch (CancelledKeyException e) {
+            log.log(Level.WARNING, String.format("Cancelled key for %s"), e);
+            throw new IllegalStateException(e);
+        } catch (NullPointerException e) {
+            // apparently the file descriptor can be nulled
+            log.log(Level.FINEST, "anamalous null pointer exception", e);
+        } catch (ClosedChannelException e) {
+            log.log(Level.FINEST, "channel has been closed", e);
+        }
+        try {
+            selector.wakeup();
+        } catch (NullPointerException e) {
+            // Bug in JRE
+            log.log(Level.FINEST, "Caught null pointer in selector wakeup", e);
+        }
     }
 
     protected void startSelect() {

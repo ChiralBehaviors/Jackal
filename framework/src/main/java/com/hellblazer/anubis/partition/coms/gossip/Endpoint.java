@@ -34,20 +34,22 @@ public class Endpoint {
     private volatile HeartbeatState heartbeat;
     private volatile boolean isAlive = true;
     private volatile long update = System.currentTimeMillis();
-    private final GossipCommunications handler;
+    private volatile GossipCommunications handler;
 
-    public Endpoint(HeartbeatState heartBeatState,
-                    GossipCommunications communications) {
+    public Endpoint(HeartbeatState heartBeatState) {
         heartbeat = heartBeatState;
-        handler = communications;
+    }
+
+    public long getEpoch() {
+        return heartbeat.getSender().epoch;
     }
 
     public GossipCommunications getHandler() {
         return handler;
     }
 
-    public long getEpoch() {
-        return heartbeat.getSender().epoch;
+    public long getViewNumber() {
+        return heartbeat.getViewNumber();
     }
 
     public boolean interpret(long now, double convictThreshold) {
@@ -78,12 +80,12 @@ public class Endpoint {
         isAlive = false;
     }
 
+    void setCommunications(GossipCommunications communications) {
+        handler = communications;
+    }
+
     void updateState(long now, HeartbeatState newHbState) {
         update = now;
         heartbeat = newHbState;
-    }
-
-    public long getViewNumber() {
-        return heartbeat.getViewNumber();
     }
 }

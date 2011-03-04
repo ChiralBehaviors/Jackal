@@ -30,6 +30,11 @@ import com.hellblazer.anubis.util.Pair;
 public interface GossipCommunications {
 
     /**
+     * Close the communications connection
+     */
+    void close();
+
+    /**
      * The first message of the gossip protocol. Send a list of the shuffled
      * digests of the receiver's view of the endpoint state
      * 
@@ -37,16 +42,6 @@ public interface GossipCommunications {
      *            - the list of heartbeat digests the receiver knows about
      */
     void gossip(List<Digest> digests);
-
-    /**
-     * The third message of the gossip protocol. Send a list of updated
-     * heartbeat states to the node this handler represents, which is requesting
-     * the updates.
-     * 
-     * @param deltaState
-     *            - the list of heartbeat states requested.
-     */
-    void update(List<HeartbeatState> deltaState);
 
     /**
      * The second message in the gossip protocol. Send a list of digests the
@@ -58,5 +53,15 @@ public interface GossipCommunications {
      *            - the pair of state updates and requested state
      */
     void reply(Pair<List<Digest>, List<HeartbeatState>> ack);
+
+    /**
+     * The third message of the gossip protocol. Send a list of updated
+     * heartbeat states to the node this handler represents, which is requesting
+     * the updates.
+     * 
+     * @param deltaState
+     *            - the list of heartbeat states requested.
+     */
+    void update(List<HeartbeatState> deltaState);
 
 }
