@@ -66,14 +66,14 @@ import com.hellblazer.anubis.util.Pair;
 public class Gossip {
     private final static Logger log = Logger.getLogger(Gossip.class.getCanonicalName());
 
+    private final ConnectionService connectionService;
     private final double convictThreshold;
     private final ConcurrentMap<InetSocketAddress, Endpoint> endpoints = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
     private final Random entropy;
     private final Endpoint localState;
-    private final SystemView view;
-    private final HeartbeatReceiver receiver;
     private final ExecutorService notificationService;
-    private final ConnectionService connectionService;
+    private final HeartbeatReceiver receiver;
+    private final SystemView view;
 
     /**
      * 
@@ -256,6 +256,56 @@ public class Gossip {
         localState.updateState(System.currentTimeMillis(), updatedState);
     }
 
+    /**
+     * Gossip with one of the kernel members of the system view with some
+     * probability. If the live member that we gossiped with is a seed member,
+     * then don't worry about it.
+     * 
+     * @param digests
+     *            - the digests to gossip.
+     * @param member
+     *            - the live member we've gossiped with.
+     */
+    protected void gossipWithSeeds(final List<Digest> digests,
+                                   InetSocketAddress member) {
+        InetSocketAddress address = view.getRandomSeedMember(member);
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint != null) {
+            endpoint.getHandler().gossip(digests);
+        } else {
+            connectAndGossipWith(address, digests);
+        }
+    }
+
+    /**
+     * Gossip with a member who is currently considered dead, with some
+     * probability.
+     * 
+     * @param digests
+     *            - the digests of interest
+     */
+    protected void gossipWithTheDead(List<Digest> digests) {
+        InetSocketAddress address = view.getRandomUnreachableMember();
+        connectAndGossipWith(address, digests);
+    }
+
+    /**
+     * Gossip with a live member of the view.
+     * 
+     * @param digests
+     *            - the digests of interest
+     * @return the address of the member contacted
+     */
+    protected InetSocketAddress gossipWithTheLiving(List<Digest> digests) {
+        InetSocketAddress address = view.getRandomLiveMember();
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint != null) {
+            endpoint.getHandler().gossip(digests);
+            return address;
+        }
+        return null;
+    }
+
     private void addUpdatedState(List<HeartbeatState> deltaState,
                                  InetSocketAddress endpoint, long viewNumber) {
         Endpoint state = endpoints.get(endpoint);
@@ -318,6 +368,61 @@ public class Gossip {
         }
     }
 
+    private void connect(final InetSocketAddress address,
+                         final Endpoint endpoint, Runnable connectAction) {
+        try {
+            endpoint.setCommunications(connectionService.connect(address,
+                                                                 connectAction));
+        } catch (IOException e) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.log(Level.WARNING,
+                        format("Cannot connect to endpoint %s", address), e);
+            }
+        }
+    }
+
+    /**
+     * Connect and gossip with a member that isn't currently connected.
+     * 
+     * @param address
+     *            - the address to connect to
+     * @param digests
+     *            - the digests in question
+     */
+    private void connectAndGossipWith(final InetSocketAddress address,
+                                      final List<Digest> digests) {
+        final Endpoint newEndpoint = new Endpoint(new HeartbeatState(address));
+        Runnable connectAction = new Runnable() {
+            @Override
+            public void run() {
+                Endpoint previous = endpoints.putIfAbsent(address, newEndpoint);
+                if (previous != null) {
+                    newEndpoint.getHandler().close();
+                    if (log.isLoggable(Level.INFO)) {
+                        log.info(format("Endpoint already established for %s",
+                                        newEndpoint));
+                    }
+                    return;
+                }
+                view.markAlive(address);
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(format("Member %s is now UP", newEndpoint));
+                }
+                List<Digest> newDigests = new ArrayList<Digest>(digests);
+                newDigests.add(new Digest(address, newEndpoint));
+                newEndpoint.getHandler().gossip(newDigests);
+            }
+        };
+        connect(address, newEndpoint, connectAction);
+    }
+
+    /**
+     * Discover a connection with a previously unconnected member
+     * 
+     * @param state
+     *            - the heartbeat state from a previously unconnected member of
+     *            the system view
+     */
     private void discover(final HeartbeatState state) {
         final InetSocketAddress address = state.getSenderAddress();
         final Endpoint endpoint = new Endpoint(state);
@@ -342,19 +447,6 @@ public class Gossip {
 
         };
         connect(address, endpoint, connectAction);
-    }
-
-    private void connect(final InetSocketAddress address,
-                         final Endpoint endpoint, Runnable connectAction) {
-        try {
-            endpoint.setCommunications(connectionService.connect(address,
-                                                                 connectAction));
-        } catch (IOException e) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
-                        format("Cannot connect to endpoint %s", address), e);
-            }
-        }
     }
 
     private Pair<List<Digest>, List<HeartbeatState>> examine(Digest[] digests) {
@@ -394,65 +486,6 @@ public class Gossip {
         }
         return new Pair<List<Digest>, List<HeartbeatState>>(deltaDigests,
                                                             deltaState);
-    }
-
-    private GossipHandler getHandler(InetSocketAddress randomLiveMember) {
-        return null;
-    }
-
-    protected void gossipWithSeeds(final List<Digest> digests,
-                                   InetSocketAddress member) {
-        InetSocketAddress address = view.getRandomSeedMember(member);
-        Endpoint endpoint = endpoints.get(address);
-        if (endpoint != null) {
-            endpoint.getHandler().gossip(digests);
-        } else {
-            connectAndGossipWith(address, digests);
-        }
-    }
-
-    private void connectAndGossipWith(final InetSocketAddress address,
-                                      final List<Digest> digests) {
-        final Endpoint newEndpoint = new Endpoint(new HeartbeatState(address));
-        Runnable connectAction = new Runnable() {
-            @Override
-            public void run() {
-                Endpoint previous = endpoints.putIfAbsent(address, newEndpoint);
-                if (previous != null) {
-                    newEndpoint.getHandler().close();
-                    if (log.isLoggable(Level.INFO)) {
-                        log.info(format("Endpoint already established for %s",
-                                        newEndpoint));
-                    }
-                    return;
-                }
-                view.markAlive(address);
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(format("Member %s is now UP", newEndpoint));
-                }
-                List<Digest> newDigests = new ArrayList<Digest>(digests);
-                newDigests.add(new Digest(address, newEndpoint));
-                newEndpoint.getHandler().gossip(newDigests);
-            }
-        };
-        connect(address, newEndpoint, connectAction);
-    }
-
-    protected void gossipWithTheDead(List<Digest> digests) {
-        GossipHandler unreachableMember = getHandler(view.getRandomUnreachableMember());
-        if (unreachableMember != null) {
-            unreachableMember.gossip(digests);
-        }
-    }
-
-    protected InetSocketAddress gossipWithTheLiving(List<Digest> digests) {
-        InetSocketAddress address = view.getRandomLiveMember();
-        Endpoint endpoint = endpoints.get(address);
-        if (endpoint != null) {
-            endpoint.getHandler().gossip(digests);
-            return address;
-        }
-        return null;
     }
 
     private void notifyReceiver(final HeartbeatState state) {
