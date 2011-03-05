@@ -34,14 +34,14 @@ import java.util.logging.Logger;
 /**
  * Provides a view on the known endpoint state for the system. The primary
  * responsibility of the system view is to provide random members from the
- * various subsets of the member endpoints the view tracks.The system endpoint
- * view is composed of live endpoints - endpoints that are considered up and
- * functioning normally - and unreachable endpoints - endpoints that are
- * considered down and non functional. A subset of the endpoints in the system
+ * various subsets of the member endpoints the view tracks. The system endpoint
+ * view is composed of live endpoints (endpoints that are considered up and
+ * functioning normally) and unreachable endpoints (endpoints that are
+ * considered down and non functional). A subset of the endpoints in the system
  * serve as seeds that form the kernel set of endpoints used to construct the
  * system view. The system view also tracks members that are considered
  * quarantined. Quarantined members are members that have been marked dead and
- * are prohibited from rejoing the set of live endpoints until the quarantine
+ * are prohibited from rejoining the set of live endpoints until the quarantine
  * period has elapsed.
  * 
  * 
@@ -49,7 +49,6 @@ import java.util.logging.Logger;
  * 
  */
 public class SystemView {
-    private static final long A_VERY_LONG_TIME = 259200 * 1000; // 3 days
     private static final Comparator<InetSocketAddress> ADDRESS_COMPARATOR = new Comparator<InetSocketAddress>() {
         @Override
         public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
@@ -69,7 +68,6 @@ public class SystemView {
         }
     };
     private static final Logger log = Logger.getLogger(SystemView.class.getCanonicalName());
-    private static final int QUARANTINE_DELAY = 30 * 1000;
     private final Random entropy;
     private final Set<InetSocketAddress> live = new ConcurrentSkipListSet<InetSocketAddress>(
                                                                                              ADDRESS_COMPARATOR);
@@ -78,11 +76,32 @@ public class SystemView {
     private final Set<InetSocketAddress> seeds = new ConcurrentSkipListSet<InetSocketAddress>(
                                                                                               ADDRESS_COMPARATOR);
     private final Map<InetSocketAddress, Long> unreachable = new ConcurrentHashMap<InetSocketAddress, Long>();
+    private final int quarantineInterval;
+    private final int unreachableInterval;
 
+    /**
+     * 
+     * @param random
+     *            - a source of entropy
+     * @param local
+     *            - the local address of this node
+     * @param seedHosts
+     *            - the kernel set of endpoints used to construct the system
+     *            view
+     * @param quarantineDelay
+     *            - the interval a failing member must remain quarantined before
+     *            rejoining the view a a live member
+     * @param unreachableDelay
+     *            - the interval it takes before the system finally considers a
+     *            member really and truly dead
+     */
     public SystemView(Random random, InetSocketAddress local,
-                      Collection<InetSocketAddress> seedHosts) {
+                      Collection<InetSocketAddress> seedHosts,
+                      int quarantineDelay, int unreachableDelay) {
         entropy = random;
         localAddress = local;
+        quarantineInterval = quarantineDelay;
+        unreachableInterval = unreachableDelay;
         for (InetSocketAddress seed : seedHosts) {
             if (!seed.equals(localAddress)) {
                 seeds.add(seed);
@@ -100,9 +119,9 @@ public class SystemView {
     public void cullQuarantined(long now) {
         if (!quarantined.isEmpty()) {
             for (Map.Entry<InetSocketAddress, Long> entry : quarantined.entrySet()) {
-                if (now - entry.getValue() > QUARANTINE_DELAY) {
+                if (now - entry.getValue() > quarantineInterval) {
                     if (log.isLoggable(Level.FINE)) {
-                        log.fine(QUARANTINE_DELAY + " elapsed, "
+                        log.fine(quarantineInterval + " elapsed, "
                                  + entry.getKey() + " gossip quarantine over");
                     }
                     quarantined.remove(entry.getKey());
@@ -112,7 +131,7 @@ public class SystemView {
     }
 
     public boolean cullUnreachable(InetSocketAddress endpoint, long now) {
-        if (now > A_VERY_LONG_TIME) {
+        if (now > unreachableInterval) {
             unreachable.remove(endpoint);
             return true;
         }

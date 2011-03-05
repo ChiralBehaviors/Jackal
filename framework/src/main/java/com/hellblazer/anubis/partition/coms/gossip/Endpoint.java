@@ -40,6 +40,10 @@ public class Endpoint {
         heartbeat = heartBeatState;
     }
 
+    public Endpoint() {
+        
+    }
+
     public long getEpoch() {
         return heartbeat.getSender().epoch;
     }

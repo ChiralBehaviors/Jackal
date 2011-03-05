@@ -45,7 +45,7 @@ import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
  */
 
 public class Communications extends ServerChannelHandler implements
-        HeartbeatCommsIntf {
+        HeartbeatCommsIntf, ConnectionService {
     private static final Logger log = Logger.getLogger(Communications.class.getCanonicalName());
 
     private final Gossip gossip;
@@ -72,6 +72,15 @@ public class Communications extends ServerChannelHandler implements
                 return daemon;
             }
         });
+    }
+
+    @Override
+    public GossipHandler connect(InetSocketAddress address,
+                                 Runnable connectAction) throws IOException {
+        SocketChannel channel = SocketChannel.open(address);
+        GossipHandler handler = new GossipHandler(gossip, this, channel);
+        selectForConnect(handler, connectAction);
+        return handler;
     }
 
     @Override
@@ -118,7 +127,7 @@ public class Communications extends ServerChannelHandler implements
         }
     }
 
-    private Runnable gossipTask() {
+    protected Runnable gossipTask() {
         return new Runnable() {
             @Override
             public void run() {
@@ -130,14 +139,6 @@ public class Communications extends ServerChannelHandler implements
                 }
             }
         };
-    }
-
-    protected GossipHandler connect(InetSocketAddress address,
-                                    Runnable connectAction) throws IOException {
-        SocketChannel channel = SocketChannel.open(address);
-        GossipHandler handler = new GossipHandler(gossip, this, channel);
-        selectForConnect(handler, connectAction);
-        return handler;
     }
 
     @Override

@@ -38,11 +38,15 @@ public class HeartbeatState implements Heartbeat {
     private boolean preferred;
     private Identity sender;
     private InetSocketAddress senderAddress;
-    private boolean stable;
+    private boolean stable = false;
     private InetSocketAddress testInterface;
     private NodeIdSet view;
-    private long viewNumber;
+    private long viewNumber = -1;
     private long viewTimeStamp = View.undefinedTimeStamp;
+
+    public HeartbeatState(InetSocketAddress sender) {
+        senderAddress = sender;
+    }
 
     public HeartbeatState(HeartbeatMsg heartbeatMsg) {
         candidate = heartbeatMsg.getCandidate();

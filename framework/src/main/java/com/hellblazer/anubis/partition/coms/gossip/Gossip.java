@@ -67,30 +67,43 @@ public class Gossip {
     private final static Logger log = Logger.getLogger(Gossip.class.getCanonicalName());
 
     private final double convictThreshold;
-    private final ConcurrentMap<InetSocketAddress, Endpoint> endpointState = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
+    private final ConcurrentMap<InetSocketAddress, Endpoint> endpoints = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
     private final Random entropy;
     private final Endpoint localState;
     private final SystemView view;
     private final HeartbeatReceiver receiver;
     private final ExecutorService notificationService;
-    private final Communications communications;
+    private final ConnectionService connectionService;
 
-    public Gossip(Communications gossipCommunications,
+    /**
+     * 
+     * @param gossipConnectionService
+     *            - the service which creates outbound connections to other
+     *            members
+     * @param heartbeatReceiver
+     *            - the reciever of newly acquired heartbeat state
+     * @param systemView
+     *            - the system management view of the member state
+     * @param random
+     *            - a source of entropy
+     * @param phiConvictThreshold
+     *            - the threshold required to convict a failed member. The value
+     *            should be between 5 and 16, inclusively.
+     * @param initialState
+     *            - the initial heartbeat state of the local member
+     */
+    public Gossip(ConnectionService gossipConnectionService,
                   HeartbeatReceiver heartbeatReceiver, SystemView systemView,
                   Random random, double phiConvictThreshold,
                   HeartbeatState initialState) {
-        if (phiConvictThreshold < 5 || phiConvictThreshold > 16) {
-            throw new IllegalArgumentException(
-                                               "Phi conviction threshold must be between 5 and 16, inclusively");
-        }
-        communications = gossipCommunications;
+        connectionService = gossipConnectionService;
         receiver = heartbeatReceiver;
         convictThreshold = phiConvictThreshold;
         entropy = random;
         view = systemView;
         localState = new Endpoint(initialState);
         localState.markAlive();
-        endpointState.put(view.getLocalAddress(), localState);
+        endpoints.put(view.getLocalAddress(), localState);
         notificationService = Executors.newSingleThreadExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
@@ -108,7 +121,7 @@ public class Gossip {
         if (log.isLoggable(Level.FINEST)) {
             log.finest("Checking the status of the living...");
         }
-        for (Entry<InetSocketAddress, Endpoint> entry : endpointState.entrySet()) {
+        for (Entry<InetSocketAddress, Endpoint> entry : endpoints.entrySet()) {
             InetSocketAddress endpoint = entry.getKey();
             if (endpoint.equals(view.getLocalAddress())) {
                 continue;
@@ -127,7 +140,7 @@ public class Gossip {
                 if (log.isLoggable(Level.INFO)) {
                     log.info(format("Culling unreachable endpoint %s", endpoint));
                 }
-                endpointState.remove(endpoint);
+                endpoints.remove(endpoint);
             }
         }
         if (log.isLoggable(Level.INFO)) {
@@ -139,13 +152,13 @@ public class Gossip {
     /**
      * Perform the periodic gossip.
      * 
-     * @param communications
+     * @param connectionService
      *            - the mechanism to send the gossip message to a peer
      */
     public void gossip() {
         List<Digest> digests = randomDigests();
         if (digests.size() > 0) {
-            GossipHandler member = gossipWithTheLiving(digests);
+            InetSocketAddress member = gossipWithTheLiving(digests);
             gossipWithTheDead(digests);
             gossipWithSeeds(digests, member);
             checkStatus();
@@ -167,7 +180,7 @@ public class Gossip {
     public Pair<List<Digest>, List<HeartbeatState>> gossip(Digest[] digests) {
         long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
-            Endpoint endpoint = endpointState.get(gDigest.getEpAddress());
+            Endpoint endpoint = endpoints.get(gDigest.getEpAddress());
             if (endpoint != null) {
                 endpoint.record(now);
             }
@@ -196,7 +209,7 @@ public class Gossip {
         if (remoteStates.length > 0) {
             long now = System.currentTimeMillis();
             for (HeartbeatState state : remoteStates) {
-                Endpoint endpoint = endpointState.get(state.getSenderAddress());
+                Endpoint endpoint = endpoints.get(state.getSenderAddress());
                 if (endpoint != null) {
                     endpoint.record(now);
                 }
@@ -225,7 +238,10 @@ public class Gossip {
     public void update(HeartbeatState[] remoteStates) {
         long now = System.currentTimeMillis();
         for (HeartbeatState state : remoteStates) {
-            endpointState.get(state.getSenderAddress()).record(now);
+            Endpoint endpoint = endpoints.get(state.getSenderAddress());
+            if (endpoint != null) {
+                endpoint.record(now);
+            }
         }
         apply(now, remoteStates);
     }
@@ -242,13 +258,13 @@ public class Gossip {
 
     private void addUpdatedState(List<HeartbeatState> deltaState,
                                  InetSocketAddress endpoint, long viewNumber) {
-        Endpoint epState = endpointState.get(endpoint);
-        if (epState != null && epState.getViewNumber() > viewNumber) {
+        Endpoint state = endpoints.get(endpoint);
+        if (state != null && state.getViewNumber() > viewNumber) {
             if (log.isLoggable(Level.FINEST)) {
                 log.finest(format("local heartbeat view number %s greater than %s for %s ",
-                                  epState.getViewNumber(), viewNumber, endpoint));
+                                  state.getViewNumber(), viewNumber, endpoint));
             }
-            deltaState.add(epState.getState());
+            deltaState.add(state.getState());
         }
     }
 
@@ -260,13 +276,13 @@ public class Gossip {
             }
             if (view.isQuarantined(endpoint)) {
                 if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("Ignoring gossip for %s because it is quarantined",
+                    log.finest(format("Ignoring gossip for %s because it is a quarantined endpoint",
                                       endpoint));
                 }
                 continue;
             }
 
-            Endpoint localState = endpointState.get(endpoint);
+            Endpoint localState = endpoints.get(endpoint);
             if (localState != null) {
                 long localEpoch = localState.getEpoch();
                 long remoteEpoch = remoteState.getEpoch();
@@ -304,15 +320,11 @@ public class Gossip {
 
     private void discover(final HeartbeatState state) {
         final InetSocketAddress address = state.getSenderAddress();
-        log.info(format("Node %s is now part of the partition", address));
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Adding endpoint state for %s", address));
-        }
         final Endpoint endpoint = new Endpoint(state);
         Runnable connectAction = new Runnable() {
             @Override
             public void run() {
-                Endpoint previous = endpointState.putIfAbsent(address, endpoint);
+                Endpoint previous = endpoints.putIfAbsent(address, endpoint);
                 if (previous != null) {
                     endpoint.getHandler().close();
                     if (log.isLoggable(Level.INFO)) {
@@ -325,12 +337,18 @@ public class Gossip {
                 if (log.isLoggable(Level.INFO)) {
                     log.info(format("Member %s is now UP", endpoint));
                 }
+                notifyReceiver(endpoint.getState());
             }
 
         };
+        connect(address, endpoint, connectAction);
+    }
+
+    private void connect(final InetSocketAddress address,
+                         final Endpoint endpoint, Runnable connectAction) {
         try {
-            endpoint.setCommunications(communications.connect(address,
-                                                              connectAction));
+            endpoint.setCommunications(connectionService.connect(address,
+                                                                 connectAction));
         } catch (IOException e) {
             if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING,
@@ -345,7 +363,7 @@ public class Gossip {
         for (Digest digest : digests) {
             long remoteEpoch = digest.getEpoch();
             long remoteViewNumber = digest.getViewNumber();
-            Endpoint state = endpointState.get(digest.getEpAddress());
+            Endpoint state = endpoints.get(digest.getEpAddress());
             if (state != null) {
                 long localEpoch = state.getEpoch();
                 long localViewNumber = state.getViewNumber();
@@ -382,26 +400,59 @@ public class Gossip {
         return null;
     }
 
-    private void gossipWithSeeds(List<Digest> digests, GossipHandler member) {
-        GossipHandler seedMember = getHandler(view.getRandomSeedMember(member.getAddress()));
-        if (seedMember != null) {
-            seedMember.gossip(digests);
+    protected void gossipWithSeeds(final List<Digest> digests,
+                                   InetSocketAddress member) {
+        InetSocketAddress address = view.getRandomSeedMember(member);
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint != null) {
+            endpoint.getHandler().gossip(digests);
+        } else {
+            connectAndGossipWith(address, digests);
         }
     }
 
-    private void gossipWithTheDead(List<Digest> digests) {
+    private void connectAndGossipWith(final InetSocketAddress address,
+                                      final List<Digest> digests) {
+        final Endpoint newEndpoint = new Endpoint(new HeartbeatState(address));
+        Runnable connectAction = new Runnable() {
+            @Override
+            public void run() {
+                Endpoint previous = endpoints.putIfAbsent(address, newEndpoint);
+                if (previous != null) {
+                    newEndpoint.getHandler().close();
+                    if (log.isLoggable(Level.INFO)) {
+                        log.info(format("Endpoint already established for %s",
+                                        newEndpoint));
+                    }
+                    return;
+                }
+                view.markAlive(address);
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(format("Member %s is now UP", newEndpoint));
+                }
+                List<Digest> newDigests = new ArrayList<Digest>(digests);
+                newDigests.add(new Digest(address, newEndpoint));
+                newEndpoint.getHandler().gossip(newDigests);
+            }
+        };
+        connect(address, newEndpoint, connectAction);
+    }
+
+    protected void gossipWithTheDead(List<Digest> digests) {
         GossipHandler unreachableMember = getHandler(view.getRandomUnreachableMember());
         if (unreachableMember != null) {
             unreachableMember.gossip(digests);
         }
     }
 
-    private GossipHandler gossipWithTheLiving(List<Digest> digests) {
-        GossipHandler member = getHandler(view.getRandomLiveMember());
-        if (member != null) {
-            member.gossip(digests);
+    protected InetSocketAddress gossipWithTheLiving(List<Digest> digests) {
+        InetSocketAddress address = view.getRandomLiveMember();
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint != null) {
+            endpoint.getHandler().gossip(digests);
+            return address;
         }
-        return member;
+        return null;
     }
 
     private void notifyReceiver(final HeartbeatState state) {
@@ -415,7 +466,7 @@ public class Gossip {
 
     private List<Digest> randomDigests() {
         ArrayList<Digest> digests = new ArrayList<Digest>();
-        for (Entry<InetSocketAddress, Endpoint> entry : endpointState.entrySet()) {
+        for (Entry<InetSocketAddress, Endpoint> entry : endpoints.entrySet()) {
             digests.add(new Digest(entry.getKey(), entry.getValue()));
         }
         Collections.shuffle(digests, entropy);
@@ -425,7 +476,7 @@ public class Gossip {
                 sb.append(gDigest);
                 sb.append(" ");
             }
-            log.finest(format("Gossip Digests are : %s" + sb.toString()));
+            log.finest(format("Gossip digests are : %s" + sb.toString()));
         }
         return digests;
     }
@@ -440,8 +491,8 @@ public class Gossip {
         int i = 0;
         for (Digest gDigest : digests) {
             InetSocketAddress ep = gDigest.getEpAddress();
-            Endpoint epState = endpointState.get(ep);
-            long viewNumber = epState != null ? epState.getViewNumber() : 0;
+            Endpoint state = endpoints.get(ep);
+            long viewNumber = state != null ? state.getViewNumber() : 0;
             long diffViewNumber = Math.abs(viewNumber - gDigest.getViewNumber());
             diffDigests[i++] = new Digest(ep, gDigest.getEpoch(),
                                           diffViewNumber);
@@ -451,6 +502,14 @@ public class Gossip {
         i = 0;
         for (int j = diffDigests.length - 1; j >= 0; --j) {
             digests[i++] = endpoint2digest.get(diffDigests[j].getEpAddress());
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            StringBuilder sb = new StringBuilder();
+            for (Digest gDigest : digests) {
+                sb.append(gDigest);
+                sb.append(" ");
+            }
+            log.finest(format("Sorted gossip digests are : %s" + sb.toString()));
         }
     }
 }
