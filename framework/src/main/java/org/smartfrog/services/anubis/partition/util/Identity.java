@@ -51,6 +51,13 @@ public class Identity implements Serializable, Cloneable, WireSizes {
         return inetAddressToNode(InetAddress.getLocalHost());
     }
 
+    public static int getMagicFromLocalIpAddress() throws IOException {
+        DataInputStream dis = new DataInputStream(
+                                                  new ByteArrayInputStream(
+                                                                           InetAddress.getLocalHost().getHostAddress().getBytes()));
+        return dis.readInt();
+    }
+
     public static int getPID() {
         String name = ManagementFactory.getRuntimeMXBean().getName();
         String pid = name.substring(0, name.indexOf('@'));
@@ -76,18 +83,15 @@ public class Identity implements Serializable, Cloneable, WireSizes {
                             bytes.getLong(idx + epochIdx));
     }
 
-    public static int getMagicFromLocalIpAddress() throws IOException {
-        DataInputStream dis = new DataInputStream(
-                                                  new ByteArrayInputStream(
-                                                                           InetAddress.getLocalHost().getHostAddress().getBytes()));
-        return dis.readInt();
-    }
-
     public final long epoch;
-
     public final int id;
-
     public final int magic;
+
+    public Identity(ByteBuffer buffer) {
+        magic = buffer.getInt();
+        id = buffer.getInt();
+        epoch = buffer.getLong();
+    }
 
     /**
      * constructor - takes a given magic number, id and epoch to construct the
@@ -188,6 +192,12 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     public String toString() {
         // return "<id=" + id + ", " + magic + ", " + epoch + ">";
         return "<id " + id + " >";
+    }
+
+    public void writeTo(ByteBuffer buffer) {
+        buffer.putInt(magic);
+        buffer.putInt(id);
+        buffer.putLong(epoch);
     }
 
     /**

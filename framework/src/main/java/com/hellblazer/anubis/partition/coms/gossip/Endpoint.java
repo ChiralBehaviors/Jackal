@@ -31,17 +31,17 @@ public class Endpoint {
     protected static Logger logger = Logger.getLogger(Endpoint.class.getCanonicalName());
 
     private final PhiAccrualFailureDetector fd = new PhiAccrualFailureDetector();
+    private volatile GossipCommunications handler;
     private volatile HeartbeatState heartbeat;
     private volatile boolean isAlive = true;
     private volatile long update = System.currentTimeMillis();
-    private volatile GossipCommunications handler;
+
+    public Endpoint() {
+
+    }
 
     public Endpoint(HeartbeatState heartBeatState) {
         heartbeat = heartBeatState;
-    }
-
-    public Endpoint() {
-        
     }
 
     public long getEpoch() {

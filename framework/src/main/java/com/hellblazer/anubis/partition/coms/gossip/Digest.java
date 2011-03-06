@@ -17,7 +17,10 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Comparator;
 
 /**
@@ -28,7 +31,6 @@ import java.util.Comparator;
  * 
  */
 public class Digest {
-
     public static class DigestComparator implements Comparator<Digest> {
         @Override
         public int compare(Digest digest1, Digest digest2) {
@@ -39,9 +41,26 @@ public class Digest {
         }
     }
 
+    public static final int BYTE_SIZE = 16 + 1 + 4 + 4;
+
     private final InetSocketAddress address;
     private final long epoch;
     private final long viewNumber;
+
+    public Digest(ByteBuffer buffer) throws UnknownHostException {
+        // Read everything first, so if error occurs, the buffer is at the right position
+        byte[] bytes = new byte[buffer.get()];
+        int port = buffer.getInt();
+        epoch = buffer.getLong();
+        viewNumber = buffer.getLong();
+        address = new InetSocketAddress(InetAddress.getByAddress(bytes), port);
+    }
+
+    public Digest(InetSocketAddress socketAddress, Endpoint ep) {
+        address = socketAddress;
+        epoch = ep.getEpoch();
+        viewNumber = ep.getViewNumber();
+    }
 
     public Digest(InetSocketAddress ep, long diffEpoch, long diffViewNumber) {
         address = ep;
@@ -49,10 +68,16 @@ public class Digest {
         viewNumber = diffViewNumber;
     }
 
-    Digest(InetSocketAddress socketAddress, Endpoint ep) {
-        address = socketAddress;
-        epoch = ep.getEpoch();
-        viewNumber = ep.getViewNumber();
+    public InetSocketAddress getEpAddress() {
+        return address;
+    }
+
+    public long getEpoch() {
+        return epoch;
+    }
+
+    public long getViewNumber() {
+        return viewNumber;
     }
 
     @Override
@@ -66,15 +91,12 @@ public class Digest {
         return sb.toString();
     }
 
-    InetSocketAddress getEpAddress() {
-        return address;
-    }
-
-    long getEpoch() {
-        return epoch;
-    }
-
-    long getViewNumber() {
-        return viewNumber;
+    public void writeTo(ByteBuffer buffer) {
+        byte[] bytes = address.getAddress().getAddress();
+        buffer.put((byte) bytes.length);
+        buffer.put(bytes);
+        buffer.putInt(address.getPort());
+        buffer.putLong(epoch);
+        buffer.putLong(viewNumber);
     }
 }

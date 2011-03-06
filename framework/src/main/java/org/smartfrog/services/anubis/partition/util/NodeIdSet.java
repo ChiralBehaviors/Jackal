@@ -61,6 +61,12 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         this(DEFAULT_SIZE);
     }
 
+    public NodeIdSet(ByteBuffer buffer) {
+        int size = buffer.getInt();
+        storage = new byte[size];
+        buffer.get(storage);
+    }
+
     /**
      * create a bitset with a size large enough to contain at least i bits
      * 
@@ -402,6 +408,11 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         }
         stBuf.append(" ]");
         return stBuf.toString();
+    }
+
+    public void writeTo(ByteBuffer buffer) {
+        buffer.putInt(storage.length);
+        buffer.put(storage);
     }
 
     public void writeWireForm(ByteBuffer bytes, int idx, int len)

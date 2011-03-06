@@ -18,6 +18,7 @@
 package com.hellblazer.anubis.partition.coms.gossip;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
@@ -33,6 +34,8 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
  * 
  */
 public class HeartbeatState implements Heartbeat {
+    public static final int BYTE_SIZE = 0;
+
     private Identity candidate;
     private NodeIdSet msgLinks;
     private boolean preferred;
@@ -44,8 +47,8 @@ public class HeartbeatState implements Heartbeat {
     private long viewNumber = -1;
     private long viewTimeStamp = View.undefinedTimeStamp;
 
-    public HeartbeatState(InetSocketAddress sender) {
-        senderAddress = sender;
+    public HeartbeatState(ByteBuffer buffer) {
+
     }
 
     public HeartbeatState(HeartbeatMsg heartbeatMsg) {
@@ -56,6 +59,10 @@ public class HeartbeatState implements Heartbeat {
         senderAddress = heartbeatMsg.getSenderAddress();
         testInterface = heartbeatMsg.getTestInterface();
         setView(heartbeatMsg.getView());
+    }
+
+    public HeartbeatState(InetSocketAddress sender) {
+        senderAddress = sender;
     }
 
     @Override
@@ -141,5 +148,9 @@ public class HeartbeatState implements Heartbeat {
     @Override
     public void setViewNumber(long n) {
         viewNumber = n;
+    }
+
+    public void writeTo(ByteBuffer buffer) {
+
     }
 }

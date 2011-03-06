@@ -177,7 +177,7 @@ public class Gossip {
      *            - the list of heartbeat state digests
      * @return the pair of digests and heartbeat states to return to the sender
      */
-    public Pair<List<Digest>, List<HeartbeatState>> gossip(Digest[] digests) {
+    public Pair<List<Digest>, List<HeartbeatState>> gossip(List<Digest> digests) {
         long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
             Endpoint endpoint = endpoints.get(gDigest.getEpAddress());
@@ -204,9 +204,9 @@ public class Gossip {
      * @return a list of heartbeat states that the gossiper would like updates
      *         for
      */
-    public List<HeartbeatState> reply(Digest[] digests,
-                                      HeartbeatState[] remoteStates) {
-        if (remoteStates.length > 0) {
+    public List<HeartbeatState> reply(List<Digest> digests,
+                                      List<HeartbeatState> remoteStates) {
+        if (remoteStates.size() > 0) {
             long now = System.currentTimeMillis();
             for (HeartbeatState state : remoteStates) {
                 Endpoint endpoint = endpoints.get(state.getSenderAddress());
@@ -235,7 +235,7 @@ public class Gossip {
      *            - the list of updated heartbeat states we requested from our
      *            partner
      */
-    public void update(HeartbeatState[] remoteStates) {
+    public void update(List<HeartbeatState> remoteStates) {
         long now = System.currentTimeMillis();
         for (HeartbeatState state : remoteStates) {
             Endpoint endpoint = endpoints.get(state.getSenderAddress());
@@ -318,7 +318,7 @@ public class Gossip {
         }
     }
 
-    private void apply(long now, HeartbeatState[] remoteStates) {
+    private void apply(long now, List<HeartbeatState> remoteStates) {
         for (HeartbeatState remoteState : remoteStates) {
             InetSocketAddress endpoint = remoteState.getSenderAddress();
             if (endpoint.equals(view.getLocalAddress())) {
@@ -449,7 +449,7 @@ public class Gossip {
         connect(address, endpoint, connectAction);
     }
 
-    private Pair<List<Digest>, List<HeartbeatState>> examine(Digest[] digests) {
+    private Pair<List<Digest>, List<HeartbeatState>> examine(List<Digest> digests) {
         List<Digest> deltaDigests = new ArrayList<Digest>();
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
@@ -514,13 +514,13 @@ public class Gossip {
         return digests;
     }
 
-    private void sort(Digest[] digests) {
+    private void sort(List<Digest> digests) {
         Map<InetSocketAddress, Digest> endpoint2digest = new HashMap<InetSocketAddress, Digest>();
         for (Digest digest : digests) {
             endpoint2digest.put(digest.getEpAddress(), digest);
         }
 
-        Digest[] diffDigests = new Digest[digests.length];
+        Digest[] diffDigests = new Digest[digests.size()];
         int i = 0;
         for (Digest gDigest : digests) {
             InetSocketAddress ep = gDigest.getEpAddress();
@@ -534,7 +534,7 @@ public class Gossip {
         Arrays.sort(diffDigests, new DigestComparator());
         i = 0;
         for (int j = diffDigests.length - 1; j >= 0; --j) {
-            digests[i++] = endpoint2digest.get(diffDigests[j].getEpAddress());
+            digests.set(i++, endpoint2digest.get(diffDigests[j].getEpAddress()));
         }
         if (log.isLoggable(Level.FINEST)) {
             StringBuilder sb = new StringBuilder();

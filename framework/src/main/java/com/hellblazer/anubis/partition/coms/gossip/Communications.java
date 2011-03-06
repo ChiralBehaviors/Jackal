@@ -127,6 +127,11 @@ public class Communications extends ServerChannelHandler implements
         }
     }
 
+    @Override
+    protected CommunicationsHandler createHandler(SocketChannel accepted) {
+        return new GossipHandler(gossip, this, accepted);
+    }
+
     protected Runnable gossipTask() {
         return new Runnable() {
             @Override
@@ -139,10 +144,5 @@ public class Communications extends ServerChannelHandler implements
                 }
             }
         };
-    }
-
-    @Override
-    protected CommunicationsHandler createHandler(SocketChannel accepted) {
-        return new GossipHandler(gossip, this, accepted);
     }
 }

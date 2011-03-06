@@ -49,10 +49,10 @@ public interface GossipCommunications {
      * for, along with the list of heartbeat state this node believes is out of
      * date on the node this handler represents.
      * 
-     * @param ack
+     * @param reply
      *            - the pair of state updates and requested state
      */
-    void reply(Pair<List<Digest>, List<HeartbeatState>> ack);
+    void reply(Pair<List<Digest>, List<HeartbeatState>> reply);
 
     /**
      * The third message of the gossip protocol. Send a list of updated

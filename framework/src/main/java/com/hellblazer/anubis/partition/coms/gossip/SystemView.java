@@ -73,10 +73,10 @@ public class SystemView {
                                                                                              ADDRESS_COMPARATOR);
     private final InetSocketAddress localAddress;
     private final Map<InetSocketAddress, Long> quarantined = new ConcurrentHashMap<InetSocketAddress, Long>();
+    private final int quarantineInterval;
     private final Set<InetSocketAddress> seeds = new ConcurrentSkipListSet<InetSocketAddress>(
                                                                                               ADDRESS_COMPARATOR);
     private final Map<InetSocketAddress, Long> unreachable = new ConcurrentHashMap<InetSocketAddress, Long>();
-    private final int quarantineInterval;
     private final int unreachableInterval;
 
     /**

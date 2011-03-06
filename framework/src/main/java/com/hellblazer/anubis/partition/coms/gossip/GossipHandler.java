@@ -19,9 +19,9 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import static java.lang.String.format;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,10 +38,10 @@ import com.hellblazer.anubis.util.Pair;
  */
 public class GossipHandler extends AbstractCommunicationsHandler implements
         GossipCommunications {
-    private static final byte REPLY = 1;
-    private static final byte UPDATE = 2;
     private static final byte GOSSIP = 0;
     private static final Logger log = Logger.getLogger(GossipHandler.class.getCanonicalName());
+    private static final byte REPLY = 1;
+    private static final byte UPDATE = 2;
 
     private final Gossip gossip;
 
@@ -51,73 +51,45 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         this.gossip = gossip;
     }
 
-    public InetSocketAddress getAddress() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
     @Override
     public void gossip(List<Digest> digests) {
-        // TODO Auto-generated method stub
-
+        ByteBuffer buffer = ByteBuffer.allocate(digests.size()
+                                                * Digest.BYTE_SIZE);
+        buffer.putInt(digests.size());
+        for (Digest digest : digests) {
+            digest.writeTo(buffer);
+        }
+        send(buffer.array());
     }
 
     @Override
-    public void reply(Pair<List<Digest>, List<HeartbeatState>> ack) {
-        // TODO Auto-generated method stub
-
+    public void reply(Pair<List<Digest>, List<HeartbeatState>> reply) {
+        ByteBuffer buffer = ByteBuffer.allocate((reply.a.size() * Digest.BYTE_SIZE)
+                                                + (reply.b.size() * HeartbeatState.BYTE_SIZE));
+        buffer.putInt(reply.a.size());
+        for (Digest digest : reply.a) {
+            digest.writeTo(buffer);
+        }
+        buffer.putInt(reply.b.size());
+        for (HeartbeatState state : reply.b) {
+            state.writeTo(buffer);
+        }
+        send(buffer.array());
     }
 
     @Override
     public void update(List<HeartbeatState> deltaState) {
-        // TODO Auto-generated method stub
-
-    }
-
-    private void handleGossip(ByteBuffer msg) {
-        Digest[] digests = new Digest[msg.getInt()];
-        if (log.isLoggable(Level.FINEST)) {
-            StringBuilder sb = new StringBuilder();
-            for (Digest gDigest : digests) {
-                sb.append(gDigest);
-                sb.append(" ");
-            }
-            log.finest(format("Gossip digests from %s are : %s", this,
-                              sb.toString()));
+        ByteBuffer buffer = ByteBuffer.allocate(deltaState.size()
+                                                * HeartbeatState.BYTE_SIZE);
+        buffer.putInt(deltaState.size());
+        for (HeartbeatState state : deltaState) {
+            state.writeTo(buffer);
         }
-        Pair<List<Digest>, List<HeartbeatState>> ack = gossip.gossip(digests);
-        if (ack != null) {
-            reply(ack);
-        }
-    }
-
-    private void handleReply(ByteBuffer msg) {
-        Digest[] digests = new Digest[msg.getInt()];
-        HeartbeatState[] remoteStates = new HeartbeatState[msg.getInt()];
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received reply from %s", this));
-        }
-        List<HeartbeatState> deltaState = gossip.reply(digests, remoteStates);
-        if (deltaState != null) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("Sending an update to %s", this));
-            }
-            update(deltaState);
-        }
-    }
-
-    private void handleUpdate(ByteBuffer msg) {
-        HeartbeatState[] remoteStates = new HeartbeatState[msg.getInt()];
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received an update from %s", this));
-        }
-        gossip.update(remoteStates);
+        send(buffer.array());
     }
 
     @Override
     protected void closing() {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -145,6 +117,104 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
                 }
             }
         }
+    }
+
+    private void handleGossip(ByteBuffer msg) {
+        int count = msg.getInt();
+        List<Digest> digests = new ArrayList<Digest>(count);
+        for (int i = 0; i < count; i++) {
+            Digest digest;
+            try {
+                digest = new Digest(msg);
+            } catch (Throwable e) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING,
+                            "Cannot deserialize digest. Ignoring the digest.",
+                            e);
+                }
+                continue;
+            }
+            digests.add(digest);
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Gossip digests from %s are : %s", this, digests));
+        }
+        Pair<List<Digest>, List<HeartbeatState>> ack = gossip.gossip(digests);
+        if (ack != null) {
+            reply(ack);
+        }
+    }
+
+    private void handleReply(ByteBuffer msg) {
+        int digestCount = msg.getInt();
+        int stateCount = msg.getInt();
+        List<Digest> digests = new ArrayList<Digest>(digestCount);
+        List<HeartbeatState> remoteStates = new ArrayList<HeartbeatState>(
+                                                                          stateCount);
+        for (int i = 0; i < digestCount; i++) {
+            Digest digest;
+            try {
+                digest = new Digest(msg);
+            } catch (Throwable e) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING,
+                            "Cannot deserialize digest. Ignoring the digest.",
+                            e);
+                }
+                continue;
+            }
+            digests.add(digest);
+        }
+
+        for (int i = 0; i < stateCount; i++) {
+            HeartbeatState state;
+            try {
+                state = new HeartbeatState(msg);
+            } catch (Throwable e) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING,
+                            "Cannot deserialize heartbeat state. Ignoring the state.",
+                            e);
+                }
+                continue;
+            }
+            remoteStates.add(state);
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Received reply from %s", this));
+        }
+        List<HeartbeatState> deltaState = gossip.reply(digests, remoteStates);
+        if (deltaState != null) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("Sending an update to %s", this));
+            }
+            update(deltaState);
+        }
+    }
+
+    private void handleUpdate(ByteBuffer msg) {
+        int stateCount = msg.getInt();
+        List<HeartbeatState> remoteStates = new ArrayList<HeartbeatState>(
+                                                                          stateCount);
+
+        for (int i = 0; i < stateCount; i++) {
+            HeartbeatState state;
+            try {
+                state = new HeartbeatState(msg);
+            } catch (Throwable e) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING,
+                            "Cannot deserialize heartbeat state. Ignoring the state.",
+                            e);
+                }
+                continue;
+            }
+            remoteStates.add(state);
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Received an update from %s", this));
+        }
+        gossip.update(remoteStates);
     }
 
 }
