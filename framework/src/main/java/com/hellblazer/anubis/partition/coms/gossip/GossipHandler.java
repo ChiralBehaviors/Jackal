@@ -38,10 +38,7 @@ import com.hellblazer.anubis.util.Pair;
  */
 public class GossipHandler extends AbstractCommunicationsHandler implements
         GossipMessages {
-    private static final byte   GOSSIP = 0;
     private static final Logger log    = Logger.getLogger(GossipHandler.class.getCanonicalName());
-    private static final byte   REPLY  = 1;
-    private static final byte   UPDATE = 2;
 
     private final Gossip        gossip;
 

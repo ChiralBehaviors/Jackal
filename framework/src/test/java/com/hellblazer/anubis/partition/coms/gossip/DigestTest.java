@@ -1,5 +1,5 @@
 /** 
- * (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
+ * (C) Copyright 2011 Hal Hildebrand, All Rights Reserved
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

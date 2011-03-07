@@ -20,14 +20,25 @@ package com.hellblazer.anubis.partition.coms.gossip;
 import junit.framework.TestCase;
 
 /**
- * Basic end to end testing
+ * Basic testing of the failure detector
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class EndToEndTest extends TestCase {
+public class PhiAccrualFailureDetectorTest extends TestCase {
 
-    public void testEnd2End() throws Exception {
-        
+    public void testDetector() throws Exception {
+
+        PhiAccrualFailureDetector detector = new PhiAccrualFailureDetector();
+
+        detector.record(111);
+        detector.record(222);
+        detector.record(333);
+        detector.record(444);
+        detector.record(555);
+
+        assertEquals(0.4342, detector.phi(666), 0.01);
+
+        assertEquals(9.566, detector.phi(3000), 0.01);
     }
 }

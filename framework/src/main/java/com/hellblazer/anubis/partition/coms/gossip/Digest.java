@@ -93,4 +93,35 @@ public class Digest {
         buffer.putLong(epoch);
         buffer.putLong(viewNumber);
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((address == null) ? 0 : address.hashCode());
+        result = prime * result + (int) (epoch ^ (epoch >>> 32));
+        result = prime * result + (int) (viewNumber ^ (viewNumber >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Digest other = (Digest) obj;
+        if (address == null) {
+            if (other.address != null)
+                return false;
+        } else if (!address.equals(other.address))
+            return false;
+        if (epoch != other.epoch)
+            return false;
+        if (viewNumber != other.viewNumber)
+            return false;
+        return true;
+    }
 }

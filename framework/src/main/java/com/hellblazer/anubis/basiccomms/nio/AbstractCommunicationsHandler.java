@@ -35,20 +35,20 @@ abstract public class AbstractCommunicationsHandler implements
         CLOSE, ERROR, HEADER, INITIAL, MESSAGE;
     }
 
-    protected static final int HEADER_SIZE = 8;
-    private static final Logger log = Logger.getLogger(AbstractCommunicationsHandler.class.getCanonicalName());
-    private static final int MAGIC_NUMBER = 24051967;
+    public static final int              HEADER_SIZE  = 8;
+    public static final int              MAGIC_NUMBER = 24051967;
+    private static final Logger          log          = Logger.getLogger(AbstractCommunicationsHandler.class.getCanonicalName());
 
     protected final ServerChannelHandler handler;
-    private final SocketChannel channel;
-    private ByteBuffer headerIn = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private ByteBuffer headerOut = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private ByteBuffer msgIn;
-    private ByteBuffer msgOut;
-    private volatile boolean open = true;
-    private volatile State readState = State.INITIAL;
-    private final Semaphore writeGate;
-    private volatile State writeState = State.INITIAL;
+    private final SocketChannel          channel;
+    private ByteBuffer                   headerIn     = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private ByteBuffer                   headerOut    = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private ByteBuffer                   msgIn;
+    private ByteBuffer                   msgOut;
+    private volatile boolean             open         = true;
+    private volatile State               readState    = State.INITIAL;
+    private final Semaphore              writeGate;
+    private volatile State               writeState   = State.INITIAL;
 
     public AbstractCommunicationsHandler(ServerChannelHandler handler,
                                          SocketChannel channel) {

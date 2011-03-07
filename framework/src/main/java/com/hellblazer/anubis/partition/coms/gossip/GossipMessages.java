@@ -28,25 +28,28 @@ import com.hellblazer.anubis.util.Pair;
  * 
  */
 public interface GossipMessages {
-    int INET_ADDRESS_V6_BYTE_SIZE  = 16;
-    int INET_ADDRESS_MAX_BYTE_SIZE = INET_ADDRESS_V6_BYTE_SIZE // address
-                                   + 1 // addressLength
-                                   + 2;  // port
-    int NODE_ID_SET_MAX_BYTE_SIZE  = 257;
-    int IDENTITY_BYTE_SIZE         = 16;
-    int HEARTBEAT_STATE_BYTE_SIZE  = IDENTITY_BYTE_SIZE // candidate
-                                     + NODE_ID_SET_MAX_BYTE_SIZE // msgLinks
-                                     + 1 // preferred
-                                     + IDENTITY_BYTE_SIZE // sender
-                                     + INET_ADDRESS_MAX_BYTE_SIZE // senderAddress
-                                     + 1 // stable
-                                     + INET_ADDRESS_MAX_BYTE_SIZE // testInterface
-                                     + NODE_ID_SET_MAX_BYTE_SIZE // view
-                                     + 4 // viewNumber
-                                     + 4; // viewTimeStamp 
-    int DIGEST_BYTE_SIZE           = INET_ADDRESS_MAX_BYTE_SIZE // address
-                                   + 4 // epoch
-                                   + 4;  // viewNumber
+    byte GOSSIP                     = 0;
+    byte REPLY                      = 1;
+    byte UPDATE                     = 2;
+    int  INET_ADDRESS_V6_BYTE_SIZE  = 16;
+    int  INET_ADDRESS_MAX_BYTE_SIZE = INET_ADDRESS_V6_BYTE_SIZE // address
+                                    + 1 // addressLength
+                                    + 2;  // port
+    int  NODE_ID_SET_MAX_BYTE_SIZE  = 257;
+    int  IDENTITY_BYTE_SIZE         = 16;
+    int  HEARTBEAT_STATE_BYTE_SIZE  = IDENTITY_BYTE_SIZE // candidate
+                                      + NODE_ID_SET_MAX_BYTE_SIZE // msgLinks
+                                      + 1 // preferred
+                                      + IDENTITY_BYTE_SIZE // sender
+                                      + INET_ADDRESS_MAX_BYTE_SIZE // senderAddress
+                                      + 1 // stable
+                                      + INET_ADDRESS_MAX_BYTE_SIZE // testInterface
+                                      + NODE_ID_SET_MAX_BYTE_SIZE // view
+                                      + 4 // viewNumber
+                                      + 4; // viewTimeStamp 
+    int  DIGEST_BYTE_SIZE           = INET_ADDRESS_MAX_BYTE_SIZE // address
+                                    + 4 // epoch
+                                    + 4;  // viewNumber
 
     /**
      * Close the communications connection
