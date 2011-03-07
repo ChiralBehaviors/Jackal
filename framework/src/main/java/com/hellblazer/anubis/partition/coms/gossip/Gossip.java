@@ -161,7 +161,7 @@ public class Gossip {
     public Pair<List<Digest>, List<HeartbeatState>> gossip(List<Digest> digests) {
         long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
-            Endpoint endpoint = endpoints.get(gDigest.getEpAddress());
+            Endpoint endpoint = endpoints.get(gDigest.getAddress());
             if (endpoint != null) {
                 endpoint.record(now);
             }
@@ -200,7 +200,7 @@ public class Gossip {
 
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
-            InetSocketAddress addr = digest.getEpAddress();
+            InetSocketAddress addr = digest.getAddress();
             addUpdatedState(deltaState, addr, digest.getViewNumber());
         }
         return deltaState;
@@ -450,7 +450,7 @@ public class Gossip {
         for (Digest digest : digests) {
             long remoteEpoch = digest.getEpoch();
             long remoteViewNumber = digest.getViewNumber();
-            Endpoint state = endpoints.get(digest.getEpAddress());
+            Endpoint state = endpoints.get(digest.getAddress());
             if (state != null) {
                 long localEpoch = state.getEpoch();
                 long localViewNumber = state.getViewNumber();
@@ -460,22 +460,22 @@ public class Gossip {
                 }
 
                 if (remoteEpoch > localEpoch) {
-                    deltaDigests.add(new Digest(digest.getEpAddress(),
+                    deltaDigests.add(new Digest(digest.getAddress(),
                                                 remoteEpoch, 0L));
                 } else if (remoteEpoch < localEpoch) {
-                    addUpdatedState(deltaState, digest.getEpAddress(), 0L);
+                    addUpdatedState(deltaState, digest.getAddress(), 0L);
                 } else if (remoteEpoch == localEpoch) {
                     if (remoteViewNumber > localViewNumber) {
-                        deltaDigests.add(new Digest(digest.getEpAddress(),
+                        deltaDigests.add(new Digest(digest.getAddress(),
                                                     remoteEpoch,
                                                     localViewNumber));
                     } else if (remoteViewNumber < localViewNumber) {
-                        addUpdatedState(deltaState, digest.getEpAddress(),
+                        addUpdatedState(deltaState, digest.getAddress(),
                                         remoteViewNumber);
                     }
                 }
             } else {
-                deltaDigests.add(new Digest(digest.getEpAddress(), remoteEpoch,
+                deltaDigests.add(new Digest(digest.getAddress(), remoteEpoch,
                                             0));
             }
         }
@@ -503,13 +503,13 @@ public class Gossip {
     private void sort(List<Digest> digests) {
         Map<InetSocketAddress, Digest> endpoint2digest = new HashMap<InetSocketAddress, Digest>();
         for (Digest digest : digests) {
-            endpoint2digest.put(digest.getEpAddress(), digest);
+            endpoint2digest.put(digest.getAddress(), digest);
         }
 
         Digest[] diffDigests = new Digest[digests.size()];
         int i = 0;
         for (Digest gDigest : digests) {
-            InetSocketAddress ep = gDigest.getEpAddress();
+            InetSocketAddress ep = gDigest.getAddress();
             Endpoint state = endpoints.get(ep);
             long viewNumber = state != null ? state.getViewNumber() : 0;
             long diffViewNumber = Math.abs(viewNumber - gDigest.getViewNumber());
@@ -520,7 +520,7 @@ public class Gossip {
         Arrays.sort(diffDigests, new DigestComparator());
         i = 0;
         for (int j = diffDigests.length - 1; j >= 0; --j) {
-            digests.set(i++, endpoint2digest.get(diffDigests[j].getEpAddress()));
+            digests.set(i++, endpoint2digest.get(diffDigests[j].getAddress()));
         }
         if (log.isLoggable(Level.FINEST)) {
             StringBuilder sb = new StringBuilder();

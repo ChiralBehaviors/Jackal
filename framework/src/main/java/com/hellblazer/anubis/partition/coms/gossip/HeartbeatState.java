@@ -101,6 +101,24 @@ public class HeartbeatState implements Heartbeat {
         fillCache();
     }
 
+    public HeartbeatState(Identity candidate, NodeIdSet msgLinks,
+                          boolean preferred, Identity sender,
+                          InetSocketAddress senderAddress, boolean stable,
+                          InetSocketAddress testInterface, NodeIdSet view,
+                          long viewNumber, long viewTimestamp) {
+        this.candidate = candidate;
+        this.msgLinks = msgLinks;
+        this.preferred = preferred;
+        this.sender = sender;
+        this.senderAddress = senderAddress;
+        this.stable = stable;
+        this.testInterface = testInterface;
+        this.view = view;
+        this.viewNumber = viewNumber;
+        this.viewTimeStamp = viewTimestamp;
+        fillCache();
+    }
+
     public HeartbeatState(InetSocketAddress sender) {
         senderAddress = sender;
         fillCache();

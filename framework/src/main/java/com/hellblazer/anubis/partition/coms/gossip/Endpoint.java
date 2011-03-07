@@ -52,6 +52,14 @@ public class Endpoint {
         return handler;
     }
 
+    public HeartbeatState getState() {
+        return heartbeat;
+    }
+
+    public long getUpdate() {
+        return update;
+    }
+
     public long getViewNumber() {
         return heartbeat.getViewNumber();
     }
@@ -64,31 +72,23 @@ public class Endpoint {
         return isAlive;
     }
 
+    public void markAlive() {
+        isAlive = true;
+    }
+
+    public void markDead() {
+        isAlive = false;
+    }
+
     public void record(long now) {
         fd.record(now);
     }
 
-    HeartbeatState getState() {
-        return heartbeat;
-    }
-
-    long getUpdate() {
-        return update;
-    }
-
-    void markAlive() {
-        isAlive = true;
-    }
-
-    void markDead() {
-        isAlive = false;
-    }
-
-    void setCommunications(GossipMessages communications) {
+    public void setCommunications(GossipMessages communications) {
         handler = communications;
     }
 
-    void updateState(long now, HeartbeatState newHbState) {
+    public void updateState(long now, HeartbeatState newHbState) {
         update = now;
         heartbeat = newHbState;
     }

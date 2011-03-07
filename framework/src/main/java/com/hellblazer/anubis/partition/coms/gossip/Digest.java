@@ -65,7 +65,7 @@ public class Digest {
         viewNumber = diffViewNumber;
     }
 
-    public InetSocketAddress getEpAddress() {
+    public InetSocketAddress getAddress() {
         return address;
     }
 
