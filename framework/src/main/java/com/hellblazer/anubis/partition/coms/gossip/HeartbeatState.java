@@ -17,7 +17,11 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
+import static com.hellblazer.anubis.partition.coms.gossip.Communications.readInetAddress;
+import static com.hellblazer.anubis.partition.coms.gossip.Communications.writeInetAddress;
+
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -28,27 +32,62 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 /**
- * The implementation of the heartbeat state replicated by the gossip protocol
+ * The heartbeat state replicated by the gossip protocol
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
 public class HeartbeatState implements Heartbeat {
-    public static final int BYTE_SIZE = 0;
 
-    private Identity candidate;
-    private NodeIdSet msgLinks;
-    private boolean preferred;
-    private Identity sender;
+    private Identity          candidate;
+    private NodeIdSet         msgLinks;
+    private boolean           preferred;
+    private Identity          sender;
     private InetSocketAddress senderAddress;
-    private boolean stable = false;
+    private boolean           stable        = false;
     private InetSocketAddress testInterface;
-    private NodeIdSet view;
-    private long viewNumber = -1;
-    private long viewTimeStamp = View.undefinedTimeStamp;
+    private NodeIdSet         view;
+    private long              viewNumber    = -1;
+    private long              viewTimeStamp = View.undefinedTimeStamp;
+    private byte[]            binaryCache;
 
-    public HeartbeatState(ByteBuffer buffer) {
+    public HeartbeatState(ByteBuffer buffer) throws UnknownHostException {
+        binaryCache = new byte[GossipMessages.HEARTBEAT_STATE_BYTE_SIZE];
+        buffer.get(binaryCache);
+        ByteBuffer msg = ByteBuffer.wrap(binaryCache);
+        candidate = new Identity(msg);
+        msgLinks = new NodeIdSet(msg);
+        preferred = msg.get() > 0 ? true : false;
+        sender = new Identity(msg);
+        senderAddress = readInetAddress(msg);
+        stable = msg.get() > 0 ? true : false;
+        testInterface = readInetAddress(msg);
+        view = new NodeIdSet(msg);
+        viewNumber = msg.getLong();
+        viewTimeStamp = msg.getLong();
+    }
 
+    private void fillCache() {
+        binaryCache = new byte[GossipMessages.HEARTBEAT_STATE_BYTE_SIZE];
+        ByteBuffer msg = ByteBuffer.wrap(binaryCache);
+        candidate.writeTo(msg);
+        msgLinks.writeTo(msg);
+        if (preferred) {
+            msg.put((byte) 1);
+        } else {
+            msg.put((byte) 0);
+        }
+        sender.writeTo(msg);
+        writeInetAddress(senderAddress, msg);
+        if (stable) {
+            msg.put((byte) 1);
+        } else {
+            msg.put((byte) 0);
+        }
+        writeInetAddress(testInterface, msg);
+        view.writeTo(msg);
+        msg.putLong(viewNumber);
+        msg.putLong(viewTimeStamp);
     }
 
     public HeartbeatState(HeartbeatMsg heartbeatMsg) {
@@ -59,10 +98,12 @@ public class HeartbeatState implements Heartbeat {
         senderAddress = heartbeatMsg.getSenderAddress();
         testInterface = heartbeatMsg.getTestInterface();
         setView(heartbeatMsg.getView());
+        fillCache();
     }
 
     public HeartbeatState(InetSocketAddress sender) {
         senderAddress = sender;
+        fillCache();
     }
 
     @Override
@@ -151,6 +192,6 @@ public class HeartbeatState implements Heartbeat {
     }
 
     public void writeTo(ByteBuffer buffer) {
-
+        buffer.put(binaryCache);
     }
 }

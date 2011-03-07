@@ -28,13 +28,13 @@ import java.util.logging.Logger;
  */
 
 public class Endpoint {
-    protected static Logger logger = Logger.getLogger(Endpoint.class.getCanonicalName());
+    protected static Logger                 logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
 
-    private final PhiAccrualFailureDetector fd = new PhiAccrualFailureDetector();
-    private volatile GossipCommunications handler;
-    private volatile HeartbeatState heartbeat;
-    private volatile boolean isAlive = true;
-    private volatile long update = System.currentTimeMillis();
+    private final PhiAccrualFailureDetector fd      = new PhiAccrualFailureDetector();
+    private volatile GossipMessages         handler;
+    private volatile HeartbeatState         heartbeat;
+    private volatile boolean                isAlive = true;
+    private volatile long                   update  = System.currentTimeMillis();
 
     public Endpoint() {
 
@@ -48,7 +48,7 @@ public class Endpoint {
         return heartbeat.getSender().epoch;
     }
 
-    public GossipCommunications getHandler() {
+    public GossipMessages getHandler() {
         return handler;
     }
 
@@ -84,7 +84,7 @@ public class Endpoint {
         isAlive = false;
     }
 
-    void setCommunications(GossipCommunications communications) {
+    void setCommunications(GossipMessages communications) {
         handler = communications;
     }
 

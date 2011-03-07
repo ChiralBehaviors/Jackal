@@ -50,34 +50,35 @@ import java.util.logging.Logger;
  */
 public class SystemView {
     private static final Comparator<InetSocketAddress> ADDRESS_COMPARATOR = new Comparator<InetSocketAddress>() {
-        @Override
-        public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
-            int hostCompare = addr1.getAddress().getHostAddress().compareTo(addr2.getAddress().getHostAddress());
-            if (hostCompare == 0) {
-                int port1 = addr1.getPort();
-                int port2 = addr2.getPort();
-                if (port1 == port2) {
-                    return 0;
-                }
-                if (port1 > port2) {
-                    return 1;
-                }
-                return -1;
-            }
-            return hostCompare;
-        }
-    };
-    private static final Logger log = Logger.getLogger(SystemView.class.getCanonicalName());
-    private final Random entropy;
-    private final Set<InetSocketAddress> live = new ConcurrentSkipListSet<InetSocketAddress>(
-                                                                                             ADDRESS_COMPARATOR);
-    private final InetSocketAddress localAddress;
-    private final Map<InetSocketAddress, Long> quarantined = new ConcurrentHashMap<InetSocketAddress, Long>();
-    private final int quarantineInterval;
-    private final Set<InetSocketAddress> seeds = new ConcurrentSkipListSet<InetSocketAddress>(
-                                                                                              ADDRESS_COMPARATOR);
-    private final Map<InetSocketAddress, Long> unreachable = new ConcurrentHashMap<InetSocketAddress, Long>();
-    private final int unreachableInterval;
+                                                                              @Override
+                                                                              public int compare(InetSocketAddress addr1,
+                                                                                                 InetSocketAddress addr2) {
+                                                                                  int hostCompare = addr1.getAddress().getHostAddress().compareTo(addr2.getAddress().getHostAddress());
+                                                                                  if (hostCompare == 0) {
+                                                                                      int port1 = addr1.getPort();
+                                                                                      int port2 = addr2.getPort();
+                                                                                      if (port1 == port2) {
+                                                                                          return 0;
+                                                                                      }
+                                                                                      if (port1 > port2) {
+                                                                                          return 1;
+                                                                                      }
+                                                                                      return -1;
+                                                                                  }
+                                                                                  return hostCompare;
+                                                                              }
+                                                                          };
+    private static final Logger                        log                = Logger.getLogger(SystemView.class.getCanonicalName());
+    private final Random                               entropy;
+    private final Set<InetSocketAddress>               live               = new ConcurrentSkipListSet<InetSocketAddress>(
+                                                                                                                         ADDRESS_COMPARATOR);
+    private final InetSocketAddress                    localAddress;
+    private final Map<InetSocketAddress, Long>         quarantined        = new ConcurrentHashMap<InetSocketAddress, Long>();
+    private final int                                  quarantineInterval;
+    private final Set<InetSocketAddress>               seeds              = new ConcurrentSkipListSet<InetSocketAddress>(
+                                                                                                                         ADDRESS_COMPARATOR);
+    private final Map<InetSocketAddress, Long>         unreachable        = new ConcurrentHashMap<InetSocketAddress, Long>();
+    private final int                                  unreachableInterval;
 
     /**
      * 
@@ -209,8 +210,7 @@ public class SystemView {
                 if (live.size() == 0) {
                     return getRandomMember(seeds);
                 }
-                if (entropy.nextDouble() <= seeds.size()
-                                            / (double) (live.size() + unreachable.size())) {
+                if (entropy.nextDouble() <= seedCommunicationProbability()) {
                     return getRandomMember(seeds);
                 }
             }
@@ -227,8 +227,7 @@ public class SystemView {
      *         available
      */
     public InetSocketAddress getRandomUnreachableMember() {
-        if (entropy.nextDouble() < unreachable.size()
-                                   / ((double) live.size() + 1)) {
+        if (entropy.nextDouble() < unreachableCommunicationsProbability()) {
             return getRandomMember(unreachable.keySet());
         }
         return null;
@@ -303,5 +302,13 @@ public class SystemView {
         throw new IllegalStateException(
                                         format("We should have found the selected random member of the supplied endpoint set: %s",
                                                index));
+    }
+
+    private double seedCommunicationProbability() {
+        return seeds.size() / (double) (live.size() + unreachable.size());
+    }
+
+    private double unreachableCommunicationsProbability() {
+        return unreachable.size() / ((double) live.size() + 1);
     }
 }

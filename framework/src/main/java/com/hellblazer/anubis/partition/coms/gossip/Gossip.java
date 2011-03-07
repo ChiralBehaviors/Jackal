@@ -31,13 +31,8 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 
 import com.hellblazer.anubis.partition.coms.gossip.Digest.DigestComparator;
 import com.hellblazer.anubis.util.Pair;
@@ -64,22 +59,20 @@ import com.hellblazer.anubis.util.Pair;
  * 
  */
 public class Gossip {
-    private final static Logger log = Logger.getLogger(Gossip.class.getCanonicalName());
+    private final static Logger                              log       = Logger.getLogger(Gossip.class.getCanonicalName());
 
-    private final ConnectionService connectionService;
-    private final double convictThreshold;
+    private final GossipCommunications                       communications;
+    private final double                                     convictThreshold;
     private final ConcurrentMap<InetSocketAddress, Endpoint> endpoints = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
-    private final Random entropy;
-    private final Endpoint localState;
-    private final ExecutorService notificationService;
-    private final HeartbeatReceiver receiver;
-    private final SystemView view;
+    private final Random                                     entropy;
+    private final Endpoint                                   localState;
+    private final SystemView                                 view;
 
     /**
      * 
-     * @param gossipConnectionService
+     * @param communicationsService
      *            - the service which creates outbound connections to other
-     *            members
+     *            members and notifies interested parties of updates
      * @param heartbeatReceiver
      *            - the reciever of newly acquired heartbeat state
      * @param systemView
@@ -92,28 +85,16 @@ public class Gossip {
      * @param initialState
      *            - the initial heartbeat state of the local member
      */
-    public Gossip(ConnectionService gossipConnectionService,
-                  HeartbeatReceiver heartbeatReceiver, SystemView systemView,
-                  Random random, double phiConvictThreshold,
-                  HeartbeatState initialState) {
-        connectionService = gossipConnectionService;
-        receiver = heartbeatReceiver;
+    public Gossip(GossipCommunications communicationsService,
+                  SystemView systemView, Random random,
+                  double phiConvictThreshold, HeartbeatState initialState) {
+        communications = communicationsService;
         convictThreshold = phiConvictThreshold;
         entropy = random;
         view = systemView;
         localState = new Endpoint(initialState);
         localState.markAlive();
         endpoints.put(view.getLocalAddress(), localState);
-        notificationService = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r,
-                                           "Anubis heartbeat notification service");
-                daemon.setDaemon(true);
-                daemon.setPriority(Thread.MAX_PRIORITY);
-                return daemon;
-            }
-        });
     }
 
     public void checkStatus() {
@@ -152,7 +133,7 @@ public class Gossip {
     /**
      * Perform the periodic gossip.
      * 
-     * @param connectionService
+     * @param communications
      *            - the mechanism to send the gossip message to a peer
      */
     public void gossip() {
@@ -345,7 +326,7 @@ public class Gossip {
                     if (remoteState.getViewNumber() > localState.getViewNumber()) {
                         long oldViewNumber = localState.getViewNumber();
                         localState.updateState(now, remoteState);
-                        notifyReceiver(localState.getState());
+                        communications.notifyUpdate(localState.getState());
                         if (log.isLoggable(Level.FINEST)) {
                             log.finest(format("Updating heartbeat state view number to %s from %s for %s  ...",
                                               localState.getViewNumber(),
@@ -368,11 +349,22 @@ public class Gossip {
         }
     }
 
+    /**
+     * Connect with a member
+     * 
+     * @param address
+     *            - the address of the member
+     * @param endpoint
+     *            - the endpoint representing the member
+     * @param connectAction
+     *            - the action to take when the connection with the member is
+     *            established
+     */
     private void connect(final InetSocketAddress address,
                          final Endpoint endpoint, Runnable connectAction) {
         try {
-            endpoint.setCommunications(connectionService.connect(address,
-                                                                 connectAction));
+            endpoint.setCommunications(communications.connect(address,
+                                                              connectAction));
         } catch (IOException e) {
             if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING,
@@ -382,7 +374,10 @@ public class Gossip {
     }
 
     /**
-     * Connect and gossip with a member that isn't currently connected.
+     * Connect and gossip with a member that isn't currently connected. As we
+     * have no idea what state this member is in, we need to add a digest to the
+     * list that is manifestly out of date so that the member, if it responds,
+     * will update us with its state.
      * 
      * @param address
      *            - the address to connect to
@@ -442,7 +437,7 @@ public class Gossip {
                 if (log.isLoggable(Level.INFO)) {
                     log.info(format("Member %s is now UP", endpoint));
                 }
-                notifyReceiver(endpoint.getState());
+                communications.notifyUpdate(endpoint.getState());
             }
 
         };
@@ -486,15 +481,6 @@ public class Gossip {
         }
         return new Pair<List<Digest>, List<HeartbeatState>>(deltaDigests,
                                                             deltaState);
-    }
-
-    private void notifyReceiver(final HeartbeatState state) {
-        notificationService.execute(new Runnable() {
-            @Override
-            public void run() {
-                receiver.receiveHeartbeat(state);
-            }
-        });
     }
 
     private List<Digest> randomDigests() {

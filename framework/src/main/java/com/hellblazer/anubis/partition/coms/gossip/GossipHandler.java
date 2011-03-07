@@ -37,13 +37,13 @@ import com.hellblazer.anubis.util.Pair;
  * 
  */
 public class GossipHandler extends AbstractCommunicationsHandler implements
-        GossipCommunications {
-    private static final byte GOSSIP = 0;
-    private static final Logger log = Logger.getLogger(GossipHandler.class.getCanonicalName());
-    private static final byte REPLY = 1;
-    private static final byte UPDATE = 2;
+        GossipMessages {
+    private static final byte   GOSSIP = 0;
+    private static final Logger log    = Logger.getLogger(GossipHandler.class.getCanonicalName());
+    private static final byte   REPLY  = 1;
+    private static final byte   UPDATE = 2;
 
-    private final Gossip gossip;
+    private final Gossip        gossip;
 
     public GossipHandler(Gossip gossip, ServerChannelHandler handler,
                          SocketChannel channel) {
@@ -54,7 +54,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     @Override
     public void gossip(List<Digest> digests) {
         ByteBuffer buffer = ByteBuffer.allocate(digests.size()
-                                                * Digest.BYTE_SIZE);
+                                                * DIGEST_BYTE_SIZE);
         buffer.putInt(digests.size());
         for (Digest digest : digests) {
             digest.writeTo(buffer);
@@ -64,8 +64,8 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
 
     @Override
     public void reply(Pair<List<Digest>, List<HeartbeatState>> reply) {
-        ByteBuffer buffer = ByteBuffer.allocate((reply.a.size() * Digest.BYTE_SIZE)
-                                                + (reply.b.size() * HeartbeatState.BYTE_SIZE));
+        ByteBuffer buffer = ByteBuffer.allocate((reply.a.size() * DIGEST_BYTE_SIZE)
+                                                + (reply.b.size() * HEARTBEAT_STATE_BYTE_SIZE));
         buffer.putInt(reply.a.size());
         for (Digest digest : reply.a) {
             digest.writeTo(buffer);
@@ -80,7 +80,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     @Override
     public void update(List<HeartbeatState> deltaState) {
         ByteBuffer buffer = ByteBuffer.allocate(deltaState.size()
-                                                * HeartbeatState.BYTE_SIZE);
+                                                * HEARTBEAT_STATE_BYTE_SIZE);
         buffer.putInt(deltaState.size());
         for (HeartbeatState state : deltaState) {
             state.writeTo(buffer);

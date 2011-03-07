@@ -17,51 +17,40 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import java.util.List;
-
-import com.hellblazer.anubis.util.Pair;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
- * The communications interface used by the gossip protocol
+ * The service interface for connecting to new members
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
- * 
  */
+
 public interface GossipCommunications {
 
     /**
-     * Close the communications connection
+     * Asynchronously create a new connection to the indicated address. When the
+     * connection is established, run the connect action. Note that this is an
+     * asynchronous operation, and the handler will not be ready for
+     * communications unless and until the connectAction is run.
+     * 
+     * @param address
+     *            - the endpoint to create a connection to
+     * @param connectAction
+     *            - the action to run when the new connection is fully
+     *            established.
+     * @return the GossipHandler for this outbound connectioin
+     * @throws IOException
+     *             - if there is a problem creating a connection to the address
      */
-    void close();
+    GossipHandler connect(InetSocketAddress address, Runnable connectAction)
+                                                                            throws IOException;
 
     /**
-     * The first message of the gossip protocol. Send a list of the shuffled
-     * digests of the receiver's view of the endpoint state
+     * Notification that heartbeat state for a member has changed or is
+     * discovered for the first time
      * 
-     * @param digests
-     *            - the list of heartbeat digests the receiver knows about
+     * @param state
      */
-    void gossip(List<Digest> digests);
-
-    /**
-     * The second message in the gossip protocol. Send a list of digests the
-     * node this handler represents, that would like heartbeat state updates
-     * for, along with the list of heartbeat state this node believes is out of
-     * date on the node this handler represents.
-     * 
-     * @param reply
-     *            - the pair of state updates and requested state
-     */
-    void reply(Pair<List<Digest>, List<HeartbeatState>> reply);
-
-    /**
-     * The third message of the gossip protocol. Send a list of updated
-     * heartbeat states to the node this handler represents, which is requesting
-     * the updates.
-     * 
-     * @param deltaState
-     *            - the list of heartbeat states requested.
-     */
-    void update(List<HeartbeatState> deltaState);
-
+    void notifyUpdate(final HeartbeatState state);
 }

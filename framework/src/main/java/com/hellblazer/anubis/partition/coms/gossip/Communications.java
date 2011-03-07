@@ -18,7 +18,10 @@
 package com.hellblazer.anubis.partition.coms.gossip;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
@@ -45,16 +49,43 @@ import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
  */
 
 public class Communications extends ServerChannelHandler implements
-        HeartbeatCommsIntf, ConnectionService {
+        HeartbeatCommsIntf, GossipCommunications {
     private static final Logger log = Logger.getLogger(Communications.class.getCanonicalName());
 
-    private final Gossip gossip;
-    private ScheduledFuture<?> gossipTask;
-    private final int interval;
-    private final TimeUnit intervalUnit;
-    private final ScheduledExecutorService scheduler;
+    public static InetSocketAddress readInetAddress(ByteBuffer msg)
+                                                                   throws UnknownHostException {
+        int length = msg.get();
+        if (length == 0) {
+            return null;
+        }
 
-    public Communications(Gossip gossiper, int gossipInterval, TimeUnit unit,
+        byte[] address = new byte[length];
+        msg.get(address);
+        int port = msg.getInt();
+
+        InetAddress inetAddress = InetAddress.getByAddress(address);
+        return new InetSocketAddress(inetAddress, port);
+    }
+
+    public static void writeInetAddress(InetSocketAddress ipaddress,
+                                        ByteBuffer bytes) {
+        byte[] address = ipaddress.getAddress().getAddress();
+        bytes.put((byte) address.length);
+        bytes.put(address);
+        bytes.putInt(ipaddress.getPort());
+    }
+
+    private final Gossip                   gossip;
+    private ScheduledFuture<?>             gossipTask;
+    private final int                      interval;
+    private final TimeUnit                 intervalUnit;
+    private final ScheduledExecutorService scheduler;
+    private final HeartbeatReceiver        receiver;
+    private final ExecutorService          notificationService;
+    private volatile View                  ignoring;
+
+    public Communications(Gossip gossiper, HeartbeatReceiver heartbeatReceiver,
+                          int gossipInterval, TimeUnit unit,
                           InetSocketAddress endpointAddress,
                           SocketOptions socketOptions,
                           ExecutorService commsExec,
@@ -63,12 +94,23 @@ public class Communications extends ServerChannelHandler implements
         interval = gossipInterval;
         intervalUnit = unit;
         gossip = gossiper;
+        receiver = heartbeatReceiver;
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
                                            "Anubis: Gossip heartbeat servicing thread");
                 daemon.setDaemon(true);
+                return daemon;
+            }
+        });
+        notificationService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           "Anubis heartbeat notification service");
+                daemon.setDaemon(true);
+                daemon.setPriority(Thread.MAX_PRIORITY);
                 return daemon;
             }
         });
@@ -91,8 +133,17 @@ public class Communications extends ServerChannelHandler implements
 
     @Override
     public boolean isIgnoring(Identity id) {
-        // TODO Auto-generated method stub
-        return false;
+        return ignoring.contains(id);
+    }
+
+    @Override
+    public void notifyUpdate(final HeartbeatState state) {
+        notificationService.execute(new Runnable() {
+            @Override
+            public void run() {
+                receiver.receiveHeartbeat(state);
+            }
+        });
     }
 
     @Override
@@ -102,8 +153,7 @@ public class Communications extends ServerChannelHandler implements
 
     @Override
     public void setIgnoring(View ignoringUpdate) {
-        // TODO Auto-generated method stub
-
+        ignoring = ignoringUpdate;
     }
 
     /**

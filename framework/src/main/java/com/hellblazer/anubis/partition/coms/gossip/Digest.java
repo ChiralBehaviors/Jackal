@@ -17,7 +17,9 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import java.net.InetAddress;
+import static com.hellblazer.anubis.partition.coms.gossip.Communications.readInetAddress;
+import static com.hellblazer.anubis.partition.coms.gossip.Communications.writeInetAddress;
+
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -41,19 +43,14 @@ public class Digest {
         }
     }
 
-    public static final int BYTE_SIZE = 16 + 1 + 4 + 4;
-
     private final InetSocketAddress address;
-    private final long epoch;
-    private final long viewNumber;
+    private final long              epoch;
+    private final long              viewNumber;
 
-    public Digest(ByteBuffer buffer) throws UnknownHostException {
-        // Read everything first, so if error occurs, the buffer is at the right position
-        byte[] bytes = new byte[buffer.get()];
-        int port = buffer.getInt();
-        epoch = buffer.getLong();
-        viewNumber = buffer.getLong();
-        address = new InetSocketAddress(InetAddress.getByAddress(bytes), port);
+    public Digest(ByteBuffer msg) throws UnknownHostException {
+        address = readInetAddress(msg);
+        epoch = msg.getLong();
+        viewNumber = msg.getLong();
     }
 
     public Digest(InetSocketAddress socketAddress, Endpoint ep) {
@@ -92,10 +89,7 @@ public class Digest {
     }
 
     public void writeTo(ByteBuffer buffer) {
-        byte[] bytes = address.getAddress().getAddress();
-        buffer.put((byte) bytes.length);
-        buffer.put(bytes);
-        buffer.putInt(address.getPort());
+        writeInetAddress(address, buffer);
         buffer.putLong(epoch);
         buffer.putLong(viewNumber);
     }

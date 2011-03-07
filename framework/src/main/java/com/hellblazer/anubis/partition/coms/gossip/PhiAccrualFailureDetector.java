@@ -36,12 +36,12 @@ package com.hellblazer.anubis.partition.coms.gossip;
  */
 public class PhiAccrualFailureDetector {
     private static final int WINDOW_SIZE = 1000;
-    private int count = 0;
-    private int head = 0;
-    private double last = -1D;
-    private final double[] samples = new double[WINDOW_SIZE];
-    private double sum = 0D;
-    private int tail = 0;
+    private int              count       = 0;
+    private int              head        = 0;
+    private double           last        = -1D;
+    private final double[]   samples     = new double[WINDOW_SIZE];
+    private double           sum         = 0D;
+    private int              tail        = 0;
 
     /**
      * Answer the suspicion level of the detector.
