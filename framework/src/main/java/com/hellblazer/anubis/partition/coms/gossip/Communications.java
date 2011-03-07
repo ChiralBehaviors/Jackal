@@ -81,7 +81,6 @@ public class Communications extends ServerChannelHandler implements
     private final TimeUnit                 intervalUnit;
     private final ScheduledExecutorService scheduler;
     private final HeartbeatReceiver        receiver;
-    private final ExecutorService          notificationService;
     private volatile View                  ignoring;
 
     public Communications(Gossip gossiper, HeartbeatReceiver heartbeatReceiver,
@@ -101,16 +100,6 @@ public class Communications extends ServerChannelHandler implements
                 Thread daemon = new Thread(r,
                                            "Anubis: Gossip heartbeat servicing thread");
                 daemon.setDaemon(true);
-                return daemon;
-            }
-        });
-        notificationService = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r,
-                                           "Anubis heartbeat notification service");
-                daemon.setDaemon(true);
-                daemon.setPriority(Thread.MAX_PRIORITY);
                 return daemon;
             }
         });
@@ -138,7 +127,7 @@ public class Communications extends ServerChannelHandler implements
 
     @Override
     public void notifyUpdate(final HeartbeatState state) {
-        notificationService.execute(new Runnable() {
+        dispatch(new Runnable() {
             @Override
             public void run() {
                 receiver.receiveHeartbeat(state);
