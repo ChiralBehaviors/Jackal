@@ -64,8 +64,10 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
 
     @Override
     public void reply(Pair<List<Digest>, List<HeartbeatState>> reply) {
-        ByteBuffer buffer = ByteBuffer.allocate((reply.a.size() * DIGEST_BYTE_SIZE)
-                                                + (reply.b.size() * HEARTBEAT_STATE_BYTE_SIZE));
+        ByteBuffer buffer = ByteBuffer.allocate(reply.a.size()
+                                                * DIGEST_BYTE_SIZE
+                                                + reply.b.size()
+                                                * HEARTBEAT_STATE_BYTE_SIZE);
         buffer.putInt(reply.a.size());
         for (Digest digest : reply.a) {
             digest.writeTo(buffer);
@@ -119,7 +121,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         }
     }
 
-    private void handleGossip(ByteBuffer msg) {
+    protected void handleGossip(ByteBuffer msg) {
         int count = msg.getInt();
         List<Digest> digests = new ArrayList<Digest>(count);
         for (int i = 0; i < count; i++) {
@@ -145,7 +147,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         }
     }
 
-    private void handleReply(ByteBuffer msg) {
+    protected void handleReply(ByteBuffer msg) {
         int digestCount = msg.getInt();
         int stateCount = msg.getInt();
         List<Digest> digests = new ArrayList<Digest>(digestCount);
@@ -192,7 +194,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         }
     }
 
-    private void handleUpdate(ByteBuffer msg) {
+    protected void handleUpdate(ByteBuffer msg) {
         int stateCount = msg.getInt();
         List<HeartbeatState> remoteStates = new ArrayList<HeartbeatState>(
                                                                           stateCount);

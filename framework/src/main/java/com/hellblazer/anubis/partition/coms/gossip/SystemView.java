@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -119,13 +120,15 @@ public class SystemView {
      */
     public void cullQuarantined(long now) {
         if (!quarantined.isEmpty()) {
-            for (Map.Entry<InetSocketAddress, Long> entry : quarantined.entrySet()) {
+            for (Iterator<Map.Entry<InetSocketAddress, Long>> iterator = quarantined.entrySet().iterator(); iterator.hasNext();) {
+                Map.Entry<InetSocketAddress, Long> entry = iterator.next();
                 if (now - entry.getValue() > quarantineInterval) {
                     if (log.isLoggable(Level.FINE)) {
                         log.fine(quarantineInterval + " elapsed, "
                                  + entry.getKey() + " gossip quarantine over");
                     }
-                    quarantined.remove(entry.getKey());
+                    iterator.remove();
+                    unreachable.put(entry.getKey(), entry.getValue());
                 }
             }
         }
@@ -270,14 +273,9 @@ public class SystemView {
      * @param endpoint
      *            - the endpoint to mark as dead
      */
-    public void markDead(InetSocketAddress endpoint) {
+    public void markDead(InetSocketAddress endpoint, long now) {
         live.remove(endpoint);
-        unreachable.put(endpoint, System.currentTimeMillis());
-        quarantined.put(endpoint, System.currentTimeMillis());
-    }
-
-    public void markUnreachable(InetSocketAddress ep) {
-        unreachable.put(ep, System.currentTimeMillis());
+        quarantined.put(endpoint, now);
     }
 
     /**
@@ -287,7 +285,7 @@ public class SystemView {
      *            - the endpoints to sample
      * @return the selected member
      */
-    private InetSocketAddress getRandomMember(Collection<InetSocketAddress> endpoints) {
+    protected InetSocketAddress getRandomMember(Collection<InetSocketAddress> endpoints) {
         if (endpoints.isEmpty()) {
             return null;
         }
@@ -304,11 +302,11 @@ public class SystemView {
                                                index));
     }
 
-    private double seedCommunicationProbability() {
+    protected double seedCommunicationProbability() {
         return seeds.size() / (double) (live.size() + unreachable.size());
     }
 
-    private double unreachableCommunicationsProbability() {
+    protected double unreachableCommunicationsProbability() {
         return unreachable.size() / ((double) live.size() + 1);
     }
 }
