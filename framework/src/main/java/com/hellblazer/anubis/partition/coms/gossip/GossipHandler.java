@@ -28,7 +28,6 @@ import java.util.logging.Logger;
 
 import com.hellblazer.anubis.basiccomms.nio.AbstractCommunicationsHandler;
 import com.hellblazer.anubis.basiccomms.nio.ServerChannelHandler;
-import com.hellblazer.anubis.util.Pair;
 
 /**
  * The communications handler imlementing the gossip wire protocol
@@ -38,7 +37,7 @@ import com.hellblazer.anubis.util.Pair;
  */
 public class GossipHandler extends AbstractCommunicationsHandler implements
         GossipMessages {
-    private static final Logger log    = Logger.getLogger(GossipHandler.class.getCanonicalName());
+    private static final Logger log = Logger.getLogger(GossipHandler.class.getCanonicalName());
 
     private final Gossip        gossip;
 
@@ -50,7 +49,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
 
     @Override
     public void gossip(List<Digest> digests) {
-        ByteBuffer buffer = ByteBuffer.allocate(digests.size()
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + digests.size()
                                                 * DIGEST_BYTE_SIZE);
         buffer.putInt(digests.size());
         for (Digest digest : digests) {
@@ -60,17 +59,17 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     }
 
     @Override
-    public void reply(Pair<List<Digest>, List<HeartbeatState>> reply) {
-        ByteBuffer buffer = ByteBuffer.allocate(reply.a.size()
+    public void reply(List<Digest> digests, List<HeartbeatState> states) {
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 4 + digests.size()
                                                 * DIGEST_BYTE_SIZE
-                                                + reply.b.size()
+                                                + states.size()
                                                 * HEARTBEAT_STATE_BYTE_SIZE);
-        buffer.putInt(reply.a.size());
-        for (Digest digest : reply.a) {
+        buffer.putInt(digests.size());
+        for (Digest digest : digests) {
             digest.writeTo(buffer);
         }
-        buffer.putInt(reply.b.size());
-        for (HeartbeatState state : reply.b) {
+        buffer.putInt(states.size());
+        for (HeartbeatState state : states) {
             state.writeTo(buffer);
         }
         send(buffer.array());
@@ -78,7 +77,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
 
     @Override
     public void update(List<HeartbeatState> deltaState) {
-        ByteBuffer buffer = ByteBuffer.allocate(deltaState.size()
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + deltaState.size()
                                                 * HEARTBEAT_STATE_BYTE_SIZE);
         buffer.putInt(deltaState.size());
         for (HeartbeatState state : deltaState) {
@@ -138,10 +137,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Gossip digests from %s are : %s", this, digests));
         }
-        Pair<List<Digest>, List<HeartbeatState>> ack = gossip.gossip(digests);
-        if (ack != null) {
-            reply(ack);
-        }
+        gossip.gossip(digests, this);
     }
 
     protected void handleReply(ByteBuffer msg) {
@@ -182,13 +178,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Received reply from %s", this));
         }
-        List<HeartbeatState> deltaState = gossip.reply(digests, remoteStates);
-        if (deltaState != null) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("Sending an update to %s", this));
-            }
-            update(deltaState);
-        }
+        gossip.reply(digests, remoteStates, this);
     }
 
     protected void handleUpdate(ByteBuffer msg) {

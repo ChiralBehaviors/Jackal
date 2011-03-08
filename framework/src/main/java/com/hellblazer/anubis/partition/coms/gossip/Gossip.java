@@ -35,7 +35,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.hellblazer.anubis.partition.coms.gossip.Digest.DigestComparator;
-import com.hellblazer.anubis.util.Pair;
 
 /**
  * The embodiment of the gossip protocol. This protocol replicates the Anubis
@@ -156,9 +155,11 @@ public class Gossip {
      * 
      * @param digests
      *            - the list of heartbeat state digests
-     * @return the pair of digests and heartbeat states to return to the sender
+     * @param gossipHandler
+     *            - the handler to send the reply of digests and heartbeat
+     *            states
      */
-    public Pair<List<Digest>, List<HeartbeatState>> gossip(List<Digest> digests) {
+    public void gossip(List<Digest> digests, GossipHandler gossipHandler) {
         long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
             Endpoint endpoint = endpoints.get(gDigest.getAddress());
@@ -167,7 +168,7 @@ public class Gossip {
             }
         }
         sort(digests);
-        return examine(digests);
+        examine(digests, gossipHandler);
     }
 
     /**
@@ -182,11 +183,12 @@ public class Gossip {
      * @param remoteStates
      *            - the list of heartbeat states the gossiper thinks is out of
      *            date on the receiver
-     * @return a list of heartbeat states that the gossiper would like updates
-     *         for
+     * @param gossipHandler
+     *            - the handler to send a list of heartbeat states that the
+     *            gossiper would like updates for
      */
-    public List<HeartbeatState> reply(List<Digest> digests,
-                                      List<HeartbeatState> remoteStates) {
+    public void reply(List<Digest> digests, List<HeartbeatState> remoteStates,
+                      GossipHandler gossipHandler) {
         if (remoteStates.size() > 0) {
             long now = System.currentTimeMillis();
             for (HeartbeatState state : remoteStates) {
@@ -203,7 +205,7 @@ public class Gossip {
             InetSocketAddress addr = digest.getAddress();
             addUpdatedState(deltaState, addr, digest.getViewNumber());
         }
-        return deltaState;
+        gossipHandler.update(deltaState);
     }
 
     /**
@@ -394,7 +396,7 @@ public class Gossip {
         connect(address, endpoint, connectAction);
     }
 
-    protected Pair<List<Digest>, List<HeartbeatState>> examine(List<Digest> digests) {
+    protected void examine(List<Digest> digests, GossipHandler gossipHandler) {
         List<Digest> deltaDigests = new ArrayList<Digest>();
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
@@ -428,8 +430,7 @@ public class Gossip {
                 deltaDigests.add(new Digest(digest.getAddress(), remoteEpoch, 0));
             }
         }
-        return new Pair<List<Digest>, List<HeartbeatState>>(deltaDigests,
-                                                            deltaState);
+        gossipHandler.reply(deltaDigests, deltaState);
     }
 
     /**

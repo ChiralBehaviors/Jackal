@@ -69,6 +69,10 @@ public class Communications extends ServerChannelHandler implements
 
     public static void writeInetAddress(InetSocketAddress ipaddress,
                                         ByteBuffer bytes) {
+        if (ipaddress == null) {
+            bytes.put((byte) 0);
+            return;
+        }
         byte[] address = ipaddress.getAddress().getAddress();
         bytes.put((byte) address.length);
         bytes.put(address);

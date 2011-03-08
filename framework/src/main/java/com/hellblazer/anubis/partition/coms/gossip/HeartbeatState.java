@@ -67,29 +67,6 @@ public class HeartbeatState implements Heartbeat {
         viewTimeStamp = msg.getLong();
     }
 
-    private void fillCache() {
-        binaryCache = new byte[GossipMessages.HEARTBEAT_STATE_BYTE_SIZE];
-        ByteBuffer msg = ByteBuffer.wrap(binaryCache);
-        candidate.writeTo(msg);
-        msgLinks.writeTo(msg);
-        if (preferred) {
-            msg.put((byte) 1);
-        } else {
-            msg.put((byte) 0);
-        }
-        sender.writeTo(msg);
-        writeInetAddress(senderAddress, msg);
-        if (stable) {
-            msg.put((byte) 1);
-        } else {
-            msg.put((byte) 0);
-        }
-        writeInetAddress(testInterface, msg);
-        view.writeTo(msg);
-        msg.putLong(viewNumber);
-        msg.putLong(viewTimeStamp);
-    }
-
     public HeartbeatState(HeartbeatMsg heartbeatMsg) {
         candidate = heartbeatMsg.getCandidate();
         msgLinks = heartbeatMsg.getMsgLinks();
@@ -115,13 +92,86 @@ public class HeartbeatState implements Heartbeat {
         this.testInterface = testInterface;
         this.view = view;
         this.viewNumber = viewNumber;
-        this.viewTimeStamp = viewTimestamp;
+        viewTimeStamp = viewTimestamp;
         fillCache();
     }
 
-    public HeartbeatState(InetSocketAddress sender) {
-        senderAddress = sender;
+    public HeartbeatState(InetSocketAddress address) {
+        candidate = new Identity(-1, -1, -1);
+        msgLinks = new NodeIdSet(1);
+        sender = new Identity(-1, -1, -1);
+        senderAddress = address;
+        view = new NodeIdSet(1);
         fillCache();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        HeartbeatState other = (HeartbeatState) obj;
+        if (candidate == null) {
+            if (other.candidate != null) {
+                return false;
+            }
+        } else if (!candidate.equals(other.candidate)) {
+            return false;
+        }
+        if (msgLinks == null) {
+            if (other.msgLinks != null) {
+                return false;
+            }
+        } else if (!msgLinks.equals(other.msgLinks)) {
+            return false;
+        }
+        if (preferred != other.preferred) {
+            return false;
+        }
+        if (sender == null) {
+            if (other.sender != null) {
+                return false;
+            }
+        } else if (!sender.equals(other.sender)) {
+            return false;
+        }
+        if (senderAddress == null) {
+            if (other.senderAddress != null) {
+                return false;
+            }
+        } else if (!senderAddress.equals(other.senderAddress)) {
+            return false;
+        }
+        if (stable != other.stable) {
+            return false;
+        }
+        if (testInterface == null) {
+            if (other.testInterface != null) {
+                return false;
+            }
+        } else if (!testInterface.equals(other.testInterface)) {
+            return false;
+        }
+        if (view == null) {
+            if (other.view != null) {
+                return false;
+            }
+        } else if (!view.equals(other.view)) {
+            return false;
+        }
+        if (viewNumber != other.viewNumber) {
+            return false;
+        }
+        if (viewTimeStamp != other.viewTimeStamp) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -168,6 +218,26 @@ public class HeartbeatState implements Heartbeat {
     }
 
     @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                 + (candidate == null ? 0 : candidate.hashCode());
+        result = prime * result + (msgLinks == null ? 0 : msgLinks.hashCode());
+        result = prime * result + (preferred ? 1231 : 1237);
+        result = prime * result + (sender == null ? 0 : sender.hashCode());
+        result = prime * result
+                 + (senderAddress == null ? 0 : senderAddress.hashCode());
+        result = prime * result + (stable ? 1231 : 1237);
+        result = prime * result
+                 + (testInterface == null ? 0 : testInterface.hashCode());
+        result = prime * result + (view == null ? 0 : view.hashCode());
+        result = prime * result + (int) (viewNumber ^ viewNumber >>> 32);
+        result = prime * result + (int) (viewTimeStamp ^ viewTimeStamp >>> 32);
+        return result;
+    }
+
+    @Override
     public boolean isPreferred() {
         return preferred;
     }
@@ -211,5 +281,28 @@ public class HeartbeatState implements Heartbeat {
 
     public void writeTo(ByteBuffer buffer) {
         buffer.put(binaryCache);
+    }
+
+    private void fillCache() {
+        binaryCache = new byte[GossipMessages.HEARTBEAT_STATE_BYTE_SIZE];
+        ByteBuffer msg = ByteBuffer.wrap(binaryCache); 
+        candidate.writeTo(msg);
+        msgLinks.writeTo(msg);
+        if (preferred) {
+            msg.put((byte) 1);
+        } else {
+            msg.put((byte) 0);
+        }
+        sender.writeTo(msg);
+        writeInetAddress(senderAddress, msg);
+        if (stable) {
+            msg.put((byte) 1);
+        } else {
+            msg.put((byte) 0);
+        }
+        writeInetAddress(testInterface, msg);
+        view.writeTo(msg);
+        msg.putLong(viewNumber);
+        msg.putLong(viewTimeStamp);
     }
 }

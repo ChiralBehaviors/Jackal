@@ -19,8 +19,6 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import java.util.List;
 
-import com.hellblazer.anubis.util.Pair;
-
 /**
  * The communications interface used by the gossip protocol
  * 
@@ -71,10 +69,13 @@ public interface GossipMessages {
      * for, along with the list of heartbeat state this node believes is out of
      * date on the node this handler represents.
      * 
-     * @param reply
-     *            - the pair of state updates and requested state
+     * @param digests
+     *            - the digests representing desired state updates
+     * @param states
+     *            - the updates for the node which are believed to be out of
+     *            date
      */
-    void reply(Pair<List<Digest>, List<HeartbeatState>> reply);
+    void reply(List<Digest> digests, List<HeartbeatState> states);
 
     /**
      * The third message of the gossip protocol. Send a list of updated
