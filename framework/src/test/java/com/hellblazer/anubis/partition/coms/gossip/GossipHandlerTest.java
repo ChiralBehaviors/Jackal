@@ -143,7 +143,7 @@ public class GossipHandlerTest extends TestCase {
         verify(gossip).update(Arrays.asList(state1, state2, state3, state4));
     }
 
-    public void teztGossip() throws Exception {
+    public void testGossip() throws Exception {
         Gossip gossip = mock(Gossip.class);
         SocketChannel channel = mock(SocketChannel.class);
         ServerChannelHandler handler = mock(ServerChannelHandler.class);
@@ -157,7 +157,7 @@ public class GossipHandlerTest extends TestCase {
         Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 0,
                                     3);
         byte[] bytes = new byte[4 * GossipMessages.DIGEST_BYTE_SIZE + 1 + 4];
-        ByteBuffer msg = ByteBuffer.wrap(bytes); 
+        ByteBuffer msg = ByteBuffer.wrap(bytes);
         msg.put(GossipMessages.GOSSIP);
         msg.putInt(4);
         digest1.writeTo(msg);
@@ -174,6 +174,87 @@ public class GossipHandlerTest extends TestCase {
         ByteBuffer msgOut = (ByteBuffer) msgBytes.get(gHandler);
         int i = 0;
         for (byte b : msgOut.array()) {
+            assertEquals("index " + i + " !=", bytes[i++], b);
+        }
+    }
+
+    public void testReply() throws Exception {
+        Gossip gossip = mock(Gossip.class);
+        SocketChannel channel = mock(SocketChannel.class);
+        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+
+        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
+                                    0);
+        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 0,
+                                    1);
+        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 2,
+                                    0);
+        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 0,
+                                    3);
+        HeartbeatState state1 = new HeartbeatState(new InetSocketAddress(0));
+        HeartbeatState state2 = new HeartbeatState(new InetSocketAddress(1));
+        HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));
+        HeartbeatState state4 = new HeartbeatState(new InetSocketAddress(3));
+
+        byte[] bytes = new byte[1 + 4 * GossipMessages.DIGEST_BYTE_SIZE + 4
+                                * GossipMessages.HEARTBEAT_STATE_BYTE_SIZE + 4
+                                + 4];
+        ByteBuffer msg = ByteBuffer.wrap(bytes);
+        msg.put(GossipMessages.REPLY);
+        msg.putInt(4);
+        msg.putInt(4);
+        digest1.writeTo(msg);
+        digest2.writeTo(msg);
+        digest3.writeTo(msg);
+        digest4.writeTo(msg);
+        state1.writeTo(msg);
+        state2.writeTo(msg);
+        state3.writeTo(msg);
+        state4.writeTo(msg);
+
+        GossipHandler gHandler = new GossipHandler(gossip, handler, channel);
+
+        gHandler.reply(Arrays.asList(digest1, digest2, digest3, digest4),
+                       Arrays.asList(state1, state2, state3, state4));
+
+        Field msgBytes = AbstractCommunicationsHandler.class.getDeclaredField("msgOut");
+        msgBytes.setAccessible(true);
+        ByteBuffer msgOut = (ByteBuffer) msgBytes.get(gHandler);
+        int i = 0;
+        byte[] outBytes = msgOut.array();
+        for (byte b : outBytes) {
+            assertEquals("index " + i + " !=", bytes[i++], b);
+        }
+    }
+
+    public void testUpdate() throws Exception {
+        Gossip gossip = mock(Gossip.class);
+        SocketChannel channel = mock(SocketChannel.class);
+        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+        HeartbeatState state1 = new HeartbeatState(new InetSocketAddress(0));
+        HeartbeatState state2 = new HeartbeatState(new InetSocketAddress(1));
+        HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));
+        HeartbeatState state4 = new HeartbeatState(new InetSocketAddress(3));
+
+        byte[] bytes = new byte[1 + 4 * GossipMessages.HEARTBEAT_STATE_BYTE_SIZE + 4];
+        ByteBuffer msg = ByteBuffer.wrap(bytes);
+        msg.put(GossipMessages.UPDATE);
+        msg.putInt(4);
+        state1.writeTo(msg);
+        state2.writeTo(msg);
+        state3.writeTo(msg);
+        state4.writeTo(msg);
+
+        GossipHandler gHandler = new GossipHandler(gossip, handler, channel);
+
+        gHandler.update(Arrays.asList(state1, state2, state3, state4));
+
+        Field msgBytes = AbstractCommunicationsHandler.class.getDeclaredField("msgOut");
+        msgBytes.setAccessible(true);
+        ByteBuffer msgOut = (ByteBuffer) msgBytes.get(gHandler);
+        int i = 0;
+        byte[] outBytes = msgOut.array();
+        for (byte b : outBytes) {
             assertEquals("index " + i + " !=", bytes[i++], b);
         }
     }

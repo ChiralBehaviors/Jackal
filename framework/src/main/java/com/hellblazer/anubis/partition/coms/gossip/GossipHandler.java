@@ -51,6 +51,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     public void gossip(List<Digest> digests) {
         ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + digests.size()
                                                 * DIGEST_BYTE_SIZE);
+        buffer.put(GOSSIP);
         buffer.putInt(digests.size());
         for (Digest digest : digests) {
             digest.writeTo(buffer);
@@ -64,11 +65,12 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
                                                 * DIGEST_BYTE_SIZE
                                                 + states.size()
                                                 * HEARTBEAT_STATE_BYTE_SIZE);
+        buffer.put(REPLY);
         buffer.putInt(digests.size());
+        buffer.putInt(states.size());
         for (Digest digest : digests) {
             digest.writeTo(buffer);
         }
-        buffer.putInt(states.size());
         for (HeartbeatState state : states) {
             state.writeTo(buffer);
         }
@@ -79,6 +81,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     public void update(List<HeartbeatState> deltaState) {
         ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + deltaState.size()
                                                 * HEARTBEAT_STATE_BYTE_SIZE);
+        buffer.put(UPDATE);
         buffer.putInt(deltaState.size());
         for (HeartbeatState state : deltaState) {
             state.writeTo(buffer);
