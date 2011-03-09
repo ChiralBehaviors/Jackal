@@ -105,6 +105,15 @@ public class HeartbeatState implements Heartbeat {
         fillCache();
     }
 
+    protected HeartbeatState(InetSocketAddress address, Identity id) {
+        sender = id;
+        senderAddress = address;
+        view = new NodeIdSet(1);
+        candidate = new Identity(-1, -1, -1);
+        msgLinks = new NodeIdSet(1);
+        fillCache();
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -285,7 +294,7 @@ public class HeartbeatState implements Heartbeat {
 
     private void fillCache() {
         binaryCache = new byte[GossipMessages.HEARTBEAT_STATE_BYTE_SIZE];
-        ByteBuffer msg = ByteBuffer.wrap(binaryCache); 
+        ByteBuffer msg = ByteBuffer.wrap(binaryCache);
         candidate.writeTo(msg);
         msgLinks.writeTo(msg);
         if (preferred) {

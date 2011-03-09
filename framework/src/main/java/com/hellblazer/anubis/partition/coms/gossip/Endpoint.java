@@ -45,7 +45,7 @@ public class Endpoint {
     }
 
     public long getEpoch() {
-        return heartbeat.getSender().epoch;
+        return heartbeat.getEpoch();
     }
 
     public GossipMessages getHandler() {

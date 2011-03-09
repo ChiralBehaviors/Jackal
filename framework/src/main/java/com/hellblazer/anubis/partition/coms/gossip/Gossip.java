@@ -267,32 +267,16 @@ public class Gossip {
 
             Endpoint localState = endpoints.get(endpoint);
             if (localState != null) {
-                long localEpoch = localState.getEpoch();
-                long remoteEpoch = remoteState.getEpoch();
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("%s local epoch %s, remote epoch %s",
-                                      endpoint, localEpoch, remoteEpoch));
-                }
-
-                if (remoteEpoch >= localEpoch) {
+                if (remoteState.getEpoch() >= localState.getEpoch()) {
                     if (remoteState.getViewNumber() > localState.getViewNumber()) {
                         long oldViewNumber = localState.getViewNumber();
                         localState.updateState(now, remoteState);
                         communications.notifyUpdate(localState.getState());
                         if (log.isLoggable(Level.FINEST)) {
-                            log.finest(format("Updating heartbeat state view number to %s from %s for %s  ...",
+                            log.finest(format("Updating heartbeat state view number to %s from %s for %s",
                                               localState.getViewNumber(),
                                               oldViewNumber, endpoint));
                         }
-                    } else if (log.isLoggable(Level.FINEST)) {
-                        log.finest(format("Ignoring remote view number %s <= %s for %s",
-                                          remoteState.getViewNumber(),
-                                          localState.getViewNumber(), endpoint));
-                    }
-                } else {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(format("Ignoring remote epoch %s < %s"
-                                          + remoteEpoch, localEpoch));
                     }
                 }
             } else {
@@ -446,6 +430,9 @@ public class Gossip {
     protected void gossipWithSeeds(final List<Digest> digests,
                                    InetSocketAddress member) {
         InetSocketAddress address = view.getRandomSeedMember(member);
+        if (address == null) {
+            return;
+        }
         Endpoint endpoint = endpoints.get(address);
         if (endpoint != null) {
             endpoint.getHandler().gossip(digests);
@@ -463,6 +450,9 @@ public class Gossip {
      */
     protected void gossipWithTheDead(List<Digest> digests) {
         InetSocketAddress address = view.getRandomUnreachableMember();
+        if (address == null) {
+            return;
+        }
         connectAndGossipWith(address, digests);
     }
 
@@ -475,10 +465,19 @@ public class Gossip {
      */
     protected InetSocketAddress gossipWithTheLiving(List<Digest> digests) {
         InetSocketAddress address = view.getRandomLiveMember();
+        if (address == null) {
+            return null;
+        }
         Endpoint endpoint = endpoints.get(address);
         if (endpoint != null) {
             endpoint.getHandler().gossip(digests);
             return address;
+        } else {
+            if (log.isLoggable(Level.WARNING)) {
+                log.warning(format("Inconsistent state!  View thinks %s is alive, but service has no endpoint!",
+                                   address));
+            }
+            view.markDead(address, System.currentTimeMillis());
         }
         return null;
     }
