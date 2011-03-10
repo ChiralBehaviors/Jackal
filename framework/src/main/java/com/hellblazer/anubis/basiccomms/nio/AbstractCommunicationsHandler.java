@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,15 +56,16 @@ abstract public class AbstractCommunicationsHandler implements
 
     protected final ServerChannelHandler handler;
     private final SocketChannel          channel;
-    private volatile ByteBuffer          headerIn   = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private volatile ByteBuffer          headerOut  = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private volatile ByteBuffer          msgIn;
-    private volatile ByteBuffer          msgOut;
+    private ByteBuffer                   headerIn   = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private ByteBuffer                   headerOut  = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private ByteBuffer                   msgIn;
+    private ByteBuffer                   msgOut;
     private volatile boolean             open       = true;
-    private volatile State               readState  = State.INITIAL;
+    private State                        readState  = State.INITIAL;
     private final Semaphore              writeGate;
-
-    private volatile State               writeState = State.INITIAL;
+    private State                        writeState = State.INITIAL;
+    private final ReentrantLock          readLock   = new ReentrantLock();
+    private final ReentrantLock          writeLock  = new ReentrantLock();
 
     public AbstractCommunicationsHandler(ServerChannelHandler handler,
                                          SocketChannel channel) {
@@ -106,60 +108,81 @@ abstract public class AbstractCommunicationsHandler implements
 
     @Override
     public synchronized void handleRead() {
-        switch (readState) {
-            case INITIAL: {
-                headerIn.clear();
-                readState = State.HEADER;
-                readHeader();
-                break;
-            }
-            case HEADER: {
-                readHeader();
-                break;
-            }
-            case ERROR: {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("In error, ignoring read ready");
+        final ReentrantLock myReadLock = readLock;
+        try {
+            myReadLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            return;
+        }
+        try {
+            switch (readState) {
+                case INITIAL: {
+                    headerIn.clear();
+                    readState = State.HEADER;
+                    readHeader();
+                    break;
                 }
-                break; // Don't read while in error
+                case HEADER: {
+                    readHeader();
+                    break;
+                }
+                case ERROR: {
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest("In error, ignoring read ready");
+                    }
+                    break; // Don't read while in error
+                }
+                case MESSAGE: {
+                    readMessage();
+                    break;
+                }
+                case CLOSE: {
+                    break; // ignore
+                }
+                default:
+                    throw new IllegalStateException("Invalid read state");
             }
-            case MESSAGE: {
-                readMessage();
-                break;
-            }
-            case CLOSE: {
-                break; // ignore
-            }
-            default:
-                throw new IllegalStateException("Invalid read state");
+        } finally {
+            myReadLock.unlock();
         }
     }
 
     @Override
     public void handleWrite() {
-        switch (writeState) {
-            case INITIAL: {
-                throw new IllegalStateException("Should never be initial state");
-            }
-            case HEADER: {
-                writeHeader();
-                break;
-            }
-            case ERROR: {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("In error, ignoring write ready");
+        final ReentrantLock myWriteLock = writeLock;
+        try {
+            myWriteLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            return;
+        }
+        try {
+            switch (writeState) {
+                case INITIAL: {
+                    throw new IllegalStateException(
+                                                    "Should never be initial state");
                 }
-                break; // Don't write while in error
+                case HEADER: {
+                    writeHeader();
+                    break;
+                }
+                case ERROR: {
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest("In error, ignoring write ready");
+                    }
+                    break; // Don't write while in error
+                }
+                case MESSAGE: {
+                    writeMessage();
+                    break;
+                }
+                case CLOSE: {
+                    break; // ignore
+                }
+                default:
+                    throw new IllegalStateException("Invalid write state");
             }
-            case MESSAGE: {
-                writeMessage();
-                break;
-            }
-            case CLOSE: {
-                break; // ignore
-            }
-            default:
-                throw new IllegalStateException("Invalid write state");
+        } finally {
+            myWriteLock.unlock();
         }
     }
 
