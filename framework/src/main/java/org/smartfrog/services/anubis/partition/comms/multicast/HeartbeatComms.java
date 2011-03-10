@@ -113,7 +113,8 @@ public class HeartbeatComms extends MulticastComms implements
      *            message to send.
      */
     @Override
-    public void sendHeartbeat(HeartbeatMsg msg) {
+    public void sendHeartbeat(Heartbeat heartbeat) { 
+        HeartbeatMsg msg = HeartbeatMsg.toHeartbeatMsg(heartbeat);
         try {
             super.sendObject(wireSecurity.toWireForm(msg));
         } catch (Exception ex) {

@@ -319,4 +319,15 @@ public class HeartbeatState implements Heartbeat {
         msg.putLong(viewNumber);
         msg.putLong(viewTimeStamp);
     }
+
+    @Override
+    public void setIsPreferred(boolean preferred) {
+        this.preferred = preferred;
+    }
+
+    @Override
+    public Heartbeat toClose() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

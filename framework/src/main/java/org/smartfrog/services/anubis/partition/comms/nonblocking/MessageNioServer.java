@@ -38,6 +38,7 @@ import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
@@ -160,13 +161,13 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
     @Override
     public void initiateConnection(Identity id, MessageConnection con,
-                                   HeartbeatMsg hb) {
+                                   Heartbeat hb) {
         if (syncLog.isLoggable(Level.FINEST)) {
             syncLog.finest("Initiating connection to " + con.getSender());
         }
         NonBlockingConnectionInitiator initiator = null;
         try {
-            initiator = new NonBlockingConnectionInitiator(con, hb,
+            initiator = new NonBlockingConnectionInitiator(con, HeartbeatMsg.toHeartbeatMsg(hb),
                                                            wireSecurity);
         } catch (Exception ex) {
             if (asyncLog.isLoggable(Level.WARNING)) {

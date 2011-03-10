@@ -270,12 +270,16 @@ public abstract class ServerChannelHandler {
         selected.remove();
         key.cancel();
         final CommunicationsHandler context = (CommunicationsHandler) key.attachment();
-        commsExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                context.handleRead();
-            }
-        });
+        if (!context.getChannel().isOpen()) {
+            context.close();
+        } else {
+            commsExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    context.handleRead();
+                }
+            });
+        }
     }
 
     protected void handleWrite(SelectionKey key, Iterator<SelectionKey> selected) {

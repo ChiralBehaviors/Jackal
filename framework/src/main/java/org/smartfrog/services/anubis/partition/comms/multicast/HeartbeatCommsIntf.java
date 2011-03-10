@@ -20,10 +20,10 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import org.smartfrog.services.anubis.partition.test.node.CommsTestIntf;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public interface HeartbeatCommsIntf extends CommsTestIntf {
-    public void sendHeartbeat(HeartbeatMsg msg);
+    public void sendHeartbeat(Heartbeat msg);
 
     public void start();
 

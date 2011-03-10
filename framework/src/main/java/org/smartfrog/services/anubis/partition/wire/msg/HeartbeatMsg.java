@@ -32,52 +32,57 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
-    static final public int MAX_BIT_SIZE = 256; // allows 2000 servers
-    static final private int msgLinksSz = MAX_BIT_SIZE + intSz;
+    static final public int   MAX_BIT_SIZE            = 256;                                       // allows 2000 servers
+    static final private int  msgLinksSz              = MAX_BIT_SIZE + intSz;
 
-    static final private int heartbeatInitialIdx = TIMED_MSG_WIRE_SIZE;
-    static final private int viewNumberIdx = heartbeatInitialIdx;
-    static final private int viewNumberSz = longSz;
-    static final private int viewTimeStampSz = longSz;
-    static final private int viewTimeStampIdx = viewNumberIdx + viewNumberSz;
-    static final private int isPreferredIdx = viewTimeStampIdx
-                                              + viewTimeStampSz;
-    static final private int isPreferredSz = booleanSz;
-    static final private int candidateIdx = isPreferredIdx + isPreferredSz;
-    static final private int candidateSz = AddressMarshalling.connectionAddressWireSz;
-    static final private int msgLinksNumberIdx = candidateIdx + candidateSz;
-    static final private int msgLinksNumberSz = longSz;
-    static final private int msgLinksIdx = msgLinksNumberIdx + msgLinksNumberSz;
-    static final private int stableIdx = msgLinksIdx + msgLinksSz;
+    static final private int  heartbeatInitialIdx     = TIMED_MSG_WIRE_SIZE;
+    static final private int  viewNumberIdx           = heartbeatInitialIdx;
+    static final private int  viewNumberSz            = longSz;
+    static final private int  viewTimeStampSz         = longSz;
+    static final private int  viewTimeStampIdx        = viewNumberIdx
+                                                        + viewNumberSz;
+    static final private int  isPreferredIdx          = viewTimeStampIdx
+                                                        + viewTimeStampSz;
+    static final private int  isPreferredSz           = booleanSz;
+    static final private int  candidateIdx            = isPreferredIdx
+                                                        + isPreferredSz;
+    static final private int  candidateSz             = AddressMarshalling.connectionAddressWireSz;
+    static final private int  msgLinksNumberIdx       = candidateIdx
+                                                        + candidateSz;
+    static final private int  msgLinksNumberSz        = longSz;
+    static final private int  msgLinksIdx             = msgLinksNumberIdx
+                                                        + msgLinksNumberSz;
+    static final private int  stableIdx               = msgLinksIdx
+                                                        + msgLinksSz;
 
-    static final private int stableSz = booleanSz;
-    static final private int viewIdx = stableIdx + stableSz;
-    static final private int viewSz = MAX_BIT_SIZE + intSz;
-    static final private int testInterfaceSz = AddressMarshalling.connectionAddressWireSz;
-    static final private int testInterfaceIdx = viewIdx + viewSz;
-    public static final int HEARTBEAT_MSG_WIRE_SIZE = testInterfaceIdx
-                                                      + testInterfaceSz;
-    public static final int HEARTBEAT_MSG_WIRE_TYPE = 300;
+    static final private int  stableSz                = booleanSz;
+    static final private int  viewIdx                 = stableIdx + stableSz;
+    static final private int  viewSz                  = MAX_BIT_SIZE + intSz;
+    static final private int  testInterfaceSz         = AddressMarshalling.connectionAddressWireSz;
+    static final private int  testInterfaceIdx        = viewIdx + viewSz;
+    public static final int   HEARTBEAT_MSG_WIRE_SIZE = testInterfaceIdx
+                                                        + testInterfaceSz;
+    public static final int   HEARTBEAT_MSG_WIRE_TYPE = 300;
 
-    private Identity candidate = null;
+    private Identity          candidate               = null;
 
-    private boolean candidateUnmarshalled;
-    private NodeIdSet msgLinks = null;
+    private boolean           candidateUnmarshalled;
+    private NodeIdSet         msgLinks                = null;
 
-    private long msgLinksNumber = 0;
-    private boolean msgLinksUnmarshalled;
+    private long              msgLinksNumber          = 0;
+    private boolean           msgLinksUnmarshalled;
 
-    private boolean preferred = false;
-    private boolean stable = true;
+    private boolean           preferred               = false;
+    private boolean           stable                  = true;
 
-    private InetSocketAddress testInterface = null;
-    private boolean testInterfaceUnmarshalled;
+    private InetSocketAddress testInterface           = null;
+    private boolean           testInterfaceUnmarshalled;
 
-    private NodeIdSet view = null;
-    private long viewNumber = -1;
+    private NodeIdSet         view                    = null;
+    private long              viewNumber              = -1;
 
-    private long viewTimeStamp = View.undefinedTimeStamp;
-    private boolean viewUnmarshalled;
+    private long              viewTimeStamp           = View.undefinedTimeStamp;
+    private boolean           viewUnmarshalled;
 
     /**
      * Constructor - Creates a heartbeat message from the wire formatted byte
@@ -94,7 +99,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         readWireForm(wireForm);
     }
 
-    public HeartbeatMsg(HeartbeatMsg hb) {
+    public HeartbeatMsg(Heartbeat hb) {
         super(hb.getSender(), hb.getSenderAddress());
         setIsPreferred(hb.isPreferred());
         setCandidate(hb.getCandidate());
@@ -256,7 +261,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     private void testInterfaceFromWire() {
         testInterfaceUnmarshalled = true;
         testInterface = AddressMarshalling.readWireForm(wireForm,
-                                                       testInterfaceIdx);
+                                                        testInterfaceIdx);
     }
 
     private void viewFromWire() {
@@ -341,8 +346,16 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         if (testInterface == null) {
             AddressMarshalling.writeNullWireForm(wireForm, testInterfaceIdx);
         } else {
-            AddressMarshalling.writeWireForm(testInterface, wireForm, testInterfaceIdx);
+            AddressMarshalling.writeWireForm(testInterface, wireForm,
+                                             testInterfaceIdx);
         }
+    }
+
+    public static HeartbeatMsg toHeartbeatMsg(Heartbeat heartbeat) {
+        if (heartbeat instanceof HeartbeatMsg) {
+            return (HeartbeatMsg) heartbeat;
+        }
+        return new HeartbeatMsg(heartbeat);
     }
 
 }

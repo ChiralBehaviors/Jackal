@@ -37,6 +37,7 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Connec
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
@@ -44,41 +45,41 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurityExcepti
 
 public class MessageNioHandler implements SendingListener, IOConnection,
         WireSizes {
-    public static final int SENDING_DONE = 0;
-    public static final int SENDING_PENDING = 1;
-    public static final int SENDING_REFUSED = 2;
+    public static final int                SENDING_DONE        = 0;
+    public static final int                SENDING_PENDING     = 1;
+    public static final int                SENDING_REFUSED     = 2;
 
-    private boolean announceTerm = true;
-    private ConnectionSet connectionSet = null;
-    private ByteBuffer[] dataToWrite = null;
-    private Vector<SelectionKey> deadKeys = null;
-    private ByteBuffer[] fullObject = null;
+    private boolean                        announceTerm        = true;
+    private ConnectionSet                  connectionSet       = null;
+    private ByteBuffer[]                   dataToWrite         = null;
+    private Vector<SelectionKey>           deadKeys            = null;
+    private ByteBuffer[]                   fullObject          = null;
     // fields to replace MessageConectionImpl
-    private boolean ignoring = false;
-    private static final Logger log = Logger.getLogger(MessageNioHandler.class.getCanonicalName());
-    private NonBlockingConnectionInitiator mci = null;
-    private Identity me = null;
-    private MessageConnection messageConnection = null;
-    private int objectSize = -1;
+    private boolean                        ignoring            = false;
+    private static final Logger            log                 = Logger.getLogger(MessageNioHandler.class.getCanonicalName());
+    private NonBlockingConnectionInitiator mci                 = null;
+    private Identity                       me                  = null;
+    private MessageConnection              messageConnection   = null;
+    private int                            objectSize          = -1;
 
-    private boolean open = false;
-    private long receiveCount = INITIAL_MSG_ORDER;
-    private ByteBuffer rxHeader = null;
-    private boolean rxHeaderAlreadyRead = false;
-    private ByteBuffer rxObject = null;
-    private RxQueue rxQueue = null;
-    private SocketChannel sc = null;
-    private Selector selector = null;
-    private long sendCount = INITIAL_MSG_ORDER;
-    private boolean sendingDoneOK = false;
-    private SendingListener sendingListener = null;
+    private boolean                        open                = false;
+    private long                           receiveCount        = INITIAL_MSG_ORDER;
+    private ByteBuffer                     rxHeader            = null;
+    private boolean                        rxHeaderAlreadyRead = false;
+    private ByteBuffer                     rxObject            = null;
+    private RxQueue                        rxQueue             = null;
+    private SocketChannel                  sc                  = null;
+    private Selector                       selector            = null;
+    private long                           sendCount           = INITIAL_MSG_ORDER;
+    private boolean                        sendingDoneOK       = false;
+    private SendingListener                sendingListener     = null;
 
-    private WireSecurity wireSecurity = null;
+    private WireSecurity                   wireSecurity        = null;
 
-    private boolean writePending = false;
-    private Vector<SelectionKey> writePendingKeys = null;
+    private boolean                        writePending        = false;
+    private Vector<SelectionKey>           writePendingKeys    = null;
 
-    private boolean writingOK = false;
+    private boolean                        writingOK           = false;
 
     /**
      * Each socketChannel has a MessageNioHandler whose main job is to read data
@@ -779,4 +780,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         return fullObject;
     }
 
+    @Override
+    public void send(Heartbeat heartbeat) {
+        send((TimedMsg) HeartbeatMsg.toHeartbeatMsg(heartbeat));
+    }
 }

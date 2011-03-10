@@ -33,7 +33,7 @@ import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 /**
@@ -129,7 +129,7 @@ public class MessageConnectionServer extends ConnectionServer implements
      */
     @Override
     public void initiateConnection(Identity id, MessageConnection con,
-                                   HeartbeatMsg hb) {
+                                   Heartbeat hb) {
         if (log.isLoggable(Level.FINER)) {
             log.finer("Initiating connection to: " + id);
         }

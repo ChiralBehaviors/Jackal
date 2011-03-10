@@ -22,7 +22,7 @@ package org.smartfrog.services.anubis.partition.comms;
 import java.net.InetSocketAddress;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public interface IOConnectionServer {
     public InetSocketAddress getAddress();
@@ -30,7 +30,7 @@ public interface IOConnectionServer {
     public String getThreadStatusString();
 
     public void initiateConnection(Identity id, MessageConnection con,
-                                   HeartbeatMsg hb);
+                                   Heartbeat hb);
 
     public void start();
 

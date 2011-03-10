@@ -56,7 +56,6 @@ import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 import com.hellblazer.anubis.annotations.Deployed;
 
@@ -90,7 +89,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     /**
      * Status - keep running heartbeat
      */
-    private HeartbeatMsg heartbeat = null;
+    private Heartbeat heartbeat = null;
 
     private MulticastAddress heartbeatAddress;
     private HeartbeatCommsIntf heartbeatComms = null;
@@ -489,9 +488,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     /**
      * Returns the most recently set up heartbeat
      * 
-     * @return - the heartbeat message
+     * @return - the heartbeat
      */
-    public HeartbeatMsg getHeartbeatMsg() {
+    public Heartbeat getHeartbeat() {
         return heartbeat;
     }
 

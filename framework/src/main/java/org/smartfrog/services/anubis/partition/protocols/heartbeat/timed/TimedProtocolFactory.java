@@ -36,7 +36,7 @@ public class TimedProtocolFactory implements HeartbeatProtocolFactory {
 
     @Override
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
-                                            HeartbeatMsg sharedHeartbeat) {
+                                            Heartbeat sharedHeartbeat) {
         return new TimedProtocolImpl(hb, vl, sharedHeartbeat);
     }
 }

@@ -19,20 +19,23 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms;
 
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 
 public interface IOConnection {
 
-    public static int INITIAL_MSG_ORDER = 0;
+    static int INITIAL_MSG_ORDER = 0;
 
-    public boolean connected();
+    boolean connected();
 
-    public void send(TimedMsg msg);
+    void send(TimedMsg msg);
 
-    public void setIgnoring(boolean ignoring);
+    void send(Heartbeat heartbeat);
 
-    public void silent();
+    void setIgnoring(boolean ignoring);
 
-    public void terminate();
+    void silent();
+
+    void terminate();
 
 }

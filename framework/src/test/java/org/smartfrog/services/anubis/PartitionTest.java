@@ -33,7 +33,7 @@ import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,7 +49,7 @@ public class PartitionTest extends TestCase {
     static class MyController extends Controller {
 
         @Override
-        protected NodeData createNode(HeartbeatMsg hb) {
+        protected NodeData createNode(Heartbeat hb) {
             return new Node(hb, this);
         }
 
@@ -91,7 +91,7 @@ public class PartitionTest extends TestCase {
         boolean interrupted = false;
         boolean barrierBroken = false;
 
-        public Node(HeartbeatMsg hb, Controller controller) {
+        public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
         }
 

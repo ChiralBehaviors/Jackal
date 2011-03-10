@@ -35,6 +35,7 @@ import org.smartfrog.services.anubis.partition.test.msg.TimingMsg;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class NodeData {
@@ -54,7 +55,7 @@ public class NodeData {
     protected long timeout = 0;
     protected View view = null;
 
-    public NodeData(HeartbeatMsg hb, Controller controller) {
+    public NodeData(Heartbeat hb, Controller controller) {
         this.controller = controller;
         lastReceive = System.currentTimeMillis();
         lastHB = hb.getTime();

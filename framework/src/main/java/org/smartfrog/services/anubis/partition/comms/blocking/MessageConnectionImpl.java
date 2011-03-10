@@ -32,6 +32,7 @@ import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatConnecti
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
@@ -40,20 +41,20 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurityExcepti
 public class MessageConnectionImpl extends ConnectionComms implements
         IOConnection {
 
-    private boolean announceTerm = true;
-    private ConnectionSet connectionSet = null;
+    private boolean                 announceTerm      = true;
+    private ConnectionSet           connectionSet     = null;
     /**
      * for testing purposes - can set to ignoring incoming messages
      */
-    private boolean ignoring = false;
-    private static final Logger log = Logger.getLogger(MessageConnectionImpl.class.getCanonicalName());
-    private Identity me = null;
-    private MessageConnection messageConnection = null;
-    private long receiveCount = INITIAL_MSG_ORDER;
-    private long sendCount = INITIAL_MSG_ORDER;
-    private MessageConnectionServer server = null;
+    private boolean                 ignoring          = false;
+    private static final Logger     log               = Logger.getLogger(MessageConnectionImpl.class.getCanonicalName());
+    private Identity                me                = null;
+    private MessageConnection       messageConnection = null;
+    private long                    receiveCount      = INITIAL_MSG_ORDER;
+    private long                    sendCount         = INITIAL_MSG_ORDER;
+    private MessageConnectionServer server            = null;
 
-    private WireSecurity wireSecurity = null;
+    private WireSecurity            wireSecurity      = null;
 
     public MessageConnectionImpl(Identity id, ConnectionSet cs,
                                  InetSocketAddress address,
@@ -185,6 +186,11 @@ public class MessageConnectionImpl extends ConnectionComms implements
                                   + tm + " - shutting down connection", ex);
             shutdown();
         }
+    }
+
+    @Override
+    public void send(Heartbeat heartbeat) {
+        send((TimedMsg) HeartbeatMsg.toHeartbeatMsg(heartbeat));
     }
 
     /**

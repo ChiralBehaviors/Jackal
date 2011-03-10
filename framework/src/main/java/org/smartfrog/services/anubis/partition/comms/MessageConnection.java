@@ -37,21 +37,21 @@ import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 public class MessageConnection extends HeartbeatProtocolAdapter implements
         Connection, HeartbeatProtocol, Candidate {
 
-    private IOConnection closingImpl = null;
+    private IOConnection         closingImpl       = null;
     /**
      * Implementations
      */
-    private IOConnection connectionImpl = null;
+    private IOConnection         connectionImpl    = null;
 
-    private ConnectionSet connectionSet = null;
-    private boolean disconnectPending = false;
-    private boolean ignoring = false;
-    private static final Logger log = Logger.getLogger(MessageConnection.class.getCanonicalName());
-    private Identity me = null;
+    private ConnectionSet        connectionSet     = null;
+    private boolean              disconnectPending = false;
+    private boolean              ignoring          = false;
+    private static final Logger  log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
+    private Identity             me                = null;
 
-    private LinkedList<TimedMsg> msgQ = new LinkedList<TimedMsg>();
+    private LinkedList<TimedMsg> msgQ              = new LinkedList<TimedMsg>();
 
-    private boolean terminated = false;
+    private boolean              terminated        = false;
 
     /**
      * Constructor used to create a MessageConnection when the implementation is
@@ -237,6 +237,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         return false;
     }
 
+    public void sendMsg(Heartbeat heartbeat) {
+        sendMsg((TimedMsg) HeartbeatMsg.toHeartbeatMsg(heartbeat));
+    }
+
     public void sendMsg(TimedMsg msg) {
 
         if (msg == null) {
@@ -346,7 +350,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
                     connectionSet.getConnectionServer().initiateConnection(me,
                                                                            this,
-                                                                           connectionSet.getHeartbeatMsg());
+                                                                           connectionSet.getHeartbeat());
                 }
 
                 /**
@@ -377,7 +381,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             connectionImpl = null;
             try {
 
-                closingImpl.send(connectionSet.getHeartbeatMsg().toClose());
+                closingImpl.send(connectionSet.getHeartbeat().toClose());
 
             } catch (Exception ex) {
                 log.log(Level.SEVERE,
@@ -399,7 +403,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
          */
         if (msg instanceof Close) {
             // System.out.println(me + " received CloseMsg - closing connection to " +  getSender() );
-            sendMsg(connectionSet.getHeartbeatMsg().toClose());
+            sendMsg(connectionSet.getHeartbeat().toClose());
             connectionImpl.silent();
             connectionImpl = null;
             if (!connectionSet.wantsMsgLinkTo(getSender())) {

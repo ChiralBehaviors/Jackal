@@ -231,10 +231,13 @@ abstract public class AbstractCommunicationsHandler implements
             numBytesRead = channel.read(headerIn);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
+            readState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
-            if (log.isLoggable(Level.WARNING)) {
+            readState = State.ERROR;
+            writeState = State.CLOSE;
+            if (isNotClosed(e) && log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Errror reading header", e);
             }
             shutdown();
@@ -270,11 +273,13 @@ abstract public class AbstractCommunicationsHandler implements
             numBytesRead = channel.read(msgIn);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
+            readState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
             readState = State.ERROR;
-            if (log.isLoggable(Level.WARNING)) {
+            writeState = State.CLOSE;
+            if (isNotClosed(e) && log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Error reading message body", e);
             }
             shutdown();
@@ -303,11 +308,13 @@ abstract public class AbstractCommunicationsHandler implements
             bytesWritten = channel.write(headerOut);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
+            readState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
             writeState = State.ERROR;
-            if (log.isLoggable(Level.WARNING)) {
+            readState = State.CLOSE;
+            if (isNotClosed(e) && log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Unable to send message header", e);
             }
             shutdown();
@@ -315,6 +322,7 @@ abstract public class AbstractCommunicationsHandler implements
         }
         if (bytesWritten == -1) {
             writeState = State.CLOSE;
+            readState = State.CLOSE;
             shutdown();
         } else if (headerOut.hasRemaining()) {
             writeState = State.HEADER;
@@ -331,11 +339,13 @@ abstract public class AbstractCommunicationsHandler implements
             bytesWritten = channel.write(msgOut);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
+            readState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
             writeState = State.ERROR;
-            if (log.isLoggable(Level.WARNING)) {
+            readState = State.CLOSE;
+            if (isNotClosed(e) && log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Unable to send message body", e);
             }
             shutdown();
@@ -343,6 +353,7 @@ abstract public class AbstractCommunicationsHandler implements
         }
         if (bytesWritten == -1) {
             writeState = State.CLOSE;
+            readState = State.CLOSE;
             shutdown();
         } else if (headerOut.hasRemaining()) {
             selectForWrite();
@@ -351,5 +362,11 @@ abstract public class AbstractCommunicationsHandler implements
             msgOut = null;
             writeGate.release();
         }
+    }
+
+    protected boolean isNotClosed(IOException e) {
+        String message = e.getMessage();
+        return !"broken pipe".equalsIgnoreCase(message)
+               && !"connection reset by peer".equalsIgnoreCase(message);
     }
 }

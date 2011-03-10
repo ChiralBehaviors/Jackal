@@ -37,7 +37,7 @@ public class PingProtocolFactory implements HeartbeatProtocolFactory {
 
     @Override
     public HeartbeatProtocol createProtocol(Heartbeat hb, ViewListener vl,
-                                            HeartbeatMsg sharedHeartbeat) {
+                                            Heartbeat sharedHeartbeat) {
         return new PingProtocolImpl(hb, vl, sharedHeartbeat);
     }
 }

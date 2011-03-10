@@ -28,7 +28,6 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
 
@@ -52,7 +51,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      * @param vl
      */
     public TimedProtocolImpl(Heartbeat hb, ViewListener vl,
-                             HeartbeatMsg sharedHeartbeat) {
+                             Heartbeat sharedHeartbeat) {
         super(hb.getView());
         time = hb.getTime();
         viewNumber = hb.getViewNumber();

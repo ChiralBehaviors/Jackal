@@ -32,6 +32,7 @@ import javax.annotation.PreDestroy;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 import com.hellblazer.anubis.annotations.Deployed;
@@ -243,7 +244,7 @@ public class Controller {
         return task;
     }
 
-    protected NodeData createNode(HeartbeatMsg hb) {
+    protected NodeData createNode(Heartbeat hb) {
         NodeData nodeData;
         nodeData = new NodeData(hb, this);
         return nodeData;

@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
+import java.net.InetSocketAddress;
+
 import org.smartfrog.services.anubis.partition.protocols.Sender;
 import org.smartfrog.services.anubis.partition.protocols.Timed;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -26,13 +28,21 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.NumberedView;
 
 public interface Heartbeat extends Sender, Timed, NumberedView {
-    public Identity getCandidate();
+    Identity getCandidate();
 
-    public boolean isPreferred();
+    boolean isPreferred();
 
-    public NodeIdSet getMsgLinks();
+    void setIsPreferred(boolean preferred);
 
-    public void setCandidate(Identity id);
+    NodeIdSet getMsgLinks();
 
-    public void setMsgLinks(NodeIdSet ml);
+    void setCandidate(Identity id);
+
+    void setMsgLinks(NodeIdSet ml);
+
+    InetSocketAddress getTestInterface();
+    
+    void setTestInterface(InetSocketAddress address);
+    
+    public Heartbeat toClose();
 }

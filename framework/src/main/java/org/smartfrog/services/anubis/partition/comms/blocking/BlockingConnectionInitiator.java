@@ -27,6 +27,7 @@ import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
@@ -40,13 +41,13 @@ public class BlockingConnectionInitiator extends Thread {
     private WireSecurity wireSecurity = null;
 
     public BlockingConnectionInitiator(Identity id, MessageConnection con,
-                                       ConnectionSet cset, HeartbeatMsg hb,
+                                       ConnectionSet cset, Heartbeat hb,
                                        WireSecurity sec) {
         super();
         me = id;
         connection = con;
         connectionSet = cset;
-        heartbeat = hb;
+        heartbeat = HeartbeatMsg.toHeartbeatMsg(hb);
         wireSecurity = sec;
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
