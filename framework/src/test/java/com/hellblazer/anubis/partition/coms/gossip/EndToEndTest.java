@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.TestCase;
 
@@ -46,6 +47,9 @@ public class EndToEndTest extends TestCase {
 
     public void testEnd2End() throws Exception {
         int membership = 64;
+        int maxSeeds = 1;
+        Random entropy = new Random();
+
         Receiver[] receivers = new Receiver[membership];
         for (int i = 0; i < membership; i++) {
             receivers[i] = new Receiver(membership, i);
@@ -56,11 +60,16 @@ public class EndToEndTest extends TestCase {
             members.add(createCommunications(receivers[i], new Identity(666, i,
                                                                         1),
                                              seedHosts));
-            if (members.size() == 1) {
+            if (i == 0) { // always add first member
                 seedHosts.add(members.get(0).getLocalAddress());
+            } else if (seedHosts.size() < maxSeeds) {
+                // add the new member with probability of 25%
+                if (entropy.nextDouble() < 0.25D) {
+                    seedHosts.add(members.get(i).getLocalAddress());
+                }
             }
         }
-
+        System.out.println("Using " + seedHosts.size() + " seed hosts");
         try {
             for (Communications member : members) {
                 member.start();
@@ -69,6 +78,7 @@ public class EndToEndTest extends TestCase {
                 receivers[i].await(60, TimeUnit.SECONDS);
             }
         } finally {
+            System.out.println();
             for (Communications member : members) {
                 member.terminate();
             }
@@ -89,10 +99,10 @@ public class EndToEndTest extends TestCase {
                                                            Executors.newFixedThreadPool(3),
                                                            Executors.newSingleThreadExecutor());
 
-        SystemView view = new SystemView(new Random(666),
+        SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),
                                          seedHosts, 5000, 500000);
-        Gossip gossip = new Gossip(communications, view, new Random(666), 11,
+        Gossip gossip = new Gossip(communications, view, new Random(), 11,
                                    localIdentity);
         communications.setGossip(gossip);
         communications.updateHeartbeat(new HeartbeatState(
@@ -107,9 +117,10 @@ public class EndToEndTest extends TestCase {
         return communications;
     }
 
-    private class Receiver implements HeartbeatReceiver {
+    private static class Receiver implements HeartbeatReceiver {
+        private static final AtomicInteger count = new AtomicInteger();
 
-        private final CountDownLatch[] latches;
+        private final CountDownLatch[]     latches;
 
         Receiver(int members, int id) {
             super();
@@ -129,7 +140,14 @@ public class EndToEndTest extends TestCase {
 
         @Override
         public boolean receiveHeartbeat(Heartbeat hb) {
-            System.out.println("Heartbeat received: " + hb);
+            // System.out.println("Heartbeat received: " + hb);
+            int currentCount = count.incrementAndGet();
+            if (currentCount % 100 == 0) {
+                System.out.print('.');
+            } else if (currentCount % 1000 == 0) {
+                System.out.println();
+            }
+
             latches[hb.getSender().id].countDown();
             return false;
         }

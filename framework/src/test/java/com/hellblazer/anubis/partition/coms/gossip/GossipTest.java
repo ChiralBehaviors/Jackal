@@ -145,8 +145,7 @@ public class GossipTest extends TestCase {
         Gossip gossip = new Gossip(communications, view, random, 4,
                                    localIdentity);
 
-        gossip.apply(System.currentTimeMillis(),
-                     asList(state1, state2, state3, state4));
+        gossip.apply(asList(state1, state2, state3, state4));
 
         verify(communications).connect(eq(address1), isA(Endpoint.class),
                                        isA(Runnable.class));
@@ -226,7 +225,7 @@ public class GossipTest extends TestCase {
         endpoints.put(address4, ep4);
 
         long now = System.currentTimeMillis();
-        gossip.apply(now, asList(state1, state2, state3, state4));
+        gossip.apply(asList(state1, state2, state3, state4));
 
         verify(ep1).getEpoch();
         verify(ep1, new Times(2)).getViewNumber();

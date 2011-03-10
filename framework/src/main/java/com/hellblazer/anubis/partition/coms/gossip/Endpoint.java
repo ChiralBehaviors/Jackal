@@ -34,7 +34,6 @@ public class Endpoint {
     private volatile GossipMessages         handler;
     private volatile HeartbeatState         heartbeat;
     private volatile boolean                isAlive = true;
-    private volatile long                   update  = System.currentTimeMillis();
 
     public Endpoint() {
 
@@ -61,27 +60,8 @@ public class Endpoint {
         return heartbeat;
     }
 
-    public long getUpdate() {
-        return update;
-    }
-
     public long getViewNumber() {
         return heartbeat.getViewNumber();
-    }
-
-    /**
-     * Answer true if the suspicion level of the failure detector is greater than
-     * the conviction threshold
-     * 
-     * @param now
-     *            - the time to measure at
-     * @param convictThreshold
-     *            - the threshold for conviction
-     * @return true if the suspicion level of the failure detector is greater than
-     *         the conviction threshold
-     */
-    public boolean shouldConvict(long now, double convictThreshold) {
-        return fd.phi(now) > convictThreshold;
     }
 
     public boolean isAlive() {
@@ -96,12 +76,23 @@ public class Endpoint {
         isAlive = false;
     }
 
-    public void record(long now) {
-        fd.record(now);
-    }
-
     public void setCommunications(GossipMessages communications) {
         handler = communications;
+    }
+
+    /**
+     * Answer true if the suspicion level of the failure detector is greater
+     * than the conviction threshold
+     * 
+     * @param now
+     *            - the time to measure at
+     * @param convictThreshold
+     *            - the threshold for conviction
+     * @return true if the suspicion level of the failure detector is greater
+     *         than the conviction threshold
+     */
+    public boolean shouldConvict(long now, double convictThreshold) {
+        return fd.phi(now) > convictThreshold;
     }
 
     @Override
@@ -110,7 +101,7 @@ public class Endpoint {
     }
 
     public void updateState(long now, HeartbeatState newHbState) {
-        update = now;
         heartbeat = newHbState;
+        fd.record(now);
     }
 }

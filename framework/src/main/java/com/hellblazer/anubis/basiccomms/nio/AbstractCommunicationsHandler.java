@@ -16,7 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 package com.hellblazer.anubis.basiccomms.nio;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,20 +41,29 @@ abstract public class AbstractCommunicationsHandler implements
         CLOSE, ERROR, HEADER, INITIAL, MESSAGE;
     }
 
-    public static final int              HEADER_SIZE  = 8;
-    public static final int              MAGIC_NUMBER = 24051967;
-    private static final Logger          log          = Logger.getLogger(AbstractCommunicationsHandler.class.getCanonicalName());
+    public static final int     HEADER_SIZE  = 8;
+    public static final int     MAGIC_NUMBER = 24051967;
+    private static final Logger log          = Logger.getLogger(AbstractCommunicationsHandler.class.getCanonicalName());
+
+    private static String toHex(byte[] data) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 4);
+        PrintStream stream = new PrintStream(baos);
+        HexDump.hexdump(stream, data, 0, data.length);
+        stream.close();
+        return baos.toString();
+    }
 
     protected final ServerChannelHandler handler;
     private final SocketChannel          channel;
-    private volatile ByteBuffer          headerIn     = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private volatile ByteBuffer          headerOut    = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private volatile ByteBuffer          headerIn   = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private volatile ByteBuffer          headerOut  = ByteBuffer.wrap(new byte[HEADER_SIZE]);
     private volatile ByteBuffer          msgIn;
     private volatile ByteBuffer          msgOut;
-    private volatile boolean             open         = true;
-    private volatile State               readState    = State.INITIAL;
+    private volatile boolean             open       = true;
+    private volatile State               readState  = State.INITIAL;
     private final Semaphore              writeGate;
-    private volatile State               writeState   = State.INITIAL;
+
+    private volatile State               writeState = State.INITIAL;
 
     public AbstractCommunicationsHandler(ServerChannelHandler handler,
                                          SocketChannel channel) {
@@ -167,6 +176,14 @@ abstract public class AbstractCommunicationsHandler implements
 
     abstract protected void deliver(byte[] msg);
 
+    protected void selectForRead() {
+        handler.selectForRead(this);
+    }
+
+    protected void selectForWrite() {
+        handler.selectForWrite(this);
+    }
+
     protected void send(byte[] bytes) {
         try {
             writeGate.acquire();
@@ -222,10 +239,6 @@ abstract public class AbstractCommunicationsHandler implements
         } else {
             selectForRead();
         }
-    }
-
-    protected void selectForRead() {
-        handler.selectForRead(this);
     }
 
     private void readMessage() {
@@ -289,10 +302,6 @@ abstract public class AbstractCommunicationsHandler implements
         }
     }
 
-    protected void selectForWrite() {
-        handler.selectForWrite(this);
-    }
-
     private void writeMessage() {
         int bytesWritten;
         try {
@@ -319,13 +328,5 @@ abstract public class AbstractCommunicationsHandler implements
             msgOut = null;
             writeGate.release();
         }
-    }
-
-    private static String toHex(byte[] data) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 4);
-        PrintStream stream = new PrintStream(baos);
-        HexDump.hexdump(stream, data, 0, data.length);
-        stream.close();
-        return baos.toString();
     }
 }

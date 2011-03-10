@@ -137,16 +137,16 @@ public class Communications extends ServerChannelHandler implements
         });
     }
 
-    public void updateHeartbeat(Heartbeat state) {
-        gossip.updateLocalState(new HeartbeatState(state));
-    }
-
     public void setGossip(Gossip gossip) {
         this.gossip = gossip;
     }
 
     public void setIgnoring(View ignoringUpdate) {
         ignoring = ignoringUpdate;
+    }
+
+    public void updateHeartbeat(Heartbeat state) {
+        gossip.updateLocalState(new HeartbeatState(state));
     }
 
     @Override

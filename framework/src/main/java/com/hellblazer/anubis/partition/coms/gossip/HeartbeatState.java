@@ -289,8 +289,8 @@ public class HeartbeatState implements Heartbeat {
 
     @Override
     public String toString() {
-        return "HeartbeatState [" + sender + " | "
-               + senderAddress + ", stable=" + stable + "]";
+        return "HeartbeatState [" + sender + " | " + senderAddress
+               + ", stable=" + stable + "]";
     }
 
     public void writeTo(ByteBuffer buffer) {

@@ -162,13 +162,6 @@ public class Gossip {
      *            states
      */
     public void gossip(List<Digest> digests, GossipHandler gossipHandler) {
-        long now = System.currentTimeMillis();
-        for (Digest gDigest : digests) {
-            Endpoint endpoint = endpoints.get(gDigest.getAddress());
-            if (endpoint != null && endpoint != localState) {
-                endpoint.record(now);
-            }
-        }
         sort(digests);
         examine(digests, gossipHandler);
     }
@@ -191,14 +184,7 @@ public class Gossip {
      */
     public void reply(List<Digest> digests, List<HeartbeatState> remoteStates,
                       GossipHandler gossipHandler) {
-        long now = System.currentTimeMillis();
-        for (HeartbeatState state : remoteStates) {
-            Endpoint endpoint = endpoints.get(state.getSenderAddress());
-            if (endpoint != null) {
-                endpoint.record(now);
-            }
-        }
-        apply(now, remoteStates);
+        apply(remoteStates);
 
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
@@ -221,14 +207,7 @@ public class Gossip {
      *            partner
      */
     public void update(List<HeartbeatState> remoteStates) {
-        long now = System.currentTimeMillis();
-        for (HeartbeatState state : remoteStates) {
-            Endpoint endpoint = endpoints.get(state.getSenderAddress());
-            if (endpoint != null) {
-                endpoint.record(now);
-            }
-        }
-        apply(now, remoteStates);
+        apply(remoteStates);
     }
 
     /**
@@ -253,7 +232,8 @@ public class Gossip {
         }
     }
 
-    protected void apply(long now, List<HeartbeatState> remoteStates) {
+    protected void apply(List<HeartbeatState> remoteStates) {
+        long now = System.currentTimeMillis();
         for (HeartbeatState remoteState : remoteStates) {
             InetSocketAddress endpoint = remoteState.getSenderAddress();
             if (endpoint.equals(view.getLocalAddress())) {

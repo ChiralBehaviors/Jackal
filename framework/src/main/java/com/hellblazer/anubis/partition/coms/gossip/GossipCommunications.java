@@ -36,7 +36,8 @@ public interface GossipCommunications {
      * 
      * @param address
      *            - the endpoint to create a connection to
-     * @param endpoint TODO
+     * @param endpoint
+     *            TODO
      * @param connectAction
      *            - the action to run when the new connection is fully
      *            established.
@@ -44,8 +45,10 @@ public interface GossipCommunications {
      * @throws IOException
      *             - if there is a problem creating a connection to the address
      */
-    GossipHandler connect(InetSocketAddress address, Endpoint endpoint, Runnable connectAction)
-                                                                            throws IOException;
+    GossipHandler connect(InetSocketAddress address, Endpoint endpoint,
+                          Runnable connectAction) throws IOException;
+
+    InetSocketAddress getLocalAddress();
 
     /**
      * Notification that heartbeat state for a member has changed or is
@@ -54,6 +57,4 @@ public interface GossipCommunications {
      * @param state
      */
     void notifyUpdate(final HeartbeatState state);
-
-    InetSocketAddress getLocalAddress();
 }
