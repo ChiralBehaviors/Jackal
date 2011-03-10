@@ -20,7 +20,6 @@ package com.hellblazer.anubis.partition.coms.gossip;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -46,14 +45,16 @@ import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
 public class EndToEndTest extends TestCase {
 
     public void testEnd2End() throws Exception {
-        int membership = 16;
-        int cross = membership * (membership - 1);
-        CountDownLatch latch = new CountDownLatch(cross);
+        int membership = 64;
+        Receiver[] receivers = new Receiver[membership];
+        for (int i = 0; i < membership; i++) {
+            receivers[i] = new Receiver(membership, i);
+        }
         List<Communications> members = new ArrayList<Communications>();
-        Receiver receiver = new Receiver(latch, cross);
         Collection<InetSocketAddress> seedHosts = new ArrayList<InetSocketAddress>();
         for (int i = 0; i < membership; i++) {
-            members.add(createCommunications(receiver, new Identity(666, i, 1),
+            members.add(createCommunications(receivers[i], new Identity(666, i,
+                                                                        1),
                                              seedHosts));
             if (members.size() == 1) {
                 seedHosts.add(members.get(0).getLocalAddress());
@@ -64,20 +65,8 @@ public class EndToEndTest extends TestCase {
             for (Communications member : members) {
                 member.start();
             }
-
-            latch.await(60, TimeUnit.SECONDS);
-            List<Identity> identities = receiver.getIdenties();
-            int[] counts = new int[membership];
-            Arrays.fill(counts, 0);
-            for (Identity id : identities) {
-                counts[id.id]++;
-            }
-            int i = 0;
-            for (int idCount : counts) { 
-                System.out.println("id = " + i++ + " : " + idCount);
-            }
-            for (int idCount : counts) {
-                assertEquals(membership - 1, idCount);
+            for (int i = 0; i < membership; i++) {
+                receivers[i].await(60, TimeUnit.SECONDS);
             }
         } finally {
             for (Communications member : members) {
@@ -120,26 +109,28 @@ public class EndToEndTest extends TestCase {
 
     private class Receiver implements HeartbeatReceiver {
 
-        private final CountDownLatch latch;
-        private final List<Identity> identities;
+        private final CountDownLatch[] latches;
 
-        Receiver(CountDownLatch latch, int expectedIds) {
+        Receiver(int members, int id) {
             super();
-            this.latch = latch;
-            identities = new ArrayList<Identity>(expectedIds);
+            latches = new CountDownLatch[members];
+            for (int i = 0; i < members; i++) {
+                int count = i == id ? 0 : 1;
+                latches[i] = new CountDownLatch(count);
+            }
         }
 
-        public List<Identity> getIdenties() {
-            return identities;
+        public void await(int timeout, TimeUnit unit)
+                                                     throws InterruptedException {
+            for (int i = 0; i < latches.length; i++) {
+                latches[i].await(timeout, unit);
+            }
         }
 
         @Override
         public boolean receiveHeartbeat(Heartbeat hb) {
             System.out.println("Heartbeat received: " + hb);
-            synchronized (identities) {
-                identities.add(hb.getSender());
-            }
-            latch.countDown();
+            latches[hb.getSender().id].countDown();
             return false;
         }
     }
