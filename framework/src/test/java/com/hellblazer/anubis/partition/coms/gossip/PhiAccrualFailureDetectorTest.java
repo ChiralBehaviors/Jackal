@@ -30,15 +30,33 @@ public class PhiAccrualFailureDetectorTest extends TestCase {
     public void testDetector() throws Exception {
 
         PhiAccrualFailureDetector detector = new PhiAccrualFailureDetector();
+        long inc = 500;
+        
+        long now = System.currentTimeMillis();
+        System.out.println("Phi: " + detector.phi(now));
 
-        detector.record(111);
-        detector.record(222);
-        detector.record(333);
-        detector.record(444);
-        detector.record(555);
+        detector.record(now);
+        System.out.println("Phi: " + detector.phi(now));
+        now += inc;
+        
+        detector.record(now);
+        now += inc;
+        System.out.println("Phi: " + detector.phi(now));
+        
+        detector.record(now);
+        now += inc;
+        // System.out.println("Phi: " + detector.phi(now));
+        
+        detector.record(now);
+        now += inc;
+        // System.out.println("Phi: " + detector.phi(now));
+        
+        detector.record(now);
+        
+        now += inc;
 
-        assertEquals(0.4342, detector.phi(666), 0.01);
+        assertEquals(0.4342, detector.phi(now), 0.01);
 
-        assertEquals(9.566, detector.phi(3000), 0.01);
+        assertEquals(26.491, detector.phi(now + 30000), 0.01);
     }
 }

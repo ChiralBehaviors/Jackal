@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.smartfrog.services.anubis.partition.util.Identity;
 
 import com.hellblazer.anubis.partition.coms.gossip.Digest.DigestComparator;
 
@@ -81,17 +84,20 @@ public class Gossip {
      * @param phiConvictThreshold
      *            - the threshold required to convict a failed member. The value
      *            should be between 5 and 16, inclusively.
-     * @param initialState
-     *            - the initial heartbeat state of the local member
+     * @param localIdentity
+     *            - the identity of the local member
      */
     public Gossip(GossipCommunications communicationsService,
                   SystemView systemView, Random random,
-                  double phiConvictThreshold, HeartbeatState initialState) {
+                  double phiConvictThreshold, Identity localIdentity) {
         communications = communicationsService;
         convictThreshold = phiConvictThreshold;
         entropy = random;
         view = systemView;
-        localState = new Endpoint(initialState);
+        localState = new Endpoint(
+                                  new HeartbeatState(
+                                                     communications.getLocalAddress(),
+                                                     localIdentity));
         localState.markAlive();
         endpoints.put(view.getLocalAddress(), localState);
     }
@@ -101,32 +107,28 @@ public class Gossip {
         if (log.isLoggable(Level.FINEST)) {
             log.finest("Checking the status of the living...");
         }
-        for (Entry<InetSocketAddress, Endpoint> entry : endpoints.entrySet()) {
+        for (Iterator<Entry<InetSocketAddress, Endpoint>> iterator = endpoints.entrySet().iterator(); iterator.hasNext();) {
+            Entry<InetSocketAddress, Endpoint> entry = iterator.next();
             InetSocketAddress endpoint = entry.getKey();
             if (endpoint.equals(view.getLocalAddress())) {
                 continue;
             }
 
             Endpoint state = entry.getValue();
-            if (state.isAlive() && state.interpret(now, convictThreshold)) {
+            if (state.isAlive() && state.shouldConvict(now, convictThreshold)) {
+                iterator.remove();
                 state.markDead();
                 view.markDead(endpoint, now);
                 if (log.isLoggable(Level.INFO)) {
-                    log.info(format("Endpoint %s is now dead.", endpoint));
+                    log.info(format("Endpoint %s is now DEAD.", endpoint));
                 }
-            } else if (!state.isAlive()
-                       && view.cullUnreachable(endpoint,
-                                               now - state.getUpdate())) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(format("Culling unreachable endpoint %s", endpoint));
-                }
-                endpoints.remove(endpoint);
             }
         }
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Culling the quarantined...");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Culling the quarantined...");
         }
         view.cullQuarantined(now);
+        view.cullUnreachable(now);
     }
 
     /**
@@ -141,8 +143,8 @@ public class Gossip {
             InetSocketAddress member = gossipWithTheLiving(digests);
             gossipWithTheDead(digests);
             gossipWithSeeds(digests, member);
-            checkStatus();
         }
+        checkStatus();
     }
 
     /**
@@ -163,7 +165,7 @@ public class Gossip {
         long now = System.currentTimeMillis();
         for (Digest gDigest : digests) {
             Endpoint endpoint = endpoints.get(gDigest.getAddress());
-            if (endpoint != null) {
+            if (endpoint != null && endpoint != localState) {
                 endpoint.record(now);
             }
         }
@@ -189,23 +191,23 @@ public class Gossip {
      */
     public void reply(List<Digest> digests, List<HeartbeatState> remoteStates,
                       GossipHandler gossipHandler) {
-        if (remoteStates.size() > 0) {
-            long now = System.currentTimeMillis();
-            for (HeartbeatState state : remoteStates) {
-                Endpoint endpoint = endpoints.get(state.getSenderAddress());
-                if (endpoint != null) {
-                    endpoint.record(now);
-                }
+        long now = System.currentTimeMillis();
+        for (HeartbeatState state : remoteStates) {
+            Endpoint endpoint = endpoints.get(state.getSenderAddress());
+            if (endpoint != null) {
+                endpoint.record(now);
             }
-            apply(now, remoteStates);
         }
+        apply(now, remoteStates);
 
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
             InetSocketAddress addr = digest.getAddress();
             addUpdatedState(deltaState, addr, digest.getViewNumber());
         }
-        gossipHandler.update(deltaState);
+        if (!deltaState.isEmpty()) {
+            gossipHandler.update(deltaState);
+        }
     }
 
     /**
@@ -299,8 +301,7 @@ public class Gossip {
     protected void connect(final InetSocketAddress address,
                            final Endpoint endpoint, Runnable connectAction) {
         try {
-            endpoint.setCommunications(communications.connect(address,
-                                                              connectAction));
+            communications.connect(address, endpoint, connectAction);
         } catch (IOException e) {
             if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING,
@@ -329,15 +330,16 @@ public class Gossip {
                 Endpoint previous = endpoints.putIfAbsent(address, newEndpoint);
                 if (previous != null) {
                     newEndpoint.getHandler().close();
-                    if (log.isLoggable(Level.INFO)) {
-                        log.info(format("Endpoint already established for %s",
-                                        newEndpoint));
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(format("Endpoint already established for %s",
+                                        newEndpoint.getMemberString()));
                     }
                     return;
                 }
                 view.markAlive(address);
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(format("Member %s is now UP", newEndpoint));
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(format("Member %s is now connected",
+                                    newEndpoint.getMemberString()));
                 }
                 List<Digest> newDigests = new ArrayList<Digest>(digests);
                 newDigests.add(new Digest(address, newEndpoint));
@@ -363,15 +365,16 @@ public class Gossip {
                 Endpoint previous = endpoints.putIfAbsent(address, endpoint);
                 if (previous != null) {
                     endpoint.getHandler().close();
-                    if (log.isLoggable(Level.INFO)) {
-                        log.info(format("Endpoint already established for %s",
-                                        endpoint));
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(format("Endpoint already established for %s",
+                                        endpoint.getMemberString()));
                     }
                     return;
                 }
                 view.markAlive(address);
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(format("Member %s is now UP", endpoint));
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(format("Member %s is now UP",
+                                    endpoint.getMemberString()));
                 }
                 communications.notifyUpdate(endpoint.getState());
             }
@@ -399,7 +402,7 @@ public class Gossip {
                     deltaDigests.add(new Digest(digest.getAddress(),
                                                 remoteEpoch, 0L));
                 } else if (remoteEpoch < localEpoch) {
-                    addUpdatedState(deltaState, digest.getAddress(), 0L);
+                    addUpdatedState(deltaState, digest.getAddress(), -1L);
                 } else if (remoteEpoch == localEpoch) {
                     if (remoteViewNumber > localViewNumber) {
                         deltaDigests.add(new Digest(digest.getAddress(),
@@ -411,7 +414,8 @@ public class Gossip {
                     }
                 }
             } else {
-                deltaDigests.add(new Digest(digest.getAddress(), remoteEpoch, 0));
+                deltaDigests.add(new Digest(digest.getAddress(), remoteEpoch,
+                                            -1));
             }
         }
         gossipHandler.reply(deltaDigests, deltaState);
@@ -489,12 +493,7 @@ public class Gossip {
         }
         Collections.shuffle(digests, entropy);
         if (log.isLoggable(Level.FINEST)) {
-            StringBuilder sb = new StringBuilder();
-            for (Digest gDigest : digests) {
-                sb.append(gDigest);
-                sb.append(" ");
-            }
-            log.finest(format("Gossip digests are : %s" + sb.toString()));
+            log.finest(format("Gossip digests are : %s", digests));
         }
         return digests;
     }
@@ -522,12 +521,7 @@ public class Gossip {
             digests.set(i++, endpoint2digest.get(diffDigests[j].getAddress()));
         }
         if (log.isLoggable(Level.FINEST)) {
-            StringBuilder sb = new StringBuilder();
-            for (Digest gDigest : digests) {
-                sb.append(gDigest);
-                sb.append(" ");
-            }
-            log.finest(format("Sorted gossip digests are : %s" + sb.toString()));
+            log.finest(format("Sorted gossip digests are : %s", digests));
         }
     }
 }

@@ -39,12 +39,12 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
  * number to differentiate incarnations of the same manager.
  */
 public class Identity implements Serializable, Cloneable, WireSizes {
-    public static int MAX_ID = 2047; // The maximum id possible
+    public static int         MAX_ID           = 2047;             // The maximum id possible
 
-    static final private int magicIdx = 0;
-    static final private int idIdx = magicIdx + intSz;
-    static final private int epochIdx = idIdx + intSz;
-    static final public int identityWireSz = epochIdx + longSz;
+    static final private int  magicIdx         = 0;
+    static final private int  idIdx            = magicIdx + intSz;
+    static final private int  epochIdx         = idIdx + intSz;
+    static final public int   identityWireSz   = epochIdx + longSz;
     private static final long serialVersionUID = 1L;
 
     public static int getIdFromLocalIpAddress() throws UnknownHostException {
@@ -84,8 +84,8 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     }
 
     public final long epoch;
-    public final int id;
-    public final int magic;
+    public final int  id;
+    public final int  magic;
 
     public Identity(ByteBuffer buffer) {
         magic = buffer.getInt();
@@ -191,7 +191,7 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     @Override
     public String toString() {
         // return "<id=" + id + ", " + magic + ", " + epoch + ">";
-        return "<id " + id + " >";
+        return "<id " + (id >= 0 ? id : "unknown") + " >";
     }
 
     public void writeTo(ByteBuffer buffer) {

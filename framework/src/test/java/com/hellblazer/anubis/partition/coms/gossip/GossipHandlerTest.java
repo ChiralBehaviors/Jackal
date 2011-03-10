@@ -51,11 +51,8 @@ public class GossipHandlerTest extends TestCase {
                                     0);
         Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 0,
                                     3);
-        byte[] bytes = new byte[4 * GossipMessages.DIGEST_BYTE_SIZE
-                                + AbstractCommunicationsHandler.HEADER_SIZE + 1
-                                + 4];
+        byte[] bytes = new byte[4 * GossipMessages.DIGEST_BYTE_SIZE + 1 + 4];
         ByteBuffer msg = ByteBuffer.wrap(bytes);
-        msg.position(AbstractCommunicationsHandler.HEADER_SIZE);
         msg.put(GossipMessages.GOSSIP);
         msg.putInt(4);
         digest1.writeTo(msg);
@@ -89,11 +86,9 @@ public class GossipHandlerTest extends TestCase {
         HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));
         HeartbeatState state4 = new HeartbeatState(new InetSocketAddress(3));
 
-        byte[] bytes = new byte[AbstractCommunicationsHandler.HEADER_SIZE + 1
-                                + 4 * GossipMessages.DIGEST_BYTE_SIZE + 4
+        byte[] bytes = new byte[1 + 4 * GossipMessages.DIGEST_BYTE_SIZE + 4
                                 * GossipMessages.HEARTBEAT_STATE_BYTE_SIZE + 4];
         ByteBuffer msg = ByteBuffer.wrap(bytes);
-        msg.position(AbstractCommunicationsHandler.HEADER_SIZE);
         msg.put(GossipMessages.REPLY);
         msg.putInt(4);
         msg.putInt(4);
@@ -124,11 +119,8 @@ public class GossipHandlerTest extends TestCase {
         HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));
         HeartbeatState state4 = new HeartbeatState(new InetSocketAddress(3));
 
-        byte[] bytes = new byte[AbstractCommunicationsHandler.HEADER_SIZE + 1
-                                + 4 * GossipMessages.HEARTBEAT_STATE_BYTE_SIZE
-                                + 4];
+        byte[] bytes = new byte[1 + 4 * GossipMessages.HEARTBEAT_STATE_BYTE_SIZE + 4];
         ByteBuffer msg = ByteBuffer.wrap(bytes);
-        msg.position(AbstractCommunicationsHandler.HEADER_SIZE);
         msg.put(GossipMessages.UPDATE);
         msg.putInt(4);
         state1.writeTo(msg);

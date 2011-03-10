@@ -32,11 +32,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 import com.hellblazer.anubis.basiccomms.nio.CommunicationsHandler;
 import com.hellblazer.anubis.basiccomms.nio.ServerChannelHandler;
@@ -49,7 +48,7 @@ import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
  */
 
 public class Communications extends ServerChannelHandler implements
-        HeartbeatCommsIntf, GossipCommunications {
+        GossipCommunications {
     private static final Logger log = Logger.getLogger(Communications.class.getCanonicalName());
 
     public static InetSocketAddress readInetAddress(ByteBuffer msg)
@@ -79,7 +78,7 @@ public class Communications extends ServerChannelHandler implements
         bytes.putInt(ipaddress.getPort());
     }
 
-    private final Gossip                   gossip;
+    private Gossip                         gossip;
     private ScheduledFuture<?>             gossipTask;
     private final int                      interval;
     private final TimeUnit                 intervalUnit;
@@ -87,16 +86,15 @@ public class Communications extends ServerChannelHandler implements
     private final HeartbeatReceiver        receiver;
     private volatile View                  ignoring;
 
-    public Communications(Gossip gossiper, HeartbeatReceiver heartbeatReceiver,
+    public Communications(HeartbeatReceiver heartbeatReceiver,
                           int gossipInterval, TimeUnit unit,
                           InetSocketAddress endpointAddress,
                           SocketOptions socketOptions,
                           ExecutorService commsExec,
-                          ExecutorService dispatchExec) {
+                          ExecutorService dispatchExec) throws IOException {
         super(endpointAddress, socketOptions, commsExec, dispatchExec);
         interval = gossipInterval;
         intervalUnit = unit;
-        gossip = gossiper;
         receiver = heartbeatReceiver;
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
@@ -110,21 +108,21 @@ public class Communications extends ServerChannelHandler implements
     }
 
     @Override
-    public GossipHandler connect(InetSocketAddress address,
+    public GossipHandler connect(InetSocketAddress address, Endpoint endpoint,
                                  Runnable connectAction) throws IOException {
         SocketChannel channel = SocketChannel.open(address);
+        channel.configureBlocking(false);
         GossipHandler handler = new GossipHandler(gossip, this, channel);
-        selectForConnect(handler, connectAction);
+        addHandler(handler);
+        endpoint.setCommunications(handler);
+        if (channel.finishConnect()) {
+            dispatch(connectAction);
+        } else {
+            selectForConnect(handler, connectAction);
+        }
         return handler;
     }
 
-    @Override
-    public String getThreadStatusString() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public boolean isIgnoring(Identity id) {
         return ignoring.contains(id);
     }
@@ -139,35 +137,16 @@ public class Communications extends ServerChannelHandler implements
         });
     }
 
-    @Override
-    public void sendHeartbeat(HeartbeatMsg msg) {
-        gossip.updateLocalState(new HeartbeatState(msg));
+    public void updateHeartbeat(Heartbeat state) {
+        gossip.updateLocalState(new HeartbeatState(state));
     }
 
-    @Override
+    public void setGossip(Gossip gossip) {
+        this.gossip = gossip;
+    }
+
     public void setIgnoring(View ignoringUpdate) {
         ignoring = ignoringUpdate;
-    }
-
-    /**
-     * Start the gossiper
-     */
-    @Override
-    public void start() {
-        if (gossipTask != null) {
-            return;
-        }
-        gossipTask = scheduler.scheduleWithFixedDelay(gossipTask(), interval,
-                                                      interval, intervalUnit);
-    }
-
-    @Override
-    public void terminate() {
-        if (gossipTask != null) {
-            scheduler.shutdownNow();
-            gossipTask.cancel(true);
-            gossipTask = null;
-        }
     }
 
     @Override
@@ -187,5 +166,23 @@ public class Communications extends ServerChannelHandler implements
                 }
             }
         };
+    }
+
+    /**
+     * Start the gossiper
+     */
+    @Override
+    protected void startService() {
+        super.startService();
+        gossipTask = scheduler.scheduleWithFixedDelay(gossipTask(), interval,
+                                                      interval, intervalUnit);
+    }
+
+    @Override
+    protected void terminateService() {
+        super.terminateService();
+        scheduler.shutdownNow();
+        gossipTask.cancel(true);
+        gossipTask = null;
     }
 }

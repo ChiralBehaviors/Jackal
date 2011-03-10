@@ -29,10 +29,11 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -57,26 +58,27 @@ public abstract class ServerChannelHandler {
         return (T[]) java.lang.reflect.Array.newInstance(c, 2);
     }
 
-    private final ExecutorService commsExecutor;
-    private final ExecutorService dispatchExecutor;
-    private final InetSocketAddress endpoint;
-    private InetSocketAddress localAddress;
-    private final Set<CommunicationsHandler> openHandlers = new HashSet<CommunicationsHandler>();
-    private final SocketOptions options;
-    private final BlockingDeque<CommunicationsHandler> readQueue;
-    private final AtomicBoolean run = new AtomicBoolean();
-    protected final Selector selector;
-    private final ExecutorService selectService;
-    private Future<?> selectTask;
-    private final int selectTimeout = 1000;
-    private ServerSocketChannel server;
-    private ServerSocket serverSocket;
-    private final BlockingDeque<CommunicationsHandler> writeQueue;
+    private final ExecutorService                                   commsExecutor;
+    private final ExecutorService                                   dispatchExecutor;
+    private final InetSocketAddress                                 endpoint;
+    private InetSocketAddress                                       localAddress;
+    private final Map<CommunicationsHandler, CommunicationsHandler> openHandlers  = new ConcurrentHashMap<CommunicationsHandler, CommunicationsHandler>();
+    private final SocketOptions                                     options;
+    private final BlockingDeque<CommunicationsHandler>              readQueue;
+    private final AtomicBoolean                                     run           = new AtomicBoolean();
+    protected final Selector                                        selector;
+    private final ExecutorService                                   selectService;
+    private Future<?>                                               selectTask;
+    private final int                                               selectTimeout = 1000;
+    private ServerSocketChannel                                     server;
+    private ServerSocket                                            serverSocket;
+    private final BlockingDeque<CommunicationsHandler>              writeQueue;
 
     public ServerChannelHandler(InetSocketAddress endpointAddress,
                                 SocketOptions socketOptions,
                                 ExecutorService commsExec,
-                                ExecutorService dispatchExec) {
+                                ExecutorService dispatchExec)
+                                                             throws IOException {
         endpoint = endpointAddress;
         commsExecutor = commsExec;
         dispatchExecutor = dispatchExec;
@@ -98,14 +100,7 @@ public abstract class ServerChannelHandler {
                 return daemon;
             }
         });
-        try {
-            selector = Selector.open();
-        } catch (IOException e) {
-            throw new IllegalStateException("Cannot open a selector");
-        }
-    }
-
-    public void connect() throws IOException {
+        selector = Selector.open();
         server = ServerSocketChannel.open();
         serverSocket = server.socket();
         serverSocket.bind(endpoint, options.getBacklog());
@@ -142,37 +137,18 @@ public abstract class ServerChannelHandler {
 
     public void start() {
         if (run.compareAndSet(false, true)) {
-            startSelect();
+            startService();
         }
     }
 
     public void terminate() {
-        if (!run.compareAndSet(true, false)) {
-            return;
+        if (run.compareAndSet(true, false)) {
+            terminateService();
         }
-        selector.wakeup();
-        disconnect();
-        try {
-            selector.close();
-        } catch (IOException e) {
-        }
-        selectTask.cancel(true);
-        selectService.shutdownNow();
-        commsExecutor.shutdownNow();
-        dispatchExecutor.shutdownNow();
-        for (CommunicationsHandler handler : openHandlers) {
-            try {
-                handler.getChannel().close();
-            } catch (IOException e) {
-            }
-        }
-        openHandlers.clear();
     }
 
     protected void addHandler(CommunicationsHandler handler) {
-        synchronized (openHandlers) {
-            openHandlers.add(handler);
-        }
+        openHandlers.put(handler, handler);
     }
 
     protected void addQueuedSelects() throws ClosedChannelException,
@@ -210,7 +186,9 @@ public abstract class ServerChannelHandler {
                 selectForWrite(handler);
             } catch (NullPointerException e) {
                 // apparently the file descriptor can be nulled
-                log.log(Level.FINEST, "anamalous null pointer exception", e);
+                if (log.isLoggable(Level.FINE)) {
+                    log.log(Level.FINEST, "anamalous null pointer exception", e);
+                }
             }
         }
     }
@@ -237,17 +215,13 @@ public abstract class ServerChannelHandler {
         }
     }
 
-    protected Collection<? extends CommunicationsHandler> getOpenHandlers() {
-        synchronized (openHandlers) {
-            return new ArrayList<CommunicationsHandler>(openHandlers);
-        }
-    }
-
     protected void handleAccept(SelectionKey key,
                                 Iterator<SelectionKey> selected)
                                                                 throws IOException {
         if (!run.get()) {
-            log.info("Ignoring accept as handler is not started");
+            if (log.isLoggable(Level.INFO)) {
+                log.info("Ignoring accept as handler is not started");
+            }
             return;
         }
         if (log.isLoggable(Level.FINEST)) {
@@ -266,9 +240,30 @@ public abstract class ServerChannelHandler {
         handler.handleAccept();
     }
 
+    protected void handleConnect(SelectionKey key,
+                                 Iterator<SelectionKey> selected) {
+        if (!run.get()) {
+            if (log.isLoggable(Level.INFO)) {
+                log.info("Ignoring connect as handler is not started");
+            }
+            return;
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Handling read");
+        }
+        selected.remove();
+        key.cancel();
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Dispatching connected action");
+        }
+        dispatch((Runnable) key.attachment());
+    }
+
     protected void handleRead(SelectionKey key, Iterator<SelectionKey> selected) {
         if (!run.get()) {
-            log.info("Ignoring read ready as handler is not started");
+            if (log.isLoggable(Level.INFO)) {
+                log.info("Ignoring read ready as handler is not started");
+            }
             return;
         }
         if (log.isLoggable(Level.FINEST)) {
@@ -287,7 +282,9 @@ public abstract class ServerChannelHandler {
 
     protected void handleWrite(SelectionKey key, Iterator<SelectionKey> selected) {
         if (!run.get()) {
-            log.info("Ignoring write ready as handler is not started");
+            if (log.isLoggable(Level.INFO)) {
+                log.info("Ignoring write ready as handler is not started");
+            }
             return;
         }
         if (log.isLoggable(Level.FINEST)) {
@@ -332,41 +329,11 @@ public abstract class ServerChannelHandler {
             } else if (key.isConnectable()) {
                 handleConnect(key, selected);
             } else {
-                log.warning("Unhandled key: " + key);
+                if (log.isLoggable(Level.WARNING)) {
+                    log.warning("Unhandled key: " + key);
+                }
             }
         }
-    }
-
-    protected void handleConnect(SelectionKey key,
-                                 Iterator<SelectionKey> selected) {
-        if (!run.get()) {
-            log.info("Ignoring connect as handler is not started");
-            return;
-        }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Handling read");
-        }
-        selected.remove();
-        key.cancel();
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Dispatching connected action");
-        }
-        dispatch((Runnable) key.attachment());
-    }
-
-    protected void selectForRead(CommunicationsHandler handler) {
-        readQueue.add(handler);
-        try {
-            selector.wakeup();
-        } catch (NullPointerException e) {
-            // Bug in JRE
-            log.log(Level.FINEST, "Caught null pointer in selector wakeup", e);
-        }
-    }
-
-    protected void selectForWrite(CommunicationsHandler handler) {
-        writeQueue.add(handler);
-        selector.wakeup();
     }
 
     protected void selectForConnect(CommunicationsHandler handler,
@@ -375,27 +342,50 @@ public abstract class ServerChannelHandler {
             handler.getChannel().register(selector, SelectionKey.OP_CONNECT,
                                           connectAction);
         } catch (CancelledKeyException e) {
-            log.log(Level.WARNING, String.format("Cancelled key for %s"), e);
+            if (log.isLoggable(Level.WARNING)) {
+                log.log(Level.WARNING, String.format("Cancelled key for %s"), e);
+            }
             throw new IllegalStateException(e);
         } catch (NullPointerException e) {
             // apparently the file descriptor can be nulled
-            log.log(Level.FINEST, "anamalous null pointer exception", e);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST, "anamalous null pointer exception", e);
+            }
         } catch (ClosedChannelException e) {
-            log.log(Level.FINEST, "channel has been closed", e);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST, "channel has been closed", e);
+            }
         }
         try {
             selector.wakeup();
         } catch (NullPointerException e) {
             // Bug in JRE
-            log.log(Level.FINEST, "Caught null pointer in selector wakeup", e);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST, "Caught null pointer in selector wakeup",
+                        e);
+            }
         }
     }
 
-    protected void startSelect() {
-        if (!run.get()) {
-            log.info("Handler is not started");
-            return;
+    protected void selectForRead(CommunicationsHandler handler) {
+        readQueue.add(handler);
+        try {
+            selector.wakeup();
+        } catch (NullPointerException e) {
+            // Bug in JRE
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST, "Caught null pointer in selector wakeup",
+                        e);
+            }
         }
+    }
+
+    protected void selectForWrite(CommunicationsHandler handler) {
+        writeQueue.add(handler);
+        selector.wakeup();
+    }
+
+    protected void startService() {
         selectTask = selectService.submit(new Runnable() {
             @Override
             public void run() {
@@ -403,10 +393,14 @@ public abstract class ServerChannelHandler {
                     try {
                         select();
                     } catch (ClosedSelectorException e) {
-                        log.log(Level.FINER, "Channel closed", e);
+                        if (log.isLoggable(Level.FINE)) {
+                            log.log(Level.FINER, "Channel closed", e);
+                        }
                     } catch (IOException e) {
-                        log.log(Level.FINE, "IOException when selecting: "
-                                            + server, e);
+                        if (log.isLoggable(Level.FINE)) {
+                            log.log(Level.FINE, "IOException when selecting: "
+                                                + server, e);
+                        }
                     } catch (Throwable e) {
                         log.log(Level.SEVERE,
                                 "Runtime exception when selecting", e);
@@ -414,5 +408,26 @@ public abstract class ServerChannelHandler {
                 }
             }
         });
+    }
+
+    protected void terminateService() {
+        selector.wakeup();
+        disconnect();
+        try {
+            selector.close();
+        } catch (IOException e) {
+        }
+        selectTask.cancel(true);
+        selectService.shutdownNow();
+        commsExecutor.shutdownNow();
+        dispatchExecutor.shutdownNow();
+        for (Iterator<CommunicationsHandler> iterator = openHandlers.keySet().iterator(); iterator.hasNext();) {
+            try {
+                iterator.next().getChannel().close();
+            } catch (IOException e) {
+            }
+            iterator.remove();
+        }
+        openHandlers.clear();
     }
 }

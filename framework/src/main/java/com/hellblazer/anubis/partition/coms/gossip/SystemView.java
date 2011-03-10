@@ -112,34 +112,45 @@ public class SystemView {
     }
 
     /**
-     * Remove endpoints that have been quarantined for a sufficient time.
+     * Reconsider endpoints that have been quarantined for a sufficient time.
      * 
      * @param now
      *            - the time to determine the interval the endpoint has been
      *            quarantined
      */
     public void cullQuarantined(long now) {
-        if (!quarantined.isEmpty()) {
-            for (Iterator<Map.Entry<InetSocketAddress, Long>> iterator = quarantined.entrySet().iterator(); iterator.hasNext();) {
-                Map.Entry<InetSocketAddress, Long> entry = iterator.next();
-                if (now - entry.getValue() > quarantineInterval) {
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(quarantineInterval + " elapsed, "
-                                 + entry.getKey() + " gossip quarantine over");
-                    }
-                    iterator.remove();
-                    unreachable.put(entry.getKey(), entry.getValue());
+        for (Iterator<Map.Entry<InetSocketAddress, Long>> iterator = quarantined.entrySet().iterator(); iterator.hasNext();) {
+            Map.Entry<InetSocketAddress, Long> entry = iterator.next();
+            if (now - entry.getValue() > quarantineInterval) {
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(format("%w elapsed, %s gossip quarantine over",
+                                    quarantineInterval, entry.getKey()));
                 }
+                iterator.remove();
+                unreachable.put(entry.getKey(), entry.getValue());
             }
         }
     }
 
-    public boolean cullUnreachable(InetSocketAddress endpoint, long now) {
-        if (now > unreachableInterval) {
-            unreachable.remove(endpoint);
-            return true;
+    /**
+     * Remove endpoints that have been unreachable for a long time
+     * 
+     * @param now
+     *            - the tim to determine the interval the endpoint has been
+     *            unreachable
+     */
+    public void cullUnreachable(long now) {
+        for (Iterator<Map.Entry<InetSocketAddress, Long>> iterator = quarantined.entrySet().iterator(); iterator.hasNext();) {
+            Map.Entry<InetSocketAddress, Long> entry = iterator.next();
+            if (now - entry.getValue() > unreachableInterval) {
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(format("%w elapsed, %s is now considered truly dead",
+                                    unreachableInterval, entry.getKey()));
+                }
+                iterator.remove();
+                unreachable.put(entry.getKey(), entry.getValue());
+            }
         }
-        return false;
     }
 
     /**

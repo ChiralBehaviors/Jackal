@@ -26,7 +26,7 @@ public class GossipTest extends TestCase {
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        HeartbeatState initialState = mock(HeartbeatState.class);
+        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
 
@@ -39,16 +39,16 @@ public class GossipTest extends TestCase {
         Digest digest4 = new Digest(new InetSocketAddress("google.com", 4), 0,
                                     3);
         Digest digest1a = new Digest(new InetSocketAddress("google.com", 1), 0,
-                                     0);
+                                     -1);
         Digest digest2a = new Digest(new InetSocketAddress("google.com", 2), 0,
-                                     0);
+                                     -1);
         Digest digest3a = new Digest(new InetSocketAddress("google.com", 3), 2,
-                                     0);
+                                     -1);
         Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), 0,
-                                     0);
+                                     -1);
 
         Gossip gossip = new Gossip(communications, view, random, 4,
-                                   initialState);
+                                   localIdentity);
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -64,7 +64,7 @@ public class GossipTest extends TestCase {
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        HeartbeatState initialState = mock(HeartbeatState.class);
+        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
 
@@ -98,7 +98,7 @@ public class GossipTest extends TestCase {
         state4.setViewNumber(4);
 
         Gossip gossip = new Gossip(communications, view, random, 4,
-                                   initialState);
+                                   localIdentity);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -123,9 +123,10 @@ public class GossipTest extends TestCase {
         GossipCommunications communications = mock(GossipCommunications.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        HeartbeatState initialState = mock(HeartbeatState.class);
+        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
+        when(communications.getLocalAddress()).thenReturn(localAddress);
 
         InetSocketAddress address1 = new InetSocketAddress(1);
         InetSocketAddress address2 = new InetSocketAddress(2);
@@ -142,15 +143,21 @@ public class GossipTest extends TestCase {
                                                                           4, 4));
 
         Gossip gossip = new Gossip(communications, view, random, 4,
-                                   initialState);
+                                   localIdentity);
 
         gossip.apply(System.currentTimeMillis(),
                      asList(state1, state2, state3, state4));
 
-        verify(communications).connect(eq(address1), isA(Runnable.class));
-        verify(communications).connect(eq(address2), isA(Runnable.class));
-        verify(communications).connect(eq(address3), isA(Runnable.class));
-        verify(communications).connect(eq(address4), isA(Runnable.class));
+        verify(communications).connect(eq(address1), isA(Endpoint.class),
+                                       isA(Runnable.class));
+        verify(communications).connect(eq(address2), isA(Endpoint.class),
+                                       isA(Runnable.class));
+        verify(communications).connect(eq(address3), isA(Endpoint.class),
+                                       isA(Runnable.class));
+        verify(communications).connect(eq(address4), isA(Endpoint.class),
+                                       isA(Runnable.class));
+
+        verify(communications).getLocalAddress();
 
         verifyNoMoreInteractions(communications);
     }
@@ -159,9 +166,10 @@ public class GossipTest extends TestCase {
         GossipCommunications communications = mock(GossipCommunications.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        HeartbeatState initialState = mock(HeartbeatState.class);
+        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
+        when(communications.getLocalAddress()).thenReturn(localAddress);
 
         Endpoint ep1 = mock(Endpoint.class);
         Endpoint ep2 = mock(Endpoint.class);
@@ -204,7 +212,7 @@ public class GossipTest extends TestCase {
         when(ep4.getViewNumber()).thenReturn(5L);
 
         Gossip gossip = new Gossip(communications, view, random, 4,
-                                   initialState);
+                                   localIdentity);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -238,6 +246,8 @@ public class GossipTest extends TestCase {
         verify(ep4).getEpoch();
         verify(ep4).getViewNumber();
         verifyNoMoreInteractions(ep4);
+
+        verify(communications).getLocalAddress();
 
         verify(communications).notifyUpdate(state1);
         verify(communications).notifyUpdate(state3);

@@ -17,6 +17,8 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Instead of providing information of a boolean nature (trust vs. suspect),
  * this failure detector outputs a suspicion level on a continuous scale. The
@@ -35,13 +37,15 @@ package com.hellblazer.anubis.partition.coms.gossip;
  * 
  */
 public class PhiAccrualFailureDetector {
-    private static final int WINDOW_SIZE = 1000;
-    private int              count       = 0;
-    private int              head        = 0;
-    private double           last        = -1D;
-    private final double[]   samples     = new double[WINDOW_SIZE];
-    private double           sum         = 0D;
-    private int              tail        = 0;
+    private static final int    WINDOW_SIZE = 1000;
+    private static final double MIN_DELTA   = 2.0D;
+    private int                 count       = 0;
+    private int                 head        = 0;
+    private double              last        = -1D;
+    private final double[]      samples     = new double[WINDOW_SIZE];
+    private double              sum         = 0D;
+    private int                 tail        = 0;
+    private final ReentrantLock stateLock   = new ReentrantLock();
 
     /**
      * Answer the suspicion level of the detector.
@@ -61,28 +65,53 @@ public class PhiAccrualFailureDetector {
      *            - the the time to calculate phi
      * @return - the suspicion level of the detector
      */
-    public synchronized double phi(long now) {
-        if (count == 0) {
-            return 0d;
+    public double phi(long now) {
+        final ReentrantLock myLock = stateLock;
+        try {
+            myLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            return 0.0D;
         }
-        return -1
-               * Math.log10(Math.pow(Math.E, -1 * (now - last) / (sum / count)));
+        try {
+            if (count == 0) {
+                return 0d;
+            }
+            double phi = -1
+                         * Math.log10(Math.pow(Math.E, -1 * (now - last)
+                                                       / (sum / count)));
+            return phi;
+        } finally {
+            myLock.unlock();
+        }
     }
 
     /**
      * Record the inter arrival time of a heartbeat.
      */
-    public synchronized void record(long now) {
-        if (last > 0D) {
-            double interArrivalTime = now - last;
-            sum += interArrivalTime;
-            if (count == WINDOW_SIZE) {
-                sum -= removeFirst();
-            }
-
-            addLast(interArrivalTime);
+    public void record(long now) {
+        final ReentrantLock myLock = stateLock;
+        try {
+            myLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            return;
         }
-        last = now;
+        try {
+            if (last > 0D) {
+                double interArrivalTime = now - last;
+                if (interArrivalTime < MIN_DELTA) {
+                    return;
+                }
+                sum += interArrivalTime;
+                if (count == WINDOW_SIZE) {
+                    sum -= removeFirst();
+                }
+
+                addLast(interArrivalTime);
+            }
+            last = now;
+        } finally {
+            myLock.unlock();
+        }
     }
 
     private void addLast(double value) {

@@ -52,6 +52,11 @@ public class Endpoint {
         return handler;
     }
 
+    public String getMemberString() {
+        return "[" + heartbeat.getSender() + " : "
+               + heartbeat.getSenderAddress() + "]";
+    }
+
     public HeartbeatState getState() {
         return heartbeat;
     }
@@ -64,7 +69,18 @@ public class Endpoint {
         return heartbeat.getViewNumber();
     }
 
-    public boolean interpret(long now, double convictThreshold) {
+    /**
+     * Answer true if the suspicion level of the failure detector is greater than
+     * the conviction threshold
+     * 
+     * @param now
+     *            - the time to measure at
+     * @param convictThreshold
+     *            - the threshold for conviction
+     * @return true if the suspicion level of the failure detector is greater than
+     *         the conviction threshold
+     */
+    public boolean shouldConvict(long now, double convictThreshold) {
         return fd.phi(now) > convictThreshold;
     }
 
@@ -86,6 +102,11 @@ public class Endpoint {
 
     public void setCommunications(GossipMessages communications) {
         handler = communications;
+    }
+
+    @Override
+    public String toString() {
+        return "Endpoint " + getMemberString();
     }
 
     public void updateState(long now, HeartbeatState newHbState) {

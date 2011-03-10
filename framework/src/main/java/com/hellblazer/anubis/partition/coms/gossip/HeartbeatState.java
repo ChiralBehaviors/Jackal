@@ -29,7 +29,6 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 /**
  * The heartbeat state replicated by the gossip protocol
@@ -67,14 +66,14 @@ public class HeartbeatState implements Heartbeat {
         viewTimeStamp = msg.getLong();
     }
 
-    public HeartbeatState(HeartbeatMsg heartbeatMsg) {
-        candidate = heartbeatMsg.getCandidate();
-        msgLinks = heartbeatMsg.getMsgLinks();
-        preferred = heartbeatMsg.isPreferred();
-        sender = heartbeatMsg.getSender();
-        senderAddress = heartbeatMsg.getSenderAddress();
-        testInterface = heartbeatMsg.getTestInterface();
-        setView(heartbeatMsg.getView());
+    public HeartbeatState(Heartbeat heartbeat) {
+        candidate = heartbeat.getCandidate();
+        msgLinks = heartbeat.getMsgLinks();
+        preferred = heartbeat.isPreferred();
+        sender = heartbeat.getSender();
+        senderAddress = heartbeat.getSenderAddress();
+        setView(heartbeat.getView());
+        setViewNumber(heartbeat.getViewNumber());
         fillCache();
     }
 
@@ -286,6 +285,12 @@ public class HeartbeatState implements Heartbeat {
     @Override
     public void setViewNumber(long n) {
         viewNumber = n;
+    }
+
+    @Override
+    public String toString() {
+        return "HeartbeatState [" + sender + " | "
+               + senderAddress + ", stable=" + stable + "]";
     }
 
     public void writeTo(ByteBuffer buffer) {

@@ -57,6 +57,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             digest.writeTo(buffer);
         }
         send(buffer.array());
+        selectForRead();
     }
 
     @Override
@@ -75,6 +76,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             state.writeTo(buffer);
         }
         send(buffer.array());
+        selectForRead();
     }
 
     @Override
@@ -96,7 +98,6 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     @Override
     protected void deliver(byte[] msg) {
         ByteBuffer buffer = ByteBuffer.wrap(msg);
-        buffer.position(HEADER_SIZE);
         byte msgType = buffer.get();
         switch (msgType) {
             case GOSSIP: {

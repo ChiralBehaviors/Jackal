@@ -16,13 +16,19 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 package com.hellblazer.anubis.basiccomms.nio;
 
+import static java.lang.String.*;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.hellblazer.anubis.util.HexDump;
 
 /**
  * 
@@ -41,10 +47,10 @@ abstract public class AbstractCommunicationsHandler implements
 
     protected final ServerChannelHandler handler;
     private final SocketChannel          channel;
-    private ByteBuffer                   headerIn     = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private ByteBuffer                   headerOut    = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private ByteBuffer                   msgIn;
-    private ByteBuffer                   msgOut;
+    private volatile ByteBuffer          headerIn     = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private volatile ByteBuffer          headerOut    = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private volatile ByteBuffer          msgIn;
+    private volatile ByteBuffer          msgOut;
     private volatile boolean             open         = true;
     private volatile State               readState    = State.INITIAL;
     private final Semaphore              writeGate;
@@ -83,14 +89,14 @@ abstract public class AbstractCommunicationsHandler implements
     }
 
     @Override
-    public void handleAccept() {
+    public synchronized void handleAccept() {
         readState = State.INITIAL;
         writeState = State.INITIAL;
-        handler.selectForRead(this);
+        selectForRead();
     }
 
     @Override
-    public void handleRead() {
+    public synchronized void handleRead() {
         switch (readState) {
             case INITIAL: {
                 headerIn.clear();
@@ -172,6 +178,9 @@ abstract public class AbstractCommunicationsHandler implements
         headerOut.putInt(0, MAGIC_NUMBER);
         headerOut.putInt(4, bytes.length);
         msgOut = ByteBuffer.wrap(bytes);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(format("Sending message: \n%s", toHex(bytes)));
+        }
         writeHeader();
     }
 
@@ -211,8 +220,12 @@ abstract public class AbstractCommunicationsHandler implements
             readState = State.MESSAGE;
             readMessage();
         } else {
-            handler.selectForRead(this);
+            selectForRead();
         }
+    }
+
+    protected void selectForRead() {
+        handler.selectForRead(this);
     }
 
     private void readMessage() {
@@ -235,13 +248,16 @@ abstract public class AbstractCommunicationsHandler implements
             readState = State.CLOSE;
             shutdown();
         } else if (msgIn.hasRemaining()) {
-            handler.selectForRead(this);
+            selectForRead();
         } else {
             byte[] msg = msgIn.array();
-            msgIn = null;
             readState = State.INITIAL;
+            msgIn = null;
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("delivering message: \n%s", toHex(msg)));
+            }
             deliver(msg);
-            handler.selectForRead(this);
+            selectForRead();
         }
     }
 
@@ -266,11 +282,15 @@ abstract public class AbstractCommunicationsHandler implements
             shutdown();
         } else if (headerOut.hasRemaining()) {
             writeState = State.HEADER;
-            handler.selectForWrite(this);
+            selectForWrite();
         } else {
             writeState = State.MESSAGE;
             writeMessage();
         }
+    }
+
+    protected void selectForWrite() {
+        handler.selectForWrite(this);
     }
 
     private void writeMessage() {
@@ -293,11 +313,19 @@ abstract public class AbstractCommunicationsHandler implements
             writeState = State.CLOSE;
             shutdown();
         } else if (headerOut.hasRemaining()) {
-            handler.selectForWrite(this);
+            selectForWrite();
         } else {
             writeState = State.INITIAL;
             msgOut = null;
             writeGate.release();
         }
+    }
+
+    private static String toHex(byte[] data) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 4);
+        PrintStream stream = new PrintStream(baos);
+        HexDump.hexdump(stream, data, 0, data.length);
+        stream.close();
+        return baos.toString();
     }
 }

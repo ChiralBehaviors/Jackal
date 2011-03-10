@@ -52,7 +52,7 @@ public class EndpointTest extends TestCase {
         Endpoint ep = new Endpoint(state); 
         long now = 100;
         ep.record(now);
-        assertFalse(ep.interpret(now, 1));
+        assertFalse(ep.shouldConvict(now, 1));
         now = now + 10000;
     }
 }
