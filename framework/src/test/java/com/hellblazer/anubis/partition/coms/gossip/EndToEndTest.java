@@ -105,15 +105,14 @@ public class EndToEndTest extends TestCase {
         Gossip gossip = new Gossip(communications, view, new Random(), 11,
                                    localIdentity);
         communications.setGossip(gossip);
-        communications.updateHeartbeat(new HeartbeatState(
-                                                          new Identity(666, 0,
-                                                                       0),
-                                                          new NodeIdSet(),
-                                                          true,
-                                                          localIdentity,
-                                                          communications.getLocalAddress(),
-                                                          false, null,
-                                                          new NodeIdSet(), 0, 0));
+        communications.sendHeartbeat(new HeartbeatState(
+                                                        new Identity(666, 0, 0),
+                                                        new NodeIdSet(),
+                                                        true,
+                                                        localIdentity,
+                                                        communications.getLocalAddress(),
+                                                        false, null,
+                                                        new NodeIdSet(), 0, 0));
         return communications;
     }
 

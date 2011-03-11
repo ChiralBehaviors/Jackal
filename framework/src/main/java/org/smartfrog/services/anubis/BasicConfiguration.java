@@ -10,6 +10,7 @@ import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
@@ -32,17 +33,13 @@ public class BasicConfiguration {
 
     @Bean
     public ConnectionSet connectionSet() throws Exception {
-        ConnectionSet connectionSet = new ConnectionSet();
-        connectionSet.setLeaderProtocolFactory(leaderProtocolFactory());
-        connectionSet.setConnectionAddress(contactAddress());
-        connectionSet.setHeartbeatAddress(heartbeatGroup());
-        connectionSet.setFactory(ioConnectionServerFactory());
-        connectionSet.setHeartbeatCommsFactory(heartbeatCommsFactory());
-        connectionSet.setHeartbeatProtocolFactory(heartbeatProtocolFactory());
-        connectionSet.setIdentity(partitionIdentity());
-        connectionSet.setPartitionProtocol(partitionProtocol());
-        connectionSet.setTiming(heartbeatInterval(), heartbeatTimeout());
-        return connectionSet;
+        return new ConnectionSet(contactAddress(), partitionIdentity(),
+                                 heartbeatCommsFactory(),
+                                 ioConnectionServerFactory(),
+                                 leaderProtocolFactory(),
+                                 heartbeatProtocolFactory(),
+                                 partitionProtocol(), heartbeatInterval(),
+                                 heartbeatTimeout());
     }
 
     public InetAddress contactHost() throws UnknownHostException {
@@ -126,10 +123,12 @@ public class BasicConfiguration {
         return true;
     }
 
-    protected MulticastHeartbeatCommsFactory heartbeatCommsFactory() {
-        MulticastHeartbeatCommsFactory factory = new MulticastHeartbeatCommsFactory();
-        factory.setWireSecurity(wireSecurity());
-        return factory;
+    protected HeartbeatCommsFactory heartbeatCommsFactory()
+                                                           throws UnknownHostException {
+        return new MulticastHeartbeatCommsFactory(wireSecurity(),
+                                                  heartbeatGroup(),
+                                                  contactAddress(),
+                                                  partitionIdentity());
     }
 
     protected MulticastAddress heartbeatGroup() throws UnknownHostException {

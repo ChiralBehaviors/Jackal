@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
@@ -57,8 +56,6 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-import com.hellblazer.anubis.annotations.Deployed;
-
 /**
  * Anubis Detection Service.
  * 
@@ -78,72 +75,110 @@ import com.hellblazer.anubis.annotations.Deployed;
  * @version 1.0
  */
 public class ConnectionSet implements ViewListener, HeartbeatReceiver {
+    private static final Logger             log                 = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
 
-    private boolean changeInViews = false;
-
-    private InetSocketAddress connectionAddress;
-    private Map<Identity, Connection> connections = new HashMap<Identity, Connection>();
-    private IOConnectionServer connectionServer = null;
-    private BitView connectionView = new BitView();
-    private IOConnectionServerFactory factory;
+    private boolean                         changeInViews       = false;
+    private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
+    private final IOConnectionServer        connectionServer;
+    private BitView                         connectionView      = new BitView();
     /**
      * Status - keep running heartbeat
      */
-    private Heartbeat heartbeat = null;
-
-    private MulticastAddress heartbeatAddress;
-    private HeartbeatCommsIntf heartbeatComms = null;
-    private HeartbeatCommsFactory heartbeatCommsFactory;
+    private Heartbeat                       heartbeat;
+    private HeartbeatCommsIntf              heartbeatComms;
 
     /**
      * Timing information
      */
-    private long heartbeatInterval = 0;
-    private HeartbeatProtocolFactory heartbeatProtocolFactory = null;
+    private long                            heartbeatInterval   = 0;
+    private final HeartbeatProtocolFactory  heartbeatProtocolFactory;
     /**
      * local identification
      */
-    private Identity identity = null;
-    private View ignoring = new BitView();
-
-    private IntervalExec intervalExec = null;
-    private boolean isPreferredLeaderNode;
-    private LeaderMgr leaderMgr = null;
-    private LeaderProtocolFactory leaderProtocolFactory = null;
-    private static final Logger log = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
-
-    private Set<Connection> msgConDelayedDelete = new HashSet<Connection>();
-    private Set<MessageConnection> msgConnections = new HashSet<MessageConnection>();
+    private final Identity                  identity;
+    private View                            ignoring            = new BitView();
+    private IntervalExec                    intervalExec        = null;
+    private boolean                         isPreferredLeaderNode;
+    private LeaderMgr                       leaderMgr           = null;
+    private final LeaderProtocolFactory     leaderProtocolFactory;
+    private Set<Connection>                 msgConDelayedDelete = new HashSet<Connection>();
+    private Set<MessageConnection>          msgConnections      = new HashSet<MessageConnection>();
 
     /**
      * Connection information
      */
-    private NodeIdSet msgLinks = new NodeIdSet();
+    private NodeIdSet                       msgLinks            = new NodeIdSet();
     /**
      * references to components
      */
-    private PartitionProtocol partitionProtocol = null;
-
-    private long quiesce = 0;
+    private PartitionProtocol               partitionProtocol   = null;
+    private long                            quiesce             = 0;
     /**
      * synchronization of sendHeartbeat() with removeConnection().
      */
-    private boolean sendingHeartbeats = false;
-
-    private long stability = 0;
-
-    private boolean stablizing = false;
-
-    private volatile boolean terminated = false;
+    private boolean                         sendingHeartbeats   = false;
+    private long                            stability           = 0;
+    private boolean                         stablizing          = false;
+    private volatile boolean                terminated          = false;
 
     /**
      * Link to test manager
      */
-    private boolean testable = false;
+    private boolean                         testable            = false;
+    private long                            timeout             = 0;
+    private long                            viewNumber          = 0;
 
-    private long timeout = 0;
+    public ConnectionSet(InetSocketAddress connectionAddress,
+                         Identity identity,
+                         HeartbeatCommsFactory heartbeatCommsFactory,
+                         IOConnectionServerFactory factory,
+                         LeaderProtocolFactory leaderProtocolFactory,
+                         HeartbeatProtocolFactory heartbeatProtocolFactory,
+                         PartitionProtocol partitionProtocol, long interval,
+                         long timeout) throws IOException {
+        this.identity = identity;
+        this.leaderProtocolFactory = leaderProtocolFactory;
+        this.heartbeatProtocolFactory = heartbeatProtocolFactory;
+        this.partitionProtocol = partitionProtocol;
+        this.partitionProtocol.setConnectionSet(this);
+        this.heartbeatComms = heartbeatCommsFactory.create(this);
+        setTiming(interval, timeout);
+        connectionServer = factory.create(connectionAddress, identity, this);
 
-    private long viewNumber = 0;
+        SelfConnection self = new SelfConnection(identity, connectionView,
+                                                 connectionServer.getAddress(),
+                                                 isPreferredLeaderNode);
+
+        /**
+         * Heartbeat and leader protocols
+         */
+        leaderMgr = leaderProtocolFactory.createMgr(connections, self);
+
+        stability = heartbeatInterval + timeout;
+        quiesce = heartbeatInterval + stability;
+
+        /**
+         * Protocol timing driver thread
+         */
+        intervalExec = new IntervalExec(identity, this, heartbeatInterval);
+
+        /**
+         * Heartbeat message initialisation
+         */
+        heartbeat = heartbeatProtocolFactory.createMsg(identity,
+                                                       connectionServer.getAddress());
+        heartbeat.setMsgLinks(msgLinks);
+        heartbeat.setView(connectionView);
+        heartbeat.setViewNumber(viewNumber);
+        heartbeat.setIsPreferred(isPreferredLeaderNode);
+        heartbeat.setCandidate(leaderMgr.getLeader());
+
+        /**
+         * Start connected to self
+         */
+        connections.put(identity, self);
+        connectionView.add(identity);
+    }
 
     /**
      * Add a new connection to the set. This will have been created by the
@@ -377,51 +412,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         }
     }
 
-    @Deployed
-    public void deploy() throws IOException {
-        connectionServer = factory.create(connectionAddress, identity, this);
-
-        heartbeatComms = heartbeatCommsFactory.create(heartbeatAddress,
-                                                      connectionAddress, this,
-                                                      "Anubis: Heartbeat Comms (node "
-                                                              + identity.id
-                                                              + ")", identity);
-
-        SelfConnection self = new SelfConnection(identity, connectionView,
-                                                 connectionServer.getAddress(),
-                                                 isPreferredLeaderNode);
-
-        /**
-         * Heartbeat and leader protocols
-         */
-        leaderMgr = leaderProtocolFactory.createMgr(connections, self);
-
-        stability = heartbeatInterval + timeout;
-        quiesce = heartbeatInterval + stability;
-
-        /**
-         * Protocol timing driver thread
-         */
-        intervalExec = new IntervalExec(identity, this, heartbeatInterval);
-
-        /**
-         * Heartbeat message initialisation
-         */
-        heartbeat = heartbeatProtocolFactory.createMsg(identity,
-                                                       connectionServer.getAddress());
-        heartbeat.setMsgLinks(msgLinks);
-        heartbeat.setView(connectionView);
-        heartbeat.setViewNumber(viewNumber);
-        heartbeat.setIsPreferred(isPreferredLeaderNode);
-        heartbeat.setCandidate(leaderMgr.getLeader());
-
-        /**
-         * Start connected to self
-         */
-        connections.put(identity, self);
-        connectionView.add(identity);
-    }
-
     /**
      * To disconnect a message connection we set the msgLinks to indicate that
      * this end does not need it any longer.
@@ -458,27 +448,11 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return connections.get(id);
     }
 
-    public InetSocketAddress getConnectionAddress() {
-        return connectionAddress;
-    }
-
     /**
      * get the connection server
      */
     public IOConnectionServer getConnectionServer() {
         return connectionServer;
-    }
-
-    public IOConnectionServerFactory getFactory() {
-        return factory;
-    }
-
-    public MulticastAddress getHeartbeatAddress() {
-        return heartbeatAddress;
-    }
-
-    public HeartbeatCommsFactory getHeartbeatCommsFactory() {
-        return heartbeatCommsFactory;
     }
 
     public long getHeartbeatInterval() {
@@ -492,10 +466,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     public Heartbeat getHeartbeat() {
         return heartbeat;
-    }
-
-    public HeartbeatProtocolFactory getHeartbeatProtocolFactory() {
-        return heartbeatProtocolFactory;
     }
 
     public Identity getIdentity() {
@@ -748,34 +718,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         msgConDelayedDelete.clear();
     }
 
-    public void setConnectionAddress(InetSocketAddress connectionAddress) {
-        this.connectionAddress = connectionAddress;
-    }
-
-    public void setConnectionServer(IOConnectionServer connectionServer) {
-        this.connectionServer = connectionServer;
-    }
-
-    public void setFactory(IOConnectionServerFactory factory) {
-        this.factory = factory;
-    }
-
-    public void setHeartbeatAddress(MulticastAddress heartbeatAddress) {
-        this.heartbeatAddress = heartbeatAddress;
-    }
-
-    public void setHeartbeatCommsFactory(HeartbeatCommsFactory heartbeatCommsFactory) {
-        this.heartbeatCommsFactory = heartbeatCommsFactory;
-    }
-
-    public void setHeartbeatProtocolFactory(HeartbeatProtocolFactory heartbeatProtocolFactory) {
-        this.heartbeatProtocolFactory = heartbeatProtocolFactory;
-    }
-
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
-    }
-
     public synchronized void setIgnoring(View ignoring) {
         if (!testable) {
             return;
@@ -790,15 +732,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                 mcon.setIgnoring(false);
             }
         }
-    }
-
-    public void setLeaderProtocolFactory(LeaderProtocolFactory leaderProtocolFactory) {
-        this.leaderProtocolFactory = leaderProtocolFactory;
-    }
-
-    public void setPartitionProtocol(PartitionProtocol partitionProtocol) {
-        this.partitionProtocol = partitionProtocol;
-        this.partitionProtocol.setConnectionSet(this);
     }
 
     public void setPreferredLeaderNode(boolean isPreferredLeaderNode) {

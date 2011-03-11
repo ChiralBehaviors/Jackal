@@ -23,9 +23,9 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public interface CommsTestIntf {
-    public String getThreadStatusString();
+    String getThreadStatusString();
 
-    public boolean isIgnoring(Identity id);
+    boolean isIgnoring(Identity id);
 
-    public void setIgnoring(View ignoringUpdate);
+    void setIgnoring(View ignoringUpdate);
 }

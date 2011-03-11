@@ -29,9 +29,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
@@ -48,7 +50,7 @@ import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
  */
 
 public class Communications extends ServerChannelHandler implements
-        GossipCommunications {
+        GossipCommunications, HeartbeatCommsIntf {
     private static final Logger log = Logger.getLogger(Communications.class.getCanonicalName());
 
     public static InetSocketAddress readInetAddress(ByteBuffer msg)
@@ -84,7 +86,7 @@ public class Communications extends ServerChannelHandler implements
     private final TimeUnit                 intervalUnit;
     private final ScheduledExecutorService scheduler;
     private final HeartbeatReceiver        receiver;
-    private volatile View                  ignoring;
+    private final AtomicReference<View>    ignoring = new AtomicReference<View>();
 
     public Communications(HeartbeatReceiver heartbeatReceiver,
                           int gossipInterval, TimeUnit unit,
@@ -123,12 +125,25 @@ public class Communications extends ServerChannelHandler implements
         return handler;
     }
 
+    @Override
+    public String getThreadStatusString() {
+        return "Anubis: Gossip heartbeat/discovery, running: " + isRunning();
+    }
+
+    @Override
     public boolean isIgnoring(Identity id) {
-        return ignoring.contains(id);
+        final View theShunned = ignoring.get();
+        if (theShunned == null) {
+            return false;
+        }
+        return theShunned.contains(id);
     }
 
     @Override
     public void notifyUpdate(final HeartbeatState state) {
+        if (state == null || isIgnoring(state.getSender())) {
+            return;
+        }
         dispatch(new Runnable() {
             @Override
             public void run() {
@@ -137,16 +152,18 @@ public class Communications extends ServerChannelHandler implements
         });
     }
 
+    @Override
+    public void sendHeartbeat(Heartbeat heartbeat) {
+        gossip.updateLocalState(HeartbeatState.toHeartbeatState(heartbeat));
+    }
+
     public void setGossip(Gossip gossip) {
         this.gossip = gossip;
     }
 
+    @Override
     public void setIgnoring(View ignoringUpdate) {
-        ignoring = ignoringUpdate;
-    }
-
-    public void updateHeartbeat(Heartbeat state) {
-        gossip.updateLocalState(new HeartbeatState(state));
+        ignoring.set(ignoringUpdate);
     }
 
     @Override

@@ -29,39 +29,28 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class MulticastHeartbeatCommsFactory implements HeartbeatCommsFactory {
 
-    private WireSecurity wireSecurity = null;
+    private final WireSecurity      wireSecurity;
+    private final MulticastAddress  address;
+    private final InetSocketAddress inf;
+    private final String            threadName;
+    private final Identity          id;
 
-    public MulticastHeartbeatCommsFactory() {
-        super();
+    public MulticastHeartbeatCommsFactory(WireSecurity wireSecurity,
+                                          MulticastAddress address,
+                                          InetSocketAddress inf, Identity id) {
+        this.wireSecurity = wireSecurity;
+        this.address = address;
+        this.inf = inf;
+        this.threadName = "Anubis: Heartbeat Comms (node " + id.id + ")";
+        this.id = id;
     }
 
     /* (non-Javadoc)
-     * @see org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory#create(org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress, org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionAddress, org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver, java.lang.String, org.smartfrog.services.anubis.partition.util.Identity)
+     * @see org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory#create(org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver)
      */
     @Override
-    public HeartbeatCommsIntf create(MulticastAddress address,
-                                     InetSocketAddress inf,
-                                     HeartbeatReceiver cs, String threadName,
-                                     Identity id) throws IOException {
+    public HeartbeatCommsIntf create(HeartbeatReceiver cs) throws IOException {
         return new HeartbeatComms(address, inf, cs, threadName, id,
                                   wireSecurity);
-    }
-
-    /* (non-Javadoc)
-     * @see org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory#create(org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress, org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver, java.lang.String, org.smartfrog.services.anubis.partition.util.Identity)
-     */
-    @Override
-    public HeartbeatCommsIntf create(MulticastAddress address,
-                                     HeartbeatReceiver cs, String threadName,
-                                     Identity id) throws IOException {
-        return new HeartbeatComms(address, cs, threadName, id, wireSecurity);
-    }
-
-    public WireSecurity getWireSecurity() {
-        return wireSecurity;
-    }
-
-    public void setWireSecurity(WireSecurity wireSecurity) {
-        this.wireSecurity = wireSecurity;
     }
 }

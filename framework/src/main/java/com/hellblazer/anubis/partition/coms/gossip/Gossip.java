@@ -504,4 +504,12 @@ public class Gossip {
             log.finest(format("Sorted gossip digests are : %s", digests));
         }
     }
+    
+    public boolean shouldConvict(InetSocketAddress address, long now) {
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint == null) {
+            return true; // not a live member if it ain't in the endpoint set
+        }
+        return endpoint.shouldConvict(now, convictThreshold);
+    }
 }

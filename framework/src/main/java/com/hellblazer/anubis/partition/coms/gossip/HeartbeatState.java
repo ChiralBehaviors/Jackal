@@ -29,6 +29,7 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 /**
  * The heartbeat state replicated by the gossip protocol
@@ -37,6 +38,13 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
  * 
  */
 public class HeartbeatState implements Heartbeat {
+
+    public static HeartbeatState toHeartbeatState(Heartbeat heartbeat) {
+        if (heartbeat instanceof HeartbeatState) {
+            return (HeartbeatState) heartbeat;
+        }
+        return new HeartbeatState(heartbeat);
+    }
 
     private Identity          candidate;
     private NodeIdSet         msgLinks;
@@ -48,6 +56,7 @@ public class HeartbeatState implements Heartbeat {
     private NodeIdSet         view;
     private long              viewNumber    = -1;
     private long              viewTimeStamp = View.undefinedTimeStamp;
+
     private byte[]            binaryCache;
 
     public HeartbeatState(ByteBuffer buffer) throws UnknownHostException {
@@ -206,6 +215,7 @@ public class HeartbeatState implements Heartbeat {
         return senderAddress;
     }
 
+    @Override
     public InetSocketAddress getTestInterface() {
         return testInterface;
     }
@@ -262,10 +272,16 @@ public class HeartbeatState implements Heartbeat {
     }
 
     @Override
+    public void setIsPreferred(boolean preferred) {
+        this.preferred = preferred;
+    }
+
+    @Override
     public void setMsgLinks(NodeIdSet ml) {
         msgLinks = ml;
     }
 
+    @Override
     public void setTestInterface(InetSocketAddress address) {
         testInterface = address;
     }
@@ -285,6 +301,11 @@ public class HeartbeatState implements Heartbeat {
     @Override
     public void setViewNumber(long n) {
         viewNumber = n;
+    }
+
+    @Override
+    public Heartbeat toClose() {
+        return new HeartbeatMsg(this).toClose();
     }
 
     @Override
@@ -318,16 +339,5 @@ public class HeartbeatState implements Heartbeat {
         view.writeTo(msg);
         msg.putLong(viewNumber);
         msg.putLong(viewTimeStamp);
-    }
-
-    @Override
-    public void setIsPreferred(boolean preferred) {
-        this.preferred = preferred;
-    }
-
-    @Override
-    public Heartbeat toClose() {
-        // TODO Auto-generated method stub
-        return null;
     }
 }
