@@ -125,6 +125,10 @@ public class Communications extends ServerChannelHandler implements
         return handler;
     }
 
+    public Gossip getGossip() {
+        return gossip;
+    }
+
     @Override
     public String getThreadStatusString() {
         return "Anubis: Gossip heartbeat/discovery, running: " + isRunning();
