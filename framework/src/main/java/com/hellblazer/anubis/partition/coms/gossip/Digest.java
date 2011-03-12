@@ -17,9 +17,6 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import static com.hellblazer.anubis.partition.coms.gossip.Communications.readInetAddress;
-import static com.hellblazer.anubis.partition.coms.gossip.Communications.writeInetAddress;
-
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -48,7 +45,7 @@ public class Digest {
     private final long              viewNumber;
 
     public Digest(ByteBuffer msg) throws UnknownHostException {
-        address = readInetAddress(msg);
+        address = GossipHandler.readInetAddress(msg);
         epoch = msg.getLong();
         viewNumber = msg.getLong();
     }
@@ -127,7 +124,7 @@ public class Digest {
     }
 
     public void writeTo(ByteBuffer buffer) {
-        writeInetAddress(address, buffer);
+        GossipHandler.writeInetAddress(address, buffer);
         buffer.putLong(epoch);
         buffer.putLong(viewNumber);
     }

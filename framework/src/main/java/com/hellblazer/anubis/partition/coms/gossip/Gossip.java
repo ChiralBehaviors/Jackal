@@ -32,10 +32,21 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.views.View;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 import com.hellblazer.anubis.partition.coms.gossip.Digest.DigestComparator;
 
@@ -60,7 +71,7 @@ import com.hellblazer.anubis.partition.coms.gossip.Digest.DigestComparator;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class Gossip {
+public class Gossip implements HeartbeatCommsIntf {
     private final static Logger                              log       = Logger.getLogger(Gossip.class.getCanonicalName());
 
     private final GossipCommunications                       communications;
@@ -69,6 +80,13 @@ public class Gossip {
     private final Random                                     entropy;
     private final Endpoint                                   localState;
     private final SystemView                                 view;
+    private ScheduledFuture<?>                               gossipTask;
+    private final int                                        interval;
+    private final TimeUnit                                   intervalUnit;
+    private final ScheduledExecutorService                   scheduler;
+    private final HeartbeatReceiver                          receiver;
+    private final AtomicReference<View>                      ignoring  = new AtomicReference<View>();
+    private final AtomicBoolean                              running   = new AtomicBoolean();
 
     /**
      * 
@@ -87,16 +105,29 @@ public class Gossip {
      * @param localIdentity
      *            - the identity of the local member
      */
-    public Gossip(GossipCommunications communicationsService,
-                  SystemView systemView, Random random,
-                  double phiConvictThreshold, Identity localIdentity) {
+    public Gossip(HeartbeatReceiver heartbeatReceiver, SystemView systemView,
+                  Random random, double phiConvictThreshold,
+                  Identity localIdentity,
+                  GossipCommunications communicationsService,
+                  int gossipInterval, TimeUnit unit) {
         communications = communicationsService;
+        communications.setGossip(this);
         convictThreshold = phiConvictThreshold;
         entropy = random;
         view = systemView;
-        localState = new Endpoint(
-                                  new HeartbeatState(
-                                                     communications.getLocalAddress(),
+        interval = gossipInterval;
+        intervalUnit = unit;
+        receiver = heartbeatReceiver;
+        scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           "Anubis: Gossip heartbeat servicing thread");
+                daemon.setDaemon(true);
+                return daemon;
+            }
+        });
+        localState = new Endpoint(new HeartbeatState(view.getLocalAddress(),
                                                      localIdentity));
         localState.markAlive();
         endpoints.put(view.getLocalAddress(), localState);
@@ -129,6 +160,11 @@ public class Gossip {
         }
         view.cullQuarantined(now);
         view.cullUnreachable(now);
+    }
+
+    @Override
+    public String getThreadStatusString() {
+        return "Anubis: Gossip heartbeat/discovery, running: " + running.get();
     }
 
     /**
@@ -166,6 +202,15 @@ public class Gossip {
         examine(digests, gossipHandler);
     }
 
+    @Override
+    public boolean isIgnoring(Identity id) {
+        final View theShunned = ignoring.get();
+        if (theShunned == null) {
+            return false;
+        }
+        return theShunned.contains(id);
+    }
+
     /**
      * The second message in the gossip protocol. This message is sent in reply
      * to the initial gossip message sent by this node. The response is a list
@@ -193,6 +238,44 @@ public class Gossip {
         }
         if (!deltaState.isEmpty()) {
             gossipHandler.update(deltaState);
+        }
+    }
+
+    @Override
+    public void sendHeartbeat(Heartbeat heartbeat) {
+        updateLocalState(HeartbeatState.toHeartbeatState(heartbeat));
+    }
+
+    @Override
+    public void setIgnoring(View ignoringUpdate) {
+        ignoring.set(ignoringUpdate);
+    }
+
+    public boolean shouldConvict(InetSocketAddress address, long now) {
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint == null) {
+            return true; // not a live member if it ain't in the endpoint set
+        }
+        return endpoint.shouldConvict(now, convictThreshold);
+    }
+
+    @Override
+    public void start() {
+        if (running.compareAndSet(false, true)) {
+            communications.start();
+            gossipTask = scheduler.scheduleWithFixedDelay(gossipTask(),
+                                                          interval, interval,
+                                                          intervalUnit);
+        }
+    }
+
+    @Override
+    public void terminate() {
+        if (running.compareAndSet(true, false)) {
+            communications.terminate();
+            scheduler.shutdownNow();
+            gossipTask.cancel(true);
+            gossipTask = null;
         }
     }
 
@@ -253,7 +336,7 @@ public class Gossip {
                     if (remoteState.getViewNumber() > localState.getViewNumber()) {
                         long oldViewNumber = localState.getViewNumber();
                         localState.updateState(now, remoteState);
-                        communications.notifyUpdate(localState.getState());
+                        notifyUpdate(localState.getState());
                         if (log.isLoggable(Level.FINEST)) {
                             log.finest(format("Updating heartbeat state view number to %s from %s for %s",
                                               localState.getViewNumber(),
@@ -356,7 +439,7 @@ public class Gossip {
                     log.fine(format("Member %s is now UP",
                                     endpoint.getMemberString()));
                 }
-                communications.notifyUpdate(endpoint.getState());
+                notifyUpdate(endpoint.getState());
             }
 
         };
@@ -399,6 +482,20 @@ public class Gossip {
             }
         }
         gossipHandler.reply(deltaDigests, deltaState);
+    }
+
+    protected Runnable gossipTask() {
+        return new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    gossip();
+                } catch (Throwable e) {
+                    log.log(Level.WARNING, "Exception while performing gossip",
+                            e);
+                }
+            }
+        };
     }
 
     /**
@@ -466,6 +563,18 @@ public class Gossip {
         return null;
     }
 
+    protected void notifyUpdate(final HeartbeatState state) {
+        if (state == null || isIgnoring(state.getSender())) {
+            return;
+        }
+        communications.dispatch(new Runnable() {
+            @Override
+            public void run() {
+                receiver.receiveHeartbeat(state);
+            }
+        });
+    }
+
     protected List<Digest> randomDigests() {
         ArrayList<Digest> digests = new ArrayList<Digest>();
         for (Entry<InetSocketAddress, Endpoint> entry : endpoints.entrySet()) {
@@ -504,12 +613,8 @@ public class Gossip {
             log.finest(format("Sorted gossip digests are : %s", digests));
         }
     }
-    
-    public boolean shouldConvict(InetSocketAddress address, long now) {
-        Endpoint endpoint = endpoints.get(address);
-        if (endpoint == null) {
-            return true; // not a live member if it ain't in the endpoint set
-        }
-        return endpoint.shouldConvict(now, convictThreshold);
+
+    public InetSocketAddress getLocalAddress() {
+        return view.getLocalAddress();
     }
 }

@@ -37,7 +37,7 @@ import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class CommunicationsFactory implements HeartbeatCommsFactory {
+public class HeartbeatCommunicationsFactory implements HeartbeatCommsFactory {
     private final int                           gossipInterval;
     private final TimeUnit                      unit;
     private final InetSocketAddress             endpointAddress;
@@ -51,29 +51,34 @@ public class CommunicationsFactory implements HeartbeatCommsFactory {
     private final double                        phiConvictThreshold;
     private Identity                            localIdentity;
 
-    public CommunicationsFactory(int gossipInterval, TimeUnit unit,
-                                 InetSocketAddress endpointAddress,
-                                 ExecutorService commsExec,
-                                 ExecutorService dispatchExec,
-                                 Collection<InetSocketAddress> seedHosts,
-                                 int quarantineDelay, int unreachableDelay,
-                                 double phiConvictThreshold,
-                                 Identity localIdentity) {
+    public HeartbeatCommunicationsFactory(int gossipInterval,
+                                          TimeUnit unit,
+                                          InetSocketAddress endpointAddress,
+                                          ExecutorService commsExec,
+                                          ExecutorService dispatchExec,
+                                          Collection<InetSocketAddress> seedHosts,
+                                          int quarantineDelay,
+                                          int unreachableDelay,
+                                          double phiConvictThreshold,
+                                          Identity localIdentity) {
         this(gossipInterval, unit, endpointAddress, new SocketOptions(),
              commsExec, dispatchExec, new Random(), seedHosts, quarantineDelay,
              unreachableDelay, phiConvictThreshold, localIdentity);
 
     }
 
-    public CommunicationsFactory(int gossipInterval, TimeUnit unit,
-                                 InetSocketAddress endpointAddress,
-                                 SocketOptions socketOptions,
-                                 ExecutorService commsExec,
-                                 ExecutorService dispatchExec, Random entropy,
-                                 Collection<InetSocketAddress> seedHosts,
-                                 int quarantineDelay, int unreachableDelay,
-                                 double phiConvictThreshold,
-                                 Identity localIdentity) {
+    public HeartbeatCommunicationsFactory(int gossipInterval,
+                                          TimeUnit unit,
+                                          InetSocketAddress endpointAddress,
+                                          SocketOptions socketOptions,
+                                          ExecutorService commsExec,
+                                          ExecutorService dispatchExec,
+                                          Random entropy,
+                                          Collection<InetSocketAddress> seedHosts,
+                                          int quarantineDelay,
+                                          int unreachableDelay,
+                                          double phiConvictThreshold,
+                                          Identity localIdentity) {
         this.gossipInterval = gossipInterval;
         this.unit = unit;
         this.endpointAddress = endpointAddress;
@@ -90,9 +95,7 @@ public class CommunicationsFactory implements HeartbeatCommsFactory {
 
     @Override
     public HeartbeatCommsIntf create(HeartbeatReceiver cs) throws IOException {
-        Communications communications = new Communications(cs, gossipInterval,
-                                                           unit,
-                                                           endpointAddress,
+        Communications communications = new Communications(endpointAddress,
                                                            socketOptions,
                                                            commsExec,
                                                            dispatchExec);
@@ -100,10 +103,10 @@ public class CommunicationsFactory implements HeartbeatCommsFactory {
                                          communications.getLocalAddress(),
                                          seedHosts, quarantineDelay,
                                          unreachableDelay);
-        Gossip gossip = new Gossip(communications, view, entropy,
-                                   phiConvictThreshold, localIdentity);
-        communications.setGossip(gossip);
-        return communications;
+        Gossip gossip = new Gossip(cs, view, entropy, phiConvictThreshold,
+                                   localIdentity, communications,
+                                   gossipInterval, unit);
+        return gossip;
     }
 
 }

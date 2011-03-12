@@ -19,6 +19,9 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import static java.lang.String.format;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -208,6 +211,33 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             log.finest(format("Received an update from %s", this));
         }
         gossip.update(remoteStates);
+    }
+
+    public static InetSocketAddress readInetAddress(ByteBuffer msg)
+                                                                   throws UnknownHostException {
+        int length = msg.get();
+        if (length == 0) {
+            return null;
+        }
+    
+        byte[] address = new byte[length];
+        msg.get(address);
+        int port = msg.getInt();
+    
+        InetAddress inetAddress = InetAddress.getByAddress(address);
+        return new InetSocketAddress(inetAddress, port);
+    }
+
+    public static void writeInetAddress(InetSocketAddress ipaddress,
+                                        ByteBuffer bytes) {
+        if (ipaddress == null) {
+            bytes.put((byte) 0);
+            return;
+        }
+        byte[] address = ipaddress.getAddress().getAddress();
+        bytes.put((byte) address.length);
+        bytes.put(address);
+        bytes.putInt(ipaddress.getPort());
     }
 
 }

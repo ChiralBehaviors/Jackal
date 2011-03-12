@@ -54,7 +54,7 @@ public class EndToEndTest extends TestCase {
         for (int i = 0; i < membership; i++) {
             receivers[i] = new Receiver(membership, i);
         }
-        List<Communications> members = new ArrayList<Communications>();
+        List<Gossip> members = new ArrayList<Gossip>();
         Collection<InetSocketAddress> seedHosts = new ArrayList<InetSocketAddress>();
         for (int i = 0; i < membership; i++) {
             members.add(createCommunications(receivers[i], new Identity(666, i,
@@ -71,7 +71,7 @@ public class EndToEndTest extends TestCase {
         }
         System.out.println("Using " + seedHosts.size() + " seed hosts");
         try {
-            for (Communications member : members) {
+            for (Gossip member : members) {
                 member.start();
             }
             for (int i = 0; i < membership; i++) {
@@ -79,20 +79,17 @@ public class EndToEndTest extends TestCase {
             }
         } finally {
             System.out.println();
-            for (Communications member : members) {
+            for (Gossip member : members) {
                 member.terminate();
             }
         }
     }
 
-    protected Communications createCommunications(HeartbeatReceiver receiver,
+    protected Gossip createCommunications(HeartbeatReceiver receiver,
                                                   Identity localIdentity,
                                                   Collection<InetSocketAddress> seedHosts)
                                                                                           throws IOException {
         Communications communications = new Communications(
-                                                           receiver,
-                                                           1,
-                                                           TimeUnit.SECONDS,
                                                            new InetSocketAddress(
                                                                                  0),
                                                            new SocketOptions(),
@@ -102,10 +99,8 @@ public class EndToEndTest extends TestCase {
         SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),
                                          seedHosts, 5000, 500000);
-        Gossip gossip = new Gossip(communications, view, new Random(), 11,
-                                   localIdentity);
-        communications.setGossip(gossip);
-        communications.sendHeartbeat(new HeartbeatState(
+        Gossip gossip = new Gossip(receiver, view, new Random(), 11, localIdentity, communications, 1, TimeUnit.SECONDS);
+        gossip.sendHeartbeat(new HeartbeatState(
                                                         new Identity(666, 0, 0),
                                                         new NodeIdSet(),
                                                         true,
@@ -113,7 +108,7 @@ public class EndToEndTest extends TestCase {
                                                         communications.getLocalAddress(),
                                                         false, null,
                                                         new NodeIdSet(), 0, 0));
-        return communications;
+        return gossip;
     }
 
     private static class Receiver implements HeartbeatReceiver {

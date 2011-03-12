@@ -50,11 +50,11 @@ public interface GossipCommunications {
 
     InetSocketAddress getLocalAddress();
 
-    /**
-     * Notification that heartbeat state for a member has changed or is
-     * discovered for the first time
-     * 
-     * @param state
-     */
-    void notifyUpdate(final HeartbeatState state);
+    void dispatch(Runnable runnable);
+
+    void setGossip(Gossip gossip);
+
+    void start();
+
+    void terminate();
 }

@@ -17,9 +17,6 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
-import static com.hellblazer.anubis.partition.coms.gossip.Communications.readInetAddress;
-import static com.hellblazer.anubis.partition.coms.gossip.Communications.writeInetAddress;
-
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -67,9 +64,9 @@ public class HeartbeatState implements Heartbeat {
         msgLinks = new NodeIdSet(msg);
         preferred = msg.get() > 0 ? true : false;
         sender = new Identity(msg);
-        senderAddress = readInetAddress(msg);
+        senderAddress = GossipHandler.readInetAddress(msg);
         stable = msg.get() > 0 ? true : false;
-        testInterface = readInetAddress(msg);
+        testInterface = GossipHandler.readInetAddress(msg);
         view = new NodeIdSet(msg);
         viewNumber = msg.getLong();
         viewTimeStamp = msg.getLong();
@@ -329,13 +326,13 @@ public class HeartbeatState implements Heartbeat {
             msg.put((byte) 0);
         }
         sender.writeTo(msg);
-        writeInetAddress(senderAddress, msg);
+        GossipHandler.writeInetAddress(senderAddress, msg);
         if (stable) {
             msg.put((byte) 1);
         } else {
             msg.put((byte) 0);
         }
-        writeInetAddress(testInterface, msg);
+        GossipHandler.writeInetAddress(testInterface, msg);
         view.writeTo(msg);
         msg.putLong(viewNumber);
         msg.putLong(viewTimeStamp);

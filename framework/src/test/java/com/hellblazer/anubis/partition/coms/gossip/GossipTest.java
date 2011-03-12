@@ -13,16 +13,20 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.internal.verification.Times;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class GossipTest extends TestCase {
 
     public void testExamineAllNew() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
+        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
@@ -47,8 +51,8 @@ public class GossipTest extends TestCase {
         Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), 0,
                                      -1);
 
-        Gossip gossip = new Gossip(communications, view, random, 4,
-                                   localIdentity);
+        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+                                   communications, 4, TimeUnit.DAYS);
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -61,6 +65,7 @@ public class GossipTest extends TestCase {
 
     public void testExamineMixed() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
+        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
@@ -97,8 +102,8 @@ public class GossipTest extends TestCase {
                                                                           4, 4));
         state4.setViewNumber(4);
 
-        Gossip gossip = new Gossip(communications, view, random, 4,
-                                   localIdentity);
+        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+                                   communications, 4, TimeUnit.DAYS);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -121,6 +126,7 @@ public class GossipTest extends TestCase {
 
     public void testApplyDiscover() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
+        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         Identity localIdentity = new Identity(666, 0, 1);
@@ -142,8 +148,8 @@ public class GossipTest extends TestCase {
         HeartbeatState state4 = new HeartbeatState(address4, new Identity(666,
                                                                           4, 4));
 
-        Gossip gossip = new Gossip(communications, view, random, 4,
-                                   localIdentity);
+        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+                                   communications, 4, TimeUnit.DAYS);
 
         gossip.apply(asList(state1, state2, state3, state4));
 
@@ -156,13 +162,14 @@ public class GossipTest extends TestCase {
         verify(communications).connect(eq(address4), isA(Endpoint.class),
                                        isA(Runnable.class));
 
-        verify(communications).getLocalAddress();
+        verify(communications).setGossip(gossip);
 
         verifyNoMoreInteractions(communications);
     }
 
     public void testApplyUpdate() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
+        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         Identity localIdentity = new Identity(666, 0, 1);
@@ -210,8 +217,8 @@ public class GossipTest extends TestCase {
         when(ep4.getEpoch()).thenReturn(4L);
         when(ep4.getViewNumber()).thenReturn(5L);
 
-        Gossip gossip = new Gossip(communications, view, random, 4,
-                                   localIdentity);
+        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+                                   communications, 4, TimeUnit.DAYS);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -246,10 +253,17 @@ public class GossipTest extends TestCase {
         verify(ep4).getViewNumber();
         verifyNoMoreInteractions(ep4);
 
-        verify(communications).getLocalAddress();
+        verify(communications).setGossip(gossip);
+        
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        verify(communications, new Times(2)).dispatch(captor.capture()); 
+        
+        for (Runnable action: captor.getAllValues()) {
+            action.run();
+        }
 
-        verify(communications).notifyUpdate(state1);
-        verify(communications).notifyUpdate(state3);
+        verify(receiver).receiveHeartbeat(state1);
+        verify(receiver).receiveHeartbeat(state3);
         verifyNoMoreInteractions(communications);
     }
 }
