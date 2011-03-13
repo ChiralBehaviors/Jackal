@@ -32,22 +32,19 @@ import javax.swing.WindowConstants;
 import javax.swing.border.TitledBorder;
 
 public class DebugFrame extends JFrame {
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
-    private BorderLayout borderLayout1 = new BorderLayout();
-    private BorderLayout borderLayout2 = new BorderLayout();
-    private Object displayObject = null;
-    private JPanel jPanel2 = new JPanel();
+    private BorderLayout      borderLayout1    = new BorderLayout();
+    private BorderLayout      borderLayout2    = new BorderLayout();
+    private Object            displayObject    = null;
+    private JPanel            jPanel2          = new JPanel();
 
     // private Test test;
-    private JScrollPane jScrollPane1 = new JScrollPane();
-    private JTextArea jTextArea1 = new JTextArea();
+    private JScrollPane       jScrollPane1     = new JScrollPane();
+    private JTextArea         jTextArea1       = new JTextArea();
 
-    private boolean onDisplay = false;
+    private boolean           onDisplay        = false;
     @SuppressWarnings("unused")
-    private TitledBorder titledBorder1;
+    private TitledBorder      titledBorder1;
 
     public DebugFrame(String title) {
         // test = t;

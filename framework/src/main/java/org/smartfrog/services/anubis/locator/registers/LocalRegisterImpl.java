@@ -22,7 +22,9 @@ package org.smartfrog.services.anubis.locator.registers;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.logging.Level;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
@@ -33,87 +35,19 @@ import org.smartfrog.services.anubis.locator.ValueData;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.names.ListenerProxy;
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
-import org.smartfrog.services.anubis.locator.util.BlockingQueue;
 import org.smartfrog.services.anubis.locator.util.DebugFrame;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class LocalRegisterImpl {
 
-    /**
-     * RequestServer is required to avoid a potential deadlock between the local
-     * and global if they send messages to each other on the local node. Sending
-     * a message to the local node results in direct delivery by method call in
-     * the same thread. It is possible for a thread that holds the
-     * GlobalRegisterImpl monitor to make a call to the LocalRegisterImpl, and
-     * vice versa at the same time. So, instead of blocking on a monitor we
-     * create a queue of requests for the global and service the queue with a
-     * single thread.
-     */
-    private class RequestServer extends Thread {
-        private boolean running = false;
-
-        public RequestServer() {
-            super();
-            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                @Override
-                public void uncaughtException(Thread t, Throwable e) {
-                    log.log(Level.WARNING, "Uncaught exception", e);
-                }
-            });
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public void run() {
-            /**
-             * The thread specific object locator.callingThread is set to this
-             * server object for this thread. The locator is then able to check
-             * if calls to its interface are made by this thread by checking the
-             * value of locator.callingThread and comparing it to this object.
-             * 
-             * This is the method used to check if the user is making illegal
-             * re-entrant calls during an upcall initiated by the local
-             * register.
-             */
-            locator.callingThread.set(this);
-            running = true;
-            while (running) {
-                try {
-                    Object obj = requests.get();
-                    if (obj instanceof RegisterMsg) {
-                        deliver((RegisterMsg) obj);
-                    } else if (obj instanceof UserProviderRequest) {
-                        deliver((UserProviderRequest) obj);
-                    } else if (obj instanceof UserListenerRequest) {
-                        deliver((UserListenerRequest) obj);
-                    } else if (obj instanceof UserStabilityRequest) {
-                        deliver((UserStabilityRequest) obj);
-                    } else if (obj == null) {
-                        continue;
-                    } else {
-                        log.severe(me
-                                   + " *** Local register encountered unknown request or message type: "
-                                   + obj);
-                    }
-                } catch (Throwable e) {
-                    log.log(Level.WARNING, "Exception delivering request", e);
-                }
-            }
-        }
-
-        public void terminate() {
-            running = false;
-        }
-    }
-
     private class UserListenerRequest {
         public final static int Deregister = 2;
-        public final static int Register = 1;
+        public final static int Register   = 1;
         @SuppressWarnings("unused")
-        public final static int Unknown = 0;
-        public AnubisListener listener;
-        public int type;
+        public final static int Unknown    = 0;
+        public AnubisListener   listener;
+        public int              type;
 
         public UserListenerRequest(int t, AnubisListener l) {
             type = t;
@@ -123,14 +57,14 @@ public class LocalRegisterImpl {
 
     private class UserProviderRequest {
         public final static int Deregister = 2;
-        public final static int NewValue = 3;
-        public final static int Register = 1;
+        public final static int NewValue   = 3;
+        public final static int Register   = 1;
         @SuppressWarnings("unused")
-        public final static int Unknown = 0;
-        public AnubisProvider provider;
-        public long time;
-        public int type;
-        public ValueData value;
+        public final static int Unknown    = 0;
+        public AnubisProvider   provider;
+        public long             time;
+        public int              type;
+        public ValueData        value;
 
         public UserProviderRequest(int t, AnubisProvider p, ValueData value,
                                    long time) {
@@ -143,11 +77,11 @@ public class LocalRegisterImpl {
 
     private class UserStabilityRequest {
         public final static int Deregister = 2;
-        public final static int Register = 1;
+        public final static int Register   = 1;
         @SuppressWarnings("unused")
-        public final static int Unknown = 0;
-        public AnubisStability stability;
-        public int type;
+        public final static int Unknown    = 0;
+        public AnubisStability  stability;
+        public int              type;
 
         public UserStabilityRequest(int t, AnubisStability s) {
             type = t;
@@ -155,31 +89,54 @@ public class LocalRegisterImpl {
         }
     }
 
-    public RequestServer server = new RequestServer(); // public so Locator can test for re-entry
     public Set<AnubisStability> stabilityNotifications = new HashSet<AnubisStability>();
-    public boolean stable = true;
-    public long timeRef = -1;
-    private DebugFrame debug = null;
-    private LocalListeners listeners = null; // name to Listeners + the provider
-    private Locator locator = null;
-    private static final Logger log = Logger.getLogger(LocalRegisterImpl.class.getCanonicalName());
-    private Identity me = null;
-    private Integer node = null;
-    private LocalProviders providers = null; // name to provider + their registered listeners
-    private BlockingQueue requests = new BlockingQueue();
+    public boolean              stable                 = true;
+    public long                 timeRef                = -1;
+    private DebugFrame          debug                  = null;
+    private LocalListeners      listeners              = null;
+    private static final Logger log                    = Logger.getLogger(LocalRegisterImpl.class.getCanonicalName());
+    private Identity            me                     = null;
+    private Integer             node                   = null;
+    private LocalProviders      providers              = null;
+
+    /**
+     * RequestServer is required to avoid a potential deadlock between the local
+     * and global if they send messages to each other on the local node. Sending
+     * a message to the local node results in direct delivery by method call in
+     * the same thread. It is possible for a thread that holds the
+     * GlobalRegisterImpl monitor to make a call to the LocalRegisterImpl, and
+     * vice versa at the same time. So, instead of blocking on a monitor we
+     * create a queue of requests for the global and service the queue with a
+     * single thread.
+     */
+    private ExecutorService     requestServer;
 
     public LocalRegisterImpl(Identity id, Locator locator) {
         me = id;
         node = new Integer(me.id);
         providers = new LocalProviders(locator, node);
         listeners = new LocalListeners(locator, node);
-        this.locator = locator;
         timeRef = me.epoch;
+        requestServer = Executors.newSingleThreadExecutor(new ThreadFactory() {
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           "Anubis: Local Register Request Server (node "
+                                                   + me.id + ")");
+                daemon.setDaemon(true);
+                return daemon;
+            }
+        });
     }
 
-    public void deliverRequest(RegisterMsg msg) {
-
-        requests.put(msg);
+    public void deliverRequest(final RegisterMsg request) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(request);
+            }
+        });
     }
 
     /**
@@ -189,9 +146,14 @@ public class LocalRegisterImpl {
      * 
      * @param listener
      */
-    public void deregisterListener(AnubisListener listener) {
-        requests.put(new UserListenerRequest(UserListenerRequest.Deregister,
-                                             listener));
+    public void deregisterListener(final AnubisListener listener) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(new UserListenerRequest(UserListenerRequest.Deregister,
+                                                listener));
+            }
+        });
     }
 
     /**
@@ -201,9 +163,14 @@ public class LocalRegisterImpl {
      * 
      * @param provider
      */
-    public void deregisterProvider(AnubisProvider provider) {
-        requests.put(new UserProviderRequest(UserProviderRequest.Deregister,
-                                             provider, null, 0));
+    public void deregisterProvider(final AnubisProvider provider) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(new UserProviderRequest(UserProviderRequest.Deregister,
+                                                provider, null, 0));
+            }
+        });
     }
 
     /**
@@ -212,9 +179,15 @@ public class LocalRegisterImpl {
      * @param stability
      *            AnubisStability
      */
-    public void deregisterStability(AnubisStability stability) {
-        requests.put(new UserStabilityRequest(UserStabilityRequest.Deregister,
-                                              stability));
+    public void deregisterStability(final AnubisStability stability) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(new UserStabilityRequest(
+                                                 UserStabilityRequest.Deregister,
+                                                 stability));
+            }
+        });
     }
 
     /**
@@ -222,18 +195,29 @@ public class LocalRegisterImpl {
      * 
      * @param provider
      */
-    public void newProviderValue(AnubisProvider provider) {
-        requests.put(new UserProviderRequest(UserProviderRequest.NewValue,
-                                             provider, provider.getValueData(),
-                                             provider.getTime()));
+    public void newProviderValue(final AnubisProvider provider) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(new UserProviderRequest(UserProviderRequest.NewValue,
+                                                provider,
+                                                provider.getValueData(),
+                                                provider.getTime()));
+            }
+        });
     }
 
     /**
      * @param listener
      */
-    public void registerListener(AnubisListener listener) {
-        requests.put(new UserListenerRequest(UserListenerRequest.Register,
-                                             listener));
+    public void registerListener(final AnubisListener listener) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(new UserListenerRequest(UserListenerRequest.Register,
+                                                listener));
+            }
+        });
     }
 
     /**
@@ -243,10 +227,16 @@ public class LocalRegisterImpl {
      * 
      * @param provider
      */
-    public void registerProvider(AnubisProvider provider) {
-        requests.put(new UserProviderRequest(UserProviderRequest.Register,
-                                             provider, provider.getValueData(),
-                                             provider.getTime()));
+    public void registerProvider(final AnubisProvider provider) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(new UserProviderRequest(UserProviderRequest.Register,
+                                                provider,
+                                                provider.getValueData(),
+                                                provider.getTime()));
+            }
+        });
     }
 
     /**
@@ -255,9 +245,14 @@ public class LocalRegisterImpl {
      * @param stability
      *            AnubisStability
      */
-    public void registerStability(AnubisStability stability) {
-        requests.put(new UserStabilityRequest(UserStabilityRequest.Register,
-                                              stability));
+    public void registerStability(final AnubisStability stability) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(new UserStabilityRequest(UserStabilityRequest.Register,
+                                                 stability));
+            }
+        });
     }
 
     public synchronized void removeDebugFrame() {
@@ -295,9 +290,6 @@ public class LocalRegisterImpl {
      * Starts the local register server
      */
     public void start() {
-        server.setName("Anubis: Local Register Request Server (node " + me.id
-                       + ")");
-        server.start();
         updateDebugFrame();
     }
 
@@ -306,8 +298,7 @@ public class LocalRegisterImpl {
      * queue.
      */
     public void terminate() {
-        server.terminate();
-        requests.deactivate();
+        requestServer.shutdownNow();
     }
 
     @Override

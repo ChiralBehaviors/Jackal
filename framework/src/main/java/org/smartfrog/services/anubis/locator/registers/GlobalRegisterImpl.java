@@ -23,20 +23,31 @@ import java.rmi.RemoteException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.names.ListenerProxy;
 import org.smartfrog.services.anubis.locator.names.ProviderProxy;
-import org.smartfrog.services.anubis.locator.util.BlockingQueue;
 import org.smartfrog.services.anubis.locator.util.DebugFrame;
 import org.smartfrog.services.anubis.locator.util.SetMap;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class GlobalRegisterImpl {
+
+    private boolean                        active          = true;
+    private DebugFrame                     debug           = null;
+    private SetMap<String, ListenerProxy>  listenersByName = new SetMap<String, ListenerProxy>();
+    private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
+    private Locator                        locator         = null;
+    private static final Logger            log             = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
+    private int                            me              = -1;
+    private SetMap<String, ProviderProxy>  providersByName = new SetMap<String, ProviderProxy>();
+    private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
 
     /**
      * RequestServer is required to avoid a potential deadlock between the local
@@ -48,51 +59,7 @@ public class GlobalRegisterImpl {
      * create a queue of requests for the global and service the queue with a
      * single thread.
      */
-    private class RequestServer extends Thread {
-        private boolean running = false;
-
-        public RequestServer() {
-            super();
-            setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                @Override
-                public void uncaughtException(Thread t, Throwable e) {
-                    log.log(Level.WARNING, "Uncaught exception", e);
-                }
-            });
-        }
-
-        @Override
-        public void run() {
-            running = true;
-            while (running) {
-                try {
-                    Object obj = requests.get();
-                    if (obj != null) {
-                        deliver((RegisterMsg) obj);
-                    }
-                } catch (Throwable e) {
-                    log.log(Level.WARNING, "Exception delivering message", e);
-                }
-            }
-        }
-
-        public void terminate() {
-            running = false;
-        }
-    }
-
-    private boolean active = true;
-    private DebugFrame debug = null;
-    private SetMap<String, ListenerProxy> listenersByName = new SetMap<String, ListenerProxy>();
-    private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
-    private Locator locator = null;
-    private static final Logger log = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
-    private int me = -1;
-    private SetMap<String, ProviderProxy> providersByName = new SetMap<String, ProviderProxy>();
-    private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
-
-    private BlockingQueue requests = new BlockingQueue();
-    private RequestServer server = new RequestServer();
+    private final ExecutorService          requestServer;
 
     /**
      * Constructor - sets the local
@@ -103,6 +70,17 @@ public class GlobalRegisterImpl {
     public GlobalRegisterImpl(Identity id, Locator locator) {
         me = id.id;
         this.locator = locator;
+        requestServer = Executors.newSingleThreadExecutor(new ThreadFactory() {
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           "Anubis: Global Register Request Server (node "
+                                                   + me + ")");
+                daemon.setDaemon(true);
+                return daemon;
+            }
+        });
     }
 
     /**
@@ -226,8 +204,13 @@ public class GlobalRegisterImpl {
      * 
      * @param request
      */
-    public void deliverRequest(RegisterMsg request) {
-        requests.put(request);
+    public void deliverRequest(final RegisterMsg request) {
+        requestServer.execute(new Runnable() {
+            @Override
+            public void run() {
+                deliver(request);
+            }
+        });
     }
 
     public synchronized void removeDebugFrame() {
@@ -264,9 +247,6 @@ public class GlobalRegisterImpl {
      * Starts the global register server
      */
     public void start() {
-        server.setName("Anubis: Global Register Request Server (node " + me
-                       + ")");
-        server.start();
         updateDebugFrame();
     }
 
@@ -275,8 +255,7 @@ public class GlobalRegisterImpl {
      * thread) and deactivate the global.
      */
     public void terminate() {
-        server.terminate();
-        requests.deactivate();
+        requestServer.shutdownNow();
     }
 
     /**

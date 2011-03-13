@@ -27,25 +27,22 @@ import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 import org.smartfrog.services.anubis.locator.names.ProviderProxy;
 
 public class RegisterMsg implements Serializable {
-    public static final int AddListener = 100;
-    public static final int DeregisterListener = 21;
-    public static final int DeregisterProvider = 11;
+    public static final int   AddListener        = 100;
+    public static final int   DeregisterListener = 21;
+    public static final int   DeregisterProvider = 11;
 
-    public static final int GlobalRegister = 1001;
+    public static final int   GlobalRegister     = 1001;
 
-    public static final int LocalRegister = 1000;
-    public static final int ProviderNotPresent = 201;
-    public static final int ProviderValue = 200;
-    public static final int RegisterListener = 20;
+    public static final int   LocalRegister      = 1000;
+    public static final int   ProviderNotPresent = 201;
+    public static final int   ProviderValue      = 200;
+    public static final int   RegisterListener   = 20;
 
-    public static final int RegisterProvider = 10;
-    public static final int RemoveListener = 101;
+    public static final int   RegisterProvider   = 10;
+    public static final int   RemoveListener     = 101;
 
-    public static final int Undefined = 0;
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
+    public static final int   Undefined          = 0;
+    private static final long serialVersionUID   = 1L;
 
     public static RegisterMsg addListener(ListenerProxy listener) {
         return new RegisterMsg(AddListener, listener, LocalRegister);
@@ -80,10 +77,10 @@ public class RegisterMsg implements Serializable {
         return new RegisterMsg(RemoveListener, listener, LocalRegister);
     }
 
-    public NameData data = null;
-    public int register = Undefined;
+    public NameData data     = null;
+    public int      register = Undefined;
 
-    public int type = Undefined;
+    public int      type     = Undefined;
 
     public RegisterMsg(int type, NameData data, int register) {
         this.type = type;

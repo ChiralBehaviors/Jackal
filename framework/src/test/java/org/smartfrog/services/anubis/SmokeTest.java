@@ -119,9 +119,7 @@ public class SmokeTest extends TestCase {
         int messageCount = 10;
         ArrayList<Node> nodes = new ArrayList<Node>();
         Class<?>[] configurations = new Class[] { testA.class, testB.class,
-                                                 testC.class, testD.class,
-                                                 testE.class, testF.class,
-                                                 testG.class };
+                testC.class, testD.class, testE.class, testF.class, testG.class };
         CyclicBarrier startBarrier = new CyclicBarrier(configurations.length);
         CyclicBarrier endBarrier = new CyclicBarrier(configurations.length + 1);
         for (Class<?> config : configurations) {
@@ -143,17 +141,15 @@ public class SmokeTest extends TestCase {
                                       + sender.getInstance(), received);
                 int lastCounter = -1;
                 boolean first = true;
-                boolean second = false;
+                List<ValueHistory> filtered = new ArrayList<ValueHistory>();
                 for (ValueHistory msg : received) {
+                    if (msg.value == null) {
+                        continue;
+                    }
+                    filtered.add(msg);
                     assertEquals(Action.NEW, msg.action);
                     if (first) {
                         first = false;
-                        second = true;
-                        // First message is the existence of the holder with no
-                        // value set
-                        assertNull(msg.value);
-                    } else if (second) {
-                        second = false;
                         lastCounter = (Integer) msg.value;
                     } else {
                         int counter = (Integer) msg.value;
@@ -163,9 +159,8 @@ public class SmokeTest extends TestCase {
                         lastCounter = counter;
                     }
                 }
-                assertEquals(sent.size() + 1, received.size());
                 for (int i = 0; i < sent.size(); i++) {
-                    assertEquals(sent.get(i).value, received.get(i + 1).value);
+                    assertEquals(sent.get(i).value, filtered.get(i).value);
                 }
             }
         }

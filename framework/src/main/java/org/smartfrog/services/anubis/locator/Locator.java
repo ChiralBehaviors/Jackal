@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -35,7 +36,6 @@ import javax.annotation.PreDestroy;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.registers.GlobalRegisterImpl;
 import org.smartfrog.services.anubis.locator.registers.LocalRegisterImpl;
-import org.smartfrog.services.anubis.locator.registers.StabilityQueue;
 import org.smartfrog.services.anubis.partition.Partition;
 import org.smartfrog.services.anubis.partition.PartitionNotification;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
@@ -70,15 +70,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     private long                            maxTransDelay;
     private Partition                       partition         = null;
     private Random                          random;
-
-    private StabilityQueue                  stabilityQueue    = new StabilityQueue() {
-                                                                  @Override
-                                                                  public void doit(View v,
-                                                                                   int l) {
-                                                                      partitionNotificationImpl(v,
-                                                                                                l);
-                                                                  }
-                                                              };
+    private ExecutorService                 stabilityQueue;
     private boolean                         stable            = false;
     private ScheduledExecutorService        timers            = null;                                              // public for debug
 
@@ -108,7 +100,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
 
         global.start();
         local.start();
-        stabilityQueue.start();
+        stabilityQueue = Executors.newSingleThreadExecutor();
         partition.register(this);
     }
 
@@ -203,8 +195,13 @@ public class Locator implements PartitionNotification, AnubisLocator {
      * @param leader
      */
     @Override
-    public void partitionNotification(View view, int leader) {
-        stabilityQueue.put(view, leader);
+    public void partitionNotification(final View view, final int leader) {
+        stabilityQueue.execute(new Runnable() { 
+            @Override
+            public void run() {
+                partitionNotificationImpl(view, leader);
+            }
+        });
     }
 
     /**
@@ -365,7 +362,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
         if (log.isLoggable(Level.INFO)) {
             log.info("Terminating Locator");
         }
-        stabilityQueue.terminate();
+        stabilityQueue.shutdownNow();
         global.terminate();
         local.terminate();
         timers.shutdownNow();
