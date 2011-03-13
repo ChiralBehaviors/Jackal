@@ -19,7 +19,9 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.SelectionKey;
@@ -42,13 +44,24 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
+
+import com.hellblazer.anubis.util.HexDump;
+
 import static java.lang.String.*;
 
 public class MessageNioHandler implements SendingListener, IOConnection,
         WireSizes {
-    public static final int                SENDING_DONE        = 0;
-    public static final int                SENDING_PENDING     = 1;
-    public static final int                SENDING_REFUSED     = 2;
+    public static final int SENDING_DONE    = 0;
+    public static final int SENDING_PENDING = 1;
+    public static final int SENDING_REFUSED = 2;
+
+    private static String toHex(byte[] data) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 4);
+        PrintStream stream = new PrintStream(baos);
+        HexDump.hexdump(stream, data, 0, data.length);
+        stream.close();
+        return baos.toString();
+    }
 
     private boolean                        announceTerm        = true;
     private ConnectionSet                  connectionSet       = null;
@@ -159,7 +172,11 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         WireMsg msg = null;
         try {
 
-            msg = wireSecurity.fromWireForm(fullRxBuffer.array());
+            byte[] bytes = fullRxBuffer.array();
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("Delivering bytes: \n%s", toHex(bytes)));
+            }
+            msg = wireSecurity.fromWireForm(bytes);
 
         } catch (WireSecurityException ex) {
             log.log(Level.SEVERE,

@@ -53,7 +53,7 @@ public class Endpoint {
 
     public String getMemberString() {
         return "[" + heartbeat.getSender() + " : "
-               + heartbeat.getSenderAddress() + "]";
+               + heartbeat.getHeartbeatAddress() + "]";
     }
 
     public HeartbeatState getState() {

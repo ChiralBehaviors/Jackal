@@ -90,6 +90,7 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     public Identity(ByteBuffer buffer) {
         magic = buffer.getInt();
         id = buffer.getInt();
+        assert id <= MAX_ID;
         epoch = buffer.getLong();
     }
 

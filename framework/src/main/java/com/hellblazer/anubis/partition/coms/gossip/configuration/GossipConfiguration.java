@@ -149,8 +149,8 @@ public class GossipConfiguration {
         return true;
     }
 
-    protected InetSocketAddress gossipEndpoint() {
-        return new InetSocketAddress(0);
+    protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
+        return new InetSocketAddress(contactHost(), 0);
     }
 
     protected int gossipInterval() {
@@ -206,7 +206,7 @@ public class GossipConfiguration {
         return 5000;
     }
 
-    protected Collection<InetSocketAddress> seedHosts() {
+    protected Collection<InetSocketAddress> seedHosts() throws UnknownHostException {
         return asList(gossipEndpoint());
     }
 

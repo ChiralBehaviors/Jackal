@@ -38,6 +38,8 @@ public class HeartbeatStateTest extends TestCase {
         Identity candidate = new Identity(0x1638, Identity.MAX_ID, 667);
         boolean preferred = true;
         Identity sender = new Identity(0x1638, 23, 22);
+        InetSocketAddress heartbeatAddress = new InetSocketAddress("yahoo.com",
+                                                                   80);
         InetSocketAddress senderAddress = new InetSocketAddress("google.com",
                                                                 80);
         boolean stable = true;
@@ -50,8 +52,8 @@ public class HeartbeatStateTest extends TestCase {
         msgLinks.add(candidate.id);
         msgLinks.add(sender.id);
         v.add(candidate.id);
-        HeartbeatState state = new HeartbeatState(candidate, msgLinks,
-                                                  preferred, sender,
+        HeartbeatState state = new HeartbeatState(candidate, heartbeatAddress,
+                                                  msgLinks, preferred, sender,
                                                   senderAddress, stable,
                                                   testInterface, v, viewNumber,
                                                   viewTimestamp);
@@ -59,6 +61,7 @@ public class HeartbeatStateTest extends TestCase {
         assertSame(sender, state.getSender());
         assertSame(senderAddress, state.getSenderAddress());
         assertSame(testInterface, state.getTestInterface());
+        assertSame(heartbeatAddress, state.getHeartbeatAddress());
         assertEquals(preferred, state.isPreferred());
         assertTrue(state.getMsgLinks().contains(candidate.id));
         assertTrue(state.getMsgLinks().contains(sender.id));
@@ -84,6 +87,7 @@ public class HeartbeatStateTest extends TestCase {
         assertEquals(senderAddress, dState.getSenderAddress());
         assertEquals(testInterface, dState.getTestInterface());
         assertEquals(preferred, dState.isPreferred());
+        assertEquals(heartbeatAddress, state.getHeartbeatAddress());
         assertTrue(dState.getMsgLinks().contains(candidate.id));
         assertTrue(dState.getMsgLinks().contains(sender.id));
 

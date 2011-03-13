@@ -126,8 +126,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 return daemon;
             }
         });
-        localState = new Endpoint(new HeartbeatState(view.getLocalAddress(),
-                                                     localIdentity));
+        localState = new Endpoint(new HeartbeatState(null, localIdentity,
+                                                     view.getLocalAddress()));
         localState.markAlive();
         endpoints.put(view.getLocalAddress(), localState);
     }
@@ -246,7 +246,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     @Override
     public void sendHeartbeat(Heartbeat heartbeat) {
-        updateLocalState(HeartbeatState.toHeartbeatState(heartbeat));
+        updateLocalState(HeartbeatState.toHeartbeatState(heartbeat,
+                                                         communications.getLocalAddress()));
     }
 
     @Override
@@ -326,7 +327,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     protected void apply(List<HeartbeatState> remoteStates) {
         long now = System.currentTimeMillis();
         for (HeartbeatState remoteState : remoteStates) {
-            InetSocketAddress endpoint = remoteState.getSenderAddress();
+            InetSocketAddress endpoint = remoteState.getHeartbeatAddress();
             if (endpoint.equals(view.getLocalAddress())) {
                 continue;
             }
@@ -428,7 +429,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            the system view
      */
     protected void discover(final HeartbeatState state) {
-        final InetSocketAddress address = state.getSenderAddress();
+        final InetSocketAddress address = state.getHeartbeatAddress();
         final Endpoint endpoint = new Endpoint(state);
         Runnable connectAction = new Runnable() {
             @Override

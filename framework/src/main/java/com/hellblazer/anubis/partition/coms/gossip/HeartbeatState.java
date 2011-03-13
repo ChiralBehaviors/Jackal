@@ -36,14 +36,16 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
  */
 public class HeartbeatState implements Heartbeat {
 
-    public static HeartbeatState toHeartbeatState(Heartbeat heartbeat) {
+    public static HeartbeatState toHeartbeatState(Heartbeat heartbeat,
+                                                  InetSocketAddress heartbeatAddress) {
         if (heartbeat instanceof HeartbeatState) {
             return (HeartbeatState) heartbeat;
         }
-        return new HeartbeatState(heartbeat);
+        return new HeartbeatState(heartbeat, heartbeatAddress);
     }
 
     private Identity          candidate;
+    private InetSocketAddress heartbeatAddress;
     private NodeIdSet         msgLinks;
     private boolean           preferred;
     private Identity          sender;
@@ -61,6 +63,7 @@ public class HeartbeatState implements Heartbeat {
         buffer.get(binaryCache);
         ByteBuffer msg = ByteBuffer.wrap(binaryCache);
         candidate = new Identity(msg);
+        heartbeatAddress = GossipHandler.readInetAddress(msg);
         msgLinks = new NodeIdSet(msg);
         preferred = msg.get() > 0 ? true : false;
         sender = new Identity(msg);
@@ -72,8 +75,9 @@ public class HeartbeatState implements Heartbeat {
         viewTimeStamp = msg.getLong();
     }
 
-    public HeartbeatState(Heartbeat heartbeat) {
+    public HeartbeatState(Heartbeat heartbeat, InetSocketAddress hbAddress) {
         candidate = heartbeat.getCandidate();
+        heartbeatAddress = hbAddress;
         msgLinks = heartbeat.getMsgLinks();
         preferred = heartbeat.isPreferred();
         sender = heartbeat.getSender();
@@ -83,12 +87,14 @@ public class HeartbeatState implements Heartbeat {
         fillCache();
     }
 
-    public HeartbeatState(Identity candidate, NodeIdSet msgLinks,
-                          boolean preferred, Identity sender,
-                          InetSocketAddress senderAddress, boolean stable,
-                          InetSocketAddress testInterface, NodeIdSet view,
-                          long viewNumber, long viewTimestamp) {
+    public HeartbeatState(Identity candidate,
+                          InetSocketAddress heartbeatAddress,
+                          NodeIdSet msgLinks, boolean preferred,
+                          Identity sender, InetSocketAddress senderAddress,
+                          boolean stable, InetSocketAddress testInterface,
+                          NodeIdSet view, long viewNumber, long viewTimestamp) {
         this.candidate = candidate;
+        this.heartbeatAddress = heartbeatAddress;
         this.msgLinks = msgLinks;
         this.preferred = preferred;
         this.sender = sender;
@@ -110,12 +116,13 @@ public class HeartbeatState implements Heartbeat {
         fillCache();
     }
 
-    protected HeartbeatState(InetSocketAddress address, Identity id) {
+    protected HeartbeatState(InetSocketAddress address, Identity id, InetSocketAddress hbAddress) {
         sender = id;
         senderAddress = address;
         view = new NodeIdSet(1);
         candidate = new Identity(-1, -1, -1);
         msgLinks = new NodeIdSet(1);
+        heartbeatAddress = hbAddress;
         fillCache();
     }
 
@@ -195,6 +202,10 @@ public class HeartbeatState implements Heartbeat {
 
     public long getEpoch() {
         return sender.epoch;
+    }
+
+    public InetSocketAddress getHeartbeatAddress() {
+        return heartbeatAddress;
     }
 
     @Override
@@ -319,6 +330,7 @@ public class HeartbeatState implements Heartbeat {
         binaryCache = new byte[GossipMessages.HEARTBEAT_STATE_BYTE_SIZE];
         ByteBuffer msg = ByteBuffer.wrap(binaryCache);
         candidate.writeTo(msg);
+        GossipHandler.writeInetAddress(heartbeatAddress, msg);
         msgLinks.writeTo(msg);
         if (preferred) {
             msg.put((byte) 1);

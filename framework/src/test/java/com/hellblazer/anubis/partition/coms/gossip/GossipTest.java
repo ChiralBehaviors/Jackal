@@ -84,20 +84,24 @@ public class GossipTest extends TestCase {
         Digest digest1a = new Digest(address1, 1, 0);
         Digest digest3a = new Digest(address3, 3, 3);
 
-        HeartbeatState state1 = new HeartbeatState(address1, new Identity(666,
-                                                                          1, 0));
+        HeartbeatState state1 = new HeartbeatState(null,
+                                                   new Identity(666, 1, 0),
+                                                   address1);
         state1.setViewNumber(1);
 
-        HeartbeatState state2 = new HeartbeatState(address2, new Identity(666,
-                                                                          2, 2));
+        HeartbeatState state2 = new HeartbeatState(null,
+                                                   new Identity(666, 2, 2),
+                                                   address2);
         state2.setViewNumber(2);
 
-        HeartbeatState state3 = new HeartbeatState(address3, new Identity(666,
-                                                                          3, 3));
+        HeartbeatState state3 = new HeartbeatState(null,
+                                                   new Identity(666, 3, 3),
+                                                   address3);
         state3.setViewNumber(3);
 
-        HeartbeatState state4 = new HeartbeatState(address4, new Identity(666,
-                                                                          4, 4));
+        HeartbeatState state4 = new HeartbeatState(null,
+                                                   new Identity(666, 4, 4),
+                                                   address4);
         state4.setViewNumber(4);
 
         Gossip gossip = new Gossip(view, random, 4, localIdentity,
@@ -137,14 +141,18 @@ public class GossipTest extends TestCase {
         InetSocketAddress address3 = new InetSocketAddress(3);
         InetSocketAddress address4 = new InetSocketAddress(4);
 
-        HeartbeatState state1 = new HeartbeatState(address1, new Identity(666,
-                                                                          1, 0));
-        HeartbeatState state2 = new HeartbeatState(address2, new Identity(666,
-                                                                          2, 1));
-        HeartbeatState state3 = new HeartbeatState(address3, new Identity(666,
-                                                                          3, 3));
-        HeartbeatState state4 = new HeartbeatState(address4, new Identity(666,
-                                                                          4, 4));
+        HeartbeatState state1 = new HeartbeatState(null,
+                                                   new Identity(666, 1, 0),
+                                                   address1);
+        HeartbeatState state2 = new HeartbeatState(null,
+                                                   new Identity(666, 2, 1),
+                                                   address2);
+        HeartbeatState state3 = new HeartbeatState(null,
+                                                   new Identity(666, 3, 3),
+                                                   address3);
+        HeartbeatState state4 = new HeartbeatState(null,
+                                                   new Identity(666, 4, 4),
+                                                   address4);
 
         Gossip gossip = new Gossip(view, random, 4, localIdentity,
                                    communications, 4, TimeUnit.DAYS);
@@ -186,20 +194,24 @@ public class GossipTest extends TestCase {
         InetSocketAddress address3 = new InetSocketAddress(3);
         InetSocketAddress address4 = new InetSocketAddress(4);
 
-        HeartbeatState state1 = new HeartbeatState(address1, new Identity(666,
-                                                                          1, 0));
+        HeartbeatState state1 = new HeartbeatState(null,
+                                                   new Identity(666, 1, 0),
+                                                   address1);
         state1.setViewNumber(1);
 
-        HeartbeatState state2 = new HeartbeatState(address2, new Identity(666,
-                                                                          2, 2));
+        HeartbeatState state2 = new HeartbeatState(null,
+                                                   new Identity(666, 2, 2),
+                                                   address2);
         state2.setViewNumber(2);
 
-        HeartbeatState state3 = new HeartbeatState(address3, new Identity(666,
-                                                                          3, 3));
+        HeartbeatState state3 = new HeartbeatState(null,
+                                                   new Identity(666, 3, 3),
+                                                   address3);
         state3.setViewNumber(3);
 
-        HeartbeatState state4 = new HeartbeatState(address4, new Identity(666,
-                                                                          4, 4));
+        HeartbeatState state4 = new HeartbeatState(null,
+                                                   new Identity(666, 4, 4),
+                                                   address4);
         state4.setViewNumber(4);
 
         when(ep1.getEpoch()).thenReturn(0L);

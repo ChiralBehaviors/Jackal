@@ -36,6 +36,7 @@ public interface GossipMessages {
     int  NODE_ID_SET_MAX_BYTE_SIZE  = 257;
     int  IDENTITY_BYTE_SIZE         = 16;
     int  HEARTBEAT_STATE_BYTE_SIZE  = IDENTITY_BYTE_SIZE // candidate
+                                      + INET_ADDRESS_MAX_BYTE_SIZE // heartbeat address
                                       + NODE_ID_SET_MAX_BYTE_SIZE // msgLinks
                                       + 1 // preferred
                                       + IDENTITY_BYTE_SIZE // sender

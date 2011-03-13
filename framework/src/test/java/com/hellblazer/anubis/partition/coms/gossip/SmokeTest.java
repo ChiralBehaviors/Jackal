@@ -18,6 +18,7 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -65,12 +66,13 @@ public class SmokeTest extends TestCase {
             }
         }
 
-        InetSocketAddress seedContact() {
-            return new InetSocketAddress(testPort);
+        InetSocketAddress seedContact() throws UnknownHostException {
+            return new InetSocketAddress(contactHost(), testPort);
         }
 
         @Override
-        protected Collection<InetSocketAddress> seedHosts() {
+        protected Collection<InetSocketAddress> seedHosts()
+                                                           throws UnknownHostException {
             return asList(seedContact());
         }
     }
@@ -83,7 +85,8 @@ public class SmokeTest extends TestCase {
         }
 
         @Override
-        protected InetSocketAddress gossipEndpoint() {
+        protected InetSocketAddress gossipEndpoint()
+                                                    throws UnknownHostException {
             return seedContact();
         }
     }

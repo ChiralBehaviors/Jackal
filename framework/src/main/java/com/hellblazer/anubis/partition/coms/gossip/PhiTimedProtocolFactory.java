@@ -40,7 +40,7 @@ public class PhiTimedProtocolFactory implements HeartbeatProtocolFactory {
 
     @Override
     public Heartbeat createMsg(Identity identity, InetSocketAddress address) {
-        return new HeartbeatState(address, identity);
+        return new HeartbeatState(address, identity, gossip.getLocalAddress());
     }
 
     @Override
