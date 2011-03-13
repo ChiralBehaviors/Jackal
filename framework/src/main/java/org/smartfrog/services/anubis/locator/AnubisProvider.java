@@ -40,24 +40,24 @@ public class AnubisProvider {
     /**
      * instance information generated qutomatically by Anubis
      */
-    private String instance = null;
+    private String        instance = null;
     /**
      * the locator that this provider is registered with.
      */
-    private AnubisLocator locator = null;
+    private AnubisLocator locator  = null;
     /**
      * The providers name;
      */
-    private String name = null;
+    private String        name     = null;
     /**
      * the time the value parameter was set or the time this provider is
      * registered, whichever is more recent. (time taken from system clock).
      */
-    private long time = 0;
+    private long          time     = 0;
     /**
      * The value supplied by the provider.
      */
-    private ValueData value = null;
+    private ValueData     value    = null;
 
     /**
      * constructor - the provider must be named.

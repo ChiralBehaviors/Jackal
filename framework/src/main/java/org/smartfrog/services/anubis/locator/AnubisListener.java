@@ -37,22 +37,23 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
-import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
-import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
 
 abstract public class AnubisListener {
-    private long mostRecentChange = -1;
+    private static final Logger        log              = Logger.getLogger(AnubisListener.class.getCanonicalName());
+    protected ScheduledExecutorService timers;
+    private long                       mostRecentChange = -1;
     /**
      * The name of the provider that this listener listens for.
      */
-    private String name;
-    private Map<String, AnubisValue> values = new HashMap<String, AnubisValue>();
-    private static final Logger log = Logger.getLogger(AnubisListener.class.getCanonicalName());;
-    protected ActiveTimeQueue timers;
+    private String                     name;                                                                         ;
+    private Map<String, AnubisValue>   values           = new HashMap<String, AnubisValue>();
 
     public AnubisListener(String n) {
         name = n;
@@ -116,7 +117,7 @@ abstract public class AnubisListener {
         }
     }
 
-    public void setTimerQueue(ActiveTimeQueue queue) {
+    public void setTimer(ScheduledExecutorService queue) {
         timers = queue;
     }
 
@@ -146,15 +147,17 @@ abstract public class AnubisListener {
      * 
      * @param listener
      */
-    private void safeNewValue(AnubisValue v) {
+    private void safeNewValue(final AnubisValue v) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
+        ScheduledFuture<?> task = timers.schedule(new Runnable() {
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
-                                                                       log,
-                                                                       "User API Upcall took >200ms in newValue(p) where p="
-                                                                               + v);
-        timers.add(timeoutErrorLogger, (timein + 200));
+            @Override
+            public void run() {
+                log.warning("User API Upcall took >200ms in newValue(p) where p="
+                            + v);
+            }
+        }, 200, TimeUnit.MILLISECONDS);
         try {
             newValue(v);
         } catch (Throwable ex) {
@@ -163,7 +166,7 @@ abstract public class AnubisListener {
                             + v, ex);
         }
         timeout = System.currentTimeMillis();
-        timers.remove(timeoutErrorLogger);
+        task.cancel(true);
         if (log.isLoggable(Level.FINER)) {
             log.finer("User API Upcall took " + (timeout - timein)
                       + "ms in newValue(p) where p=" + v);
@@ -176,15 +179,19 @@ abstract public class AnubisListener {
      * 
      * @param listener
      */
-    private void safeRemoveValue(AnubisValue v) {
+    private void safeRemoveValue(final AnubisValue v) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
-                                                                       log,
-                                                                       "User API Upcall took >200ms in removeValue(p) where p="
-                                                                               + v);
-        timers.add(timeoutErrorLogger, (timein + 200));
+        ScheduledFuture<?> task = timers.schedule(new Runnable() {
+
+            @Override
+            public void run() {
+                log.warning("User API Upcall took >200ms in removeValue(p) where p="
+                            + v);
+            }
+        }, 200, TimeUnit.MILLISECONDS);
+
         try {
             removeValue(v);
         } catch (Throwable ex) {
@@ -193,7 +200,7 @@ abstract public class AnubisListener {
                             + v, ex);
         }
         timeout = System.currentTimeMillis();
-        timers.remove(timeoutErrorLogger);
+        task.cancel(true);
         if (log.isLoggable(Level.FINER)) {
             log.finer("User API Upcall took " + (timeout - timein)
                       + "ms in removeValue(p) where p=" + v);

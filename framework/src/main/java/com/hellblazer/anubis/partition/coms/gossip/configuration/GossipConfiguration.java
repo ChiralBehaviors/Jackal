@@ -1,4 +1,4 @@
-package org.smartfrog.services.anubis;
+package com.hellblazer.anubis.partition.coms.gossip.configuration;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
 import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 
 @Configuration
-public class BasicConfiguration {
+public class GossipConfiguration {
 
     @Bean
     public ConnectionSet connectionSet() throws Exception {

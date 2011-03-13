@@ -19,18 +19,18 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.locator;
 
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
-import org.smartfrog.services.anubis.locator.util.TimeoutErrorLogger;
-
 abstract public class AnubisStability {
 
-    private long lastTimeRef = -1;
-    private boolean lastWasStable = true;
-    private ActiveTimeQueue timers = null;
-    private static final Logger log = Logger.getLogger(AnubisStability.class.getCanonicalName());
+    private static final Logger      log           = Logger.getLogger(AnubisStability.class.getCanonicalName());
+    private long                     lastTimeRef   = -1;
+    private boolean                  lastWasStable = true;
+    private ScheduledExecutorService timers        = null;
 
     public synchronized boolean isStable() {
         return lastWasStable;
@@ -68,18 +68,18 @@ abstract public class AnubisStability {
         }
     }
 
-    public void safeStability(boolean isStable, long timeRef) {
+    public void safeStability(final boolean isStable, final long timeRef) {
 
         long timein = System.currentTimeMillis();
         long timeout = 0;
+        ScheduledFuture<?> task = timers.schedule(new Runnable() {
 
-        TimeoutErrorLogger timeoutErrorLogger = new TimeoutErrorLogger(
-                                                                       log,
-                                                                       "User API Upcall took >200ms in stability(s,t) where s="
-                                                                               + isStable
-                                                                               + ", t="
-                                                                               + timeRef);
-        timers.add(timeoutErrorLogger, (timein + 200));
+            @Override
+            public void run() {
+                log.warning("User API Upcall took >200ms in stability(s,t) where s="
+                            + isStable + ", t=" + timeRef);
+            }
+        }, 200, TimeUnit.MILLISECONDS);
         try {
             stability(isStable, timeRef);
         } catch (Throwable ex) {
@@ -88,7 +88,7 @@ abstract public class AnubisStability {
                             + isStable + ", t=" + timeRef, ex);
         }
         timeout = System.currentTimeMillis();
-        timers.remove(timeoutErrorLogger);
+        task.cancel(true);
         if (log.isLoggable(Level.FINER)) {
             log.finer("User API Upcall took " + (timeout - timein)
                       + "ms in stability(s,t) where s=" + isStable + ", t="
@@ -97,7 +97,7 @@ abstract public class AnubisStability {
 
     }
 
-    public void setTimerQueue(ActiveTimeQueue t) {
+    public void setTimer(ScheduledExecutorService t) {
         timers = t;
     }
 

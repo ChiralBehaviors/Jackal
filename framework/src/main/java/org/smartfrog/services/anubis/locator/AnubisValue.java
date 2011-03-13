@@ -25,7 +25,7 @@ public class AnubisValue {
 
     private String instance;
     private String name;
-    private long time;
+    private long   time;
     private Object value;
 
     public AnubisValue(ProviderInstance i) {

@@ -33,7 +33,8 @@ package org.smartfrog.services.anubis.locator;
  *                 AnubisProvider and AnubisListener base classes and registering
  *                 them using this API.
  */
-import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
+import java.util.concurrent.ScheduledExecutorService;
+
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public interface AnubisLocator {
@@ -52,6 +53,8 @@ public interface AnubisLocator {
      */
     public void deregisterStability(AnubisStability stability);
 
+    public abstract Identity getIdentity();
+
     /**
      * Returns the upper bound on communication delay.
      * 
@@ -64,9 +67,9 @@ public interface AnubisLocator {
      * building on the AnubisLocator interface that will order their timers with
      * those used by Anubis as well as provide a general timer facility.
      * 
-     * @return ActiveTimeQueue
+     * @return ScheduledExecutorService
      */
-    public ActiveTimeQueue getTimeQueue();
+    public ScheduledExecutorService getScheduler();
 
     /**
      * Indicates that the provider has a new value
@@ -100,6 +103,4 @@ public interface AnubisLocator {
      * becomes stable or unstable.
      */
     public void registerStability(AnubisStability stability);
-
-    public abstract Identity getIdentity();
 }

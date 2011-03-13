@@ -19,11 +19,15 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.locator.subprocess;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,14 +38,11 @@ import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.AnubisStability;
-import org.smartfrog.services.anubis.locator.util.ActiveTimeQueue;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 import com.hellblazer.anubis.annotations.Deployed;
 
 public class SPLocatorImpl implements AnubisLocator, SPLocator {
-    private static final long serialVersionUID = 1L;
-
     class LivenessChecker extends PeriodicTimer {
         LivenessChecker(long period) {
             super("SPLocator liveness checker", period);
@@ -65,23 +66,45 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         }
     }
 
-    private boolean isDeployed = false;
-    private boolean isRegistered = false;
-    private Object adapterMonitor = new Object();
-    private SPLocatorAdapter adapter;
-    private Set<AnubisProvider> providers = new HashSet<AnubisProvider>();
-    private Map<AnubisListener, SPListener> listeners = new HashMap<AnubisListener, SPListener>();
-    private Map<AnubisStability, SPStability> stabilities = new HashMap<AnubisStability, SPStability>();
-    private Liveness liveness;
-    private LivenessChecker livenessChecker;
-    private Pinger pinger;
-    private ActiveTimeQueue timers;
-    private long maxTransDelay;
-    private Logger syncLog = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
-    private Logger asyncLog = syncLog; // TO Do: wrap with Async...
-    private volatile boolean terminated = false;
-    private long period;
-    private long timeout;
+    private static final long                 serialVersionUID = 1L;
+
+    private static final Logger               log              = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
+    private boolean                           isDeployed       = false;
+    private boolean                           isRegistered     = false;
+    private Object                            adapterMonitor   = new Object();
+    private SPLocatorAdapter                  adapter;
+    private Set<AnubisProvider>               providers        = new HashSet<AnubisProvider>();
+    private Map<AnubisListener, SPListener>   listeners        = new HashMap<AnubisListener, SPListener>();
+    private Map<AnubisStability, SPStability> stabilities      = new HashMap<AnubisStability, SPStability>();
+    private Liveness                          liveness;
+    private LivenessChecker                   livenessChecker;
+    private Pinger                            pinger;
+    private ScheduledExecutorService          timers;
+    private long                              maxTransDelay;
+    private Logger                            syncLog          = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
+    private Logger                            asyncLog         = syncLog;                                                 // TO Do: wrap with Async...
+    private volatile boolean                  terminated       = false;
+    private long                              period;
+    private long                              timeout;
+
+    public SPLocatorImpl() {
+        timers = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           "Anubis: subprocess locator timers");
+                daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                    }
+                });
+                daemon.setPriority(Thread.MAX_PRIORITY);
+                return daemon;
+            }
+        });
+    }
 
     @Deployed
     public void deploy() throws RemoteException {
@@ -90,8 +113,6 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             // liveness.ping();
             pinger = new Pinger(period);
             livenessChecker = new LivenessChecker(period);
-            timers = new ActiveTimeQueue("Anubis: subprocess locator timers");
-            timers.start();
             maxTransDelay = period * timeout;
 
             synchronized (adapterMonitor) {
@@ -188,12 +209,21 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
     }
 
     @Override
+    public Identity getIdentity() {
+        try {
+            return adapter.getIdentity();
+        } catch (RemoteException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
     public long getmaxDelay() {
         return maxTransDelay;
     }
 
     @Override
-    public ActiveTimeQueue getTimeQueue() {
+    public ScheduledExecutorService getScheduler() {
         return timers;
     }
 
@@ -241,7 +271,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         }
 
         try {
-            listener.setTimerQueue(timers);
+            listener.setTimer(timers);
             SPListener spListener = new SPListenerImpl(listener);
             adapter.registerListener(this, listener.getName(), spListener);
             listeners.put(listener, spListener);
@@ -300,7 +330,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         }
 
         try {
-            stability.setTimerQueue(timers);
+            stability.setTimer(timers);
             SPStability spStability = new SPStabilityImpl(stability);
             adapter.registerStability(this, spStability);
             stabilities.put(stability, spStability);
@@ -347,7 +377,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         terminated = true;
         deregister();
         if (timers != null) {
-            timers.terminate();
+            timers.shutdownNow();
         }
     }
 
@@ -461,13 +491,4 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             }
         }
     }
-
-    public Identity getIdentity() {
-        try {
-            return adapter.getIdentity();
-        } catch (RemoteException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
 }

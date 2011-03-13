@@ -25,13 +25,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ValueData implements Serializable {
-    static private final Logger log = Logger.getLogger(ValueData.class.getClass().toString()); // TODO use asynch wrapper
-    static private Object noMarshall = "state could not be marshalled";
-    static private Object noUnmarshall = "state could not be unmarshalled";
+    static private final Logger log              = Logger.getLogger(ValueData.class.getClass().toString()); // TODO use asynch wrapper
+    static private Object       noMarshall       = "state could not be marshalled";
+    static private Object       noUnmarshall     = "state could not be unmarshalled";
     /**
      * 
      */
-    private static final long serialVersionUID = 1L;
+    private static final long   serialVersionUID = 1L;
 
     static public ValueData newMarshalledValue(Object value) {
         try {
@@ -57,7 +57,7 @@ public class ValueData implements Serializable {
 
     private boolean marshalled;
 
-    private Object value;
+    private Object  value;
 
     private ValueData(boolean marshalled, Object value) {
         this.marshalled = marshalled;
