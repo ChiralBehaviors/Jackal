@@ -42,22 +42,24 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  * 
  */
 public class Node {
-    static Random RANDOM = new Random(666);
-    private AnnotationConfigApplicationContext context;
-    private int maxSleep;
-    private AnubisProvider provider;
-    private int messagesToSend;
-    private CyclicBarrier barrier;
-    private String instance;
-    private CountDownLatch latch = new CountDownLatch(1);
+    static Random                                         RANDOM           = new Random(
+                                                                                        666);
+    private AnnotationConfigApplicationContext            context;
+    private int                                           maxSleep;
+    private AnubisProvider                                provider;
+    private int                                           messagesToSend;
+    private CyclicBarrier                                 barrier;
+    private String                                        instance;
+    private CountDownLatch                                latch            = new CountDownLatch(
+                                                                                                1);
 
-    private ArrayList<SendHistory> sendHistory = new ArrayList<SendHistory>();
-    private ConcurrentHashMap<String, List<ValueHistory>> receiveHistory = new ConcurrentHashMap<String, List<ValueHistory>>();
-    private ArrayList<StabilityHistory> stabilityHistory = new ArrayList<StabilityHistory>();
-    private CyclicBarrier startBarrier;
+    private ArrayList<SendHistory>                        sendHistory      = new ArrayList<SendHistory>();
+    private ConcurrentHashMap<String, List<ValueHistory>> receiveHistory   = new ConcurrentHashMap<String, List<ValueHistory>>();
+    private ArrayList<StabilityHistory>                   stabilityHistory = new ArrayList<StabilityHistory>();
+    private CyclicBarrier                                 startBarrier;
 
-    Node(AnnotationConfigApplicationContext context, String stateName)
-                                                                      throws Exception {
+    public Node(AnnotationConfigApplicationContext context, String stateName)
+                                                                             throws Exception {
         this.context = context;
 
         PartitionManager pm = context.getBean(PartitionManager.class);

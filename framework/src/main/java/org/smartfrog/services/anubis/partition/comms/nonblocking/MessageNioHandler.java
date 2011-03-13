@@ -42,6 +42,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
+import static java.lang.String.*;
 
 public class MessageNioHandler implements SendingListener, IOConnection,
         WireSizes {
@@ -161,25 +162,22 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             msg = wireSecurity.fromWireForm(fullRxBuffer.array());
 
         } catch (WireSecurityException ex) {
-            log.severe(me
-                       + "non blocking connection transport encountered security violation unmarshalling message - ignoring the message "); // +
-                                                                                                                                            // this.getSender()
-                                                                                                                                            // );
+            log.log(Level.SEVERE,
+                    format("%s non blocking connection transport encountered security violation unmarshalling message - ignoring the message ",
+                           me), ex);
             return;
 
         } catch (Exception ex) {
-            log.severe(me
-                       + "connection transport unable to unmarshall message "); // +
-                                                                                // this.getSender()
-                                                                                // );
+            log.log(Level.SEVERE,
+                    format("%s connection transport unable to unmarshall message ",
+                           me), ex);
             shutdown();
             return;
         }
 
         if (!(msg instanceof TimedMsg)) {
-            log.severe(me + "connection transport received non timed message "); // +
-                                                                                 // this.getSender()
-                                                                                 // );
+            log.severe(format("%s connection transport received non timed message ",
+                              me));
             shutdown();
             return;
         }
@@ -187,8 +185,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         TimedMsg tm = (TimedMsg) msg;
 
         if (tm.getOrder() != receiveCount) {
-            log.severe(me
-                       + "connection transport has delivered a message out of order - shutting down");
+            log.severe(format("%s connection transport has delivered a message out of order - shutting down",
+                              me));
             shutdown();
             return;
         }
@@ -432,8 +430,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             sendCount++;
             bytesToSend = wireSecurity.toWireForm(tm);
         } catch (Exception ex) {
-            log.log(Level.SEVERE, me + " failed to marshall timed message: "
-                                  + tm + " - not sent", ex);
+            log.log(Level.SEVERE,
+                    format("%s failed to marshall timed message: %s - not sent",
+                           me, tm), ex);
             return;
         }
 
@@ -636,8 +635,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * must be a heartbeat message
          */
         if (!(obj instanceof HeartbeatMsg)) {
-            log.severe(me
-                       + " did not receive a heartbeat message first - shutdown");
+            log.severe(format("%s did not receive a heartbeat message first - shutdown",
+                              me));
             shutdown();
             return;
         }
@@ -648,8 +647,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * There must be a valid connection (heartbeat connection)
          */
         if (!connectionSet.getView().contains(hbmsg.getSender())) {
-            log.severe(me
-                       + " did not have incoming connection in the connection set");
+            log.severe(format("%s did not have incoming connection in the connection set",
+                              me));
             shutdown();
             return;
         }
@@ -670,7 +669,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 // " Connection Comms");
                 messageConnection.deliver(bytes);
             } else {
-                log.severe(me + " failed to assign incoming connection");
+                log.severe(format("%s failed to assign incoming connection", me));
                 shutdown();
             }
             return;
@@ -680,8 +679,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * By now we should be left with a heartbeat connection - sanity check
          */
         if (!(con instanceof HeartbeatConnection)) {
-            log.severe(me
-                       + " ?!? incoming connection is in connection set, but not heartbeat or message type");
+            log.severe(format("%s ?!? incoming connection is in connection set, but not heartbeat or message type",
+                              me));
             shutdown();
             return;
         }
@@ -703,9 +702,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          */
         if (!hbmsg.getMsgLinks().contains(me.id)) {
             if (log.isLoggable(Level.FINER)) {
-                log.severe(me + " incoming connection from "
-                           + con.getSender().toString()
-                           + " when neither end wants the connection");
+                log.severe(format("%s incoming connection from %s when neither end wants the connection",
+                                  me, con.getSender()));
                 // next two lines removed to allow this case
                 // shutdown();
                 // return;
@@ -746,9 +744,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          */
         if (!connectionSet.useNewMessageConnection(messageConnection)) {
             if (log.isLoggable(Level.FINER)) {
-                log.severe(me
-                           + "Concurrent creation of message connections from "
-                           + messageConnection.getSender());
+                log.severe(format("%s Concurrent creation of message connections from %s",
+                                  me, messageConnection.getSender()));
             }
             shutdown();
             return;

@@ -37,6 +37,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
+import static java.lang.String.format;
 
 public class MessageConnectionImpl extends ConnectionComms implements
         IOConnection {
@@ -53,14 +54,13 @@ public class MessageConnectionImpl extends ConnectionComms implements
     private long                    receiveCount      = INITIAL_MSG_ORDER;
     private long                    sendCount         = INITIAL_MSG_ORDER;
     private MessageConnectionServer server            = null;
-
     private WireSecurity            wireSecurity      = null;
 
     public MessageConnectionImpl(Identity id, ConnectionSet cs,
                                  InetSocketAddress address,
                                  MessageConnection mc, WireSecurity sec) {
-        super("Anubis: Connection Comms (node " + id.id + ", remote node "
-              + mc.getSender().id + ")", address);
+        super(format("Anubis: Connection Comms (node %s, remote node %s)",
+                     id.id, mc.getSender()), address);
         me = id;
         connectionSet = cs;
         messageConnection = mc;
@@ -71,7 +71,7 @@ public class MessageConnectionImpl extends ConnectionComms implements
     public MessageConnectionImpl(Identity id, SocketChannel channel,
                                  MessageConnectionServer mcs, ConnectionSet cs,
                                  WireSecurity sec) {
-        super("Anubis: " + id + " Connection Comms (node " + id.id + ")",
+        super(format("Anubis: %s Connection Comms (node %s)", id, id.id),
               channel);
         me = id;
         server = mcs;
@@ -116,19 +116,21 @@ public class MessageConnectionImpl extends ConnectionComms implements
             msg = wireSecurity.fromWireForm(bytes);
 
         } catch (WireSecurityException ex) {
-            log.severe(me
-                       + "connection transport encountered security violation unmarshalling message - ignoring "); // + this.getSender() );
+            log.log(Level.SEVERE,
+                    format("%s connection transport encountered security violation unmarshalling message - ignoring ",
+                           me), ex);
             return;
 
         } catch (Exception ex) {
-            log.severe(me
-                       + "connection transport unable to unmarshall message "); // + this.getSender() );
+            log.log(Level.SEVERE,
+                    format("%s connection transport unable to unmarshall message",
+                           me), ex);
             shutdown();
             return;
         }
 
         if (!(msg instanceof TimedMsg)) {
-            log.severe(me + "connection transport received non timed message "); // + this.getSender() );
+            log.severe(me + "connection transport received non timed message ");
             shutdown();
             return;
         }
@@ -136,8 +138,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
         TimedMsg tm = (TimedMsg) msg;
 
         if (tm.getOrder() != receiveCount) {
-            log.severe(me
-                       + "connection transport has delivered a message out of order - shutting down");
+            log.severe(format("%s connection transport has delivered a message out of order - shutting down",
+                              me));
             shutdown();
             return;
         }
@@ -182,8 +184,9 @@ public class MessageConnectionImpl extends ConnectionComms implements
             sendCount++;
             super.send(wireSecurity.toWireForm(tm));
         } catch (Exception ex) {
-            log.log(Level.SEVERE, me + " failed to marshall timed message: "
-                                  + tm + " - shutting down connection", ex);
+            log.log(Level.SEVERE,
+                    format("%s failed to marshall timed message: %s - shutting down connection",
+                           me, tm), ex);
             shutdown();
         }
     }
@@ -229,9 +232,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
          */
         if (!(obj instanceof HeartbeatMsg)) {
             log.log(Level.SEVERE,
-                    me
-                            + " did not receive a heartbeat message first - shutdown",
-                    new Exception());
+                    format("%s did not receive a heartbeat message first - shutdown",
+                           me), new Exception());
             shutdown();
             return;
         }
@@ -242,9 +244,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * There must be a valid connection (heartbeat connection)
          */
         if (!connectionSet.getView().contains(hbmsg.getSender())) {
-            log.severe(me + " did not have incoming connection from "
-                       + hbmsg.getSender().toString()
-                       + " in the connection set");
+            log.severe(format("%s did not have incoming connection from %s in the connection set",
+                              hbmsg));
             shutdown();
             return;
         }
@@ -260,12 +261,12 @@ public class MessageConnectionImpl extends ConnectionComms implements
         if (con instanceof MessageConnection) {
             if (((MessageConnection) con).assignImpl(this)) {
                 messageConnection = (MessageConnection) con;
-                setName("Anubis: Connection Comms (node " + me.id
-                        + ", remote node " + con.getSender().id + ")");
+                setName(format("Anubis: Connection Comms (node %s, remote node %s)",
+                               me.id, con.getSender().id));
                 messageConnection.deliver(bytes);
             } else {
-                log.severe(me + " failed to assign incoming connection from "
-                           + con.getSender().toString());
+                log.severe(format("%s failed to assign incoming connection from %s",
+                                  me, con.getSender()));
                 shutdown();
             }
             return;
@@ -275,10 +276,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * By now we should be left with a heartbeat connection - sanity check
          */
         if (!(con instanceof HeartbeatConnection)) {
-            log.severe(me
-                       + " ?!? incoming connection from "
-                       + con.getSender().toString()
-                       + " is in connection set, but not heartbeat or message type");
+            log.severe(format("%s ?!? incoming connection from %s is in connection set, but not heartbeat or message type",
+                              me, con.getSender()));
             shutdown();
             return;
         }
@@ -299,10 +298,8 @@ public class MessageConnectionImpl extends ConnectionComms implements
          * do log its occurance.
          */
         if (!hbmsg.getMsgLinks().contains(me.id)) {
-            log.severe(me
-                       + " VALID CASE - FOR INFORMATION ONLY:=> incoming connection from "
-                       + con.getSender().toString()
-                       + " when neither end wants the connection");
+            log.info(format("%s VALID CASE - FOR INFORMATION ONLY:=> incoming connection from %s when neither end wants the connection",
+                            me, con.getSender()));
             // next two lines removed to allow this case
             // shutdown();
             // return;
@@ -346,8 +343,7 @@ public class MessageConnectionImpl extends ConnectionComms implements
             shutdown();
             return;
         }
-        setName("Anubis: Connection Comms (node " + me.id + ", remote node "
-                + messageConnection.getSender().id + ")");
+        setName(format("Anubis: Connection Comms (node %s, remote node %s)",
+                       me.id, messageConnection.getSender().id));
     }
-
 }

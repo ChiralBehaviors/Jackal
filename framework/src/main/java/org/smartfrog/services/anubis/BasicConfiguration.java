@@ -3,7 +3,6 @@ package org.smartfrog.services.anubis;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Timer;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
@@ -94,11 +93,6 @@ public class BasicConfiguration {
         mgr.setIdentity(partitionIdentity());
         mgr.setTestable(getTestable());
         return mgr;
-    }
-
-    @Bean
-    public Timer timer() {
-        return new Timer("Partition timer", true);
     }
 
     @Bean

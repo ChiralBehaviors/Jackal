@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -71,7 +72,7 @@ import com.hellblazer.anubis.partition.coms.gossip.Digest.DigestComparator;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class Gossip implements HeartbeatCommsIntf {
+public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private final static Logger                              log       = Logger.getLogger(Gossip.class.getCanonicalName());
 
     private final GossipCommunications                       communications;
@@ -84,7 +85,7 @@ public class Gossip implements HeartbeatCommsIntf {
     private final int                                        interval;
     private final TimeUnit                                   intervalUnit;
     private final ScheduledExecutorService                   scheduler;
-    private final HeartbeatReceiver                          receiver;
+    private HeartbeatReceiver                                receiver;
     private final AtomicReference<View>                      ignoring  = new AtomicReference<View>();
     private final AtomicBoolean                              running   = new AtomicBoolean();
 
@@ -105,9 +106,8 @@ public class Gossip implements HeartbeatCommsIntf {
      * @param localIdentity
      *            - the identity of the local member
      */
-    public Gossip(HeartbeatReceiver heartbeatReceiver, SystemView systemView,
-                  Random random, double phiConvictThreshold,
-                  Identity localIdentity,
+    public Gossip(SystemView systemView, Random random,
+                  double phiConvictThreshold, Identity localIdentity,
                   GossipCommunications communicationsService,
                   int gossipInterval, TimeUnit unit) {
         communications = communicationsService;
@@ -117,7 +117,6 @@ public class Gossip implements HeartbeatCommsIntf {
         view = systemView;
         interval = gossipInterval;
         intervalUnit = unit;
-        receiver = heartbeatReceiver;
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
@@ -160,6 +159,10 @@ public class Gossip implements HeartbeatCommsIntf {
         }
         view.cullQuarantined(now);
         view.cullUnreachable(now);
+    }
+
+    public InetSocketAddress getLocalAddress() {
+        return view.getLocalAddress();
     }
 
     @Override
@@ -249,6 +252,11 @@ public class Gossip implements HeartbeatCommsIntf {
     @Override
     public void setIgnoring(View ignoringUpdate) {
         ignoring.set(ignoringUpdate);
+    }
+
+    public HeartbeatCommsIntf create(HeartbeatReceiver hbReceiver) {
+        receiver = hbReceiver;
+        return this;
     }
 
     public boolean shouldConvict(InetSocketAddress address, long now) {
@@ -612,9 +620,5 @@ public class Gossip implements HeartbeatCommsIntf {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Sorted gossip digests are : %s", digests));
         }
-    }
-
-    public InetSocketAddress getLocalAddress() {
-        return view.getLocalAddress();
     }
 }

@@ -26,7 +26,6 @@ public class GossipTest extends TestCase {
 
     public void testExamineAllNew() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
-        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
@@ -51,7 +50,7 @@ public class GossipTest extends TestCase {
         Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), 0,
                                      -1);
 
-        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+        Gossip gossip = new Gossip(view, random, 4, localIdentity,
                                    communications, 4, TimeUnit.DAYS);
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
@@ -65,7 +64,6 @@ public class GossipTest extends TestCase {
 
     public void testExamineMixed() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
-        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
@@ -102,7 +100,7 @@ public class GossipTest extends TestCase {
                                                                           4, 4));
         state4.setViewNumber(4);
 
-        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+        Gossip gossip = new Gossip(view, random, 4, localIdentity,
                                    communications, 4, TimeUnit.DAYS);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
@@ -148,8 +146,9 @@ public class GossipTest extends TestCase {
         HeartbeatState state4 = new HeartbeatState(address4, new Identity(666,
                                                                           4, 4));
 
-        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+        Gossip gossip = new Gossip(view, random, 4, localIdentity,
                                    communications, 4, TimeUnit.DAYS);
+        gossip.create(receiver);
 
         gossip.apply(asList(state1, state2, state3, state4));
 
@@ -217,8 +216,9 @@ public class GossipTest extends TestCase {
         when(ep4.getEpoch()).thenReturn(4L);
         when(ep4.getViewNumber()).thenReturn(5L);
 
-        Gossip gossip = new Gossip(receiver, view, random, 4, localIdentity,
+        Gossip gossip = new Gossip(view, random, 4, localIdentity,
                                    communications, 4, TimeUnit.DAYS);
+        gossip.create(receiver);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -254,11 +254,11 @@ public class GossipTest extends TestCase {
         verifyNoMoreInteractions(ep4);
 
         verify(communications).setGossip(gossip);
-        
+
         ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
-        verify(communications, new Times(2)).dispatch(captor.capture()); 
-        
-        for (Runnable action: captor.getAllValues()) {
+        verify(communications, new Times(2)).dispatch(captor.capture());
+
+        for (Runnable action : captor.getAllValues()) {
             action.run();
         }
 

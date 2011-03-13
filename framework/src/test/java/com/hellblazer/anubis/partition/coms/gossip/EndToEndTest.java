@@ -119,6 +119,8 @@ public class EndToEndTest extends TestCase {
                                           Collection<InetSocketAddress> seedHosts)
                                                                                   throws IOException {
         Communications communications = new Communications(
+                                                           "Gossip Endpoint Handler for "
+                                                                   + localIdentity,
                                                            new InetSocketAddress(
                                                                                  0),
                                                            new SocketOptions(),
@@ -128,9 +130,9 @@ public class EndToEndTest extends TestCase {
         SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),
                                          seedHosts, 5000, 500000);
-        Gossip gossip = new Gossip(receiver, view, new Random(), 11,
-                                   localIdentity, communications, 1,
-                                   TimeUnit.SECONDS);
+        Gossip gossip = new Gossip(view, new Random(), 11, localIdentity,
+                                   communications, 1, TimeUnit.SECONDS);
+        gossip.create(receiver);
         gossip.sendHeartbeat(new HeartbeatState(
                                                 new Identity(666, 0, 0),
                                                 new NodeIdSet(),

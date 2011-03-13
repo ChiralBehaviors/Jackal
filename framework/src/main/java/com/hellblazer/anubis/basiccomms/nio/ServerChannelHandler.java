@@ -16,6 +16,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 package com.hellblazer.anubis.basiccomms.nio;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -71,12 +73,15 @@ public abstract class ServerChannelHandler {
     private ServerSocketChannel                                     server;
     private ServerSocket                                            serverSocket;
     private final BlockingDeque<CommunicationsHandler>              writeQueue;
+    private final String                                            name;
 
-    public ServerChannelHandler(InetSocketAddress endpointAddress,
+    public ServerChannelHandler(String handlerName,
+                                InetSocketAddress endpointAddress,
                                 SocketOptions socketOptions,
                                 ExecutorService commsExec,
                                 ExecutorService dispatchExec)
                                                              throws IOException {
+        name = handlerName;
         endpoint = endpointAddress;
         commsExecutor = commsExec;
         dispatchExecutor = dispatchExec;
@@ -106,7 +111,8 @@ public abstract class ServerChannelHandler {
                                              server.socket().getLocalPort());
         server.configureBlocking(false);
         server.register(selector, SelectionKey.OP_ACCEPT);
-        log.finest("Socket is connected");
+        log.info(format("%s is connected, local address: %s", name,
+                        localAddress));
     }
 
     public void dispatch(Runnable command) {

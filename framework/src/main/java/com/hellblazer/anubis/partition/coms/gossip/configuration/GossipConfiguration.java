@@ -1,20 +1,21 @@
 package com.hellblazer.anubis.partition.coms.gossip.configuration;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Timer;
+import java.security.SecureRandom;
+import java.util.Collection;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
-import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
@@ -27,9 +28,25 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.anubis.annotations.DeployedPostProcessor;
+import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
+import com.hellblazer.anubis.partition.coms.gossip.Communications;
+import com.hellblazer.anubis.partition.coms.gossip.Gossip;
+import com.hellblazer.anubis.partition.coms.gossip.PhiTimedProtocolFactory;
+import com.hellblazer.anubis.partition.coms.gossip.SystemView;
+import static java.util.Arrays.asList;
 
 @Configuration
 public class GossipConfiguration {
+
+    @Bean
+    public Communications communications() throws IOException {
+        return new Communications("Gossip Endpoint Handler for "
+                                  + partitionIdentity(), gossipEndpoint(),
+                                  socketOptions(),
+                                  Executors.newFixedThreadPool(3),
+                                  Executors.newSingleThreadExecutor());
+
+    }
 
     @Bean
     public ConnectionSet connectionSet() throws Exception {
@@ -54,6 +71,14 @@ public class GossipConfiguration {
     @Bean
     public Epoch epoch() {
         return new Epoch();
+    }
+
+    @Bean
+    public Gossip gossip() throws IOException {
+        return new Gossip(systemView(), new SecureRandom(),
+                          phiConvictionThreshold(), partitionIdentity(),
+                          communications(), gossipInterval(),
+                          gossipIntervalTimeUnit());
     }
 
     @Bean
@@ -86,6 +111,13 @@ public class GossipConfiguration {
     }
 
     @Bean
+    public SystemView systemView() throws IOException {
+        return new SystemView(new SecureRandom(),
+                              communications().getLocalAddress(), seedHosts(),
+                              quarantineDelay(), unreachableNodeDelay());
+    }
+
+    @Bean
     public TestMgr testMgr() throws Exception {
         TestMgr mgr = new TestMgr(contactHost().getCanonicalHostName(),
                                   contactPort(), partition(), node());
@@ -94,11 +126,6 @@ public class GossipConfiguration {
         mgr.setIdentity(partitionIdentity());
         mgr.setTestable(getTestable());
         return mgr;
-    }
-
-    @Bean
-    public Timer timer() {
-        return new Timer("Partition timer", true);
     }
 
     @Bean
@@ -122,38 +149,30 @@ public class GossipConfiguration {
         return true;
     }
 
-    protected HeartbeatCommsFactory heartbeatCommsFactory()
-                                                           throws UnknownHostException {
-        return new MulticastHeartbeatCommsFactory(wireSecurity(),
-                                                  heartbeatGroup(),
-                                                  contactAddress(),
-                                                  partitionIdentity());
+    protected InetSocketAddress gossipEndpoint() {
+        return new InetSocketAddress(0);
     }
 
-    protected MulticastAddress heartbeatGroup() throws UnknownHostException {
-        return new MulticastAddress(heartbeatGroupMulticastAddress(),
-                                    heartbeatGroupPort(), heartbeatGroupTTL());
-    }
-
-    protected InetAddress heartbeatGroupMulticastAddress()
-                                                          throws UnknownHostException {
-        return InetAddress.getByName("233.1.2.30");
-    }
-
-    protected int heartbeatGroupPort() {
-        return 1966;
-    }
-
-    protected int heartbeatGroupTTL() {
+    protected int gossipInterval() {
         return 1;
+    }
+
+    protected TimeUnit gossipIntervalTimeUnit() {
+        return TimeUnit.SECONDS;
+    }
+
+    protected HeartbeatCommsFactory heartbeatCommsFactory() throws IOException {
+        return gossip();
     }
 
     protected long heartbeatInterval() {
         return 2000L;
     }
 
-    protected HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        return new TimedProtocolFactory();
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory()
+                                                              throws IOException {
+        return new PhiTimedProtocolFactory(gossip());
     }
 
     protected long heartbeatTimeout() {
@@ -177,5 +196,25 @@ public class GossipConfiguration {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    protected int phiConvictionThreshold() {
+        return 11;
+    }
+
+    protected int quarantineDelay() {
+        return 5000;
+    }
+
+    protected Collection<InetSocketAddress> seedHosts() {
+        return asList(gossipEndpoint());
+    }
+
+    protected SocketOptions socketOptions() {
+        return new SocketOptions();
+    }
+
+    protected int unreachableNodeDelay() {
+        return 500000;
     }
 }

@@ -33,7 +33,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class PhiTimedProtocolFactory implements HeartbeatProtocolFactory {
     private final Gossip gossip;
 
-    PhiTimedProtocolFactory(Gossip gossip) {
+    public PhiTimedProtocolFactory(Gossip gossip) {
         super();
         this.gossip = gossip;
     }

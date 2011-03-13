@@ -36,11 +36,13 @@ public class Communications extends ServerChannelHandler implements
         GossipCommunications {
     private Gossip gossip;
 
-    public Communications(InetSocketAddress endpointAddress,
+    public Communications(String handlerName,
+                          InetSocketAddress endpointAddress,
                           SocketOptions socketOptions,
                           ExecutorService commsExec,
                           ExecutorService dispatchExec) throws IOException {
-        super(endpointAddress, socketOptions, commsExec, dispatchExec);
+        super(handlerName, endpointAddress, socketOptions, commsExec,
+              dispatchExec);
     }
 
     @Override
