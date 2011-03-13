@@ -366,8 +366,8 @@ public class Gossip implements HeartbeatCommsIntf {
         try {
             communications.connect(address, endpoint, connectAction);
         } catch (IOException e) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.FINE,
                         format("Cannot connect to endpoint %s", address), e);
             }
         }
