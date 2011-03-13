@@ -77,6 +77,13 @@ public class EndToEndTest extends TestCase {
             for (int i = 0; i < membership; i++) {
                 receivers[i].await(60, TimeUnit.SECONDS);
             }
+            System.out.println();
+            System.out.println("Initial iteration completed");
+            for (int i = 0; i < 5; i++) {
+                updateAndAwait(i, membership, receivers, members);
+                System.out.println();
+                System.out.println("Iteration " + (i + 2) + " completed");
+            }
         } finally {
             System.out.println();
             for (Gossip member : members) {
@@ -85,10 +92,32 @@ public class EndToEndTest extends TestCase {
         }
     }
 
+    protected void updateAndAwait(int iteration, int membership,
+                                  Receiver[] receivers, List<Gossip> members)
+                                                                             throws InterruptedException {
+        int id = 0;
+        for (Receiver receiver : receivers) {
+            receiver.setLatches(id++);
+        }
+        id = 0;
+        for (Gossip member : members) {
+            member.sendHeartbeat(new HeartbeatState(new Identity(666, 0, 0),
+                                                    new NodeIdSet(), true,
+                                                    new Identity(666, id++, 1),
+                                                    member.getLocalAddress(),
+                                                    false, null,
+                                                    new NodeIdSet(),
+                                                    iteration + 1, 0));
+        }
+        for (int i = 0; i < membership; i++) {
+            receivers[i].await(60, TimeUnit.SECONDS);
+        }
+    }
+
     protected Gossip createCommunications(HeartbeatReceiver receiver,
-                                                  Identity localIdentity,
-                                                  Collection<InetSocketAddress> seedHosts)
-                                                                                          throws IOException {
+                                          Identity localIdentity,
+                                          Collection<InetSocketAddress> seedHosts)
+                                                                                  throws IOException {
         Communications communications = new Communications(
                                                            new InetSocketAddress(
                                                                                  0),
@@ -99,15 +128,17 @@ public class EndToEndTest extends TestCase {
         SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),
                                          seedHosts, 5000, 500000);
-        Gossip gossip = new Gossip(receiver, view, new Random(), 11, localIdentity, communications, 1, TimeUnit.SECONDS);
+        Gossip gossip = new Gossip(receiver, view, new Random(), 11,
+                                   localIdentity, communications, 1,
+                                   TimeUnit.SECONDS);
         gossip.sendHeartbeat(new HeartbeatState(
-                                                        new Identity(666, 0, 0),
-                                                        new NodeIdSet(),
-                                                        true,
-                                                        localIdentity,
-                                                        communications.getLocalAddress(),
-                                                        false, null,
-                                                        new NodeIdSet(), 0, 0));
+                                                new Identity(666, 0, 0),
+                                                new NodeIdSet(),
+                                                true,
+                                                localIdentity,
+                                                communications.getLocalAddress(),
+                                                false, null, new NodeIdSet(),
+                                                0, 0));
         return gossip;
     }
 
@@ -119,7 +150,11 @@ public class EndToEndTest extends TestCase {
         Receiver(int members, int id) {
             super();
             latches = new CountDownLatch[members];
-            for (int i = 0; i < members; i++) {
+            setLatches(id);
+        }
+
+        void setLatches(int id) {
+            for (int i = 0; i < latches.length; i++) {
                 int count = i == id ? 0 : 1;
                 latches[i] = new CountDownLatch(count);
             }
