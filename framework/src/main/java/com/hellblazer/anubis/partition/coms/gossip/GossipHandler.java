@@ -42,7 +42,34 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         GossipMessages {
     private static final Logger log = Logger.getLogger(GossipHandler.class.getCanonicalName());
 
-    private final Gossip        gossip;
+    public static InetSocketAddress readInetAddress(ByteBuffer msg)
+                                                                   throws UnknownHostException {
+        int length = msg.get();
+        if (length == 0) {
+            return null;
+        }
+
+        byte[] address = new byte[length];
+        msg.get(address);
+        int port = msg.getInt();
+
+        InetAddress inetAddress = InetAddress.getByAddress(address);
+        return new InetSocketAddress(inetAddress, port);
+    }
+
+    public static void writeInetAddress(InetSocketAddress ipaddress,
+                                        ByteBuffer bytes) {
+        if (ipaddress == null) {
+            bytes.put((byte) 0);
+            return;
+        }
+        byte[] address = ipaddress.getAddress().getAddress();
+        bytes.put((byte) address.length);
+        bytes.put(address);
+        bytes.putInt(ipaddress.getPort());
+    }
+
+    private final Gossip gossip;
 
     public GossipHandler(Gossip gossip, ServerChannelHandler handler,
                          SocketChannel channel) {
@@ -126,6 +153,9 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
 
     protected void handleGossip(ByteBuffer msg) {
         int count = msg.getInt();
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("Handling gossip, digest count: " + count);
+        }
         List<Digest> digests = new ArrayList<Digest>(count);
         for (int i = 0; i < count; i++) {
             Digest digest;
@@ -150,6 +180,10 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
     protected void handleReply(ByteBuffer msg) {
         int digestCount = msg.getInt();
         int stateCount = msg.getInt();
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("Handling reply, digest count: " + digestCount
+                      + " state count: " + stateCount);
+        }
         List<Digest> digests = new ArrayList<Digest>(digestCount);
         List<HeartbeatState> remoteStates = new ArrayList<HeartbeatState>(
                                                                           stateCount);
@@ -183,13 +217,16 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             remoteStates.add(state);
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received reply from %s", this));
+            log.finest(format("Received reply from %s", getChannel()));
         }
         gossip.reply(digests, remoteStates, this);
     }
 
     protected void handleUpdate(ByteBuffer msg) {
         int stateCount = msg.getInt();
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("Handling update,  state count: " + stateCount);
+        }
         List<HeartbeatState> remoteStates = new ArrayList<HeartbeatState>(
                                                                           stateCount);
 
@@ -211,33 +248,6 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             log.finest(format("Received an update from %s", this));
         }
         gossip.update(remoteStates);
-    }
-
-    public static InetSocketAddress readInetAddress(ByteBuffer msg)
-                                                                   throws UnknownHostException {
-        int length = msg.get();
-        if (length == 0) {
-            return null;
-        }
-    
-        byte[] address = new byte[length];
-        msg.get(address);
-        int port = msg.getInt();
-    
-        InetAddress inetAddress = InetAddress.getByAddress(address);
-        return new InetSocketAddress(inetAddress, port);
-    }
-
-    public static void writeInetAddress(InetSocketAddress ipaddress,
-                                        ByteBuffer bytes) {
-        if (ipaddress == null) {
-            bytes.put((byte) 0);
-            return;
-        }
-        byte[] address = ipaddress.getAddress().getAddress();
-        bytes.put((byte) address.length);
-        bytes.put(address);
-        bytes.putInt(ipaddress.getPort());
     }
 
 }

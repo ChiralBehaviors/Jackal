@@ -42,6 +42,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
@@ -269,6 +272,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
+    @PostConstruct
     public void start() {
         if (running.compareAndSet(false, true)) {
             communications.start();
@@ -279,6 +283,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
+    @PreDestroy
     public void terminate() {
         if (running.compareAndSet(true, false)) {
             communications.terminate();
