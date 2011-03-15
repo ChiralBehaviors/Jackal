@@ -36,30 +36,30 @@ public class Digest {
             if (digest1.epoch != digest2.epoch) {
                 return (int) (digest1.epoch - digest2.epoch);
             }
-            return (int) (digest1.viewNumber - digest2.viewNumber);
+            return (int) (digest1.version - digest2.version);
         }
     }
 
     private final InetSocketAddress address;
     private final long              epoch;
-    private final long              viewNumber;
+    private final long              version;
 
     public Digest(ByteBuffer msg) throws UnknownHostException {
         address = GossipHandler.readInetAddress(msg);
         epoch = msg.getLong();
-        viewNumber = msg.getLong();
+        version = msg.getLong();
     }
 
     public Digest(InetSocketAddress socketAddress, Endpoint ep) {
         address = socketAddress;
         epoch = ep.getEpoch();
-        viewNumber = ep.getViewNumber();
+        version = ep.getVersion();
     }
 
     public Digest(InetSocketAddress ep, long diffEpoch, long diffViewNumber) {
         address = ep;
         epoch = diffEpoch;
-        viewNumber = diffViewNumber;
+        version = diffViewNumber;
     }
 
     @Override
@@ -84,7 +84,7 @@ public class Digest {
         if (epoch != other.epoch) {
             return false;
         }
-        if (viewNumber != other.viewNumber) {
+        if (version != other.version) {
             return false;
         }
         return true;
@@ -98,8 +98,8 @@ public class Digest {
         return epoch;
     }
 
-    public long getViewNumber() {
-        return viewNumber;
+    public long getVersion() {
+        return version;
     }
 
     @Override
@@ -108,7 +108,7 @@ public class Digest {
         int result = 1;
         result = prime * result + (address == null ? 0 : address.hashCode());
         result = prime * result + (int) (epoch ^ epoch >>> 32);
-        result = prime * result + (int) (viewNumber ^ viewNumber >>> 32);
+        result = prime * result + (int) (version ^ version >>> 32);
         return result;
     }
 
@@ -119,13 +119,13 @@ public class Digest {
         sb.append(":");
         sb.append(epoch);
         sb.append(":");
-        sb.append(viewNumber);
+        sb.append(version);
         return sb.toString();
     }
 
     public void writeTo(ByteBuffer buffer) {
         GossipHandler.writeInetAddress(address, buffer);
         buffer.putLong(epoch);
-        buffer.putLong(viewNumber);
+        buffer.putLong(version);
     }
 }

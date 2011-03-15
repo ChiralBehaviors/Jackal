@@ -153,7 +153,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 state.markDead();
                 view.markDead(endpoint, now);
                 if (log.isLoggable(Level.INFO)) {
-                    log.info(format("Endpoint %s is now DEAD.", endpoint));
+                    log.info(format("Endpoint %s is now DEAD on node: %s",
+                                    endpoint, localState.getMemberString()));
                 }
             }
         }
@@ -240,7 +241,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
             InetSocketAddress addr = digest.getAddress();
-            addUpdatedState(deltaState, addr, digest.getViewNumber());
+            addUpdatedState(deltaState, addr, digest.getVersion());
         }
         if (!deltaState.isEmpty()) {
             gossipHandler.update(deltaState);
@@ -249,8 +250,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     @Override
     public void sendHeartbeat(Heartbeat heartbeat) {
-        updateLocalState(HeartbeatState.toHeartbeatState(heartbeat,
-                                                         communications.getLocalAddress()));
+        localState.updateState(HeartbeatState.toHeartbeatState(heartbeat,
+                                                               communications.getLocalAddress()));
     }
 
     @Override
@@ -307,23 +308,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         apply(remoteStates);
     }
 
-    /**
-     * Update the local heartbeat state vector.
-     * 
-     * @param updatedState
-     *            - the new heartbeat state
-     */
-    public void updateLocalState(HeartbeatState updatedState) {
-        localState.updateState(System.currentTimeMillis(), updatedState);
-    }
-
     protected void addUpdatedState(List<HeartbeatState> deltaState,
-                                   InetSocketAddress endpoint, long viewNumber) {
+                                   InetSocketAddress endpoint, long version) {
         Endpoint state = endpoints.get(endpoint);
-        if (state != null && state.getViewNumber() > viewNumber) {
+        if (state != null && state.getVersion() > version) {
             if (log.isLoggable(Level.FINEST)) {
                 log.finest(format("local heartbeat view number %s greater than %s for %s ",
-                                  state.getViewNumber(), viewNumber, endpoint));
+                                  state.getVersion(), version, endpoint));
             }
             deltaState.add(state.getState());
         }
@@ -347,14 +338,14 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             Endpoint localState = endpoints.get(endpoint);
             if (localState != null) {
                 if (remoteState.getEpoch() >= localState.getEpoch()) {
-                    if (remoteState.getViewNumber() > localState.getViewNumber()) {
-                        long oldViewNumber = localState.getViewNumber();
+                    if (remoteState.getVersion() > localState.getVersion()) {
+                        long oldVersion = localState.getVersion();
                         localState.updateState(now, remoteState);
                         notifyUpdate(localState.getState());
                         if (log.isLoggable(Level.FINEST)) {
                             log.finest(format("Updating heartbeat state view number to %s from %s for %s",
-                                              localState.getViewNumber(),
-                                              oldViewNumber, endpoint));
+                                              localState.getVersion(),
+                                              oldVersion, endpoint));
                         }
                     }
                 }
@@ -465,13 +456,12 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
             long remoteEpoch = digest.getEpoch();
-            long remoteViewNumber = digest.getViewNumber();
+            long remoteVersion = digest.getVersion();
             Endpoint state = endpoints.get(digest.getAddress());
             if (state != null) {
                 long localEpoch = state.getEpoch();
-                long localViewNumber = state.getViewNumber();
-                if (remoteEpoch == localEpoch
-                    && remoteViewNumber == localViewNumber) {
+                long localVersion = state.getVersion();
+                if (remoteEpoch == localEpoch && remoteVersion == localVersion) {
                     continue;
                 }
 
@@ -481,13 +471,12 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 } else if (remoteEpoch < localEpoch) {
                     addUpdatedState(deltaState, digest.getAddress(), -1L);
                 } else if (remoteEpoch == localEpoch) {
-                    if (remoteViewNumber > localViewNumber) {
+                    if (remoteVersion > localVersion) {
                         deltaDigests.add(new Digest(digest.getAddress(),
-                                                    remoteEpoch,
-                                                    localViewNumber));
-                    } else if (remoteViewNumber < localViewNumber) {
+                                                    remoteEpoch, localVersion));
+                    } else if (remoteVersion < localVersion) {
                         addUpdatedState(deltaState, digest.getAddress(),
-                                        remoteViewNumber);
+                                        remoteVersion);
                     }
                 }
             } else {
@@ -495,7 +484,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                                             -1));
             }
         }
-        gossipHandler.reply(deltaDigests, deltaState);
+        if (!deltaDigests.isEmpty() || !deltaState.isEmpty()) {
+            gossipHandler.reply(deltaDigests, deltaState);
+        }
     }
 
     protected Runnable gossipTask() {
@@ -612,10 +603,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         for (Digest gDigest : digests) {
             InetSocketAddress ep = gDigest.getAddress();
             Endpoint state = endpoints.get(ep);
-            long viewNumber = state != null ? state.getViewNumber() : 0;
-            long diffViewNumber = Math.abs(viewNumber - gDigest.getViewNumber());
-            diffDigests[i++] = new Digest(ep, gDigest.getEpoch(),
-                                          diffViewNumber);
+            long version = state != null ? state.getVersion() : 0;
+            long diffVersion = Math.abs(version - gDigest.getVersion());
+            diffDigests[i++] = new Digest(ep, gDigest.getEpoch(), diffVersion);
         }
 
         Arrays.sort(diffDigests, new DigestComparator());

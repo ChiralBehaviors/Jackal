@@ -46,16 +46,20 @@ public class PhiTimedProtocol extends BitView implements HeartbeatProtocol {
     private boolean                 terminated       = false;
     private long                    time             = 0;
     private long                    viewNumber       = 0;
+    private final InetSocketAddress heartbeatAddress;
 
     public PhiTimedProtocol(Heartbeat hb, ViewListener vl,
                             Heartbeat sharedHeartbeat, Gossip gossipService) {
         super(hb.getView());
+        assert hb instanceof HeartbeatState;
         time = hb.getTime();
         viewNumber = hb.getViewNumber();
         listener = vl;
         sender = hb.getSender();
         address = hb.getSenderAddress();
         gossip = gossipService;
+        heartbeatAddress = ((HeartbeatState) hb).getHeartbeatAddress();
+        assert heartbeatAddress != null;
     }
 
     @Override
@@ -75,7 +79,7 @@ public class PhiTimedProtocol extends BitView implements HeartbeatProtocol {
 
     @Override
     public boolean isNotTimely(long timenow, long timebound) {
-        return gossip.shouldConvict(address, timenow);
+        return gossip.shouldConvict(heartbeatAddress, timenow);
     }
 
     @Override

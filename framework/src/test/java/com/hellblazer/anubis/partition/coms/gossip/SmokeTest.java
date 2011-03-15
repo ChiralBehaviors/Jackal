@@ -144,8 +144,7 @@ public class SmokeTest extends TestCase {
         int maxSleep = 500;
         int messageCount = 10;
         ArrayList<Node> nodes = new ArrayList<Node>();
-        Class<?>[] configurations = new Class[] { testA.class, testB.class,
-                testC.class, testD.class, testE.class, testF.class, testG.class };
+        Class<?>[] configurations = new Class[] { testA.class, testB.class };
         CyclicBarrier startBarrier = new CyclicBarrier(configurations.length);
         CyclicBarrier endBarrier = new CyclicBarrier(configurations.length + 1);
         for (Class<?> config : configurations) {

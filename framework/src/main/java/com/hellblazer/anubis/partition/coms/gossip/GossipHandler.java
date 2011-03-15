@@ -217,7 +217,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             remoteStates.add(state);
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received reply from %s", getChannel()));
+            log.finest(format("Gossip digests from %s are : %s, heartbeat state is: %s", this, digests, remoteStates));
         }
         gossip.reply(digests, remoteStates, this);
     }
@@ -245,7 +245,7 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
             remoteStates.add(state);
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Received an update from %s", this));
+            log.finest(format("Heartbeat states from %s are : %s", this, remoteStates));
         }
         gossip.update(remoteStates);
     }

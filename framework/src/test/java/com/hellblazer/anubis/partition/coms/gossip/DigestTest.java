@@ -35,7 +35,7 @@ public class DigestTest extends TestCase {
         InetSocketAddress address = new InetSocketAddress("google.com", 80);
         Digest s = new Digest(address, 666, 667);
         assertEquals(666, s.getEpoch());
-        assertEquals(667, s.getViewNumber());
+        assertEquals(667, s.getVersion());
         assertEquals(address, s.getAddress());
         byte[] bytes = new byte[GossipMessages.DIGEST_BYTE_SIZE];
         ByteBuffer msg = ByteBuffer.wrap(bytes);
@@ -43,7 +43,7 @@ public class DigestTest extends TestCase {
         msg.flip();
         Digest d = new Digest(msg);
         assertEquals(666, d.getEpoch());
-        assertEquals(667, d.getViewNumber());
+        assertEquals(667, d.getVersion());
         assertEquals(address, d.getAddress());
         DigestComparator comparator = new DigestComparator();
         assertEquals(0, comparator.compare(s, d));

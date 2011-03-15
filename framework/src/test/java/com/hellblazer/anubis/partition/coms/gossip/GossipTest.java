@@ -215,18 +215,18 @@ public class GossipTest extends TestCase {
         state4.setViewNumber(4);
 
         when(ep1.getEpoch()).thenReturn(0L);
-        when(ep1.getViewNumber()).thenReturn(0L);
+        when(ep1.getVersion()).thenReturn(0L);
         when(ep1.getState()).thenReturn(state1);
 
         when(ep2.getEpoch()).thenReturn(3L);
-        when(ep2.getViewNumber()).thenReturn(1L);
+        when(ep2.getVersion()).thenReturn(1L);
 
         when(ep3.getEpoch()).thenReturn(3L);
-        when(ep3.getViewNumber()).thenReturn(0L);
+        when(ep3.getVersion()).thenReturn(0L);
         when(ep3.getState()).thenReturn(state3);
 
         when(ep4.getEpoch()).thenReturn(4L);
-        when(ep4.getViewNumber()).thenReturn(5L);
+        when(ep4.getVersion()).thenReturn(5L);
 
         Gossip gossip = new Gossip(view, random, 4, localIdentity,
                                    communications, 4, TimeUnit.DAYS);
@@ -247,7 +247,7 @@ public class GossipTest extends TestCase {
         gossip.apply(asList(state1, state2, state3, state4));
 
         verify(ep1).getEpoch();
-        verify(ep1, new Times(2)).getViewNumber();
+        verify(ep1, new Times(2)).getVersion();
         verify(ep1).updateState(now, state1);
         verify(ep1).getState();
         verifyNoMoreInteractions(ep1);
@@ -256,13 +256,13 @@ public class GossipTest extends TestCase {
         verifyNoMoreInteractions(ep2);
 
         verify(ep3).getEpoch();
-        verify(ep3, new Times(2)).getViewNumber();
+        verify(ep3, new Times(2)).getVersion();
         verify(ep3).updateState(now, state3);
         verify(ep3).getState();
         verifyNoMoreInteractions(ep3);
 
         verify(ep4).getEpoch();
-        verify(ep4).getViewNumber();
+        verify(ep4).getVersion();
         verifyNoMoreInteractions(ep4);
 
         verify(communications).setGossip(gossip);

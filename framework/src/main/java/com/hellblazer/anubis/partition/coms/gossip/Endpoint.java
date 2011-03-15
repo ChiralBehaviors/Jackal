@@ -60,8 +60,8 @@ public class Endpoint {
         return heartbeat;
     }
 
-    public long getViewNumber() {
-        return heartbeat.getViewNumber();
+    public long getVersion() {
+        return heartbeat.getVersion();
     }
 
     public boolean isAlive() {
@@ -103,5 +103,10 @@ public class Endpoint {
     public void updateState(long now, HeartbeatState newHbState) {
         heartbeat = newHbState;
         fd.record(now);
+    }
+
+    public void updateState(HeartbeatState newHbState) {
+        newHbState.setVersion(heartbeat.getVersion() + 1L);
+        heartbeat = newHbState;
     }
 }

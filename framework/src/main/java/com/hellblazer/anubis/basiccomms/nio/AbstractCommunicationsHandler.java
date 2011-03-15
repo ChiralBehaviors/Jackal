@@ -21,6 +21,7 @@ import static java.lang.String.format;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
@@ -368,5 +369,12 @@ abstract public class AbstractCommunicationsHandler implements
         String message = e.getMessage();
         return !"broken pipe".equalsIgnoreCase(message)
                && !"connection reset by peer".equalsIgnoreCase(message);
+    }
+
+    @Override
+    public String toString() {
+        Socket socket = channel.socket();
+        return "Handler for " + "[local=" + socket.getLocalSocketAddress()
+               + ", remote=" + socket.getRemoteSocketAddress() + "]";
     }
 }
