@@ -29,6 +29,7 @@ import org.smartfrog.services.anubis.partition.test.colors.ColorAllocator;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.views.BitView;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 import com.hellblazer.anubis.annotations.Deployed;
@@ -103,7 +104,7 @@ public class GraphicController extends Controller {
     }
 
     @Override
-    protected void addNode(HeartbeatMsg hb, NodeData nodeData) {
+    protected void addNode(Heartbeat hb, NodeData nodeData) {
         consoleFrame.addNode((GraphicNodeData) nodeData);
         super.addNode(hb, nodeData);
     }
