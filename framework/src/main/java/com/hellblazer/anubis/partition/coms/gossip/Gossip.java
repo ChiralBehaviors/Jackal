@@ -110,7 +110,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the identity of the local member
      */
     public Gossip(SystemView systemView, Random random,
-                  double phiConvictThreshold, Identity localIdentity,
+                  double phiConvictThreshold,
                   GossipCommunications communicationsService,
                   int gossipInterval, TimeUnit unit) {
         communications = communicationsService;
@@ -129,10 +129,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 return daemon;
             }
         });
-        localState = new Endpoint(new HeartbeatState(null, localIdentity,
-                                                     view.getLocalAddress()));
-        localState.markAlive();
-        endpoints.put(view.getLocalAddress(), localState);
+        localState = new Endpoint();
     }
 
     public void checkStatus() {
@@ -250,8 +247,15 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     @Override
     public void sendHeartbeat(Heartbeat heartbeat) {
+        boolean initial = false;
+        if (localState.getState() == null) {
+            initial = true;
+        }
         localState.updateState(HeartbeatState.toHeartbeatState(heartbeat,
                                                                communications.getLocalAddress()));
+        if (initial) {
+            endpoints.put(view.getLocalAddress(), localState);
+        }
     }
 
     @Override

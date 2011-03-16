@@ -30,17 +30,18 @@ import java.util.logging.Logger;
 public class Endpoint {
     protected static Logger                 logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
 
-    private final PhiAccrualFailureDetector fd      = new PhiAccrualFailureDetector();
+    private final PhiAccrualFailureDetector fd;
     private volatile GossipMessages         handler;
     private volatile HeartbeatState         heartbeat;
     private volatile boolean                isAlive = true;
 
     public Endpoint() {
-
+        fd = null;
     }
 
     public Endpoint(HeartbeatState heartBeatState) {
         heartbeat = heartBeatState;
+        fd = new PhiAccrualFailureDetector();
     }
 
     public long getEpoch() {
@@ -106,7 +107,9 @@ public class Endpoint {
     }
 
     public void updateState(HeartbeatState newHbState) {
-        newHbState.setVersion(heartbeat.getVersion() + 1L);
+        if (heartbeat != null) {
+            newHbState.setVersion(heartbeat.getVersion() + 1L);
+        }
         heartbeat = newHbState;
     }
 }

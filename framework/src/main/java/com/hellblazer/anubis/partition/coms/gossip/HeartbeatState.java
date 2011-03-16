@@ -53,11 +53,11 @@ public class HeartbeatState implements Heartbeat {
     private InetSocketAddress          senderAddress;
     private volatile boolean           stable        = false;
     private volatile InetSocketAddress testInterface;
+    private volatile long              time;
     private volatile long              version       = 0;
     private NodeIdSet                  view;
     private volatile long              viewNumber    = 0;
     private volatile long              viewTimeStamp = View.undefinedTimeStamp;
-
     private volatile byte[]            binaryCache;
 
     public HeartbeatState(ByteBuffer buffer) throws UnknownHostException {
@@ -68,6 +68,7 @@ public class HeartbeatState implements Heartbeat {
         candidate = new Identity(msg);
         heartbeatAddress = GossipHandler.readInetAddress(msg);
         version = msg.getLong();
+        time = msg.getLong();
         msgLinks = new NodeIdSet(msg);
         preferred = msg.get() > 0 ? true : false;
         sender = new Identity(msg);
@@ -247,7 +248,7 @@ public class HeartbeatState implements Heartbeat {
 
     @Override
     public long getTime() {
-        return viewTimeStamp;
+        return time;
     }
 
     public long getVersion() {
@@ -320,7 +321,7 @@ public class HeartbeatState implements Heartbeat {
     @Override
     public void setTime(long t) {
         binaryCache = null;
-        viewTimeStamp = t;
+        time = t;
     }
 
     public void setVersion(long l) {
@@ -368,6 +369,7 @@ public class HeartbeatState implements Heartbeat {
         candidate.writeTo(msg);
         GossipHandler.writeInetAddress(heartbeatAddress, msg);
         msg.putLong(version);
+        msg.putLong(time);
         msgLinks.writeTo(msg);
         if (preferred) {
             msg.put((byte) 1);

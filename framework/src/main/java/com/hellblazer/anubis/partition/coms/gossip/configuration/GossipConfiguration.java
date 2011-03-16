@@ -76,9 +76,8 @@ public class GossipConfiguration {
     @Bean
     public Gossip gossip() throws IOException {
         return new Gossip(systemView(), new SecureRandom(),
-                          phiConvictionThreshold(), partitionIdentity(),
-                          communications(), gossipInterval(),
-                          gossipIntervalTimeUnit());
+                          phiConvictionThreshold(), communications(),
+                          gossipInterval(), gossipIntervalTimeUnit());
     }
 
     @Bean
@@ -206,7 +205,8 @@ public class GossipConfiguration {
         return 5000;
     }
 
-    protected Collection<InetSocketAddress> seedHosts() throws UnknownHostException {
+    protected Collection<InetSocketAddress> seedHosts()
+                                                       throws UnknownHostException {
         return asList(gossipEndpoint());
     }
 

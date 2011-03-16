@@ -98,6 +98,7 @@ public class ValueData implements Serializable {
                 return "Marshalled[ IOException when unmarshalling ]";
             }
         }
-        return getValue().toString();
+        Object v = getValue();
+        return v == null ? "<null value>" : v.toString();
     }
 }

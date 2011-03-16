@@ -43,25 +43,25 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class MessageNioServer extends Thread implements IOConnectionServer {
-    private InetSocketAddress connAdd = null;
-    private ConnectionSet connectionSet = null;
-    private RxQueue connectQueue = null;
-    private Vector<SelectionKey> deadKeys = null;
+    private InetSocketAddress                           connAdd            = null;
+    private ConnectionSet                               connectionSet      = null;
+    private RxQueue                                     connectQueue       = null;
+    private Vector<SelectionKey>                        deadKeys           = null;
 
-    private Identity me = null;
-    volatile private boolean open = false;
+    private Identity                                    me                 = null;
+    volatile private boolean                            open               = false;
 
     private Hashtable<SocketChannel, MessageNioHandler> pendingNewChannels = null;
-    private final int RX_WORKERS = 4;
-    private RxQueue[] rxQueue = null;
-    private int rxQueueCounter = 0;
-    private Selector selector = null;
-    private ServerSocketChannel server = null;
-    private static final Logger syncLog = Logger.getLogger(MessageNioServer.class.getCanonicalName());
-    private Logger asyncLog = syncLog; // need to wrap with async log wrapper
-    private WireSecurity wireSecurity = null;
+    private final int                                   RX_WORKERS         = 4;
+    private RxQueue[]                                   rxQueue            = null;
+    private int                                         rxQueueCounter     = 0;
+    private Selector                                    selector           = null;
+    private ServerSocketChannel                         server             = null;
+    private static final Logger                         syncLog            = Logger.getLogger(MessageNioServer.class.getCanonicalName());
+    private Logger                                      asyncLog           = syncLog;                                                    // need to wrap with async log wrapper
+    private WireSecurity                                wireSecurity       = null;
 
-    private Vector<SelectionKey> writePendingKeys = null;
+    private Vector<SelectionKey>                        writePendingKeys   = null;
 
     /**
      * This is a single threaded TCP socket server (de)multiplexing many
@@ -167,7 +167,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         }
         NonBlockingConnectionInitiator initiator = null;
         try {
-            initiator = new NonBlockingConnectionInitiator(con, HeartbeatMsg.toHeartbeatMsg(hb),
+            initiator = new NonBlockingConnectionInitiator(
+                                                           con,
+                                                           HeartbeatMsg.toHeartbeatMsg(hb),
                                                            wireSecurity);
         } catch (Exception ex) {
             if (asyncLog.isLoggable(Level.WARNING)) {
@@ -203,9 +205,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                 ConnectionSet cs, MessageConnection con,
                                 NonBlockingConnectionInitiator mci) {
         if (asyncLog.isLoggable(Level.FINER)) {
-            asyncLog.finer("MNS: startConnection is called: "
-                           + conAd.getAddress().getHostName() + " - "
-                           + conAd.getPort());
+            asyncLog.finer("MNS: startConnection is called: " + conAd);
         }
         MessageNioHandler mnh = null;
         try {

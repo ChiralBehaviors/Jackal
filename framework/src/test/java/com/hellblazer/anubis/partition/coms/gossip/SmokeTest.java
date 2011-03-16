@@ -139,12 +139,13 @@ public class SmokeTest extends TestCase {
         }
     }
 
-    public void teztInProcess() throws Exception {
+    public void testInProcess() throws Exception {
         String stateName = "Whip It";
         int maxSleep = 500;
         int messageCount = 10;
         ArrayList<Node> nodes = new ArrayList<Node>();
-        Class<?>[] configurations = new Class[] { testA.class, testB.class };
+        Class<?>[] configurations = new Class[] { testA.class, testB.class,
+                testC.class, testD.class, testE.class, testF.class, testG.class };
         CyclicBarrier startBarrier = new CyclicBarrier(configurations.length);
         CyclicBarrier endBarrier = new CyclicBarrier(configurations.length + 1);
         for (Class<?> config : configurations) {

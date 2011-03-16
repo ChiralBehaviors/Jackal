@@ -29,7 +29,6 @@ public class GossipTest extends TestCase {
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
 
@@ -50,8 +49,8 @@ public class GossipTest extends TestCase {
         Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), 0,
                                      -1);
 
-        Gossip gossip = new Gossip(view, random, 4, localIdentity,
-                                   communications, 4, TimeUnit.DAYS);
+        Gossip gossip = new Gossip(view, random, 4, communications, 4,
+                                   TimeUnit.DAYS);
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -67,7 +66,6 @@ public class GossipTest extends TestCase {
         GossipHandler gossipHandler = mock(GossipHandler.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
 
@@ -87,25 +85,25 @@ public class GossipTest extends TestCase {
         HeartbeatState state1 = new HeartbeatState(null,
                                                    new Identity(666, 1, 0),
                                                    address1);
-        state1.setViewNumber(1);
+        state1.setVersion(1);
 
         HeartbeatState state2 = new HeartbeatState(null,
                                                    new Identity(666, 2, 2),
                                                    address2);
-        state2.setViewNumber(2);
+        state2.setVersion(2);
 
         HeartbeatState state3 = new HeartbeatState(null,
                                                    new Identity(666, 3, 3),
                                                    address3);
-        state3.setViewNumber(3);
+        state3.setVersion(3);
 
         HeartbeatState state4 = new HeartbeatState(null,
                                                    new Identity(666, 4, 4),
                                                    address4);
-        state4.setViewNumber(4);
+        state4.setVersion(4);
 
-        Gossip gossip = new Gossip(view, random, 4, localIdentity,
-                                   communications, 4, TimeUnit.DAYS);
+        Gossip gossip = new Gossip(view, random, 4, communications, 4,
+                                   TimeUnit.DAYS);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -131,7 +129,6 @@ public class GossipTest extends TestCase {
         HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
         when(communications.getLocalAddress()).thenReturn(localAddress);
@@ -154,8 +151,8 @@ public class GossipTest extends TestCase {
                                                    new Identity(666, 4, 4),
                                                    address4);
 
-        Gossip gossip = new Gossip(view, random, 4, localIdentity,
-                                   communications, 4, TimeUnit.DAYS);
+        Gossip gossip = new Gossip(view, random, 4, communications, 4,
+                                   TimeUnit.DAYS);
         gossip.create(receiver);
 
         gossip.apply(asList(state1, state2, state3, state4));
@@ -179,7 +176,6 @@ public class GossipTest extends TestCase {
         HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        Identity localIdentity = new Identity(666, 0, 1);
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
         when(communications.getLocalAddress()).thenReturn(localAddress);
@@ -197,22 +193,22 @@ public class GossipTest extends TestCase {
         HeartbeatState state1 = new HeartbeatState(null,
                                                    new Identity(666, 1, 0),
                                                    address1);
-        state1.setViewNumber(1);
+        state1.setVersion(1);
 
         HeartbeatState state2 = new HeartbeatState(null,
                                                    new Identity(666, 2, 2),
                                                    address2);
-        state2.setViewNumber(2);
+        state2.setVersion(2);
 
         HeartbeatState state3 = new HeartbeatState(null,
                                                    new Identity(666, 3, 3),
                                                    address3);
-        state3.setViewNumber(3);
+        state3.setVersion(3);
 
         HeartbeatState state4 = new HeartbeatState(null,
                                                    new Identity(666, 4, 4),
                                                    address4);
-        state4.setViewNumber(4);
+        state4.setVersion(4);
 
         when(ep1.getEpoch()).thenReturn(0L);
         when(ep1.getVersion()).thenReturn(0L);
@@ -228,8 +224,8 @@ public class GossipTest extends TestCase {
         when(ep4.getEpoch()).thenReturn(4L);
         when(ep4.getVersion()).thenReturn(5L);
 
-        Gossip gossip = new Gossip(view, random, 4, localIdentity,
-                                   communications, 4, TimeUnit.DAYS);
+        Gossip gossip = new Gossip(view, random, 4, communications, 4,
+                                   TimeUnit.DAYS);
         gossip.create(receiver);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");

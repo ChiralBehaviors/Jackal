@@ -57,6 +57,7 @@ public class PhiTimedProtocol extends BitView implements HeartbeatProtocol {
         listener = vl;
         sender = hb.getSender();
         address = hb.getSenderAddress();
+        assert address != null;
         gossip = gossipService;
         heartbeatAddress = ((HeartbeatState) hb).getHeartbeatAddress();
         assert heartbeatAddress != null;

@@ -45,8 +45,9 @@ public class HeartbeatStateTest extends TestCase {
         InetSocketAddress testInterface = new InetSocketAddress("localhost",
                                                                 443);
         NodeIdSet v = new NodeIdSet();
-        long viewNumber = 128;
-        long viewTimestamp = 990876;
+        long viewNumber = 128L;
+        long viewTimestamp = 990876L;
+        long time = 564567L;
 
         msgLinks.add(candidate.id);
         msgLinks.add(sender.id);
@@ -57,6 +58,7 @@ public class HeartbeatStateTest extends TestCase {
                                                   stable, testInterface, v,
                                                   viewNumber, viewTimestamp);
         state.setVersion(1L);
+        state.setTime(time);
         assertSame(msgLinks, state.getMsgLinks());
         assertSame(sender, state.getSender());
         assertSame(senderAddress, state.getSenderAddress());
@@ -66,6 +68,7 @@ public class HeartbeatStateTest extends TestCase {
         assertTrue(state.getMsgLinks().contains(candidate.id));
         assertTrue(state.getMsgLinks().contains(sender.id));
         assertEquals(1, state.getVersion());
+        assertEquals(time, state.getTime());
 
         View view = state.getView();
 
@@ -73,8 +76,7 @@ public class HeartbeatStateTest extends TestCase {
         assertTrue(view.contains(candidate));
         assertFalse(view.contains(sender));
         assertEquals(viewNumber, state.getViewNumber());
-        assertEquals(viewTimestamp, state.getTime());
-        assertEquals(viewTimestamp, state.getTime());
+        assertEquals(viewTimestamp, view.getTimeStamp());
         assertEquals(stable, view.isStable());
 
         byte[] bytes = new byte[GossipMessages.HEARTBEAT_STATE_BYTE_SIZE];
@@ -92,6 +94,7 @@ public class HeartbeatStateTest extends TestCase {
         assertTrue(dState.getMsgLinks().contains(candidate.id));
         assertTrue(dState.getMsgLinks().contains(sender.id));
         assertEquals(1, dState.getVersion());
+        assertEquals(time, dState.getTime());
 
         view = dState.getView();
 
@@ -99,8 +102,7 @@ public class HeartbeatStateTest extends TestCase {
         assertTrue(view.contains(candidate));
         assertFalse(view.contains(sender));
         assertEquals(viewNumber, dState.getViewNumber());
-        assertEquals(viewTimestamp, dState.getTime());
-        assertEquals(viewTimestamp, dState.getTime());
+        assertEquals(viewTimestamp, view.getTimeStamp()); 
         assertEquals(stable, view.isStable());
     }
 }

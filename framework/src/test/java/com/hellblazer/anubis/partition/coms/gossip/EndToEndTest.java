@@ -130,14 +130,13 @@ public class EndToEndTest extends TestCase {
         SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),
                                          seedHosts, 5000, 500000);
-        Gossip gossip = new Gossip(view, new Random(), 11, localIdentity,
-                                   communications, 1, TimeUnit.SECONDS);
+        Gossip gossip = new Gossip(view, new Random(), 11, communications, 1,
+                                   TimeUnit.SECONDS);
         gossip.create(receiver);
         gossip.sendHeartbeat(new HeartbeatState(
                                                 new Identity(666, 0, 0),
                                                 communications.getLocalAddress(),
-                                                0,
-                                                new NodeIdSet(), true,
+                                                0, new NodeIdSet(), true,
                                                 localIdentity, null, false,
                                                 null, new NodeIdSet(), 0, 0));
         return gossip;
