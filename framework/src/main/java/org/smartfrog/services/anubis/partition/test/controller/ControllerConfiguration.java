@@ -1,5 +1,6 @@
 package org.smartfrog.services.anubis.partition.test.controller;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Timer;
@@ -23,7 +24,6 @@ public class ControllerConfiguration {
     @Bean
     public Controller controller() throws UnknownHostException {
         Controller controller = constructController();
-        controller.setAddress(heartbeatGroup());
         controller.setTimer(timer());
         controller.setCheckPeriod(1000);
         controller.setExpirePeriod(300000);
@@ -68,6 +68,16 @@ public class ControllerConfiguration {
     @Bean
     public Identity partitionIdentity() throws UnknownHostException {
         return new Identity(magic(), node(), epoch().longValue());
+    }
+
+    @Bean(initMethod = "start", destroyMethod = "shutdown")
+    public Snoop snoop() throws UnknownHostException, IOException {
+        return new Snoop(
+                         "Anubis: Partition Manager Test Console heartbeat snoop",
+                         new MulticastAddress(heartbeatGroupMulticastAddress(),
+                                              heartbeatGroupPort(),
+                                              heartbeatGroupTTL()),
+                         partitionIdentity(), controller());
     }
 
     @Bean

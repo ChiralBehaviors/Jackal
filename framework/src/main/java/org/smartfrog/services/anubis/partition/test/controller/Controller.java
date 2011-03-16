@@ -29,26 +29,23 @@ import java.util.TimerTask;
 
 import javax.annotation.PreDestroy;
 
-import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 import com.hellblazer.anubis.annotations.Deployed;
 
-public class Controller {
-    private MulticastAddress address;
-    private long checkPeriod = 1000;
-    private long expirePeriod = 10000;
-    private BitView globalView = new BitView();
-    protected long heartbeatInterval = 1000;
-    protected long heartbeatTimeout = 2000;
-    protected Identity identity;
-    protected Map<Identity, NodeData> nodes = new HashMap<Identity, NodeData>();
-    private Snoop snoop;
-    private TimerTask task;
-    private Timer timer;
+public class Controller implements HeartbeatReceiver {
+    private long                      checkPeriod       = 1000;
+    private long                      expirePeriod      = 10000;
+    private BitView                   globalView        = new BitView();
+    protected long                    heartbeatInterval = 1000;
+    protected long                    heartbeatTimeout  = 2000;
+    protected Identity                identity;
+    protected Map<Identity, NodeData> nodes             = new HashMap<Identity, NodeData>();
+    private TimerTask                 task;
+    private Timer                     timer;
 
     public synchronized void asymPartition(BitView partition) {
         Iterator<NodeData> iter = nodes.values().iterator();
@@ -91,17 +88,19 @@ public class Controller {
         }
     }
 
-    public synchronized void deliverHeartbeat(HeartbeatMsg hb) {
+    @Override
+    public boolean receiveHeartbeat(Heartbeat hb) {
         NodeData nodeData = nodes.get(hb.getSender());
         if (nodeData != null) {
             nodeData.heartbeat(hb);
-            return;
+            return false;
         }
         nodeData = createNode(hb);
         addNode(hb, nodeData);
+        return false;
     }
 
-    protected void addNode(HeartbeatMsg hb, NodeData nodeData) {
+    protected void addNode(Heartbeat hb, NodeData nodeData) {
         nodes.put(hb.getSender(), nodeData);
         globalView.add(hb.getSender());
     }
@@ -113,18 +112,10 @@ public class Controller {
     @Deployed
     public synchronized void deploy() throws IOException {
         timer.schedule(getTask(), checkPeriod, checkPeriod);
-        snoop = new Snoop(
-                          "Anubis: Partition Manager Test Console heartbeat snoop",
-                          address, identity, this);
-        snoop.start();
     }
 
     public synchronized void disconnectNode(NodeData node) {
         node.disconnected();
-    }
-
-    public MulticastAddress getAddress() {
-        return address;
     }
 
     public long getCheckPeriod() {
@@ -170,10 +161,6 @@ public class Controller {
     }
 
     public void removeNode(NodeData nodeData) {
-    }
-
-    public void setAddress(MulticastAddress address) {
-        this.address = address;
     }
 
     public void setCheckPeriod(long checkPeriod) {
@@ -226,7 +213,6 @@ public class Controller {
 
     @PreDestroy
     public synchronized void terminate() {
-        snoop.shutdown();
         if (task != null) {
             task.cancel();
         }

@@ -23,17 +23,18 @@ import java.io.IOException;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastComms;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.Wire;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public class Snoop extends MulticastComms {
 
-    private Controller controller;
-    private Identity id;
+    private HeartbeatReceiver controller;
+    private Identity          id;
 
     public Snoop(String threadName, MulticastAddress address, Identity id,
-                 Controller controller) throws IOException {
+                 HeartbeatReceiver controller) throws IOException {
         super(threadName, address);
         this.controller = controller;
         this.id = id;
@@ -50,10 +51,10 @@ public class Snoop extends MulticastComms {
             return;
         }
 
-        if (obj instanceof HeartbeatMsg) {
-            HeartbeatMsg msg = (HeartbeatMsg) obj;
+        if (obj instanceof Heartbeat) {
+            Heartbeat msg = (Heartbeat) obj;
             if (id.equalMagic(msg.getSender())) {
-                controller.deliverHeartbeat((HeartbeatMsg) obj);
+                controller.receiveHeartbeat((Heartbeat) obj);
             }
         }
     }

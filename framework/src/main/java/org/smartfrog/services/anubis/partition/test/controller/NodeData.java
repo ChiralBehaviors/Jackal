@@ -36,24 +36,23 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class NodeData {
-    protected TestConnection connection = null;
-    protected Controller controller = null;
-    protected long heartbeatInterval = 0;
-    protected View ignoring = new BitView();
-    protected long lastHB = 0;
-    protected long lastReceive = 0;
-    protected int leader = -1;
-    private static final Logger log = Logger.getLogger(NodeData.class.getCanonicalName());
-    protected Identity nodeId = null;
-    protected View partition = new BitView();
-    protected StatsMsg stats = null;
-    protected ThreadsMsg threadsInfo = null;
-    protected long threadsInfoExpire = 0;
-    protected long timeout = 0;
-    protected View view = null;
+    protected TestConnection    connection        = null;
+    protected Controller        controller        = null;
+    protected long              heartbeatInterval = 0;
+    protected View              ignoring          = new BitView();
+    protected long              lastHB            = 0;
+    protected long              lastReceive       = 0;
+    protected int               leader            = -1;
+    private static final Logger log               = Logger.getLogger(NodeData.class.getCanonicalName());
+    protected Identity          nodeId            = null;
+    protected View              partition         = new BitView();
+    protected StatsMsg          stats             = null;
+    protected ThreadsMsg        threadsInfo       = null;
+    protected long              threadsInfoExpire = 0;
+    protected long              timeout           = 0;
+    protected View              view              = null;
 
     public NodeData(Heartbeat hb, Controller controller) {
         this.controller = controller;
@@ -85,7 +84,7 @@ public class NodeData {
     }
 
     public void disconnected() {
-        connection = null; 
+        connection = null;
         update();
     }
 
@@ -123,7 +122,7 @@ public class NodeData {
         return view.toBitSet().toString();
     }
 
-    public void heartbeat(HeartbeatMsg hb) {
+    public void heartbeat(Heartbeat hb) {
 
         if (lastHB <= hb.getTime()) {
             lastHB = hb.getTime();
@@ -195,33 +194,6 @@ public class NodeData {
         connection.sendObject(new SetTimingMsg(interval, timeout));
     }
 
-    private void connectIfAvailable(InetSocketAddress address) {
-
-        if (address == null) {
-            return;
-        }
-
-        connection = new TestConnection(address, this, nodeId, controller);
-        if (connection.connected()) {
-            connection.sendObject(new SetTimingMsg(
-                                                   controller.getHeartbeatInterval(),
-                                                   controller.getHeartbeatTimeout()));
-            connection.start();
-        } else {
-            connection = null;
-        }
-    }
-
-    private View partOrIgnoring(View partition, View ignoring) {
-        return new BitView().copyView(partition).merge(ignoring);
-    }
-
-    protected void update() {
-        if (threadsInfoExpire < System.currentTimeMillis()) {
-            threadsInfo = null;
-        }
-    }
-
     protected void ignoring(IgnoringMsg ignoringMsg) {
         ignoring = ignoringMsg.ignoring;
         update();
@@ -258,6 +230,33 @@ public class NodeData {
         heartbeatInterval = interval;
         this.timeout = timeout;
         update();
+    }
+
+    protected void update() {
+        if (threadsInfoExpire < System.currentTimeMillis()) {
+            threadsInfo = null;
+        }
+    }
+
+    private void connectIfAvailable(InetSocketAddress address) {
+
+        if (address == null) {
+            return;
+        }
+
+        connection = new TestConnection(address, this, nodeId, controller);
+        if (connection.connected()) {
+            connection.sendObject(new SetTimingMsg(
+                                                   controller.getHeartbeatInterval(),
+                                                   controller.getHeartbeatTimeout()));
+            connection.start();
+        } else {
+            connection = null;
+        }
+    }
+
+    private View partOrIgnoring(View partition, View ignoring) {
+        return new BitView().copyView(partition).merge(ignoring);
     }
 
 }
