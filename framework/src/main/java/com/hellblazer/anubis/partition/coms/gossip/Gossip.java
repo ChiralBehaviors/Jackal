@@ -20,6 +20,7 @@ package com.hellblazer.anubis.partition.coms.gossip;
 import static java.lang.String.format;
 
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -88,15 +90,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private final int                                        interval;
     private final TimeUnit                                   intervalUnit;
     private final ScheduledExecutorService                   scheduler;
+    private final ExecutorService                            dispatcher;
     private HeartbeatReceiver                                receiver;
     private final AtomicReference<View>                      ignoring  = new AtomicReference<View>();
     private final AtomicBoolean                              running   = new AtomicBoolean();
 
     /**
      * 
-     * @param communicationsService
-     *            - the service which creates outbound connections to other
-     *            members and notifies interested parties of updates
      * @param heartbeatReceiver
      *            - the reciever of newly acquired heartbeat state
      * @param systemView
@@ -106,8 +106,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      * @param phiConvictThreshold
      *            - the threshold required to convict a failed member. The value
      *            should be between 5 and 16, inclusively.
-     * @param localIdentity
-     *            - the identity of the local member
+     * @param communicationsService
+     *            - the service which creates outbound connections to other
+     *            members
+     * @param gossipInterval
+     *            - the period of the random gossiping
+     * @param unit
+     *            - time unit for the gossip interval
      */
     public Gossip(SystemView systemView, Random random,
                   double phiConvictThreshold,
@@ -126,6 +131,30 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 Thread daemon = new Thread(r,
                                            "Anubis: Gossip heartbeat servicing thread");
                 daemon.setDaemon(true);
+                daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                    }
+                });
+                return daemon;
+            }
+        });
+        dispatcher = Executors.newFixedThreadPool(3, new ThreadFactory() {
+            volatile int count = 0;
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r,
+                                           "Anubis: Gossip dispatching thread "
+                                                   + count++);
+                daemon.setDaemon(true);
+                daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                    }
+                });
                 return daemon;
             }
         });
@@ -151,12 +180,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 view.markDead(endpoint, now);
                 if (log.isLoggable(Level.INFO)) {
                     log.info(format("Endpoint %s is now DEAD on node: %s",
-                                    endpoint, localState.getMemberString()));
+                                    state.getMemberString(),
+                                    localState.getMemberString()));
                 }
             }
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("Culling the quarantined...");
+            log.finest("Culling the quarantined and unreachable...");
         }
         view.cullQuarantined(now);
         view.cullUnreachable(now);
@@ -270,10 +300,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     public boolean shouldConvict(InetSocketAddress address, long now) {
         Endpoint endpoint = endpoints.get(address);
-        if (endpoint == null) {
-            return true; // not a live member if it ain't in the endpoint set
-        }
-        return endpoint.shouldConvict(now, convictThreshold);
+        return endpoint == null || isIgnoring(endpoint.getState().getSender())
+               || endpoint.shouldConvict(now, convictThreshold);
     }
 
     @Override
@@ -334,11 +362,10 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             if (view.isQuarantined(endpoint)) {
                 if (log.isLoggable(Level.FINEST)) {
                     log.finest(format("Ignoring gossip for %s because it is a quarantined endpoint",
-                                      endpoint));
+                                      remoteState));
                 }
                 continue;
             }
-
             Endpoint localState = endpoints.get(endpoint);
             if (localState != null) {
                 if (remoteState.getEpoch() >= localState.getEpoch()) {
@@ -347,7 +374,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                         localState.updateState(now, remoteState);
                         notifyUpdate(localState.getState());
                         if (log.isLoggable(Level.FINEST)) {
-                            log.finest(format("Updating heartbeat state view number to %s from %s for %s",
+                            log.finest(format("Updating heartbeat state version to %s from %s for %s",
                                               localState.getVersion(),
                                               oldVersion, endpoint));
                         }
@@ -410,7 +437,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 }
                 view.markAlive(address);
                 if (log.isLoggable(Level.FINE)) {
-                    log.fine(format("Member %s is now connected",
+                    log.fine(format("Member %s is now CONNECTED",
                                     newEndpoint.getMemberString()));
                 }
                 List<Digest> newDigests = new ArrayList<Digest>(digests);
@@ -573,10 +600,11 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     protected void notifyUpdate(final HeartbeatState state) {
-        if (state == null || isIgnoring(state.getSender())) {
+        assert state != null;
+        if (state.isDiscoveryOnly() || isIgnoring(state.getSender())) {
             return;
         }
-        communications.dispatch(new Runnable() {
+        dispatcher.execute(new Runnable() {
             @Override
             public void run() {
                 receiver.receiveHeartbeat(state);

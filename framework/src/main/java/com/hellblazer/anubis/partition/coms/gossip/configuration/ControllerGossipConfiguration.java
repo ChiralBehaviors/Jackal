@@ -30,8 +30,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
+import org.smartfrog.services.anubis.partition.test.controller.GossipSnoop;
 import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,6 +42,7 @@ import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
 import com.hellblazer.anubis.partition.coms.gossip.Communications;
 import com.hellblazer.anubis.partition.coms.gossip.Gossip;
+import com.hellblazer.anubis.partition.coms.gossip.HeartbeatState;
 import com.hellblazer.anubis.partition.coms.gossip.SystemView;
 
 /**
@@ -126,11 +129,11 @@ public class ControllerGossipConfiguration {
 
     @Bean
     public Communications communications() throws IOException {
-        return new Communications("Gossip Endpoint Handler for "
+        return new Communications("Test controller gossip endpoint handler "
                                   + partitionIdentity(), gossipEndpoint(),
                                   socketOptions(),
                                   Executors.newFixedThreadPool(3),
-                                  Executors.newSingleThreadExecutor());
+                                  Executors.newFixedThreadPool(10));
 
     }
 
@@ -150,11 +153,11 @@ public class ControllerGossipConfiguration {
     }
 
     protected int phiConvictionThreshold() {
-        return 11;
+        return 16;
     }
 
     protected int quarantineDelay() {
-        return 5000;
+        return 1000;
     }
 
     protected Collection<InetSocketAddress> seedHosts()
@@ -167,5 +170,13 @@ public class ControllerGossipConfiguration {
         return new Gossip(systemView(), new SecureRandom(),
                           phiConvictionThreshold(), communications(),
                           gossipInterval(), gossipIntervalTimeUnit());
+    }
+
+    @Bean
+    public GossipSnoop snoop() throws IOException {
+        Heartbeat heartbeat = new HeartbeatState(gossip().getLocalAddress(), 0,
+                                                 partitionIdentity());
+        return new GossipSnoop(heartbeat, gossip(), heartbeatInterval(),
+                               TimeUnit.MILLISECONDS);
     }
 }

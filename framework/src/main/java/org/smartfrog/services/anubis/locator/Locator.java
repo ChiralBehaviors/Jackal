@@ -90,7 +90,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
                         log.log(Level.WARNING, "Uncaught exceptiion", e);
                     }
                 });
-                daemon.setPriority(Thread.MAX_PRIORITY);
+                daemon.setDaemon(true);
                 return daemon;
             }
         });
@@ -100,7 +100,21 @@ public class Locator implements PartitionNotification, AnubisLocator {
 
         global.start();
         local.start();
-        stabilityQueue = Executors.newSingleThreadExecutor();
+        stabilityQueue = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread daemon = new Thread(r, "Anubis: stability queue (node "
+                                              + me + ")");
+                daemon.setDaemon(true);
+                daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                    }
+                });
+                return daemon;
+            }
+        });;
         partition.register(this);
     }
 

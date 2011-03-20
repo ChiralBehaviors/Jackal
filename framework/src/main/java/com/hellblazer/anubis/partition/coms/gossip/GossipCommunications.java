@@ -50,8 +50,6 @@ public interface GossipCommunications {
 
     InetSocketAddress getLocalAddress();
 
-    void dispatch(Runnable runnable);
-
     void setGossip(Gossip gossip);
 
     void start();

@@ -242,6 +242,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
              * Only bother if the connection has missed its deadline
              */
             if (con.isNotTimely(timenow, timeout)) {
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(String.format("Terminating untimely connection: %s", con));
+                }
 
                 /**
                  * If the connection is in the connection set then terminate it.

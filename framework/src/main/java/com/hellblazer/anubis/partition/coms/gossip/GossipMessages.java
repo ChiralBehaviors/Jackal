@@ -31,21 +31,22 @@ public interface GossipMessages {
     byte UPDATE                     = 2;
     int  INET_ADDRESS_V6_BYTE_SIZE  = 16;
     int  INET_ADDRESS_MAX_BYTE_SIZE = INET_ADDRESS_V6_BYTE_SIZE // address
-                                    + 1   // addressLength
+                                    + 1 // addressLength
                                     + 2;  // port
     int  NODE_ID_SET_MAX_BYTE_SIZE  = 257;
     int  IDENTITY_BYTE_SIZE         = 16;
     int  HEARTBEAT_STATE_BYTE_SIZE  = IDENTITY_BYTE_SIZE // candidate
                                       + INET_ADDRESS_MAX_BYTE_SIZE // heartbeat address
                                       + NODE_ID_SET_MAX_BYTE_SIZE // msgLinks
-                                      + 1  // preferred
+                                      + 1 // preferred
+                                      + 1 // discoveryOnly
                                       + IDENTITY_BYTE_SIZE // sender
                                       + INET_ADDRESS_MAX_BYTE_SIZE // senderAddress
-                                      + 1  // stable
+                                      + 1 // stable
                                       + INET_ADDRESS_MAX_BYTE_SIZE // testInterface
                                       + NODE_ID_SET_MAX_BYTE_SIZE // view
-                                      + 4  // viewNumber
-                                      + 4  // viewTimeStamp 
+                                      + 4 // viewNumber
+                                      + 4 // viewTimeStamp 
                                       + 4; // version
     int  DIGEST_BYTE_SIZE           = INET_ADDRESS_MAX_BYTE_SIZE // address
                                     + 4 // epoch

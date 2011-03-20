@@ -63,13 +63,6 @@ public class PartitionTest extends TestCase {
 
     @Configuration
     static class MyControllerConfig extends ControllerGossipConfiguration {
-        static final int testPort;
-
-        static {
-            String port = System.getProperty("com.hellblazer.anubis.partition.coms.gossip.test.port",
-                                             "23001");
-            testPort = Integer.parseInt(port);
-        }
 
         @Override
         @Bean
@@ -94,21 +87,25 @@ public class PartitionTest extends TestCase {
         @Override
         protected Collection<InetSocketAddress> seedHosts()
                                                            throws UnknownHostException {
-            return asList(seedContact());
+            return asList(seedContact1(), seedContact2());
         }
 
-        InetSocketAddress seedContact() throws UnknownHostException {
-            return new InetSocketAddress(contactHost(), testPort);
+        InetSocketAddress seedContact1() throws UnknownHostException {
+            return new InetSocketAddress(contactHost(), testPort1);
+        }
+
+        InetSocketAddress seedContact2() throws UnknownHostException {
+            return new InetSocketAddress(contactHost(), testPort2);
         }
 
     }
 
     static class Node extends NodeData {
-        boolean       initial       = true;
         CyclicBarrier barrier       = INITIAL_BARRIER;
-        int           cardinality   = CONFIGS.length;
-        boolean       interrupted   = false;
         boolean       barrierBroken = false;
+        int           cardinality   = CONFIGS.length;
+        boolean       initial       = true;
+        boolean       interrupted   = false;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -116,7 +113,7 @@ public class PartitionTest extends TestCase {
 
         @Override
         protected void partitionNotification(View partition, int leader) {
-            log.fine("Partition notification: " + partition);
+            log.finer("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
             if (partition.isStable() && partition.cardinality() == cardinality) {
                 interrupted = false;
@@ -152,6 +149,12 @@ public class PartitionTest extends TestCase {
         public int node() {
             return 0;
         }
+
+        @Override
+        protected InetSocketAddress gossipEndpoint()
+                                                    throws UnknownHostException {
+            return seedContact1();
+        }
     }
 
     @Configuration
@@ -159,6 +162,12 @@ public class PartitionTest extends TestCase {
         @Override
         public int node() {
             return 1;
+        }
+
+        @Override
+        protected InetSocketAddress gossipEndpoint()
+                                                    throws UnknownHostException {
+            return seedContact2();
         }
     }
 
@@ -307,13 +316,6 @@ public class PartitionTest extends TestCase {
     }
 
     static class nodeCfg extends GossipConfiguration {
-        static final int testPort;
-
-        static {
-            String port = System.getProperty("com.hellblazer.anubis.partition.coms.gossip.test.port",
-                                             "23001");
-            testPort = Integer.parseInt(port);
-        }
 
         @Override
         public int getMagic() {
@@ -327,17 +329,18 @@ public class PartitionTest extends TestCase {
         @Override
         protected Collection<InetSocketAddress> seedHosts()
                                                            throws UnknownHostException {
-            return asList(seedContact());
+            return asList(seedContact1(), seedContact2());
         }
 
-        InetSocketAddress seedContact() throws UnknownHostException {
-            return new InetSocketAddress(contactHost(), testPort);
+        InetSocketAddress seedContact1() throws UnknownHostException {
+            return new InetSocketAddress(contactHost(), testPort1);
+        }
+
+        InetSocketAddress seedContact2() throws UnknownHostException {
+            return new InetSocketAddress(contactHost(), testPort2);
         }
     }
 
-    private static final Logger              log     = Logger.getLogger(PartitionTest.class.getCanonicalName());
-
-    static CyclicBarrier                     INITIAL_BARRIER;
     @SuppressWarnings("rawtypes")
     final static Class[]                     CONFIGS = { node0.class,
             node1.class, node2.class, node3.class, node4.class, node5.class,
@@ -345,20 +348,29 @@ public class PartitionTest extends TestCase {
             node11.class, node12.class, node13.class, node14.class,
             node15.class, node16.class, node17.class, node18.class,
             node19.class                            };
+    static CyclicBarrier                     INITIAL_BARRIER;
+    static int                               testPort1;
+    static int                               testPort2;
+    private static final Logger              log     = Logger.getLogger(PartitionTest.class.getCanonicalName());
+    static {
+        String port = System.getProperty("com.hellblazer.anubis.partition.coms.gossip.test.port.1",
+                                         "24010");
+        testPort1 = Integer.parseInt(port);
+        port = System.getProperty("com.hellblazer.anubis.partition.coms.gossip.test.port.2",
+                                  "24020");
+        testPort2 = Integer.parseInt(port);
+    }
 
+    MyController                             controller;
     AnnotationConfigApplicationContext       controllerContext;
     List<AnnotationConfigApplicationContext> memberContexts;
-    MyController                             controller;
     List<Node>                               partition;
 
-    public void testMe() {
-        assertTrue(1==1);
-    }
     /**
      * Test that a partition can form two asymmetric partitions, with one
      * stabilizing, and then reform the original partition.
      */
-    public void teztAsymmetricPartition() throws Exception {
+    public void testAsymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
         CyclicBarrier barrierA = new CyclicBarrier(minorPartitionSize + 1);
@@ -382,8 +394,8 @@ public class PartitionTest extends TestCase {
         }
         log.info("asymmetric partitioning: " + A);
         controller.asymPartition(A);
-        log.info("Awaiting stabilty of minor partition A");
-        barrierA.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of minor partition A");
+        barrierA.await(60, TimeUnit.SECONDS);
         // The other partition should still be unstable.
         assertEquals(0, barrierB.getNumberWaiting());
 
@@ -400,15 +412,15 @@ public class PartitionTest extends TestCase {
         }
 
         controller.clearPartitions();
-        log.info("Awaiting stabilty of reformed major partition");
-        barrier.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of reformed major partition");
+        barrier.await(60, TimeUnit.SECONDS);
     }
 
     /**
      * Test that a partition can form two stable sub partions and then reform
      * the original partition.
      */
-    public void teztSymmetricPartition() throws Exception {
+    public void testSymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
         CyclicBarrier barrierA = new CyclicBarrier(minorPartitionSize + 1);
@@ -432,10 +444,10 @@ public class PartitionTest extends TestCase {
         }
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
-        log.info("Awaiting stabilty of minor partition A");
-        barrierA.await(30, TimeUnit.SECONDS);
-        log.info("Awaiting stabilty of minor partition B");
-        barrierB.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of minor partition A");
+        barrierA.await(60, TimeUnit.SECONDS);
+        log.info("Awaiting stability of minor partition B");
+        barrierB.await(60, TimeUnit.SECONDS);
 
         View viewA = partitionA.get(0).getView();
         for (Node member : partitionA) {
@@ -455,11 +467,10 @@ public class PartitionTest extends TestCase {
         }
 
         controller.clearPartitions();
-        log.info("Awaiting stabilty of reformed major partition");
-        barrier.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of reformed major partition");
+        barrier.await(60, TimeUnit.SECONDS);
     }
 
-    /*
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -470,16 +481,26 @@ public class PartitionTest extends TestCase {
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
-        INITIAL_BARRIER.await(120, TimeUnit.SECONDS);
-        log.info("Initial partition stabile");
-        partition = new ArrayList<PartitionTest.Node>();
-        for (AnnotationConfigApplicationContext context : memberContexts) {
-            partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+        boolean success = false;
+        try {
+            INITIAL_BARRIER.await(120, TimeUnit.SECONDS);
+            success = true;
+            log.info("Initial partition stable");
+            partition = new ArrayList<PartitionTest.Node>();
+            for (AnnotationConfigApplicationContext context : memberContexts) {
+                partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+            }
+        } finally {
+            if (!success) {
+                tearDown();
+            }
         }
     }
 
     @Override
     protected void tearDown() throws Exception {
+        testPort1++;
+        testPort2++;
         if (controllerContext != null) {
             try {
                 controllerContext.close();
@@ -501,8 +522,9 @@ public class PartitionTest extends TestCase {
         controller = null;
         partition = null;
         INITIAL_BARRIER = null;
+        Thread.sleep(10000);
     }
-    */
+
     private List<AnnotationConfigApplicationContext> createMembers() {
         ArrayList<AnnotationConfigApplicationContext> contexts = new ArrayList<AnnotationConfigApplicationContext>();
         for (Class<?> config : CONFIGS) {

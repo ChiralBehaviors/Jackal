@@ -102,6 +102,7 @@ public class EndToEndTest extends TestCase {
         id = 0;
         for (Gossip member : members) {
             member.sendHeartbeat(new HeartbeatState(new Identity(666, 0, 0),
+                                                    false,
                                                     member.getLocalAddress(),
                                                     iteration + 1,
                                                     new NodeIdSet(), true,
@@ -135,6 +136,7 @@ public class EndToEndTest extends TestCase {
         gossip.create(receiver);
         gossip.sendHeartbeat(new HeartbeatState(
                                                 new Identity(666, 0, 0),
+                                                false,
                                                 communications.getLocalAddress(),
                                                 0, new NodeIdSet(), true,
                                                 localIdentity, null, false,

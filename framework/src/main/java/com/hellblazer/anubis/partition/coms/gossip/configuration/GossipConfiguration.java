@@ -17,6 +17,8 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip.configuration;
 
+import static java.util.Arrays.asList;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -50,7 +52,6 @@ import com.hellblazer.anubis.partition.coms.gossip.Communications;
 import com.hellblazer.anubis.partition.coms.gossip.Gossip;
 import com.hellblazer.anubis.partition.coms.gossip.PhiTimedProtocolFactory;
 import com.hellblazer.anubis.partition.coms.gossip.SystemView;
-import static java.util.Arrays.asList;
 
 /**
  * Basic gossip based discovery/replication Anubis configuration.
@@ -194,6 +195,7 @@ public class GossipConfiguration {
     @Bean
     public HeartbeatProtocolFactory heartbeatProtocolFactory()
                                                               throws IOException {
+        // return new TimedProtocolFactory();
         return new PhiTimedProtocolFactory(gossip());
     }
 
@@ -221,11 +223,11 @@ public class GossipConfiguration {
     }
 
     protected int phiConvictionThreshold() {
-        return 11;
+        return 16;
     }
 
     protected int quarantineDelay() {
-        return 5000;
+        return 1000;
     }
 
     protected Collection<InetSocketAddress> seedHosts()

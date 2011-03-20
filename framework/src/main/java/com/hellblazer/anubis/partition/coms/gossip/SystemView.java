@@ -123,7 +123,7 @@ public class SystemView {
             Map.Entry<InetSocketAddress, Long> entry = iterator.next();
             if (now - entry.getValue() > quarantineInterval) {
                 if (log.isLoggable(Level.FINE)) {
-                    log.fine(format("%w elapsed, %s gossip quarantine over",
+                    log.fine(format("%s elapsed, %s gossip quarantine over",
                                     quarantineInterval, entry.getKey()));
                 }
                 iterator.remove();

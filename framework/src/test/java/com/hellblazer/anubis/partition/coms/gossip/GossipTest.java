@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 
-import org.mockito.ArgumentCaptor;
 import org.mockito.internal.verification.Times;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -173,7 +172,7 @@ public class GossipTest extends TestCase {
 
     public void testApplyUpdate() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
-        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
+        final HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         InetSocketAddress localAddress = new InetSocketAddress(0);
@@ -225,7 +224,13 @@ public class GossipTest extends TestCase {
         when(ep4.getVersion()).thenReturn(5L);
 
         Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS);
+                                   TimeUnit.DAYS) {
+
+            @Override
+            protected void notifyUpdate(HeartbeatState state) {
+                receiver.receiveHeartbeat(state);
+            }
+        };
         gossip.create(receiver);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
@@ -262,13 +267,6 @@ public class GossipTest extends TestCase {
         verifyNoMoreInteractions(ep4);
 
         verify(communications).setGossip(gossip);
-
-        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
-        verify(communications, new Times(2)).dispatch(captor.capture());
-
-        for (Runnable action : captor.getAllValues()) {
-            action.run();
-        }
 
         verify(receiver).receiveHeartbeat(state1);
         verify(receiver).receiveHeartbeat(state3);

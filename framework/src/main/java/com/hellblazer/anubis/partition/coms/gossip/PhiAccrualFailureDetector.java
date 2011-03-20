@@ -19,6 +19,10 @@ package com.hellblazer.anubis.partition.coms.gossip;
 
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.hellblazer.anubis.util.RunningAverage;
+import com.hellblazer.anubis.util.RunningMedian;
+import com.hellblazer.anubis.util.SampledWindow;
+
 /**
  * Instead of providing information of a boolean nature (trust vs. suspect),
  * this failure detector outputs a suspicion level on a continuous scale. The
@@ -37,15 +41,26 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  */
 public class PhiAccrualFailureDetector {
-    private static final int    WINDOW_SIZE = 1000;
-    private static final double MIN_DELTA   = 2.0D;
-    private int                 count       = 0;
-    private int                 head        = 0;
-    private double              last        = -1D;
-    private final double[]      samples     = new double[WINDOW_SIZE];
-    private double              sum         = 0D;
-    private int                 tail        = 0;
-    private final ReentrantLock stateLock   = new ReentrantLock();
+    private static final boolean DEFAULT_USE_MEDIAN  = true;
+    private static final int     DEFAULT_WINDOW_SIZE = 1000;
+    private static final double  MIN_DELTA           = 2.0D;
+
+    private boolean              first               = true;
+    private double               last;
+    private final ReentrantLock  stateLock           = new ReentrantLock();
+    private SampledWindow        window;
+
+    public PhiAccrualFailureDetector() {
+        this(DEFAULT_USE_MEDIAN, DEFAULT_WINDOW_SIZE);
+    }
+
+    public PhiAccrualFailureDetector(boolean useMedian, int windowSize) {
+        if (useMedian) {
+            window = new RunningMedian(windowSize);
+        } else {
+            window = new RunningAverage(windowSize);
+        }
+    }
 
     /**
      * Answer the suspicion level of the detector.
@@ -73,12 +88,12 @@ public class PhiAccrualFailureDetector {
             return 0.0D;
         }
         try {
-            if (count == 0) {
-                return 0d;
+            if (!window.hasSamples()) {
+                return 0.0D;
             }
             double phi = -1
                          * Math.log10(Math.pow(Math.E, -1 * (now - last)
-                                                       / (sum / count)));
+                                                       / window.value()));
             return phi;
         } finally {
             myLock.unlock();
@@ -96,34 +111,17 @@ public class PhiAccrualFailureDetector {
             return;
         }
         try {
-            if (last > 0D) {
+            if (!first) {
                 double interArrivalTime = now - last;
                 if (interArrivalTime < MIN_DELTA) {
                     return;
                 }
-                sum += interArrivalTime;
-                if (count == WINDOW_SIZE) {
-                    sum -= removeFirst();
-                }
-
-                addLast(interArrivalTime);
+                window.sample(interArrivalTime);
             }
             last = now;
+            first = false;
         } finally {
             myLock.unlock();
         }
-    }
-
-    private void addLast(double value) {
-        samples[tail] = value;
-        tail = (tail + 1) % samples.length;
-        count++;
-    }
-
-    private double removeFirst() {
-        double item = samples[head];
-        count--;
-        head = (head + 1) % samples.length;
-        return item;
     }
 }

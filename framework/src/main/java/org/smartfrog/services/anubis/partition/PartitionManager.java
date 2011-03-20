@@ -70,6 +70,7 @@ public class PartitionManager implements Partition {
                         log.log(Level.WARNING, "Uncaught exceptiion", e);
                     }
                 });
+                daemon.setDaemon(true);
                 daemon.setPriority(Thread.MAX_PRIORITY);
                 return daemon;
             }

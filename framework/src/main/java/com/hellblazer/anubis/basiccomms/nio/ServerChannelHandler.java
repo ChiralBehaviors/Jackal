@@ -91,7 +91,7 @@ public abstract class ServerChannelHandler {
         selectService = Executors.newSingleThreadExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r, "Server channel handler select");
+                Thread daemon = new Thread(r, "Server channel handler select for " + name);
                 daemon.setDaemon(true);
                 daemon.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                     @Override

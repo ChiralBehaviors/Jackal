@@ -47,6 +47,7 @@ public class HeartbeatState implements Heartbeat {
 
     private volatile Identity          candidate;
     private InetSocketAddress          heartbeatAddress;
+    private boolean                    discoveryOnly = false;
     private volatile NodeIdSet         msgLinks;
     private volatile boolean           preferred;
     private Identity                   sender;
@@ -66,6 +67,7 @@ public class HeartbeatState implements Heartbeat {
         ByteBuffer msg = ByteBuffer.wrap(binaryCache);
 
         candidate = new Identity(msg);
+        discoveryOnly = msg.get() > 0 ? true : false;
         heartbeatAddress = GossipHandler.readInetAddress(msg);
         version = msg.getLong();
         time = msg.getLong();
@@ -92,13 +94,14 @@ public class HeartbeatState implements Heartbeat {
         fillCache();
     }
 
-    public HeartbeatState(Identity candidate,
+    public HeartbeatState(Identity candidate, boolean discoveryOnly,
                           InetSocketAddress heartbeatAddress, long version,
                           NodeIdSet msgLinks, boolean preferred,
                           Identity sender, InetSocketAddress senderAddress,
                           boolean stable, InetSocketAddress testInterface,
                           NodeIdSet view, long viewNumber, long viewTimestamp) {
         this.candidate = candidate;
+        this.discoveryOnly = discoveryOnly;
         this.heartbeatAddress = heartbeatAddress;
         this.version = version;
         this.msgLinks = msgLinks;
@@ -110,6 +113,18 @@ public class HeartbeatState implements Heartbeat {
         this.view = view;
         this.viewNumber = viewNumber;
         viewTimeStamp = viewTimestamp;
+    }
+
+    public HeartbeatState(InetSocketAddress heartbeatAddress, long version,
+                          Identity sender) {
+        this.discoveryOnly = true;
+        this.heartbeatAddress = heartbeatAddress;
+        this.version = version;
+        candidate = new Identity(-1, -1, -1);
+        msgLinks = new NodeIdSet(1);
+        sender = new Identity(-1, -1, -1);
+        view = new NodeIdSet(1);
+        this.sender = sender;
     }
 
     public HeartbeatState(InetSocketAddress address) {
@@ -289,48 +304,56 @@ public class HeartbeatState implements Heartbeat {
         return result;
     }
 
+    public boolean isDiscoveryOnly() {
+        return discoveryOnly;
+    }
+
     @Override
     public boolean isPreferred() {
         return preferred;
     }
 
     @Override
-    public void setCandidate(Identity id) {
+    public synchronized void setCandidate(Identity id) {
         binaryCache = null;
         candidate = id;
     }
 
+    public synchronized void setDiscoveryOnly(boolean b) {
+        discoveryOnly = b;
+    }
+
     @Override
-    public void setIsPreferred(boolean preferred) {
+    public synchronized void setIsPreferred(boolean preferred) {
         binaryCache = null;
         this.preferred = preferred;
     }
 
     @Override
-    public void setMsgLinks(NodeIdSet ml) {
+    public synchronized void setMsgLinks(NodeIdSet ml) {
         binaryCache = null;
         msgLinks = ml;
     }
 
     @Override
-    public void setTestInterface(InetSocketAddress address) {
+    public synchronized void setTestInterface(InetSocketAddress address) {
         binaryCache = null;
         testInterface = address;
     }
 
     @Override
-    public void setTime(long t) {
+    public synchronized void setTime(long t) {
         binaryCache = null;
         time = t;
     }
 
-    public void setVersion(long l) {
+    public synchronized void setVersion(long l) {
         binaryCache = null;
         version = l;
     }
 
     @Override
-    public void setView(View v) {
+    public synchronized void setView(View v) {
         binaryCache = null;
         view = v.toBitSet();
         stable = v.isStable();
@@ -338,7 +361,7 @@ public class HeartbeatState implements Heartbeat {
     }
 
     @Override
-    public void setViewNumber(long n) {
+    public synchronized void setViewNumber(long n) {
         binaryCache = null;
         viewNumber = n;
     }
@@ -354,12 +377,12 @@ public class HeartbeatState implements Heartbeat {
                + ", version=" + version + "]";
     }
 
-    public void writeTo(ByteBuffer buffer) {
+    public synchronized void writeTo(ByteBuffer buffer) {
         fillCache();
         buffer.put(binaryCache);
     }
 
-    private synchronized void fillCache() {
+    private void fillCache() {
         if (binaryCache != null) {
             return;
         }
@@ -367,6 +390,11 @@ public class HeartbeatState implements Heartbeat {
         ByteBuffer msg = ByteBuffer.wrap(binaryCache);
 
         candidate.writeTo(msg);
+        if (discoveryOnly) {
+            msg.put((byte) 1);
+        } else {
+            msg.put((byte) 0);
+        }
         GossipHandler.writeInetAddress(heartbeatAddress, msg);
         msg.putLong(version);
         msg.putLong(time);

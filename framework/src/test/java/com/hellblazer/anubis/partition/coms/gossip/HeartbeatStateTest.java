@@ -52,13 +52,15 @@ public class HeartbeatStateTest extends TestCase {
         msgLinks.add(candidate.id);
         msgLinks.add(sender.id);
         v.add(candidate.id);
-        HeartbeatState state = new HeartbeatState(candidate, heartbeatAddress,
-                                                  0, msgLinks, preferred,
-                                                  sender, senderAddress,
-                                                  stable, testInterface, v,
-                                                  viewNumber, viewTimestamp);
+        HeartbeatState state = new HeartbeatState(candidate, false,
+                                                  heartbeatAddress, 0,
+                                                  msgLinks, preferred, sender,
+                                                  senderAddress, stable,
+                                                  testInterface, v, viewNumber,
+                                                  viewTimestamp);
         state.setVersion(1L);
         state.setTime(time);
+        state.setDiscoveryOnly(true);
         assertSame(msgLinks, state.getMsgLinks());
         assertSame(sender, state.getSender());
         assertSame(senderAddress, state.getSenderAddress());
@@ -102,7 +104,7 @@ public class HeartbeatStateTest extends TestCase {
         assertTrue(view.contains(candidate));
         assertFalse(view.contains(sender));
         assertEquals(viewNumber, dState.getViewNumber());
-        assertEquals(viewTimestamp, view.getTimeStamp()); 
+        assertEquals(viewTimestamp, view.getTimeStamp());
         assertEquals(stable, view.isStable());
     }
 }

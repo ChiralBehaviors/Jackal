@@ -32,24 +32,19 @@ public class PhiAccrualFailureDetectorTest extends TestCase {
         PhiAccrualFailureDetector detector = new PhiAccrualFailureDetector();
         long inc = 500;
         
-        long now = System.currentTimeMillis();
-        System.out.println("Phi: " + detector.phi(now));
+        long now = System.currentTimeMillis(); 
 
-        detector.record(now);
-        System.out.println("Phi: " + detector.phi(now));
+        detector.record(now); 
         now += inc;
         
         detector.record(now);
         now += inc;
-        System.out.println("Phi: " + detector.phi(now));
         
         detector.record(now);
-        now += inc;
-        // System.out.println("Phi: " + detector.phi(now));
+        now += inc; 
         
         detector.record(now);
-        now += inc;
-        // System.out.println("Phi: " + detector.phi(now));
+        now += inc; 
         
         detector.record(now);
         

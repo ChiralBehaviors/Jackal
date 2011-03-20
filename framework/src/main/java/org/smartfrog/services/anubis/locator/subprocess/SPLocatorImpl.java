@@ -100,7 +100,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
                         log.log(Level.WARNING, "Uncaught exceptiion", e);
                     }
                 });
-                daemon.setPriority(Thread.MAX_PRIORITY);
+                daemon.setDaemon(true);
                 return daemon;
             }
         });

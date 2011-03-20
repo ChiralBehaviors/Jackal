@@ -348,8 +348,8 @@ public class PartitionTest extends TestCase {
         }
         log.info("asymmetric partitioning: " + A);
         controller.asymPartition(A);
-        log.info("Awaiting stabilty of minor partition A");
-        barrierA.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of minor partition A");
+        barrierA.await(60, TimeUnit.SECONDS);
         // The other partition should still be unstable.
         assertEquals(0, barrierB.getNumberWaiting());
 
@@ -366,8 +366,8 @@ public class PartitionTest extends TestCase {
         }
 
         controller.clearPartitions();
-        log.info("Awaiting stabilty of reformed major partition");
-        barrier.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of reformed major partition");
+        barrier.await(60, TimeUnit.SECONDS);
     }
 
     /**
@@ -398,10 +398,10 @@ public class PartitionTest extends TestCase {
         }
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
-        log.info("Awaiting stabilty of minor partition A");
-        barrierA.await(30, TimeUnit.SECONDS);
-        log.info("Awaiting stabilty of minor partition B");
-        barrierB.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of minor partition A");
+        barrierA.await(60, TimeUnit.SECONDS);
+        log.info("Awaiting stability of minor partition B");
+        barrierB.await(60, TimeUnit.SECONDS);
 
         View viewA = partitionA.get(0).getView();
         for (Node member : partitionA) {
@@ -421,8 +421,8 @@ public class PartitionTest extends TestCase {
         }
 
         controller.clearPartitions();
-        log.info("Awaiting stabilty of reformed major partition");
-        barrier.await(30, TimeUnit.SECONDS);
+        log.info("Awaiting stability of reformed major partition");
+        barrier.await(60, TimeUnit.SECONDS);
     }
 
     private List<AnnotationConfigApplicationContext> createMembers() {
@@ -444,7 +444,7 @@ public class PartitionTest extends TestCase {
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
         INITIAL_BARRIER.await(120, TimeUnit.SECONDS);
-        log.info("Initial partition stabile");
+        log.info("Initial partition stable");
         partition = new ArrayList<PartitionTest.Node>();
         for (AnnotationConfigApplicationContext context : memberContexts) {
             partition.add((Node) controller.getNode(context.getBean(Identity.class)));
