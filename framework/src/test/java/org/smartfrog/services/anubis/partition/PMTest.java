@@ -24,7 +24,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class PMTest implements PartitionNotification {
 
-    class Tester extends Thread {
+    static class Tester extends Thread {
         Partition partition = null;
         int remote = 0;
 

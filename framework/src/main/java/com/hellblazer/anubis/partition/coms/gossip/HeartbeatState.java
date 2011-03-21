@@ -314,56 +314,52 @@ public class HeartbeatState implements Heartbeat {
     }
 
     @Override
-    public synchronized void setCandidate(Identity id) {
-        binaryCache = null;
+    public void setCandidate(Identity id) {
         candidate = id;
-    }
-
-    public synchronized void setDiscoveryOnly(boolean b) {
-        discoveryOnly = b;
+        invalidateCache();
     }
 
     @Override
-    public synchronized void setIsPreferred(boolean preferred) {
-        binaryCache = null;
+    public void setIsPreferred(boolean preferred) {
         this.preferred = preferred;
+        invalidateCache();
     }
 
     @Override
-    public synchronized void setMsgLinks(NodeIdSet ml) {
-        binaryCache = null;
+    public void setMsgLinks(NodeIdSet ml) {
         msgLinks = ml;
+        invalidateCache();
     }
 
     @Override
-    public synchronized void setTestInterface(InetSocketAddress address) {
-        binaryCache = null;
+    public void setTestInterface(InetSocketAddress address) {
         testInterface = address;
+        invalidateCache();
     }
 
     @Override
-    public synchronized void setTime(long t) {
-        binaryCache = null;
+    public void setTime(long t) {
         time = t;
+        invalidateCache();
     }
 
-    public synchronized void setVersion(long l) {
-        binaryCache = null;
+    public void setVersion(long l) {
         version = l;
+        invalidateCache();
     }
 
     @Override
-    public synchronized void setView(View v) {
-        binaryCache = null;
+    public void setView(View v) {
         view = v.toBitSet();
         stable = v.isStable();
         viewTimeStamp = v.getTimeStamp();
+        invalidateCache();
     }
 
     @Override
-    public synchronized void setViewNumber(long n) {
-        binaryCache = null;
+    public void setViewNumber(long n) {
         viewNumber = n;
+        invalidateCache();
     }
 
     @Override
@@ -380,6 +376,10 @@ public class HeartbeatState implements Heartbeat {
     public synchronized void writeTo(ByteBuffer buffer) {
         fillCache();
         buffer.put(binaryCache);
+    }
+
+    private synchronized void invalidateCache() {
+        binaryCache = null;
     }
 
     private void fillCache() {

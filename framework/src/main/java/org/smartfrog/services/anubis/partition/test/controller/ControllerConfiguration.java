@@ -24,12 +24,6 @@ public class ControllerConfiguration {
     @Bean
     public Controller controller() throws UnknownHostException {
         Controller controller = constructController();
-        controller.setTimer(timer());
-        controller.setCheckPeriod(1000);
-        controller.setExpirePeriod(300000);
-        controller.setIdentity(partitionIdentity());
-        controller.setHeartbeatTimeout(heartbeatTimeout());
-        controller.setHeartbeatInterval(heartbeatInterval());
         return controller;
     }
 
@@ -85,8 +79,8 @@ public class ControllerConfiguration {
         return new Timer("Partition timer", true);
     }
 
-    protected Controller constructController() {
-        return new Controller();
+    protected Controller constructController() throws UnknownHostException {
+        return new Controller(timer(), 1000, 300000, partitionIdentity(), heartbeatTimeout(), heartbeatInterval());
     }
 
     protected Epoch epoch() {

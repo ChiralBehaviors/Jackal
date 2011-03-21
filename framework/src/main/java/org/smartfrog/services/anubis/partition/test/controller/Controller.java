@@ -37,15 +37,26 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import com.hellblazer.anubis.annotations.Deployed;
 
 public class Controller implements HeartbeatReceiver {
-    private long                      checkPeriod       = 1000;
-    private long                      expirePeriod      = 10000;
-    private BitView                   globalView        = new BitView();
-    protected long                    heartbeatInterval = 1000;
-    protected long                    heartbeatTimeout  = 2000;
-    protected Identity                identity;
-    protected Map<Identity, NodeData> nodes             = new HashMap<Identity, NodeData>();
-    private TimerTask                 task;
-    private Timer                     timer;
+    private long                            checkPeriod;
+    private long                            expirePeriod;
+    private BitView                         globalView = new BitView();
+    protected long                          heartbeatInterval;
+    protected long                          heartbeatTimeout;
+    protected final Identity                identity;
+    protected final Map<Identity, NodeData> nodes      = new HashMap<Identity, NodeData>();
+    private TimerTask                       task;
+    private final Timer                     timer;
+
+    public Controller(Timer timer, long checkPeriod, long expirePeriod,
+                      Identity partitionIdentity, long heartbeatTimeout,
+                      long heartbeatInterval) {
+        this.timer = timer;
+        this.checkPeriod = checkPeriod;
+        this.expirePeriod = expirePeriod;
+        this.identity = partitionIdentity;
+        this.heartbeatTimeout = heartbeatTimeout;
+        this.heartbeatInterval = heartbeatInterval;
+    }
 
     public synchronized void asymPartition(BitView partition) {
         Iterator<NodeData> iter = nodes.values().iterator();
@@ -100,7 +111,7 @@ public class Controller implements HeartbeatReceiver {
         return false;
     }
 
-    protected void addNode(Heartbeat hb, NodeData nodeData) {
+    protected synchronized void addNode(Heartbeat hb, NodeData nodeData) {
         nodes.put(hb.getSender(), nodeData);
         globalView.add(hb.getSender());
     }
@@ -118,24 +129,12 @@ public class Controller implements HeartbeatReceiver {
         node.disconnected();
     }
 
-    public long getCheckPeriod() {
-        return checkPeriod;
-    }
-
-    public long getExpirePeriod() {
-        return expirePeriod;
-    }
-
     public long getHeartbeatInterval() {
         return heartbeatInterval;
     }
 
     public long getHeartbeatTimeout() {
         return heartbeatTimeout;
-    }
-
-    public Identity getIdentity() {
-        return identity;
     }
 
     public NodeData getNode(Identity id) {
@@ -161,30 +160,6 @@ public class Controller implements HeartbeatReceiver {
     }
 
     public void removeNode(NodeData nodeData) {
-    }
-
-    public void setCheckPeriod(long checkPeriod) {
-        this.checkPeriod = checkPeriod;
-    }
-
-    public synchronized void setExpirePeriod(long expirePeriod) {
-        this.expirePeriod = expirePeriod;
-    }
-
-    public void setHeartbeatInterval(long heartbeatInterval) {
-        this.heartbeatInterval = heartbeatInterval;
-    }
-
-    public void setHeartbeatTimeout(long heartbeatTimeout) {
-        this.heartbeatTimeout = heartbeatTimeout;
-    }
-
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
-    }
-
-    public void setTimer(Timer timer) {
-        this.timer = timer;
     }
 
     public synchronized void setTiming(long interval, long timeout) {

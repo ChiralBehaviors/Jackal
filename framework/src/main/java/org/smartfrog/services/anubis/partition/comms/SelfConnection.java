@@ -32,13 +32,10 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class SelfConnection extends BitView implements Connection,
         HeartbeatProtocol, Candidate {
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
-    private InetSocketAddress address = null;
-    private Candidate candidate = null;
-    private Identity me = null;
+    private static final long         serialVersionUID = 1L;
+    private final InetSocketAddress   address;
+    private transient Candidate candidate;
+    private final Identity            me;
 
     public SelfConnection(Identity id, View v, InetSocketAddress addr,
                           boolean preferred) {

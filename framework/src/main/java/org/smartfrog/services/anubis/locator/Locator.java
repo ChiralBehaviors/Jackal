@@ -76,7 +76,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
 
     @Deployed
     public void deployed() {
-        me = new Integer(identity.id);
+        me = Integer.valueOf(identity.id);
         maxTransDelay = heartbeatTimeout * heartbeatInterval;
         timers = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
@@ -228,7 +228,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
          * leader holds the active global register.
          */
         stable = view.isStable();
-        this.leader = new Integer(leader);
+        this.leader = Integer.valueOf(leader);
 
         /**
          * The view will only be the same or larger when a stable report is

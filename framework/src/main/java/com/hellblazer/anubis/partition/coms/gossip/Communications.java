@@ -48,11 +48,12 @@ public class Communications extends ServerChannelHandler implements
     @Override
     public GossipHandler connect(InetSocketAddress address, Endpoint endpoint,
                                  Runnable connectAction) throws IOException {
-        SocketChannel channel = SocketChannel.open(address);
+        SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         GossipHandler handler = new GossipHandler(gossip, this, channel);
         addHandler(handler);
         endpoint.setCommunications(handler);
+        channel.connect(address);
         if (channel.finishConnect()) {
             dispatch(connectAction);
         } else {

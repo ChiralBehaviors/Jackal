@@ -38,7 +38,7 @@ public class BasicConfiguration {
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
-                                 heartbeatTimeout());
+                                 heartbeatTimeout(), false);
     }
 
     public InetAddress contactHost() throws UnknownHostException {
@@ -78,9 +78,8 @@ public class BasicConfiguration {
 
     @Bean
     public PartitionProtocol partitionProtocol() {
-        PartitionProtocol protocol = new PartitionProtocol();
-        protocol.setPartitionMgr(partition());
-        protocol.setIdentity(partitionIdentity());
+        PartitionProtocol protocol = new PartitionProtocol(partitionIdentity(),
+                                                           partition());
         return protocol;
     }
 

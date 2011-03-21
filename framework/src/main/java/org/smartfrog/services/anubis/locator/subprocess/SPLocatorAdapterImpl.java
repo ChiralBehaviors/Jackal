@@ -46,7 +46,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         }
     }
 
-    class Provider extends AnubisProvider {
+    static class Provider extends AnubisProvider {
         public Provider(String name) {
             super(name);
         }
@@ -62,17 +62,17 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         }
     }
 
-    private AnubisLocator locator;
-    private Map<SPLocator, SPLocatorData> subProcessLocators = new HashMap<SPLocator, SPLocatorData>();
-    private long timeout;
-    private long period;
-    private LivenessChecker livenessChecker;
-    private long heartbeatTimeout;
-    private volatile boolean terminated;
+    private final AnubisLocator                 locator;
+    private final Map<SPLocator, SPLocatorData> subProcessLocators = new HashMap<SPLocator, SPLocatorData>();
+    private final long                          timeout;
+    private final LivenessChecker               livenessChecker;
+    private volatile boolean                    terminated;
 
-    public SPLocatorAdapterImpl() {
-        timeout = 4000;
-        livenessChecker = new LivenessChecker(2000);
+    public SPLocatorAdapterImpl(final long heartbeatTimeout,
+                                AnubisLocator locator, final long period) {
+        timeout = heartbeatTimeout * period;
+        livenessChecker = new LivenessChecker(period);
+        this.locator = locator;
     }
 
     @Override
@@ -129,7 +129,6 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
 
         SPLocatorData spLocatorData = removeSPLocatorData(spLocator);
         clearRegistrations(spLocatorData);
-        subProcessLocators.remove(spLocatorData);
     }
 
     @Override
@@ -253,28 +252,13 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         stabilities.put(spStability, stability);
     }
 
-    public void setHeartbeatInterval(long period) {
-        this.period = period;
-    }
-
-    public void setHeartbeatTimeout(long timeout) {
-        heartbeatTimeout = timeout;
-    }
-
-    public void setLocator(AnubisLocator locator) {
-        this.locator = locator;
-    }
-
     @Deployed
-    public void deploy() {
-        timeout = heartbeatTimeout * period;
-        livenessChecker = new LivenessChecker(period);
+    public synchronized void deploy() {
         livenessChecker.start();
     }
 
     @PreDestroy
     public void terminate() {
-        locator = null;
         livenessChecker.terminate();
     }
 
@@ -324,7 +308,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
     }
 
     private SPLocatorData removeSPLocatorData(SPLocator spLocator)
-                                                               throws UnknownSPLocatorException {
+                                                                  throws UnknownSPLocatorException {
         SPLocatorData spLocatorData = subProcessLocators.remove(spLocator);
         if (spLocatorData == null || spLocatorData.getLiveness() == null) {
             throw new UnknownSPLocatorException();

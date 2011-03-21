@@ -93,7 +93,12 @@ public class Endpoint {
      *         than the conviction threshold
      */
     public boolean shouldConvict(long now, double convictThreshold) {
-        return fd.phi(now) > convictThreshold;
+        double phi = fd.phi(now);
+        boolean shouldConvict = phi > convictThreshold;
+        if (shouldConvict) {
+            System.out.println("Phi: " + phi);
+        }
+        return shouldConvict;
     }
 
     @Override

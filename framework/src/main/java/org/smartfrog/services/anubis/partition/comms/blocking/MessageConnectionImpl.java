@@ -245,7 +245,7 @@ public class MessageConnectionImpl extends ConnectionComms implements
          */
         if (!connectionSet.getView().contains(hbmsg.getSender())) {
             log.severe(format("%s did not have incoming connection from %s in the connection set",
-                              hbmsg));
+                              me, hbmsg.getSender()));
             shutdown();
             return;
         }

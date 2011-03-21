@@ -25,7 +25,7 @@ import java.util.List;
 
 public class TimedAveCalculator implements AveCalculator {
 
-    public class Entry {
+    public static class Entry {
         public long delay;
         public long time;
 
@@ -35,12 +35,12 @@ public class TimedAveCalculator implements AveCalculator {
         }
     }
 
-    private long accumulator = 0;
-    private long biggest = 0;
-    private boolean complete = false;
-    private long count = 0;
-    private List<Entry> entries = new LinkedList<Entry>();
-    private long period = 0;
+    private long        accumulator = 0;
+    private long        biggest     = 0;
+    private boolean     complete    = false;
+    private long        count       = 0;
+    private List<Entry> entries     = new LinkedList<Entry>();
+    private long        period      = 0;
 
     public TimedAveCalculator(long period) {
         this.period = period;

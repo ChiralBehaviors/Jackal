@@ -17,6 +17,7 @@
  */
 package com.hellblazer.anubis.partition.coms.gossip;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -30,7 +31,9 @@ import java.util.Comparator;
  * 
  */
 public class Digest {
-    public static class DigestComparator implements Comparator<Digest> {
+    public static class DigestComparator implements Serializable, Comparator<Digest> {
+        private static final long serialVersionUID = 1L;
+
         @Override
         public int compare(Digest digest1, Digest digest2) {
             if (digest1.epoch != digest2.epoch) {

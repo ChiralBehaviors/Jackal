@@ -91,7 +91,9 @@ public abstract class ServerChannelHandler {
         selectService = Executors.newSingleThreadExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r, "Server channel handler select for " + name);
+                Thread daemon = new Thread(r,
+                                           "Server channel handler select for "
+                                                   + name);
                 daemon.setDaemon(true);
                 daemon.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                     @Override
@@ -198,9 +200,7 @@ public abstract class ServerChannelHandler {
     }
 
     protected void closeHandler(CommunicationsHandler handler) {
-        synchronized (openHandlers) {
-            openHandlers.remove(handler);
-        }
+        openHandlers.remove(handler);
     }
 
     abstract protected CommunicationsHandler createHandler(SocketChannel accepted);
@@ -257,6 +257,11 @@ public abstract class ServerChannelHandler {
         }
         selected.remove();
         key.cancel();
+        try {
+            ((SocketChannel) key.channel()).finishConnect();
+        } catch (IOException e) {
+            log.log(Level.SEVERE, "Unable to finish connection", e);
+        }
         if (log.isLoggable(Level.FINE)) {
             log.fine("Dispatching connected action");
         }
@@ -351,7 +356,8 @@ public abstract class ServerChannelHandler {
                                           connectAction);
         } catch (CancelledKeyException e) {
             if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, String.format("Cancelled key for %s"), e);
+                log.log(Level.WARNING,
+                        String.format("Cancelled key for %s", handler), e);
             }
             throw new IllegalStateException(e);
         } catch (NullPointerException e) {

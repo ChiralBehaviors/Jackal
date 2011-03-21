@@ -259,7 +259,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: IsReadyForWriting being called");
         }
-        return writingOK;
+        synchronized (this) {
+            return writingOK;
+        }
     }
 
     public boolean isWritePending() {
@@ -632,7 +634,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: cleanup is being called");
         }
-        writingOK = false;
+        synchronized (this) {
+            writingOK = false;
+        }
         deadKeys.add(key);
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Cleanup is called - socket has gone away");

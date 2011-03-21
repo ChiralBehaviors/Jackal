@@ -27,7 +27,7 @@ import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
 public class SPListenerImpl extends UnicastRemoteObject implements SPListener {
     private static final long serialVersionUID = 1L;
-    private AnubisListener listener;
+    private final transient AnubisListener listener;
 
     public SPListenerImpl(AnubisListener listener) throws RemoteException {
         this.listener = listener;

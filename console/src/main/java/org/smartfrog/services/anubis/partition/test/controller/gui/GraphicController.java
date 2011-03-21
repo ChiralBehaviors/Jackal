@@ -18,6 +18,7 @@ package org.smartfrog.services.anubis.partition.test.controller.gui;
 
 import java.io.IOException;
 import java.util.StringTokenizer;
+import java.util.Timer;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -28,6 +29,7 @@ import org.smartfrog.services.anubis.Anubis;
 import org.smartfrog.services.anubis.partition.test.colors.ColorAllocator;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
+import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
@@ -40,6 +42,13 @@ import com.hellblazer.anubis.annotations.Deployed;
  *
  */
 public class GraphicController extends Controller {
+    public GraphicController(Timer timer, long checkPeriod, long expirePeriod,
+                             Identity partitionIdentity, long heartbeatTimeout,
+                             long heartbeatInterval) {
+        super(timer, checkPeriod, expirePeriod, partitionIdentity, heartbeatTimeout,
+              heartbeatInterval);
+    }
+
     private ColorAllocator colorAllocator = new ColorAllocator();
     private MainConsoleFrame consoleFrame;
     private AsymetryReportFrame asymetryReport = null;

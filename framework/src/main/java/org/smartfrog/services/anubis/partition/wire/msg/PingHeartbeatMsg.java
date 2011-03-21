@@ -103,7 +103,7 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
     }
 
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return "[" + super.toString() + ", pings=" + pings.toString() + "]";
     }
 
@@ -119,7 +119,7 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
      *            byte[]
      */
     @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
+    protected synchronized void readWireForm(ByteBuffer buf) throws IOException,
                                                WireFormException,
                                                ClassNotFoundException {
         super.readWireForm(buf);
@@ -130,7 +130,7 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
      * Write the message attributes to the
      */
     @Override
-    protected void writeWireForm() throws WireFormException {
+    protected synchronized void writeWireForm() throws WireFormException {
         super.writeWireForm();
         pings.writeWireForm(wireForm, pingBitIdx, pingBitSz);
     }

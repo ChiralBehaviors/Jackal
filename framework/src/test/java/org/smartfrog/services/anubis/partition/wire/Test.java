@@ -97,7 +97,7 @@ public class Test extends TestCase {
             System.out.println("END HeartbeatTestMsg UNmarshalling test run took "
                                + (end - start) + "ms");
 
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             ex.printStackTrace();
         }
     }
@@ -167,7 +167,7 @@ public class Test extends TestCase {
             inMsg.getSenderAddress();
             System.out.println("Heartbeat Test message with sender address is: "
                                + inMsg);
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             ex.printStackTrace();
         }
     }

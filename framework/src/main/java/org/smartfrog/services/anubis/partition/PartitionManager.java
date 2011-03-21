@@ -58,7 +58,6 @@ public class PartitionManager implements Partition {
         notifiedView = BitView.create(identity, identity.epoch);
         notifiedLeader = identity.id;
         timer = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
@@ -149,7 +148,7 @@ public class PartitionManager implements Partition {
     }
 
     @PreDestroy
-    public void terminate() {
+    public synchronized void terminate() {
         if (log.isLoggable(Level.INFO)) {
             log.info("Terminating partition manager at " + identity);
         }

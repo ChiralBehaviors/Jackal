@@ -25,6 +25,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Timer;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +55,13 @@ import com.hellblazer.anubis.partition.coms.gossip.configuration.GossipConfigura
 public class PartitionTest extends TestCase {
     static class MyController extends Controller {
 
+        public MyController(Timer timer, long checkPeriod, long expirePeriod,
+                            Identity partitionIdentity, long heartbeatTimeout,
+                            long heartbeatInterval) {
+            super(timer, checkPeriod, expirePeriod, partitionIdentity,
+                  heartbeatTimeout, heartbeatInterval);
+        }
+
         @Override
         protected NodeData createNode(Heartbeat hb) {
             return new Node(hb, this);
@@ -80,8 +88,9 @@ public class PartitionTest extends TestCase {
         }
 
         @Override
-        protected Controller constructController() {
-            return new MyController();
+        protected Controller constructController() throws UnknownHostException {
+            return new MyController(timer(), 1000, 300000, partitionIdentity(),
+                                    heartbeatTimeout(), heartbeatInterval());
         }
 
         @Override
@@ -104,7 +113,6 @@ public class PartitionTest extends TestCase {
         CyclicBarrier barrier       = INITIAL_BARRIER;
         boolean       barrierBroken = false;
         int           cardinality   = CONFIGS.length;
-        boolean       initial       = true;
         boolean       interrupted   = false;
 
         public Node(Heartbeat hb, Controller controller) {
@@ -344,10 +352,10 @@ public class PartitionTest extends TestCase {
     @SuppressWarnings("rawtypes")
     final static Class[]                     CONFIGS = { node0.class,
             node1.class, node2.class, node3.class, node4.class, node5.class,
-            node6.class, node7.class, node8.class, node9.class, node10.class,
-            node11.class, node12.class, node13.class, node14.class,
-            node15.class, node16.class, node17.class, node18.class,
-            node19.class                            };
+            node6.class, node7.class, node8.class, node9.class /*, node10.class,
+                                                               node11.class, node12.class, node13.class, node14.class,
+                                                               node15.class, node16.class, node17.class, node18.class,
+                                                               node19.class */};
     static CyclicBarrier                     INITIAL_BARRIER;
     static int                               testPort1;
     static int                               testPort2;
@@ -401,12 +409,16 @@ public class PartitionTest extends TestCase {
 
         View viewA = partitionA.get(0).getView();
         for (Node member : partitionA) {
+            assertFalse(member.barrierBroken);
+            assertFalse(member.interrupted);
             assertEquals(viewA, member.getView());
         }
 
         // reform
         CyclicBarrier barrier = new CyclicBarrier(CONFIGS.length + 1);
         for (Node node : partition) {
+            assertFalse(node.barrierBroken);
+            assertFalse(node.interrupted);
             node.barrier = barrier;
             node.cardinality = CONFIGS.length;
         }
@@ -451,11 +463,15 @@ public class PartitionTest extends TestCase {
 
         View viewA = partitionA.get(0).getView();
         for (Node member : partitionA) {
+            assertFalse(member.barrierBroken);
+            assertFalse(member.interrupted);
             assertEquals(viewA, member.getView());
         }
 
         View viewB = partitionB.get(0).getView();
         for (Node member : partitionB) {
+            assertFalse(member.barrierBroken);
+            assertFalse(member.interrupted);
             assertEquals(viewB, member.getView());
         }
 

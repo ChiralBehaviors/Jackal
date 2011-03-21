@@ -57,7 +57,7 @@ import com.hellblazer.anubis.partition.coms.gossip.SystemView;
  * Basic gossip based discovery/replication Anubis configuration.
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
- *
+ * 
  */
 @Configuration
 public class GossipConfiguration {
@@ -68,7 +68,7 @@ public class GossipConfiguration {
                                   + partitionIdentity(), gossipEndpoint(),
                                   socketOptions(),
                                   Executors.newFixedThreadPool(3),
-                                  Executors.newSingleThreadExecutor());
+                                  Executors.newFixedThreadPool(3));
 
     }
 
@@ -80,7 +80,7 @@ public class GossipConfiguration {
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
-                                 heartbeatTimeout());
+                                 heartbeatTimeout(), false);
     }
 
     public InetAddress contactHost() throws UnknownHostException {
@@ -127,9 +127,8 @@ public class GossipConfiguration {
 
     @Bean
     public PartitionProtocol partitionProtocol() {
-        PartitionProtocol protocol = new PartitionProtocol();
-        protocol.setPartitionMgr(partition());
-        protocol.setIdentity(partitionIdentity());
+        PartitionProtocol protocol = new PartitionProtocol(partitionIdentity(),
+                                                           partition());
         return protocol;
     }
 

@@ -425,7 +425,7 @@ public class GlobalRegisterImpl {
         }
     }
 
-    private void updateDebugFrame() {
+    private synchronized void updateDebugFrame() {
         if (debug != null) {
             debug.update();
         }

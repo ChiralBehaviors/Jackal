@@ -71,7 +71,7 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
             connection.socket().setKeepAlive(true);
             open = true;
 
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
 
             // ex.printStackTrace();
 

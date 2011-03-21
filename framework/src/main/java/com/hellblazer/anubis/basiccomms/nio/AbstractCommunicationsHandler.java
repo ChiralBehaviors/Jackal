@@ -309,12 +309,10 @@ abstract public class AbstractCommunicationsHandler implements
             bytesWritten = channel.write(headerOut);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
-            readState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
             writeState = State.ERROR;
-            readState = State.CLOSE;
             if (isNotClosed(e) && log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Unable to send message header", e);
             }
@@ -323,7 +321,6 @@ abstract public class AbstractCommunicationsHandler implements
         }
         if (bytesWritten == -1) {
             writeState = State.CLOSE;
-            readState = State.CLOSE;
             shutdown();
         } else if (headerOut.hasRemaining()) {
             writeState = State.HEADER;
@@ -340,12 +337,10 @@ abstract public class AbstractCommunicationsHandler implements
             bytesWritten = channel.write(msgOut);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
-            readState = State.CLOSE;
             shutdown();
             return;
         } catch (IOException e) {
             writeState = State.ERROR;
-            readState = State.CLOSE;
             if (isNotClosed(e) && log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Unable to send message body", e);
             }
@@ -354,7 +349,6 @@ abstract public class AbstractCommunicationsHandler implements
         }
         if (bytesWritten == -1) {
             writeState = State.CLOSE;
-            readState = State.CLOSE;
             shutdown();
         } else if (headerOut.hasRemaining()) {
             selectForWrite();

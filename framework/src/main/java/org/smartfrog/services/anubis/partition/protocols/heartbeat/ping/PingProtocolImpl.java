@@ -58,18 +58,18 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     /**
      * 
      */
-    private static final long serialVersionUID = 1L;
-    private InetSocketAddress address = null;
-    private boolean expected = true;
-    private ViewListener listener = null;
-    private static final Logger log = Logger.getLogger(PingProtocolImpl.class.getCanonicalName());
-    private Identity me = null;
-    private long pingTime = 0;
-    private Identity sender = null;
-    private PingHeartbeatMsg sharedData = null;
-    private boolean terminated = false;
-    private long time = 0;
-    private long viewNumber = 0;
+    private static final long                serialVersionUID = 1L;
+    private InetSocketAddress                address          = null;
+    private boolean                          expected         = true;
+    private transient final ViewListener     listener;
+    private static final Logger              log              = Logger.getLogger(PingProtocolImpl.class.getCanonicalName());
+    private Identity                         me               = null;
+    private long                             pingTime         = 0;
+    private Identity                         sender           = null;
+    private final transient PingHeartbeatMsg sharedData;
+    private boolean                          terminated       = false;
+    private long                             time             = 0;
+    private long                             viewNumber       = 0;
 
     /**
      * Constructor - create a heartbeat protocol implementation using the

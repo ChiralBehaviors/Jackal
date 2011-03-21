@@ -34,11 +34,8 @@ public class Config extends BasicConfiguration {
 
     @Bean
     SPLocatorAdapterImpl adapter() {
-        SPLocatorAdapterImpl adapter = new SPLocatorAdapterImpl();
-        adapter.setHeartbeatInterval(heartbeatInterval());
-        adapter.setHeartbeatTimeout(heartbeatTimeout());
-        adapter.setLocator(locator());
-        return adapter;
+        return new SPLocatorAdapterImpl(heartbeatInterval(), locator(),
+                                        heartbeatTimeout());
     }
 
     @Bean

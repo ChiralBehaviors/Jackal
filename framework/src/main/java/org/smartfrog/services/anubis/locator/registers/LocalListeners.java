@@ -31,6 +31,7 @@ import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.names.ListenerProxy;
+import org.smartfrog.services.anubis.locator.names.NameData;
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 import org.smartfrog.services.anubis.locator.names.ProviderProxy;
 import org.smartfrog.services.anubis.locator.util.SetMap;
@@ -48,7 +49,7 @@ public class LocalListeners {
     private class ListenerInfo {
 
         public Set<AnubisListener> listeners = new HashSet<AnubisListener>();
-        public Map<ProviderInstance, ProviderInstance> providers = new HashMap<ProviderInstance, ProviderInstance>(); // instance --> name
+        public Map<NameData, ProviderInstance> providers = new HashMap<NameData, ProviderInstance>(); // instance --> name
         public ListenerProxy proxy = null;
 
         public ListenerInfo(String name, AnubisListener l) {

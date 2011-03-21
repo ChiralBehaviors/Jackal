@@ -31,17 +31,14 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
-    private InetSocketAddress address = null;
-    private ViewListener listener = null;
-    private Identity sender = null;
-    private boolean terminated = false;
-    private long time = 0;
-    private long viewNumber = 0;
-    private static final Logger log = Logger.getLogger(TimedProtocolImpl.class.getCanonicalName());
+    private static final long            serialVersionUID = 1L;
+    private final InetSocketAddress      address;
+    private transient final ViewListener listener;
+    private Identity                     sender           = null;
+    private boolean                      terminated       = false;
+    private long                         time             = 0;
+    private long                         viewNumber       = 0;
+    private static final Logger          log              = Logger.getLogger(TimedProtocolImpl.class.getCanonicalName());
 
     /**
      * Constructor - create a heartbeat protocol implementation using the

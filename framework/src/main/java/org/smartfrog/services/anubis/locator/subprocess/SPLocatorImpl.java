@@ -196,8 +196,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         }
 
         try {
-            SPStability spStability = (SPStability) listeners.remove(stability);
-            adapter.deregisterStability(this, spStability);
+            adapter.deregisterStability(this, stabilities.remove(stability));
             // don't set timers to null in stability
         } catch (RemoteException ex) {
             syncLog.log(Level.SEVERE, "Failed to call adapter", ex);

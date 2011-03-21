@@ -144,7 +144,7 @@ public class SystemView {
             Map.Entry<InetSocketAddress, Long> entry = iterator.next();
             if (now - entry.getValue() > unreachableInterval) {
                 if (log.isLoggable(Level.FINE)) {
-                    log.fine(format("%w elapsed, %s is now considered truly dead",
+                    log.fine(format("%s elapsed, %s is now considered truly dead",
                                     unreachableInterval, entry.getKey()));
                 }
                 iterator.remove();
@@ -304,13 +304,14 @@ public class SystemView {
         int index = size == 1 ? 0 : entropy.nextInt(size);
         int i = 0;
         for (InetSocketAddress address : endpoints) {
-            if (i++ == index) {
+            if (i == index) {
                 return address;
             }
+            i++;
         }
-        throw new IllegalStateException(
-                                        format("We should have found the selected random member of the supplied endpoint set: %s",
-                                               index));
+        log.info(format("We should have found the selected random member of the supplied endpoint set: %s",
+                        index));
+        return null;
     }
 
     protected double seedCommunicationProbability() {

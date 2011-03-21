@@ -130,7 +130,7 @@ public class MACData {
                 System.out.println("test6 succeeded");
             }
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }
@@ -204,7 +204,7 @@ public class MACData {
         throw new SecurityException("MAC not valid");
     }
 
-    public Key getKey() {
+    public synchronized Key getKey() {
         return key;
     }
 

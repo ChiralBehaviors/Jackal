@@ -18,8 +18,10 @@ package org.smartfrog.services.anubis;
 
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +50,13 @@ import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 public class PartitionTest extends TestCase {
     static class MyController extends Controller {
 
+        public MyController(Timer timer, long checkPeriod, long expirePeriod,
+                            Identity partitionIdentity, long heartbeatTimeout,
+                            long heartbeatInterval) {
+            super(timer, checkPeriod, expirePeriod, partitionIdentity,
+                  heartbeatTimeout, heartbeatInterval);
+        }
+
         @Override
         protected NodeData createNode(Heartbeat hb) {
             return new Node(hb, this);
@@ -64,8 +73,8 @@ public class PartitionTest extends TestCase {
         }
 
         @Override
-        protected Controller constructController() {
-            return new MyController();
+        public int heartbeatGroupTTL() {
+            return 0;
         }
 
         @Override
@@ -78,18 +87,18 @@ public class PartitionTest extends TestCase {
         }
 
         @Override
-        public int heartbeatGroupTTL() {
-            return 0;
+        protected Controller constructController() throws UnknownHostException {
+            return new MyController(timer(), 1000, 300000, partitionIdentity(),
+                                    heartbeatTimeout(), heartbeatInterval());
         }
 
     }
 
     static class Node extends NodeData {
-        boolean initial = true;
-        CyclicBarrier barrier = INITIAL_BARRIER;
-        int cardinality = CONFIGS.length;
-        boolean interrupted = false;
-        boolean barrierBroken = false;
+        CyclicBarrier barrier       = INITIAL_BARRIER;
+        int           cardinality   = CONFIGS.length;
+        boolean       interrupted   = false;
+        boolean       barrierBroken = false;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -124,22 +133,6 @@ public class PartitionTest extends TestCase {
                 });
                 testThread.start();
             }
-        }
-    }
-
-    static class nodeCfg extends BasicConfiguration {
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
         }
     }
 
@@ -303,22 +296,41 @@ public class PartitionTest extends TestCase {
         }
     }
 
-    private static final Logger log = Logger.getLogger(PartitionTest.class.getCanonicalName());
+    static class nodeCfg extends BasicConfiguration {
+        @Override
+        public int getMagic() {
+            try {
+                return Identity.getMagicFromLocalIpAddress();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
 
-    static CyclicBarrier INITIAL_BARRIER;
+        @Override
+        public int heartbeatGroupTTL() {
+            return 0;
+        }
+    }
+
+    private static final Logger log     = Logger.getLogger(PartitionTest.class.getCanonicalName());
+
+    static CyclicBarrier        INITIAL_BARRIER;
     @SuppressWarnings("rawtypes")
-    final static Class[] CONFIGS = { node0.class, node1.class, node2.class,
-                                    node3.class, node4.class, node5.class,
-                                    node6.class, node7.class, node8.class,
-                                    node9.class, node10.class, node11.class,
-                                    node12.class, node13.class, node14.class,
-                                    node15.class, node16.class, node17.class,
-                                    node18.class, node19.class };
+    final static Class[]        CONFIGS = { node0.class, node1.class,
+            node2.class, node3.class, node4.class, node5.class, node6.class,
+            node7.class, node8.class, node9.class, node10.class, node11.class,
+            node12.class, node13.class, node14.class, node15.class,
+            node16.class, node17.class, node18.class, node19.class };
 
-    AnnotationConfigApplicationContext controllerContext;
+    private static void clear() {
+        INITIAL_BARRIER = null;
+    }
+
+    AnnotationConfigApplicationContext       controllerContext;
     List<AnnotationConfigApplicationContext> memberContexts;
-    MyController controller;
-    List<Node> partition;
+    MyController                             controller;
+
+    List<Node>                               partition;
 
     /**
      * Test that a partition can form two asymmetric partitions, with one
@@ -355,6 +367,8 @@ public class PartitionTest extends TestCase {
 
         View viewA = partitionA.get(0).getView();
         for (Node member : partitionA) {
+            assertFalse(member.interrupted);
+            assertFalse(member.barrierBroken);
             assertEquals(viewA, member.getView());
         }
 
@@ -405,11 +419,15 @@ public class PartitionTest extends TestCase {
 
         View viewA = partitionA.get(0).getView();
         for (Node member : partitionA) {
+            assertFalse(member.interrupted);
+            assertFalse(member.barrierBroken);
             assertEquals(viewA, member.getView());
         }
 
         View viewB = partitionB.get(0).getView();
         for (Node member : partitionB) {
+            assertFalse(member.interrupted);
+            assertFalse(member.barrierBroken);
             assertEquals(viewB, member.getView());
         }
 
@@ -423,14 +441,6 @@ public class PartitionTest extends TestCase {
         controller.clearPartitions();
         log.info("Awaiting stability of reformed major partition");
         barrier.await(60, TimeUnit.SECONDS);
-    }
-
-    private List<AnnotationConfigApplicationContext> createMembers() {
-        ArrayList<AnnotationConfigApplicationContext> contexts = new ArrayList<AnnotationConfigApplicationContext>();
-        for (Class<?> config : CONFIGS) {
-            contexts.add(new AnnotationConfigApplicationContext(config));
-        }
-        return contexts;
     }
 
     @Override
@@ -473,6 +483,14 @@ public class PartitionTest extends TestCase {
         memberContexts = null;
         controller = null;
         partition = null;
-        INITIAL_BARRIER = null;
+        clear();
+    }
+
+    private List<AnnotationConfigApplicationContext> createMembers() {
+        ArrayList<AnnotationConfigApplicationContext> contexts = new ArrayList<AnnotationConfigApplicationContext>();
+        for (Class<?> config : CONFIGS) {
+            contexts.add(new AnnotationConfigApplicationContext(config));
+        }
+        return contexts;
     }
 }

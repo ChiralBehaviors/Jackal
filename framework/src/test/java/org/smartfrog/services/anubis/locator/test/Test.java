@@ -77,7 +77,7 @@ public class Test {
         }
     }
 
-    class Provider extends AnubisProvider {
+    static class Provider extends AnubisProvider {
         Provider(String name) {
             super(name);
         }

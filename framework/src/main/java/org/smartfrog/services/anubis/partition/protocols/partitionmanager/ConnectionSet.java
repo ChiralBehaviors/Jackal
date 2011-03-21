@@ -80,12 +80,12 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     private boolean                         changeInViews       = false;
     private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
     private final IOConnectionServer        connectionServer;
-    private BitView                         connectionView      = new BitView();
+    private final BitView                   connectionView      = new BitView();
     /**
      * Status - keep running heartbeat
      */
-    private Heartbeat                       heartbeat;
-    private HeartbeatCommsIntf              heartbeatComms;
+    private final Heartbeat                 heartbeat;
+    private final HeartbeatCommsIntf        heartbeatComms;
 
     /**
      * Timing information
@@ -96,37 +96,36 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * local identification
      */
     private final Identity                  identity;
-    private View                            ignoring            = new BitView();
-    private IntervalExec                    intervalExec        = null;
-    private boolean                         isPreferredLeaderNode;
-    private LeaderMgr                       leaderMgr           = null;
+    private final View                      ignoring            = new BitView();
+    private final IntervalExec              intervalExec;
+    private final LeaderMgr                 leaderMgr;
     private final LeaderProtocolFactory     leaderProtocolFactory;
-    private Set<Connection>                 msgConDelayedDelete = new HashSet<Connection>();
-    private Set<MessageConnection>          msgConnections      = new HashSet<MessageConnection>();
+    private final Set<Connection>           msgConDelayedDelete = new HashSet<Connection>();
+    private final Set<MessageConnection>    msgConnections      = new HashSet<MessageConnection>();
 
     /**
      * Connection information
      */
-    private NodeIdSet                       msgLinks            = new NodeIdSet();
+    private final NodeIdSet                 msgLinks            = new NodeIdSet();
     /**
      * references to components
      */
-    private PartitionProtocol               partitionProtocol   = null;
-    private long                            quiesce             = 0;
+    private final PartitionProtocol         partitionProtocol;
+    private volatile long                   quiesce             = 0;
     /**
      * synchronization of sendHeartbeat() with removeConnection().
      */
-    private boolean                         sendingHeartbeats   = false;
-    private long                            stability           = 0;
-    private boolean                         stablizing          = false;
+    private volatile boolean                sendingHeartbeats   = false;
+    private volatile long                   stability           = 0;
+    private volatile boolean                stablizing          = false;
     private volatile boolean                terminated          = false;
 
     /**
      * Link to test manager
      */
-    private boolean                         testable            = false;
-    private long                            timeout             = 0;
-    private long                            viewNumber          = 0;
+    private volatile boolean                testable            = false;
+    private volatile long                   timeout             = 0;
+    private volatile long                   viewNumber          = 0;
 
     public ConnectionSet(InetSocketAddress connectionAddress,
                          Identity identity,
@@ -135,13 +134,14 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                          LeaderProtocolFactory leaderProtocolFactory,
                          HeartbeatProtocolFactory heartbeatProtocolFactory,
                          PartitionProtocol partitionProtocol, long interval,
-                         long timeout) throws IOException {
+                         long timeout, boolean isPreferredLeaderNode)
+                                                                     throws IOException {
         this.identity = identity;
         this.leaderProtocolFactory = leaderProtocolFactory;
         this.heartbeatProtocolFactory = heartbeatProtocolFactory;
         this.partitionProtocol = partitionProtocol;
         this.partitionProtocol.setConnectionSet(this);
-        this.heartbeatComms = heartbeatCommsFactory.create(this);
+        heartbeatComms = heartbeatCommsFactory.create(this);
         setTiming(interval, timeout);
         connectionServer = factory.create(connectionAddress, identity, this);
 
@@ -181,20 +181,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     /**
-     * Add a new connection to the set. This will have been created by the
-     * transport.
-     * 
-     * @param con
-     */
-    public synchronized void addConnection(Connection con) {
-        connections.put(con.getSender(), con);
-        connectionView.add(con.getSender());
-        changeInViews = true;
-        intervalExec.clearStability();
-        viewNumber++;
-    }
-
-    /**
      * dummy for now - check for completion of stability period.
      * 
      * @param timenow
@@ -225,45 +211,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * drive the partition manager's notifictions.
          */
         partitionProtocol.notifyChanges();
-    }
-
-    /**
-     * scans through the connections and checks to see if any have expired or
-     * are ready to be cleaned up. If expired they are terminated (entering a
-     * quiescence period), if to be cleaned up they are removed.
-     */
-    public synchronized void checkTimeouts(long timenow) {
-
-        Iterator<Entry<Identity, Connection>> iter = connections.entrySet().iterator();
-        while (iter.hasNext()) {
-            Connection con = iter.next().getValue();
-
-            /**
-             * Only bother if the connection has missed its deadline
-             */
-            if (con.isNotTimely(timenow, timeout)) {
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(String.format("Terminating untimely connection: %s", con));
-                }
-
-                /**
-                 * If the connection is in the connection set then terminate it.
-                 */
-                if (connectionView.contains(con.getSender())) {
-                    con.terminate();
-                    removeConnection(con);
-                }
-
-                /**
-                 * check for clean up - don't clean up until the quiescence
-                 * period has expired. This is how new connections are prevented
-                 * during quiescence.
-                 */
-                if (con.isQuiesced(timenow, quiesce)) {
-                    iter.remove();
-                }
-            }
-        }
     }
 
     /**
@@ -458,10 +405,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return connectionServer;
     }
 
-    public long getHeartbeatInterval() {
-        return heartbeatInterval;
-    }
-
     /**
      * Returns the most recently set up heartbeat
      * 
@@ -471,16 +414,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return heartbeat;
     }
 
-    public Identity getIdentity() {
-        return identity;
-    }
-
     public synchronized long getInterval() {
         return heartbeatInterval;
-    }
-
-    public LeaderProtocolFactory getLeaderProtocolFactory() {
-        return leaderProtocolFactory;
     }
 
     /**
@@ -511,19 +446,15 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return con.getSenderAddress().getAddress();
     }
 
-    public PartitionProtocol getPartitionProtocol() {
-        return partitionProtocol;
-    }
-
     /**
      * returns an string representing the status of all threads
      */
     public String getThreadStatusString() {
-        String str = new String();
-        str += intervalExec.getThreadStatusString() + "\n";
-        str += heartbeatComms.getThreadStatusString() + "\n";
-        str += connectionServer.getThreadStatusString() + "\n";
-        return str;
+        StringBuilder builder = new StringBuilder();
+        builder.append(intervalExec.getThreadStatusString()).append("\n");
+        builder.append(heartbeatComms.getThreadStatusString()).append("\n");
+        builder.append(connectionServer.getThreadStatusString()).append("\n");
+        return builder.toString();
     }
 
     public synchronized long getTimeout() {
@@ -532,10 +463,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
     public View getView() {
         return connectionView;
-    }
-
-    public boolean isPreferredLeaderNode() {
-        return isPreferredLeaderNode;
     }
 
     /**
@@ -737,10 +664,6 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         }
     }
 
-    public void setPreferredLeaderNode(boolean isPreferredLeaderNode) {
-        this.isPreferredLeaderNode = isPreferredLeaderNode;
-    }
-
     public synchronized void setTiming(long interval, long timeout) {
         heartbeatInterval = interval;
         this.timeout = interval * timeout;
@@ -868,6 +791,60 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     public boolean wantsMsgLinkTo(Identity id) {
         return msgLinks.contains(id.id);
+    }
+
+    /**
+     * scans through the connections and checks to see if any have expired or
+     * are ready to be cleaned up. If expired they are terminated (entering a
+     * quiescence period), if to be cleaned up they are removed.
+     */
+    synchronized void checkTimeouts(long timenow) {
+
+        Iterator<Entry<Identity, Connection>> iter = connections.entrySet().iterator();
+        while (iter.hasNext()) {
+            Connection con = iter.next().getValue();
+
+            /**
+             * Only bother if the connection has missed its deadline
+             */
+            if (con.isNotTimely(timenow, timeout)) {
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(String.format("Terminating untimely connection: %s",
+                                            con));
+                }
+
+                /**
+                 * If the connection is in the connection set then terminate it.
+                 */
+                if (connectionView.contains(con.getSender())) {
+                    con.terminate();
+                    removeConnection(con);
+                }
+
+                /**
+                 * check for clean up - don't clean up until the quiescence
+                 * period has expired. This is how new connections are prevented
+                 * during quiescence.
+                 */
+                if (con.isQuiesced(timenow, quiesce)) {
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * Add a new connection to the set. This will have been created by the
+     * transport.
+     * 
+     * @param con
+     */
+    private void addConnection(Connection con) {
+        connections.put(con.getSender(), con);
+        connectionView.add(con.getSender());
+        changeInViews = true;
+        intervalExec.clearStability();
+        viewNumber++;
     }
 
     /**

@@ -36,17 +36,17 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
  */
 public class PhiTimedProtocol extends BitView implements HeartbeatProtocol {
 
-    private static final Logger     log              = Logger.getLogger(PhiTimedProtocol.class.getCanonicalName());
-    private static final long       serialVersionUID = 1L;
+    private static final Logger          log              = Logger.getLogger(PhiTimedProtocol.class.getCanonicalName());
+    private static final long            serialVersionUID = 1L;
 
-    private final InetSocketAddress address;
-    private final Gossip            gossip;
-    private final ViewListener      listener;
-    private final Identity          sender;
-    private boolean                 terminated       = false;
-    private long                    time             = 0;
-    private long                    viewNumber       = 0;
-    private final InetSocketAddress heartbeatAddress;
+    private final InetSocketAddress      address;
+    private transient final Gossip       gossip;
+    private transient final ViewListener listener;
+    private final Identity               sender;
+    private boolean                      terminated       = false;
+    private long                         time             = 0;
+    private long                         viewNumber       = 0;
+    private final InetSocketAddress      heartbeatAddress;
 
     public PhiTimedProtocol(Heartbeat hb, ViewListener vl,
                             Heartbeat sharedHeartbeat, Gossip gossipService) {

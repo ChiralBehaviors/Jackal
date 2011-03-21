@@ -34,13 +34,19 @@ import com.hellblazer.anubis.annotations.Deployed;
 
 public class PartitionProtocol {
 
-    private boolean changed = false;
-    private ConnectionSet connectionSet = null;
-    private Identity identity = null;
-    private Identity leader = null;
-    private PartitionManager partitionMgr = null;
-    private boolean terminated = false;
-    private BitView view = new BitView();
+    private volatile boolean       changed       = false;
+    private ConnectionSet          connectionSet = null;
+    private final Identity         identity;
+    private volatile Identity      leader        = null;
+    private final PartitionManager partitionMgr;
+    private volatile boolean       terminated    = false;
+    private final BitView          view          = new BitView();
+
+    public PartitionProtocol(Identity identity, PartitionManager partitionMgr) {
+        this.identity = identity;
+        this.partitionMgr = partitionMgr;
+        this.partitionMgr.setPartitionProtocol(this);
+    }
 
     /**
      * Changed view is called during regular connection set checks if the
@@ -126,15 +132,6 @@ public class PartitionProtocol {
 
     public void setConnectionSet(ConnectionSet connectionSet) {
         this.connectionSet = connectionSet;
-    }
-
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
-    }
-
-    public void setPartitionMgr(PartitionManager partitionMgr) {
-        this.partitionMgr = partitionMgr;
-        this.partitionMgr.setPartitionProtocol(this);
     }
 
     /**

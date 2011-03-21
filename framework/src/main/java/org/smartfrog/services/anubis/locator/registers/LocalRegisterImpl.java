@@ -41,7 +41,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class LocalRegisterImpl {
 
-    private class UserListenerRequest {
+    private static class UserListenerRequest {
         public final static int Deregister = 2;
         public final static int Register   = 1;
         @SuppressWarnings("unused")
@@ -55,7 +55,7 @@ public class LocalRegisterImpl {
         }
     }
 
-    private class UserProviderRequest {
+    private static class UserProviderRequest {
         public final static int Deregister = 2;
         public final static int NewValue   = 3;
         public final static int Register   = 1;
@@ -75,7 +75,7 @@ public class LocalRegisterImpl {
         }
     }
 
-    private class UserStabilityRequest {
+    private static class UserStabilityRequest {
         public final static int Deregister = 2;
         public final static int Register   = 1;
         @SuppressWarnings("unused")
@@ -113,7 +113,7 @@ public class LocalRegisterImpl {
 
     public LocalRegisterImpl(Identity id, Locator locator) {
         me = id;
-        node = new Integer(me.id);
+        node = Integer.valueOf(me.id);
         providers = new LocalProviders(locator, node);
         listeners = new LocalListeners(locator, node);
         timeRef = me.epoch;
@@ -435,7 +435,7 @@ public class LocalRegisterImpl {
         }
     }
 
-    private void updateDebugFrame() {
+    private synchronized void updateDebugFrame() {
         if (debug != null) {
             debug.update();
         }

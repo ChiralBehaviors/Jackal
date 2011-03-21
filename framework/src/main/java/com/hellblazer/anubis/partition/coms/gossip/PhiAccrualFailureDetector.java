@@ -43,10 +43,9 @@ import com.hellblazer.anubis.util.SampledWindow;
 public class PhiAccrualFailureDetector {
     private static final boolean DEFAULT_USE_MEDIAN  = true;
     private static final int     DEFAULT_WINDOW_SIZE = 1000;
-    private static final double  MIN_DELTA           = 2.0D;
+    private static final double  MIN_DELTA           = 10.0D;
 
-    private boolean              first               = true;
-    private double               last;
+    private double               last                = System.currentTimeMillis();
     private final ReentrantLock  stateLock           = new ReentrantLock();
     private SampledWindow        window;
 
@@ -111,15 +110,12 @@ public class PhiAccrualFailureDetector {
             return;
         }
         try {
-            if (!first) {
-                double interArrivalTime = now - last;
-                if (interArrivalTime < MIN_DELTA) {
-                    return;
-                }
-                window.sample(interArrivalTime);
+            double interArrivalTime = now - last;
+            if (interArrivalTime < MIN_DELTA) {
+                return;
             }
+            window.sample(interArrivalTime);
             last = now;
-            first = false;
         } finally {
             myLock.unlock();
         }
