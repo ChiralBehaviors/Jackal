@@ -1,28 +1,22 @@
 package com.hellblazer.anubis.util;
 
-public class RunningAverage implements SampledWindow {
-    private int            count = 0;
-    private int            head  = 0;
-    private final double[] samples;
-    private double         sum   = 0.0D;
-    private int            tail  = 0;
+public class RunningAverage extends Window implements SampledWindow {
+    private double sum          = 0.0D;
+    private double sumOfSquares = 0.0D;
 
     public RunningAverage(int windowSize) {
-        samples = new double[windowSize];
-    }
-
-    @Override
-    public boolean hasSamples() {
-        return count != 0;
+        super(windowSize);
     }
 
     @Override
     public void sample(double sample) {
         sum += sample;
+        sumOfSquares += sample * sample;
         if (count == samples.length) {
-            sum -= removeFirst();
+            double first = removeFirst();
+            sum -= first;
+            sumOfSquares -= first * first;
         }
-
         addLast(sample);
     }
 
@@ -33,18 +27,5 @@ public class RunningAverage implements SampledWindow {
                                             "Must have at least one sample to calculate the average");
         }
         return sum / count;
-    }
-
-    private void addLast(double value) {
-        samples[tail] = value;
-        tail = (tail + 1) % samples.length;
-        count++;
-    }
-
-    private double removeFirst() {
-        double item = samples[head];
-        count--;
-        head = (head + 1) % samples.length;
-        return item;
     }
 }

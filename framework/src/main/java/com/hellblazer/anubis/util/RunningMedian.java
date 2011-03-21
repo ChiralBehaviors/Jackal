@@ -23,30 +23,19 @@ package com.hellblazer.anubis.util;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class RunningMedian implements SampledWindow {
-    private int            count  = 0;
-    private int            head   = 0;
-    private final double[] samples;
+public class RunningMedian extends Window implements SampledWindow {
     private final SkipList sorted = new SkipList();
-    private int            tail   = 0;
 
     public RunningMedian(int windowSize) {
-        samples = new double[windowSize];
-    }
-
-    @Override
-    public boolean hasSamples() {
-        return count != 0;
+        super(windowSize);
     }
 
     @Override
     public void sample(double sample) {
-
         sorted.add(sample);
         if (count == samples.length) {
             sorted.remove(removeFirst());
         }
-
         addLast(sample);
     }
 
@@ -57,18 +46,5 @@ public class RunningMedian implements SampledWindow {
                                             "Must have at least one sample to calculate the median");
         }
         return sorted.get(sorted.size() / 2);
-    }
-
-    private void addLast(double value) {
-        samples[tail] = value;
-        tail = (tail + 1) % samples.length;
-        count++;
-    }
-
-    private double removeFirst() {
-        double item = samples[head];
-        count--;
-        head = (head + 1) % samples.length;
-        return item;
     }
 }

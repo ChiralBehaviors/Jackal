@@ -90,13 +90,15 @@ public class PhiAccrualFailureDetector {
             if (!window.hasSamples()) {
                 return 0.0D;
             }
-            double phi = -1
-                         * Math.log10(Math.pow(Math.E, -1 * (now - last)
-                                                       / window.value()));
+            double phi = -1 * Math.log10(exponentialPhi(now));
             return phi;
         } finally {
             myLock.unlock();
         }
+    }
+
+    private double exponentialPhi(long now) {
+        return Math.pow(Math.E, -1 * (now - last) / window.value());
     }
 
     /**
