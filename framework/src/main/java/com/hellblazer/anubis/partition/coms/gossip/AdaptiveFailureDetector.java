@@ -49,8 +49,8 @@ public class AdaptiveFailureDetector extends Window implements
     @Override
     public double p(long now) {
         double delta = (now - last) * scale;
-        int countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
-        return countLessThanEqualTo / count;
+        double countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
+        return countLessThanEqualTo / (double) count;
     }
 
     @Override

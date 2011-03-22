@@ -23,11 +23,9 @@ public class AdaptiveFailureDetectorTest extends TestCase {
 
         assertEquals(0.0, detector.p(now + variance), 0.01);
 
-        now += 635;
-        /*
-                assertEquals(0.0, detector.p(now), 0.01);
+        now += 601;
+        assertEquals(0.91, detector.p(now), 0.01);
 
-                assertEquals(26.491, detector.p(now + 30000), 0.01);
-                */
+        assertEquals(1.0, detector.p(now + 30000), 0.01);
     }
 }
