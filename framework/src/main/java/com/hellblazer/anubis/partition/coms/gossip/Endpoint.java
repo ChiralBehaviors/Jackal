@@ -28,12 +28,12 @@ import java.util.logging.Logger;
  */
 
 public class Endpoint {
-    protected static Logger                 logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
+    protected static Logger              logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
 
-    private final PhiAccrualFailureDetector fd;
-    private volatile GossipMessages         handler;
-    private volatile HeartbeatState         heartbeat;
-    private volatile boolean                isAlive = true;
+    private final AccrualFailureDetector fd;
+    private volatile GossipMessages      handler;
+    private volatile HeartbeatState      heartbeat;
+    private volatile boolean             isAlive = true;
 
     public Endpoint() {
         fd = null;
@@ -93,7 +93,7 @@ public class Endpoint {
      *         than the conviction threshold
      */
     public boolean shouldConvict(long now, double convictThreshold) {
-        double phi = fd.phi(now);
+        double phi = fd.p(now);
         boolean shouldConvict = phi > convictThreshold;
         if (shouldConvict) {
             System.out.println("Phi: " + phi);

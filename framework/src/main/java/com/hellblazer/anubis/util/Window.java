@@ -58,13 +58,26 @@ public class Window implements Iterable<Double> {
         samples = new double[windowSize];
     }
 
-    public boolean hasSamples() {
-        return count != 0;
+    public void addLast(double value) {
+        samples[tail] = value;
+        tail = (tail + 1) % samples.length;
+        count++;
     }
 
     @Override
     public Iterator<Double> iterator() {
         return new RingBufferIterator();
+    }
+
+    public double removeFirst() {
+        double item = samples[head];
+        count--;
+        head = (head + 1) % samples.length;
+        return item;
+    }
+
+    public int size() {
+        return count;
     }
 
     @Override
@@ -76,18 +89,5 @@ public class Window implements Iterable<Double> {
         }
         builder.append(']');
         return builder.toString();
-    }
-
-    protected void addLast(double value) {
-        samples[tail] = value;
-        tail = (tail + 1) % samples.length;
-        count++;
-    }
-
-    protected double removeFirst() {
-        double item = samples[head];
-        count--;
-        head = (head + 1) % samples.length;
-        return item;
     }
 }

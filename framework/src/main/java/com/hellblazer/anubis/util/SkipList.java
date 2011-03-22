@@ -127,6 +127,32 @@ public final class SkipList {
         return size;
     }
 
+    /**
+     * count the number of elements that are <= the supplied value
+     * 
+     * @param value
+     * @return
+     */
+    public int countLessThanEqualTo(double value) {
+        Node node = head.next();
+        Node last = null;
+        int offset = 0;
+        int index = 0;
+        int count = 0;
+
+        while (index + offset < size()) {
+            index++;
+            last = node;
+            node = node.next();
+            if (last.element <= value) {
+                count++;
+            } else {
+                return count;
+            }
+        }
+        return count;
+    }
+
     private void delete(final Node node, final Node[] update) {
         for (int i = 0; i < level; i++) {
             if (update[i].next[i] == node) {

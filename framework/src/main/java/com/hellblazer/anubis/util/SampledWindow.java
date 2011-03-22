@@ -1,7 +1,7 @@
 package com.hellblazer.anubis.util;
 
 public interface SampledWindow {
-    boolean hasSamples();
+    int size();
 
     void sample(double sample);
 

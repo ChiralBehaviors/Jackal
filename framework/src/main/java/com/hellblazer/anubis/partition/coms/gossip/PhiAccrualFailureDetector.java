@@ -40,7 +40,7 @@ import com.hellblazer.anubis.util.SampledWindow;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class PhiAccrualFailureDetector {
+public class PhiAccrualFailureDetector implements AccrualFailureDetector {
     private static final boolean DEFAULT_USE_MEDIAN  = true;
     private static final int     DEFAULT_WINDOW_SIZE = 1000;
     private static final double  MIN_DELTA           = 10.0D;
@@ -61,25 +61,11 @@ public class PhiAccrualFailureDetector {
         }
     }
 
-    /**
-     * Answer the suspicion level of the detector.
-     * <p>
-     * Given some threshold sigma, and assuming that we decide to suspect p when
-     * phi >= sigma, when sigma = 1 then the likeliness that we will make a
-     * mistake (i.e., the decision will be contradicted in the future by the
-     * reception of a late heartbeat) is about 10%. The likeliness is about 1%
-     * with sigma = 2, 0.1% with sigma = 3, and so on.
-     * <p>
-     * Although the original paper suggests that the distribution is
-     * approximated by the Gaussian distribution the Cassandra group has
-     * reported that the Exponential Distribution to be a better approximation,
-     * because of the nature of the gossip channel and its impact on latency
-     * 
-     * @param now
-     *            - the the time to calculate phi
-     * @return - the suspicion level of the detector
+    /* (non-Javadoc)
+     * @see com.hellblazer.anubis.partition.coms.gossip.AccrualFailureDetector#p(long)
      */
-    public double phi(long now) {
+    @Override
+    public double p(long now) {
         final ReentrantLock myLock = stateLock;
         try {
             myLock.lockInterruptibly();
@@ -87,7 +73,7 @@ public class PhiAccrualFailureDetector {
             return 0.0D;
         }
         try {
-            if (!window.hasSamples()) {
+            if (window.size() == 0) {
                 return 0.0D;
             }
             double phi = -1 * Math.log10(exponentialPhi(now));
@@ -101,9 +87,10 @@ public class PhiAccrualFailureDetector {
         return Math.pow(Math.E, -1 * (now - last) / window.value());
     }
 
-    /**
-     * Record the inter arrival time of a heartbeat.
+    /* (non-Javadoc)
+     * @see com.hellblazer.anubis.partition.coms.gossip.AccrualFailureDetector#record(long)
      */
+    @Override
     public void record(long now) {
         final ReentrantLock myLock = stateLock;
         try {
