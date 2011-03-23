@@ -106,7 +106,8 @@ public class ControllerGossipConfiguration {
     }
 
     protected Controller constructController() throws UnknownHostException {
-        return new Controller(timer(), 1000, 300000, partitionIdentity(), heartbeatTimeout(), heartbeatInterval());
+        return new Controller(timer(), 1000, 300000, partitionIdentity(),
+                              heartbeatTimeout(), heartbeatInterval());
     }
 
     protected Epoch epoch() {
@@ -163,7 +164,8 @@ public class ControllerGossipConfiguration {
     public Gossip gossip() throws IOException {
         return new Gossip(systemView(), new SecureRandom(),
                           phiConvictionThreshold(), communications(),
-                          gossipInterval(), gossipIntervalTimeUnit());
+                          gossipInterval(), gossipIntervalTimeUnit(),
+                          heartbeatInterval());
     }
 
     @Bean

@@ -94,6 +94,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private HeartbeatReceiver                                receiver;
     private final AtomicReference<View>                      ignoring  = new AtomicReference<View>();
     private final AtomicBoolean                              running   = new AtomicBoolean();
+    private final long                                       expectedHeartbeatInterval;
 
     /**
      * 
@@ -117,7 +118,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     public Gossip(SystemView systemView, Random random,
                   double phiConvictThreshold,
                   GossipCommunications communicationsService,
-                  int gossipInterval, TimeUnit unit) {
+                  int gossipInterval, TimeUnit unit, long heartbeatInterval) {
         communications = communicationsService;
         communications.setGossip(this);
         convictThreshold = phiConvictThreshold;
@@ -159,6 +160,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             }
         });
         localState = new Endpoint();
+        expectedHeartbeatInterval = heartbeatInterval;
     }
 
     public void checkStatus() {
@@ -422,7 +424,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      */
     protected void connectAndGossipWith(final InetSocketAddress address,
                                         final List<Digest> digests) {
-        final Endpoint newEndpoint = new Endpoint(new HeartbeatState(address));
+        final Endpoint newEndpoint = new Endpoint(new HeartbeatState(address),
+                                                  expectedHeartbeatInterval);
         Runnable connectAction = new Runnable() {
             @Override
             public void run() {
@@ -457,7 +460,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      */
     protected void discover(final HeartbeatState state) {
         final InetSocketAddress address = state.getHeartbeatAddress();
-        final Endpoint endpoint = new Endpoint(state);
+        final Endpoint endpoint = new Endpoint(state, expectedHeartbeatInterval);
         Runnable connectAction = new Runnable() {
             @Override
             public void run() {

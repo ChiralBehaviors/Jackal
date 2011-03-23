@@ -132,7 +132,7 @@ public class EndToEndTest extends TestCase {
                                          communications.getLocalAddress(),
                                          seedHosts, 5000, 500000);
         Gossip gossip = new Gossip(view, new Random(), 11, communications, 1,
-                                   TimeUnit.SECONDS);
+                                   TimeUnit.SECONDS, 3000);
         gossip.create(receiver);
         gossip.sendHeartbeat(new HeartbeatState(
                                                 new Identity(666, 0, 0),

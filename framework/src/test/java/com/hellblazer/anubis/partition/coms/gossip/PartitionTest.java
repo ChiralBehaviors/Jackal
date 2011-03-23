@@ -352,10 +352,10 @@ public class PartitionTest extends TestCase {
     @SuppressWarnings("rawtypes")
     final static Class[]                     CONFIGS = { node0.class,
             node1.class, node2.class, node3.class, node4.class, node5.class,
-            node6.class, node7.class, node8.class, node9.class /*, node10.class,
-                                                               node11.class, node12.class, node13.class, node14.class,
-                                                               node15.class, node16.class, node17.class, node18.class,
-                                                               node19.class */};
+            node6.class, node7.class, node8.class, node9.class, node10.class,
+            node11.class, node12.class, node13.class, node14.class,
+            node15.class, node16.class, node17.class, node18.class,
+            node19.class                            };
     static CyclicBarrier                     INITIAL_BARRIER;
     static int                               testPort1;
     static int                               testPort2;

@@ -49,7 +49,7 @@ public class GossipTest extends TestCase {
                                      -1);
 
         Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS);
+                                   TimeUnit.DAYS, 3000);
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -102,7 +102,7 @@ public class GossipTest extends TestCase {
         state4.setVersion(4);
 
         Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS);
+                                   TimeUnit.DAYS, 3000);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -110,10 +110,10 @@ public class GossipTest extends TestCase {
         @SuppressWarnings("unchecked")
         ConcurrentMap<InetSocketAddress, Endpoint> endpoints = (ConcurrentMap<InetSocketAddress, Endpoint>) ep.get(gossip);
 
-        endpoints.put(address1, new Endpoint(state1));
-        endpoints.put(address2, new Endpoint(state2));
-        endpoints.put(address3, new Endpoint(state3));
-        endpoints.put(address4, new Endpoint(state4));
+        endpoints.put(address1, new Endpoint(state1, 3000));
+        endpoints.put(address2, new Endpoint(state2, 3000));
+        endpoints.put(address3, new Endpoint(state3, 3000));
+        endpoints.put(address4, new Endpoint(state4, 3000));
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -151,7 +151,7 @@ public class GossipTest extends TestCase {
                                                    address4);
 
         Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS);
+                                   TimeUnit.DAYS, 3000);
         gossip.create(receiver);
 
         gossip.apply(asList(state1, state2, state3, state4));
@@ -224,7 +224,7 @@ public class GossipTest extends TestCase {
         when(ep4.getVersion()).thenReturn(5L);
 
         Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS) {
+                                   TimeUnit.DAYS, 3000) {
 
             @Override
             protected void notifyUpdate(HeartbeatState state) {

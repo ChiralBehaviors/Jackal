@@ -49,15 +49,27 @@ public class PhiAccrualFailureDetector implements AccrualFailureDetector {
     private final ReentrantLock  stateLock           = new ReentrantLock();
     private SampledWindow        window;
 
-    public PhiAccrualFailureDetector() {
-        this(DEFAULT_USE_MEDIAN, DEFAULT_WINDOW_SIZE);
+    public PhiAccrualFailureDetector(long expectedSampleInterval) {
+        this(DEFAULT_USE_MEDIAN, DEFAULT_WINDOW_SIZE, expectedSampleInterval,
+             DEFAULT_WINDOW_SIZE / 2);
     }
 
-    public PhiAccrualFailureDetector(boolean useMedian, int windowSize) {
+    public PhiAccrualFailureDetector(long expectedSampleInterval,
+                                     int initialSamples) {
+        this(DEFAULT_USE_MEDIAN, DEFAULT_WINDOW_SIZE, expectedSampleInterval,
+             initialSamples);
+    }
+
+    public PhiAccrualFailureDetector(boolean useMedian, int windowSize,
+                                     long expectedSampleInterval,
+                                     int initialSamples) {
         if (useMedian) {
             window = new RunningMedian(windowSize);
         } else {
             window = new RunningAverage(windowSize);
+        }
+        for (int i = 0; i < initialSamples; i++) {
+            record((long) (last + expectedSampleInterval));
         }
     }
 

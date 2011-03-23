@@ -39,9 +39,10 @@ public class Endpoint {
         fd = null;
     }
 
-    public Endpoint(HeartbeatState heartBeatState) {
+    public Endpoint(HeartbeatState heartBeatState,
+                    long expectedHeartbeatInterval) {
         heartbeat = heartBeatState;
-        fd = new PhiAccrualFailureDetector();
+        fd = new PhiAccrualFailureDetector(expectedHeartbeatInterval);
     }
 
     public long getEpoch() {

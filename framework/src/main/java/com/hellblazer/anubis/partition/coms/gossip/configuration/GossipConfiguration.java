@@ -101,7 +101,8 @@ public class GossipConfiguration {
     public Gossip gossip() throws IOException {
         return new Gossip(systemView(), new SecureRandom(),
                           phiConvictionThreshold(), communications(),
-                          gossipInterval(), gossipIntervalTimeUnit());
+                          gossipInterval(), gossipIntervalTimeUnit(),
+                          heartbeatInterval());
     }
 
     @Bean

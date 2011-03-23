@@ -29,7 +29,7 @@ public class PhiAccrualFailureDetectorTest extends TestCase {
 
     public void testDetector() throws Exception {
 
-        AccrualFailureDetector detector = new PhiAccrualFailureDetector();
+        AccrualFailureDetector detector = new PhiAccrualFailureDetector(500, 0);
         long inc = 500;
         
         long now = System.currentTimeMillis(); 
