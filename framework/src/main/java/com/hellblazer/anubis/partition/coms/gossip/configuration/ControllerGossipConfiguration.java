@@ -41,8 +41,10 @@ import org.springframework.context.annotation.Configuration;
 import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
 import com.hellblazer.anubis.partition.coms.gossip.Communications;
+import com.hellblazer.anubis.partition.coms.gossip.FailureDetectorFactory;
 import com.hellblazer.anubis.partition.coms.gossip.Gossip;
 import com.hellblazer.anubis.partition.coms.gossip.HeartbeatState;
+import com.hellblazer.anubis.partition.coms.gossip.PhiFailureDetectorFactory;
 import com.hellblazer.anubis.partition.coms.gossip.SystemView;
 
 /**
@@ -60,6 +62,20 @@ public class ControllerGossipConfiguration {
     }
 
     @Bean
+    public Communications communications() throws IOException {
+        return new Communications("Test controller gossip endpoint handler "
+                                  + partitionIdentity(), gossipEndpoint(),
+                                  socketOptions(),
+                                  Executors.newFixedThreadPool(3),
+                                  Executors.newFixedThreadPool(10));
+
+    }
+
+    public InetAddress contactHost() throws UnknownHostException {
+        return InetAddress.getLocalHost();
+    }
+
+    @Bean
     public Controller controller() throws IOException {
         Controller controller = constructController();
         gossip().create(controller);
@@ -71,6 +87,19 @@ public class ControllerGossipConfiguration {
         return new DeployedPostProcessor();
     }
 
+    @Bean
+    public FailureDetectorFactory failureDetectorFactory() {
+        return new PhiFailureDetectorFactory(16, 1000, heartbeatInterval(),
+                                             500, 100, true);
+    }
+
+    @Bean
+    public Gossip gossip() throws IOException {
+        return new Gossip(systemView(), new SecureRandom(), communications(),
+                          gossipInterval(), gossipIntervalTimeUnit(),
+                          failureDetectorFactory());
+    }
+
     public long heartbeatInterval() {
         return 2000L;
     }
@@ -79,25 +108,24 @@ public class ControllerGossipConfiguration {
         return 3L;
     }
 
-    public InetAddress contactHost() throws UnknownHostException {
-        return InetAddress.getLocalHost();
-    }
-
-    protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
-        return new InetSocketAddress(contactHost(), 0);
-    }
-
-    protected int gossipInterval() {
-        return 1;
-    }
-
-    protected TimeUnit gossipIntervalTimeUnit() {
-        return TimeUnit.SECONDS;
-    }
-
     @Bean
     public Identity partitionIdentity() throws UnknownHostException {
         return new Identity(magic(), node(), epoch().longValue());
+    }
+
+    @Bean
+    public GossipSnoop snoop() throws IOException {
+        Heartbeat heartbeat = new HeartbeatState(gossip().getLocalAddress(), 0,
+                                                 partitionIdentity());
+        return new GossipSnoop(heartbeat, gossip(), heartbeatInterval(),
+                               TimeUnit.MILLISECONDS);
+    }
+
+    @Bean
+    public SystemView systemView() throws IOException {
+        return new SystemView(new SecureRandom(),
+                              communications().getLocalAddress(), seedHosts(),
+                              quarantineDelay(), unreachableNodeDelay());
     }
 
     @Bean
@@ -114,41 +142,24 @@ public class ControllerGossipConfiguration {
         return new Epoch();
     }
 
+    protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
+        return new InetSocketAddress(contactHost(), 0);
+    }
+
+    protected int gossipInterval() {
+        return 1;
+    }
+
+    protected TimeUnit gossipIntervalTimeUnit() {
+        return TimeUnit.SECONDS;
+    }
+
     protected int magic() {
         return 12345;
     }
 
     protected int node() throws UnknownHostException {
         return Identity.getProcessUniqueId();
-    }
-
-    @Bean
-    public Communications communications() throws IOException {
-        return new Communications("Test controller gossip endpoint handler "
-                                  + partitionIdentity(), gossipEndpoint(),
-                                  socketOptions(),
-                                  Executors.newFixedThreadPool(3),
-                                  Executors.newFixedThreadPool(10));
-
-    }
-
-    protected SocketOptions socketOptions() {
-        return new SocketOptions();
-    }
-
-    protected int unreachableNodeDelay() {
-        return 500000;
-    }
-
-    @Bean
-    public SystemView systemView() throws IOException {
-        return new SystemView(new SecureRandom(),
-                              communications().getLocalAddress(), seedHosts(),
-                              quarantineDelay(), unreachableNodeDelay());
-    }
-
-    protected int phiConvictionThreshold() {
-        return 16;
     }
 
     protected int quarantineDelay() {
@@ -160,19 +171,11 @@ public class ControllerGossipConfiguration {
         return asList(gossipEndpoint());
     }
 
-    @Bean
-    public Gossip gossip() throws IOException {
-        return new Gossip(systemView(), new SecureRandom(),
-                          phiConvictionThreshold(), communications(),
-                          gossipInterval(), gossipIntervalTimeUnit(),
-                          heartbeatInterval());
+    protected SocketOptions socketOptions() {
+        return new SocketOptions();
     }
 
-    @Bean
-    public GossipSnoop snoop() throws IOException {
-        Heartbeat heartbeat = new HeartbeatState(gossip().getLocalAddress(), 0,
-                                                 partitionIdentity());
-        return new GossipSnoop(heartbeat, gossip(), heartbeatInterval(),
-                               TimeUnit.MILLISECONDS);
+    protected int unreachableNodeDelay() {
+        return 500000;
     }
 }

@@ -8,7 +8,13 @@ public class AdaptiveFailureDetectorTest extends TestCase {
 
     public void testDetector() throws Exception {
 
-        AccrualFailureDetector detector = new AdaptiveFailureDetector();
+        AccrualFailureDetector detector = new AdaptiveFailureDetectorFactory(
+                                                                             0.95,
+                                                                             1000,
+                                                                             0.95,
+                                                                             500,
+                                                                             0,
+                                                                             0.0).create();
         Random random = new Random(666);
 
         long average = 500;
@@ -21,11 +27,11 @@ public class AdaptiveFailureDetectorTest extends TestCase {
             detector.record(now);
         }
 
-        assertEquals(0.0, detector.p(now + variance), 0.01);
+        assertEquals(false, detector.shouldConvict(now + variance));
 
-        now += 601;
-        assertEquals(0.39, detector.p(now), 0.01);
+        now += 573;
+        assertFalse(detector.shouldConvict(now));
 
-        assertEquals(1.0, detector.p(now + 30000), 0.01);
+        assertTrue(detector.shouldConvict(now + 30000));
     }
 }

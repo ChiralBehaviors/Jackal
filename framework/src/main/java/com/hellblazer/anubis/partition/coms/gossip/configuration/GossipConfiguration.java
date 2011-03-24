@@ -49,7 +49,9 @@ import org.springframework.context.annotation.Configuration;
 import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
 import com.hellblazer.anubis.partition.coms.gossip.Communications;
+import com.hellblazer.anubis.partition.coms.gossip.FailureDetectorFactory;
 import com.hellblazer.anubis.partition.coms.gossip.Gossip;
+import com.hellblazer.anubis.partition.coms.gossip.PhiFailureDetectorFactory;
 import com.hellblazer.anubis.partition.coms.gossip.PhiTimedProtocolFactory;
 import com.hellblazer.anubis.partition.coms.gossip.SystemView;
 
@@ -98,11 +100,23 @@ public class GossipConfiguration {
     }
 
     @Bean
+    public FailureDetectorFactory failureDetectorFactory() {
+        return new PhiFailureDetectorFactory(16, 1000, heartbeatInterval(),
+                                             500, 100, true);
+    }
+
+    @Bean
     public Gossip gossip() throws IOException {
-        return new Gossip(systemView(), new SecureRandom(),
-                          phiConvictionThreshold(), communications(),
+        return new Gossip(systemView(), new SecureRandom(), communications(),
                           gossipInterval(), gossipIntervalTimeUnit(),
-                          heartbeatInterval());
+                          failureDetectorFactory());
+    }
+
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory()
+                                                              throws IOException {
+        // return new TimedProtocolFactory();
+        return new PhiTimedProtocolFactory(gossip());
     }
 
     @Bean
@@ -192,13 +206,6 @@ public class GossipConfiguration {
         return 2000L;
     }
 
-    @Bean
-    public HeartbeatProtocolFactory heartbeatProtocolFactory()
-                                                              throws IOException {
-        // return new TimedProtocolFactory();
-        return new PhiTimedProtocolFactory(gossip());
-    }
-
     protected long heartbeatTimeout() {
         return 3L;
     }
@@ -220,10 +227,6 @@ public class GossipConfiguration {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    protected int phiConvictionThreshold() {
-        return 16;
     }
 
     protected int quarantineDelay() {

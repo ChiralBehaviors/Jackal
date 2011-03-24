@@ -40,9 +40,9 @@ public class Endpoint {
     }
 
     public Endpoint(HeartbeatState heartBeatState,
-                    long expectedHeartbeatInterval) {
+                    AccrualFailureDetector failureDetector) {
         heartbeat = heartBeatState;
-        fd = new PhiAccrualFailureDetector(expectedHeartbeatInterval);
+        fd = failureDetector;
     }
 
     public long getEpoch() {
@@ -87,19 +87,12 @@ public class Endpoint {
      * than the conviction threshold
      * 
      * @param now
-     *            - the time to measure at
-     * @param convictThreshold
-     *            - the threshold for conviction
+     *            - the time at which to base the measurement
      * @return true if the suspicion level of the failure detector is greater
      *         than the conviction threshold
      */
-    public boolean shouldConvict(long now, double convictThreshold) {
-        double phi = fd.p(now);
-        boolean shouldConvict = phi > convictThreshold;
-        if (shouldConvict) {
-            System.out.println("Phi: " + phi);
-        }
-        return shouldConvict;
+    public boolean shouldConvict(long now) {
+        return fd.shouldConvict(now);
     }
 
     @Override

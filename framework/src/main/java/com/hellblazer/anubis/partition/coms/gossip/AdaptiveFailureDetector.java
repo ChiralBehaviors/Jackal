@@ -30,33 +30,35 @@ import com.hellblazer.anubis.util.Window;
  */
 public class AdaptiveFailureDetector extends Window implements
         AccrualFailureDetector {
-    public final static double DEFAULT_SCALE       = 0.9;
-    public final static int    DEFAULT_WINDOW_SIZE = 1000;
+    private double         last   = -1.0;
+    private final double   minInterval;
+    private final double   scale;
+    private final SkipList sorted = new SkipList();
+    private final double   threshold;
 
-    private double             last                = -1.0;
-    private final double       scale;
-    private final SkipList     sorted              = new SkipList();
-
-    public AdaptiveFailureDetector() {
-        this(DEFAULT_WINDOW_SIZE, DEFAULT_SCALE);
-    }
-
-    public AdaptiveFailureDetector(int windowSize, double scale) {
+    public AdaptiveFailureDetector(double convictionThreshold, int windowSize,
+                                   double scale, long expectedSampleInterval,
+                                   int initialSamples, double minimumInterval) {
         super(windowSize);
+        threshold = convictionThreshold;
+        minInterval = minimumInterval;
         this.scale = scale;
-    }
 
-    @Override
-    public double p(long now) {
-        double delta = (now - last) * scale;
-        double countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
-        return countLessThanEqualTo / (double) count;
+        long now = System.currentTimeMillis();
+        last = now - initialSamples * expectedSampleInterval;
+        for (int i = 0; i < initialSamples; i++) {
+            record((long) (last + expectedSampleInterval));
+        }
+        assert last == now;
     }
 
     @Override
     public void record(long now) {
         if (last >= 0.0) {
             double sample = now - last;
+            if (sample < minInterval) {
+                return;
+            }
             sorted.add(sample);
             if (count == samples.length) {
                 sorted.remove(removeFirst());
@@ -64,5 +66,12 @@ public class AdaptiveFailureDetector extends Window implements
             addLast(sample);
         }
         last = now;
+    }
+
+    @Override
+    public boolean shouldConvict(long now) {
+        double delta = (now - last) * scale;
+        double countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
+        return countLessThanEqualTo / count >= threshold;
     }
 }

@@ -131,8 +131,14 @@ public class EndToEndTest extends TestCase {
         SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),
                                          seedHosts, 5000, 500000);
-        Gossip gossip = new Gossip(view, new Random(), 11, communications, 1,
-                                   TimeUnit.SECONDS, 3000);
+        FailureDetectorFactory fdFactory = new PhiFailureDetectorFactory(11,
+                                                                         1000,
+                                                                         3000,
+                                                                         250,
+                                                                         1.0,
+                                                                         true);
+        Gossip gossip = new Gossip(view, new Random(), communications, 1,
+                                   TimeUnit.SECONDS, fdFactory);
         gossip.create(receiver);
         gossip.sendHeartbeat(new HeartbeatState(
                                                 new Identity(666, 0, 0),

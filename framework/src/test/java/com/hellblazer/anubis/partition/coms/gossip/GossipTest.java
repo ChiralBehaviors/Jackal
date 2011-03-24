@@ -26,6 +26,7 @@ public class GossipTest extends TestCase {
     public void testExamineAllNew() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
         GossipHandler gossipHandler = mock(GossipHandler.class);
+        FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         InetSocketAddress localAddress = new InetSocketAddress(0);
@@ -48,8 +49,8 @@ public class GossipTest extends TestCase {
         Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), 0,
                                      -1);
 
-        Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS, 3000);
+        Gossip gossip = new Gossip(view, random, communications, 4,
+                                   TimeUnit.DAYS, fdFactory);
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -63,6 +64,8 @@ public class GossipTest extends TestCase {
     public void testExamineMixed() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
         GossipHandler gossipHandler = mock(GossipHandler.class);
+        FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
+        AccrualFailureDetector fd = mock(AccrualFailureDetector.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         InetSocketAddress localAddress = new InetSocketAddress(0);
@@ -101,8 +104,8 @@ public class GossipTest extends TestCase {
                                                    address4);
         state4.setVersion(4);
 
-        Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS, 3000);
+        Gossip gossip = new Gossip(view, random, communications, 4,
+                                   TimeUnit.DAYS, fdFactory);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -110,10 +113,10 @@ public class GossipTest extends TestCase {
         @SuppressWarnings("unchecked")
         ConcurrentMap<InetSocketAddress, Endpoint> endpoints = (ConcurrentMap<InetSocketAddress, Endpoint>) ep.get(gossip);
 
-        endpoints.put(address1, new Endpoint(state1, 3000));
-        endpoints.put(address2, new Endpoint(state2, 3000));
-        endpoints.put(address3, new Endpoint(state3, 3000));
-        endpoints.put(address4, new Endpoint(state4, 3000));
+        endpoints.put(address1, new Endpoint(state1, fd));
+        endpoints.put(address2, new Endpoint(state2, fd));
+        endpoints.put(address3, new Endpoint(state3, fd));
+        endpoints.put(address4, new Endpoint(state4, fd));
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -126,6 +129,7 @@ public class GossipTest extends TestCase {
     public void testApplyDiscover() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
         HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
+        FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         InetSocketAddress localAddress = new InetSocketAddress(0);
@@ -150,8 +154,8 @@ public class GossipTest extends TestCase {
                                                    new Identity(666, 4, 4),
                                                    address4);
 
-        Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS, 3000);
+        Gossip gossip = new Gossip(view, random, communications, 4,
+                                   TimeUnit.DAYS, fdFactory);
         gossip.create(receiver);
 
         gossip.apply(asList(state1, state2, state3, state4));
@@ -173,6 +177,7 @@ public class GossipTest extends TestCase {
     public void testApplyUpdate() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
         final HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
+        FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         InetSocketAddress localAddress = new InetSocketAddress(0);
@@ -223,8 +228,8 @@ public class GossipTest extends TestCase {
         when(ep4.getEpoch()).thenReturn(4L);
         when(ep4.getVersion()).thenReturn(5L);
 
-        Gossip gossip = new Gossip(view, random, 4, communications, 4,
-                                   TimeUnit.DAYS, 3000) {
+        Gossip gossip = new Gossip(view, random, communications, 4,
+                                   TimeUnit.DAYS, fdFactory) {
 
             @Override
             protected void notifyUpdate(HeartbeatState state) {

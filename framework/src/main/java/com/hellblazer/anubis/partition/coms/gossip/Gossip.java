@@ -81,7 +81,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private final static Logger                              log       = Logger.getLogger(Gossip.class.getCanonicalName());
 
     private final GossipCommunications                       communications;
-    private final double                                     convictThreshold;
     private final ConcurrentMap<InetSocketAddress, Endpoint> endpoints = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
     private final Random                                     entropy;
     private final Endpoint                                   localState;
@@ -94,7 +93,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private HeartbeatReceiver                                receiver;
     private final AtomicReference<View>                      ignoring  = new AtomicReference<View>();
     private final AtomicBoolean                              running   = new AtomicBoolean();
-    private final long                                       expectedHeartbeatInterval;
+    private final FailureDetectorFactory                     fdFactory;
 
     /**
      * 
@@ -104,9 +103,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the system management view of the member state
      * @param random
      *            - a source of entropy
-     * @param phiConvictThreshold
-     *            - the threshold required to convict a failed member. The value
-     *            should be between 5 and 16, inclusively.
      * @param communicationsService
      *            - the service which creates outbound connections to other
      *            members
@@ -114,18 +110,20 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the period of the random gossiping
      * @param unit
      *            - time unit for the gossip interval
+     * @param failureDetectorFactory
+     *            - the factory producing instances of the failure detector
      */
     public Gossip(SystemView systemView, Random random,
-                  double phiConvictThreshold,
                   GossipCommunications communicationsService,
-                  int gossipInterval, TimeUnit unit, long heartbeatInterval) {
+                  int gossipInterval, TimeUnit unit,
+                  FailureDetectorFactory failureDetectorFactory) {
         communications = communicationsService;
         communications.setGossip(this);
-        convictThreshold = phiConvictThreshold;
         entropy = random;
         view = systemView;
         interval = gossipInterval;
         intervalUnit = unit;
+        fdFactory = failureDetectorFactory;
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
@@ -160,7 +158,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             }
         });
         localState = new Endpoint();
-        expectedHeartbeatInterval = heartbeatInterval;
     }
 
     public void checkStatus() {
@@ -176,7 +173,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             }
 
             Endpoint state = entry.getValue();
-            if (state.isAlive() && state.shouldConvict(now, convictThreshold)) {
+            if (state.isAlive() && state.shouldConvict(now)) {
                 iterator.remove();
                 state.markDead();
                 view.markDead(endpoint, now);
@@ -303,7 +300,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     public boolean shouldConvict(InetSocketAddress address, long now) {
         Endpoint endpoint = endpoints.get(address);
         return endpoint == null || isIgnoring(endpoint.getState().getSender())
-               || endpoint.shouldConvict(now, convictThreshold);
+               || endpoint.shouldConvict(now);
     }
 
     @Override
@@ -425,7 +422,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     protected void connectAndGossipWith(final InetSocketAddress address,
                                         final List<Digest> digests) {
         final Endpoint newEndpoint = new Endpoint(new HeartbeatState(address),
-                                                  expectedHeartbeatInterval);
+                                                  fdFactory.create());
         Runnable connectAction = new Runnable() {
             @Override
             public void run() {
@@ -460,7 +457,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      */
     protected void discover(final HeartbeatState state) {
         final InetSocketAddress address = state.getHeartbeatAddress();
-        final Endpoint endpoint = new Endpoint(state, expectedHeartbeatInterval);
+        final Endpoint endpoint = new Endpoint(state, fdFactory.create());
         Runnable connectAction = new Runnable() {
             @Override
             public void run() {
@@ -592,13 +589,12 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         if (endpoint != null) {
             endpoint.getHandler().gossip(digests);
             return address;
-        } else {
-            if (log.isLoggable(Level.WARNING)) {
-                log.warning(format("Inconsistent state!  View thinks %s is alive, but service has no endpoint!",
-                                   address));
-            }
-            view.markDead(address, System.currentTimeMillis());
         }
+        if (log.isLoggable(Level.WARNING)) {
+            log.warning(format("Inconsistent state!  View thinks %s is alive, but service has no endpoint!",
+                               address));
+        }
+        view.markDead(address, System.currentTimeMillis());
         return null;
     }
 

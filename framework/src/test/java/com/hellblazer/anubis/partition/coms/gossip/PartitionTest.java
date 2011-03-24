@@ -538,7 +538,7 @@ public class PartitionTest extends TestCase {
         controller = null;
         partition = null;
         INITIAL_BARRIER = null;
-        Thread.sleep(10000);
+        Thread.sleep(1000);
     }
 
     private List<AnnotationConfigApplicationContext> createMembers() {

@@ -41,62 +41,29 @@ import com.hellblazer.anubis.util.SampledWindow;
  * 
  */
 public class PhiAccrualFailureDetector implements AccrualFailureDetector {
-    private static final boolean DEFAULT_USE_MEDIAN  = true;
-    private static final int     DEFAULT_WINDOW_SIZE = 1000;
-    private static final double  MIN_DELTA           = 10.0D;
+    private double              last;
+    private final double        minInterval;
+    private final ReentrantLock stateLock = new ReentrantLock();
+    private final double        threshold;
+    private SampledWindow       window;
 
-    private double               last                = System.currentTimeMillis();
-    private final ReentrantLock  stateLock           = new ReentrantLock();
-    private SampledWindow        window;
-
-    public PhiAccrualFailureDetector(long expectedSampleInterval) {
-        this(DEFAULT_USE_MEDIAN, DEFAULT_WINDOW_SIZE, expectedSampleInterval,
-             DEFAULT_WINDOW_SIZE / 2);
-    }
-
-    public PhiAccrualFailureDetector(long expectedSampleInterval,
-                                     int initialSamples) {
-        this(DEFAULT_USE_MEDIAN, DEFAULT_WINDOW_SIZE, expectedSampleInterval,
-             initialSamples);
-    }
-
-    public PhiAccrualFailureDetector(boolean useMedian, int windowSize,
+    public PhiAccrualFailureDetector(double convictThreshold,
+                                     boolean useMedian, int windowSize,
                                      long expectedSampleInterval,
-                                     int initialSamples) {
+                                     int initialSamples, double minimumInterval) {
+        threshold = convictThreshold;
+        minInterval = minimumInterval;
         if (useMedian) {
             window = new RunningMedian(windowSize);
         } else {
             window = new RunningAverage(windowSize);
         }
+        long now = System.currentTimeMillis();
+        last = now - initialSamples * expectedSampleInterval;
         for (int i = 0; i < initialSamples; i++) {
             record((long) (last + expectedSampleInterval));
         }
-    }
-
-    /* (non-Javadoc)
-     * @see com.hellblazer.anubis.partition.coms.gossip.AccrualFailureDetector#p(long)
-     */
-    @Override
-    public double p(long now) {
-        final ReentrantLock myLock = stateLock;
-        try {
-            myLock.lockInterruptibly();
-        } catch (InterruptedException e) {
-            return 0.0D;
-        }
-        try {
-            if (window.size() == 0) {
-                return 0.0D;
-            }
-            double phi = -1 * Math.log10(exponentialPhi(now));
-            return phi;
-        } finally {
-            myLock.unlock();
-        }
-    }
-
-    private double exponentialPhi(long now) {
-        return Math.pow(Math.E, -1 * (now - last) / window.value());
+        assert last == now;
     }
 
     /* (non-Javadoc)
@@ -112,7 +79,7 @@ public class PhiAccrualFailureDetector implements AccrualFailureDetector {
         }
         try {
             double interArrivalTime = now - last;
-            if (interArrivalTime < MIN_DELTA) {
+            if (interArrivalTime < minInterval) {
                 return;
             }
             window.sample(interArrivalTime);
@@ -120,5 +87,43 @@ public class PhiAccrualFailureDetector implements AccrualFailureDetector {
         } finally {
             myLock.unlock();
         }
+    }
+
+    /**
+     * 
+     * Given the programmed conviction threshold sigma, and assuming that we
+     * decide to suspect when phi >= sigma, when sigma = 1 then the likeliness
+     * that we will make a mistake (i.e., the decision will be contradicted in
+     * the future by the reception of a late heartbeat) is about 10%. The
+     * likeliness is about 1% with sigma = 2, 0.1% with sigma = 3, and so on.
+     * <p>
+     * Although the original paper suggests that the distribution is
+     * approximated by the Gaussian distribution the Cassandra group has
+     * reported that the Exponential Distribution to be a better approximation,
+     * because of the nature of the gossip channel and its impact on latency
+     * 
+     * @see com.hellblazer.anubis.partition.coms.gossip.AccrualFailureDetector#shouldConvict(long)
+     */
+    @Override
+    public boolean shouldConvict(long now) {
+        final ReentrantLock myLock = stateLock;
+        try {
+            myLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            return false;
+        }
+        try {
+            if (window.size() == 0) {
+                return false;
+            }
+            double phi = -1 * Math.log10(exponentialPhi(now));
+            return phi > threshold;
+        } finally {
+            myLock.unlock();
+        }
+    }
+
+    private double exponentialPhi(long now) {
+        return Math.pow(Math.E, -1 * (now - last) / window.value());
     }
 }

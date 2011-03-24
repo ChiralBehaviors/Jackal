@@ -32,7 +32,7 @@ public interface GossipMessages {
     int  INET_ADDRESS_V6_BYTE_SIZE  = 16;
     int  INET_ADDRESS_MAX_BYTE_SIZE = INET_ADDRESS_V6_BYTE_SIZE // address
                                     + 1 // addressLength
-                                    + 2;  // port
+                                    + 4;  // port
     int  NODE_ID_SET_MAX_BYTE_SIZE  = 257;
     int  IDENTITY_BYTE_SIZE         = 16;
     int  HEARTBEAT_STATE_BYTE_SIZE  = IDENTITY_BYTE_SIZE // candidate
@@ -49,8 +49,8 @@ public interface GossipMessages {
                                       + 4 // viewTimeStamp 
                                       + 4; // version
     int  DIGEST_BYTE_SIZE           = INET_ADDRESS_MAX_BYTE_SIZE // address
-                                    + 4 // epoch
-                                    + 4;  // viewNumber
+                                    + 8 // epoch
+                                    + 8;  // version
 
     /**
      * Close the communications connection

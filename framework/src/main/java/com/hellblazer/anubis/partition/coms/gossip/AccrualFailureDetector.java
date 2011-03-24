@@ -35,24 +35,14 @@ package com.hellblazer.anubis.partition.coms.gossip;
 public interface AccrualFailureDetector {
 
     /**
-     * Answer the suspicion level of the detector.
-     * <p>
-     * Given some threshold sigma, and assuming that we decide to suspect p when
-     * phi >= sigma, when sigma = 1 then the likeliness that we will make a
-     * mistake (i.e., the decision will be contradicted in the future by the
-     * reception of a late heartbeat) is about 10%. The likeliness is about 1%
-     * with sigma = 2, 0.1% with sigma = 3, and so on.
-     * <p>
-     * Although the original paper suggests that the distribution is
-     * approximated by the Gaussian distribution the Cassandra group has
-     * reported that the Exponential Distribution to be a better approximation,
-     * because of the nature of the gossip channel and its impact on latency
+     * Answer true if the suspicion level of the detector has exceeded the
+     * conviction threshold.
      * 
      * @param now
-     *            - the the time to calculate phi
-     * @return - the suspicion level of the detector
+     *            - the the time to calculate conviction
+     * @return - true if the conviction threshold has been exceeded.
      */
-    public abstract double p(long now);
+    public abstract boolean shouldConvict(long now);
 
     /**
      * Record the inter arrival time of a heartbeat.

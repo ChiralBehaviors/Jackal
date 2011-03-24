@@ -29,29 +29,33 @@ public class PhiAccrualFailureDetectorTest extends TestCase {
 
     public void testDetector() throws Exception {
 
-        AccrualFailureDetector detector = new PhiAccrualFailureDetector(500, 0);
+        AccrualFailureDetector detector = new PhiAccrualFailureDetector(11,
+                                                                        false,
+                                                                        1000,
+                                                                        500, 0,
+                                                                        1.0);
         long inc = 500;
-        
-        long now = System.currentTimeMillis(); 
 
-        detector.record(now); 
-        now += inc;
-        
+        long now = System.currentTimeMillis();
+
         detector.record(now);
         now += inc;
-        
+
         detector.record(now);
-        now += inc; 
-        
-        detector.record(now);
-        now += inc; 
-        
-        detector.record(now);
-        
         now += inc;
 
-        assertEquals(0.4342, detector.p(now), 0.01);
+        detector.record(now);
+        now += inc;
 
-        assertEquals(26.491, detector.p(now + 30000), 0.01);
+        detector.record(now);
+        now += inc;
+
+        detector.record(now);
+
+        now += inc;
+
+        assertFalse(detector.shouldConvict(now));
+
+        assertTrue(detector.shouldConvict(now + 30000));
     }
 }

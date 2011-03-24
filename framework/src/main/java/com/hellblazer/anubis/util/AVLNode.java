@@ -12,27 +12,13 @@ public class AVLNode<E> {
     ArrayList<E> _myElements   = new ArrayList<E>();
     int          _height;
 
-    public AVLNode(E data, AVLNode<E> parent, AVLNode<E> left, AVLNode<E> right) {
-        this._parent = parent;
-        this._left = left;
-        this._right = right;
-        _height = _parent._height + 1;
+    public AVLNode(E data) {
         if (data == null) {
             throw new NullPointerException(
                                            "Passed data to be stored cannot be Null.");
-        } else {
-            this._data = data;
         }
-    }
-
-    public AVLNode(E data, AVLNode<E> leftS, AVLNode<E> rightS) {
-        if (data == null)
-            throw new NullPointerException(
-                                           "Passed data to be stored cannot be Null.");
-        else
-            this._data = data;
-        _left = leftS;
-        _right = rightS;
+        this._data = data;
+        _height = 0;
     }
 
     public AVLNode(E data, AVLNode<E> parent) {
@@ -43,30 +29,42 @@ public class AVLNode<E> {
         _data = data;
     }
 
-    public AVLNode(E data) {
+    public AVLNode(E data, AVLNode<E> leftS, AVLNode<E> rightS) {
         if (data == null) {
             throw new NullPointerException(
                                            "Passed data to be stored cannot be Null.");
-        } else {
-            this._data = data;
         }
-        _height = 0;
+        this._data = data;
+        _left = leftS;
+        _right = rightS;
+    }
+
+    public AVLNode(E data, AVLNode<E> parent, AVLNode<E> left, AVLNode<E> right) {
+        this._parent = parent;
+        this._left = left;
+        this._right = right;
+        _height = _parent._height + 1;
+        if (data == null) {
+            throw new NullPointerException(
+                                           "Passed data to be stored cannot be Null.");
+        }
+        this._data = data;
+    }
+
+    public int balanceFactor() {
+        return heightRChild() - heightLChild();
     }
 
     public void recalculateHeight() {
         _height = Math.max(heightLChild(), heightRChild()) + 1;
     }
 
-    public int balanceFactor() {
-        return (heightRChild() - heightLChild());
-    }
-
     private int heightLChild() {
-        return (_left == null ? 0 : _left._height);
+        return _left == null ? 0 : _left._height;
     }
 
     private int heightRChild() {
-        return (_right == null ? 0 : _right._height);
+        return _right == null ? 0 : _right._height;
     }
 
     E getData() {
