@@ -19,6 +19,7 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.test.controller;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -120,7 +121,7 @@ public class Controller implements HeartbeatReceiver {
     }
 
     @Deployed
-    public synchronized void deploy() {
+    public synchronized void deploy() throws IOException {
         timer.schedule(getTask(), checkPeriod, checkPeriod);
     }
 
