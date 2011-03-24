@@ -22,9 +22,9 @@ package org.smartfrog.services.anubis.partition.test.node;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -42,18 +42,18 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class TestMgr {
 
-    private static final long STATSRATE = 5;
-    private InetSocketAddress connectionAddress;
-    private Set<TestConnection> connections = new HashSet<TestConnection>();
-    private TestServer connectionServer = null;
-    private ConnectionSet connectionSet = null;
-    private Identity identity;
-    private long lastStats = 0;
-    private PartitionManager partitionManager = null;
-    private StatsManager statistics = new StatsManager();
-    private long statsInterval = STATSRATE * 1000; // adjusts with heartbeat
-                                                   // timing
-    private boolean testable = true;
+    private static final long         STATSRATE     = 5;
+    private InetSocketAddress         connectionAddress;
+    private final Set<TestConnection> connections   = new CopyOnWriteArraySet<TestConnection>();
+    private TestServer                connectionServer;
+    private ConnectionSet             connectionSet = null;
+    private Identity                  identity;
+    private volatile long             lastStats     = 0;
+    private PartitionManager    partitionManager;
+    private final StatsManager        statistics    = new StatsManager();
+    private volatile long             statsInterval = STATSRATE * 1000;                         // adjusts with heartbeat
+    // timing
+    private boolean                   testable      = true;
 
     public TestMgr(String host, int port, PartitionManager partitionManager,
                    int id) throws IOException, Exception {

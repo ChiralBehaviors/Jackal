@@ -40,6 +40,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.anubis.annotations.DeployedPostProcessor;
 import com.hellblazer.anubis.basiccomms.nio.SocketOptions;
+import com.hellblazer.anubis.partition.coms.gossip.AdaptiveFailureDetectorFactory;
 import com.hellblazer.anubis.partition.coms.gossip.Communications;
 import com.hellblazer.anubis.partition.coms.gossip.FailureDetectorFactory;
 import com.hellblazer.anubis.partition.coms.gossip.Gossip;
@@ -89,8 +90,20 @@ public class ControllerGossipConfiguration {
 
     @Bean
     public FailureDetectorFactory failureDetectorFactory() {
-        return new PhiFailureDetectorFactory(16, 1000, heartbeatInterval(),
-                                             500, 100, true);
+        return phiAccrualFailureDetectorFactory();
+    }
+
+    protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
+        return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
+                                                       * heartbeatTimeout(),
+                                             10, 1, false);
+    }
+
+    protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
+        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
+                                                  heartbeatInterval()
+                                                          * heartbeatTimeout(),
+                                                  200, 1.0);
     }
 
     @Bean

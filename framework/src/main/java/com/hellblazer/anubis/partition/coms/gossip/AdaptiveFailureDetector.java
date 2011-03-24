@@ -72,6 +72,7 @@ public class AdaptiveFailureDetector extends Window implements
     public boolean shouldConvict(long now) {
         double delta = (now - last) * scale;
         double countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
-        return countLessThanEqualTo / count >= threshold;
+        boolean convict = countLessThanEqualTo / count >= threshold;
+        return convict;
     }
 }

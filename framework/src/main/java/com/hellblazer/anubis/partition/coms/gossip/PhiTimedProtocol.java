@@ -80,8 +80,8 @@ public class PhiTimedProtocol extends BitView implements HeartbeatProtocol {
 
     @Override
     public boolean isNotTimely(long timenow, long timebound) {
-        // return timenow - time > timebound || time - timenow > timebound;
-        return gossip.shouldConvict(heartbeatAddress, timenow);
+        return timenow - time > timebound || time - timenow > timebound;
+        // return gossip.shouldConvict(heartbeatAddress, timenow);
     }
 
     @Override
