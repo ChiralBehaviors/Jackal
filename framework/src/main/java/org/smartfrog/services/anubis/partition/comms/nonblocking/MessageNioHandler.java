@@ -45,7 +45,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
-import com.hellblazer.anubis.util.HexDump;
+import com.hellblazer.jackal.util.HexDump;
 
 import static java.lang.String.*;
 

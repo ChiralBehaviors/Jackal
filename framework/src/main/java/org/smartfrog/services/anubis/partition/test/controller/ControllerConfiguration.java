@@ -12,7 +12,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.anubis.annotations.DeployedPostProcessor;
+import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 
 @Configuration
 public class ControllerConfiguration {

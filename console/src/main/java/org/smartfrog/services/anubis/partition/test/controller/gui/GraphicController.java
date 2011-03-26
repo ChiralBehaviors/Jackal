@@ -34,7 +34,7 @@ import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
-import com.hellblazer.anubis.annotations.Deployed;
+import com.hellblazer.jackal.annotations.Deployed;
 
 /**
  * 

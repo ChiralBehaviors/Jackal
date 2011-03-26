@@ -1,19 +1,40 @@
-package org.smartfrog.services.anubis;
+/** 
+ * (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+package com.hellblazer.jackal.gossip.configuration;
 
+import static java.util.Arrays.asList;
+
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.security.SecureRandom;
+import java.util.Collection;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
-import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
@@ -26,9 +47,33 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
+import com.hellblazer.jackal.gossip.AdaptiveFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.Communications;
+import com.hellblazer.jackal.gossip.FailureDetectorFactory;
+import com.hellblazer.jackal.gossip.Gossip;
+import com.hellblazer.jackal.gossip.GossipHeartbeatProtocolFactory;
+import com.hellblazer.jackal.gossip.PhiFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.SystemView;
+import com.hellblazer.jackal.nio.SocketOptions;
 
+/**
+ * Basic gossip based discovery/replication Anubis configuration.
+ * 
+ * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
+ * 
+ */
 @Configuration
-public class BasicConfiguration {
+public class GossipConfiguration {
+
+    @Bean
+    public Communications communications() throws IOException {
+        return new Communications("Gossip Endpoint Handler for "
+                                  + partitionIdentity(), gossipEndpoint(),
+                                  socketOptions(),
+                                  Executors.newFixedThreadPool(3),
+                                  Executors.newFixedThreadPool(3));
+
+    }
 
     @Bean
     public ConnectionSet connectionSet() throws Exception {
@@ -53,6 +98,38 @@ public class BasicConfiguration {
     @Bean
     public Epoch epoch() {
         return new Epoch();
+    }
+
+    @Bean
+    public FailureDetectorFactory failureDetectorFactory() {
+        return phiAccrualFailureDetectorFactory();
+    }
+
+    protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
+        return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
+                                                       * heartbeatTimeout(),
+                                             10, 1, false       );
+    }
+
+    protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
+        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
+                                                  heartbeatInterval()
+                                                          * heartbeatTimeout(),
+                                                  200, 1.0);
+    }
+
+    @Bean
+    public Gossip gossip() throws IOException {
+        return new Gossip(systemView(), new SecureRandom(), communications(),
+                          gossipInterval(), gossipIntervalTimeUnit(),
+                          failureDetectorFactory());
+    }
+
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory()
+                                                              throws IOException {
+        // return new TimedProtocolFactory();
+        return new GossipHeartbeatProtocolFactory(gossip());
     }
 
     @Bean
@@ -81,6 +158,13 @@ public class BasicConfiguration {
         PartitionProtocol protocol = new PartitionProtocol(partitionIdentity(),
                                                            partition());
         return protocol;
+    }
+
+    @Bean
+    public SystemView systemView() throws IOException {
+        return new SystemView(new SecureRandom(),
+                              communications().getLocalAddress(), seedHosts(),
+                              quarantineDelay(), unreachableNodeDelay());
     }
 
     @Bean
@@ -115,38 +199,24 @@ public class BasicConfiguration {
         return true;
     }
 
-    protected HeartbeatCommsFactory heartbeatCommsFactory()
-                                                           throws UnknownHostException {
-        return new MulticastHeartbeatCommsFactory(wireSecurity(),
-                                                  heartbeatGroup(),
-                                                  contactAddress(),
-                                                  partitionIdentity());
+    protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
+        return new InetSocketAddress(contactHost(), 0);
     }
 
-    protected MulticastAddress heartbeatGroup() throws UnknownHostException {
-        return new MulticastAddress(heartbeatGroupMulticastAddress(),
-                                    heartbeatGroupPort(), heartbeatGroupTTL());
-    }
-
-    protected InetAddress heartbeatGroupMulticastAddress()
-                                                          throws UnknownHostException {
-        return InetAddress.getByName("233.1.2.30");
-    }
-
-    protected int heartbeatGroupPort() {
-        return 1966;
-    }
-
-    protected int heartbeatGroupTTL() {
+    protected int gossipInterval() {
         return 1;
+    }
+
+    protected TimeUnit gossipIntervalTimeUnit() {
+        return TimeUnit.SECONDS;
+    }
+
+    protected HeartbeatCommsFactory heartbeatCommsFactory() throws IOException {
+        return gossip();
     }
 
     protected long heartbeatInterval() {
         return 2000L;
-    }
-
-    protected HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        return new TimedProtocolFactory();
     }
 
     protected long heartbeatTimeout() {
@@ -170,5 +240,22 @@ public class BasicConfiguration {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    protected int quarantineDelay() {
+        return 1000;
+    }
+
+    protected Collection<InetSocketAddress> seedHosts()
+                                                       throws UnknownHostException {
+        return asList(gossipEndpoint());
+    }
+
+    protected SocketOptions socketOptions() {
+        return new SocketOptions();
+    }
+
+    protected int unreachableNodeDelay() {
+        return 500000;
     }
 }

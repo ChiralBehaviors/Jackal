@@ -42,7 +42,7 @@ import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
-import com.hellblazer.anubis.annotations.Deployed;
+import com.hellblazer.jackal.annotations.Deployed;
 
 public class Locator implements PartitionNotification, AnubisLocator {
 

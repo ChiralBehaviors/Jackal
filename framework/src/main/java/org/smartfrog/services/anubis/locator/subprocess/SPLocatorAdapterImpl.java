@@ -31,7 +31,7 @@ import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.ValueData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
-import com.hellblazer.anubis.annotations.Deployed;
+import com.hellblazer.jackal.annotations.Deployed;
 
 public class SPLocatorAdapterImpl implements SPLocatorAdapter {
 

@@ -35,7 +35,7 @@ import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.AnubisValue;
 import org.smartfrog.services.anubis.locator.Locator;
 
-import com.hellblazer.anubis.annotations.Deployed;
+import com.hellblazer.jackal.annotations.Deployed;
 
 @SuppressWarnings("rawtypes")
 public class Test {
