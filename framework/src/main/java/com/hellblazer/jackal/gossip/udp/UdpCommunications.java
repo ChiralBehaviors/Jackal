@@ -118,18 +118,20 @@ public class UdpCommunications implements GossipCommunications {
 
     }
 
+    private static final int                  DEFAULT_RECEIVE_BUFFER_MULTIPLIER = 4;
+    private static final int                  DEFAULT_SEND_BUFFER_MULTIPLIER    = 4;
     @SuppressWarnings("unchecked")
-    private static final List<HeartbeatState> EMPTY_HEATBEAT_LIST = Collections.EMPTY_LIST;
-    private static final Logger               log                 = Logger.getLogger(UdpCommunications.class.getCanonicalName());
-    private static final int                  MAGIC_NUMBER        = 24051967;
+    private static final List<HeartbeatState> EMPTY_HEATBEAT_LIST               = Collections.EMPTY_LIST;
+    private static final Logger               log                               = Logger.getLogger(UdpCommunications.class.getCanonicalName());
+    private static final int                  MAGIC_NUMBER                      = 24051967;
     private static final int                  MAX_DIGESTS;
     /**
      * MAX_SEG_SIZE is a default maximum packet size. This may be small, but any
      * network will be capable of handling this size so the packet transfer
      * semantics are atomic (no fragmentation in the network).
      */
-    private static final int                  MAX_SEG_SIZE        = 1500;
-    private static final int                  RECEIVE_TIME_OUT    = 2000;
+    private static final int                  MAX_SEG_SIZE                      = 1500;
+    private static final int                  RECEIVE_TIME_OUT                  = 2000;
 
     static {
         MAX_DIGESTS = (MAX_SEG_SIZE - 4 - 4) / DIGEST_BYTE_SIZE;
@@ -151,11 +153,19 @@ public class UdpCommunications implements GossipCommunications {
 
     public UdpCommunications(InetSocketAddress endpoint,
                              ExecutorService msgDispatcher) throws IOException {
+        this(endpoint, msgDispatcher, DEFAULT_RECEIVE_BUFFER_MULTIPLIER,
+             DEFAULT_SEND_BUFFER_MULTIPLIER);
+    }
+
+    public UdpCommunications(InetSocketAddress endpoint,
+                             ExecutorService msgDispatcher,
+                             int receiveBufferMultiplier,
+                             int sendBufferMultiplier) throws IOException {
         dispatcher = msgDispatcher;
         socket = new DatagramSocket(endpoint.getPort(), endpoint.getAddress());
-        socket.setReceiveBufferSize(MAX_SEG_SIZE * 3);
+        socket.setReceiveBufferSize(MAX_SEG_SIZE * receiveBufferMultiplier);
         socket.setReuseAddress(true);
-        socket.setSendBufferSize(MAX_SEG_SIZE * 3);
+        socket.setSendBufferSize(MAX_SEG_SIZE * sendBufferMultiplier);
         socket.setSendBufferSize(RECEIVE_TIME_OUT);
     }
 
