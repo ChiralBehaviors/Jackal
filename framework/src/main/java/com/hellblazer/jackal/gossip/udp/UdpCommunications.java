@@ -27,13 +27,14 @@ import static java.util.Arrays.asList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,22 +102,17 @@ public class UdpCommunications implements GossipCommunications {
         private void sendDigests(List<Digest> digests, byte messageType) {
             ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
-            int nextSublist = 0;
-            while (nextSublist < digests.size()) {
-                buffer.clear();
-                List<Digest> sublist = digests.subList(nextSublist,
-                                                       min(MAX_DIGESTS,
-                                                           digests.size()
-                                                                   - nextSublist));
-                nextSublist += sublist.size();
+            for (int i = 0; i < digests.size();) {
+                int count = min(MAX_DIGESTS, digests.size() - i);
                 buffer.position(4);
                 buffer.put(messageType);
-                buffer.putInt(digests.size());
-                for (Digest digest : digests) {
-                    digest.writeTo(buffer);
+                buffer.putInt(count);
+                for (int j = i; j < count; j++) {
+                    digests.get(j).writeTo(buffer);
                 }
                 buffer.flip();
                 send(buffer, target);
+                i += count;
             }
         }
 
@@ -146,19 +142,17 @@ public class UdpCommunications implements GossipCommunications {
         stream.close();
         return baos.toString();
     }
- 
-    private final ExecutorService   dispatcher;
-    private Gossip                  gossip;
-    private final AtomicBoolean     running          = new AtomicBoolean();
-    private final Executor          serviceEvaluator = Executors.newSingleThreadExecutor();
-    private final DatagramChannel   socketChannel;
+
+    private final ExecutorService dispatcher;
+    private Gossip                gossip;
+    private final AtomicBoolean   running          = new AtomicBoolean();
+    private final Executor        serviceEvaluator = Executors.newSingleThreadExecutor();
+    private final DatagramSocket  socket;
 
     public UdpCommunications(InetSocketAddress endpoint,
-                             ExecutorService msgDispatcher) throws IOException { 
+                             ExecutorService msgDispatcher) throws IOException {
         dispatcher = msgDispatcher;
-        socketChannel = DatagramChannel.open();
-        socketChannel.connect(endpoint);
-        DatagramSocket socket = socketChannel.socket();
+        socket = new DatagramSocket(endpoint.getPort(), endpoint.getAddress());
         socket.setReceiveBufferSize(MAX_SEG_SIZE * 3);
         socket.setReuseAddress(true);
         socket.setSendBufferSize(MAX_SEG_SIZE * 3);
@@ -174,7 +168,6 @@ public class UdpCommunications implements GossipCommunications {
 
     @Override
     public InetSocketAddress getLocalAddress() {
-        DatagramSocket socket = socketChannel.socket();
         return new InetSocketAddress(socket.getLocalAddress(),
                                      socket.getLocalPort());
     }
@@ -200,11 +193,7 @@ public class UdpCommunications implements GossipCommunications {
     @Override
     public void terminate() {
         if (running.compareAndSet(true, false)) {
-            try {
-                socketChannel.close();
-            } catch (IOException e) {
-                log.log(Level.FINEST, "Exception closing the socket", e);
-            }
+            socket.close();
         }
     }
 
@@ -241,10 +230,8 @@ public class UdpCommunications implements GossipCommunications {
 
     private void handleReply(final InetSocketAddress target, ByteBuffer msg) {
         int digestCount = msg.getInt();
-        int stateCount = msg.getInt();
         if (log.isLoggable(Level.FINER)) {
-            log.finer("Handling reply, digest count: " + digestCount
-                      + " state count: " + stateCount);
+            log.finer("Handling reply, digest count: " + digestCount);
         }
         final List<Digest> digests = new ArrayList<Digest>(digestCount);
         for (int i = 0; i < digestCount; i++) {
@@ -344,7 +331,10 @@ public class UdpCommunications implements GossipCommunications {
     private void send(ByteBuffer buffer, SocketAddress target) {
         buffer.putInt(0, MAGIC_NUMBER);
         try {
-            socketChannel.send(buffer, target);
+            byte[] bytes = buffer.array();
+            DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+            packet.setSocketAddress(target);
+            socket.send(packet);
         } catch (IOException e) {
             if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Error sending packet", e);
@@ -359,18 +349,20 @@ public class UdpCommunications implements GossipCommunications {
      *            - the buffer to use to receive the datagram
      * @throws IOException
      */
-    private void service(ByteBuffer buffer) throws IOException {
-        InetSocketAddress sender = (InetSocketAddress) socketChannel.receive(buffer);
-        buffer.flip();
+    private void service(DatagramPacket packet) throws IOException {
+        socket.receive(packet);
+        ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
+        buffer.order(ByteOrder.BIG_ENDIAN);
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(prettyPrint(sender, buffer.array()));
+            log.finest(prettyPrint(packet.getSocketAddress(), buffer.array()));
         } else if (log.isLoggable(Level.FINE)) {
-            log.fine("Received packet from: " + sender);
+            log.fine("Received packet from: " + packet.getSocketAddress());
         }
         int magic = buffer.getInt();
         if (MAGIC_NUMBER == magic) {
             try {
-                processInbound(sender, buffer);
+                processInbound((InetSocketAddress) packet.getSocketAddress(),
+                               buffer);
             } catch (BufferOverflowException e) {
                 if (log.isLoggable(Level.WARNING)) {
                     log.warning(format("Invalid message: %s", buffer.array()));
@@ -394,13 +386,19 @@ public class UdpCommunications implements GossipCommunications {
             @Override
             public void run() {
                 byte[] inBytes = new byte[MAX_SEG_SIZE];
-                ByteBuffer buffer = ByteBuffer.wrap(inBytes);
-                buffer.order(ByteOrder.BIG_ENDIAN);
+                DatagramPacket packet = new DatagramPacket(inBytes,
+                                                           inBytes.length);
                 while (running.get()) {
                     try {
-                        // Arrays.fill(inBytes, (byte) 0);
-                        buffer.clear();
-                        service(buffer);
+                        service(packet);
+                    } catch (SocketException e) {
+                        if ("Socket closed".equals(e.getMessage())) {
+                            if (log.isLoggable(Level.INFO)) {
+                                log.info("Socket closed, shutting down");
+                                terminate();
+                                return;
+                            }
+                        }
                     } catch (Throwable e) {
                         if (log.isLoggable(Level.WARNING)) {
                             log.log(Level.WARNING,

@@ -72,7 +72,7 @@ public class GossipConfiguration {
 
     @Bean
     public GossipCommunications communications() throws IOException {
-        return tcpCommunications();
+        return udpCommunications();
     }
 
     protected GossipCommunications udpCommunications() throws IOException {
@@ -213,7 +213,7 @@ public class GossipConfiguration {
     }
 
     protected int gossipInterval() {
-        return 4;
+        return 2;
     }
 
     protected TimeUnit gossipIntervalTimeUnit() {
