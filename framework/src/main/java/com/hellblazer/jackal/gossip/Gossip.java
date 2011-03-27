@@ -55,7 +55,6 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 import com.hellblazer.jackal.gossip.Digest.DigestComparator;
-import com.hellblazer.jackal.gossip.tcp.GossipHandler;
 
 /**
  * The embodiment of the gossip protocol. This protocol replicates the Anubis
@@ -231,7 +230,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the handler to send the reply of digests and heartbeat
      *            states
      */
-    public void gossip(List<Digest> digests, GossipHandler gossipHandler) {
+    public void gossip(List<Digest> digests, GossipMessages gossipHandler) {
         sort(digests);
         examine(digests, gossipHandler);
     }
@@ -262,7 +261,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            gossiper would like updates for
      */
     public void reply(List<Digest> digests, List<HeartbeatState> remoteStates,
-                      GossipHandler gossipHandler) {
+                      GossipMessages gossipHandler) {
         apply(remoteStates);
 
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
@@ -483,7 +482,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         connect(address, endpoint, connectAction);
     }
 
-    protected void examine(List<Digest> digests, GossipHandler gossipHandler) {
+    protected void examine(List<Digest> digests, GossipMessages gossipHandler) {
         List<Digest> deltaDigests = new ArrayList<Digest>();
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
         for (Digest digest : digests) {
