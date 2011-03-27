@@ -30,7 +30,6 @@ import java.io.PrintStream;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -147,8 +146,7 @@ public class UdpCommunications implements GossipCommunications {
         stream.close();
         return baos.toString();
     }
-
-    private final InetSocketAddress address;
+ 
     private final ExecutorService   dispatcher;
     private Gossip                  gossip;
     private final AtomicBoolean     running          = new AtomicBoolean();
@@ -156,16 +154,15 @@ public class UdpCommunications implements GossipCommunications {
     private final DatagramChannel   socketChannel;
 
     public UdpCommunications(InetSocketAddress endpoint,
-                             ExecutorService msgDispatcher)
-                                                           throws SocketException {
-        address = endpoint;
+                             ExecutorService msgDispatcher) throws IOException { 
         dispatcher = msgDispatcher;
-        DatagramSocket socket = new DatagramSocket();
+        socketChannel = DatagramChannel.open();
+        socketChannel.connect(endpoint);
+        DatagramSocket socket = socketChannel.socket();
         socket.setReceiveBufferSize(MAX_SEG_SIZE * 3);
         socket.setReuseAddress(true);
         socket.setSendBufferSize(MAX_SEG_SIZE * 3);
         socket.setSendBufferSize(RECEIVE_TIME_OUT);
-        socketChannel = socket.getChannel();
     }
 
     @Override
@@ -193,13 +190,6 @@ public class UdpCommunications implements GossipCommunications {
     @Override
     public void start() {
         if (running.compareAndSet(false, true)) {
-            try {
-                socketChannel.connect(address);
-            } catch (IOException e) {
-                log.log(Level.SEVERE,
-                        "Cannot connect to socket, shutting down", e);
-                running.set(false);
-            }
             serviceEvaluator.execute(serviceTask());
         }
     }

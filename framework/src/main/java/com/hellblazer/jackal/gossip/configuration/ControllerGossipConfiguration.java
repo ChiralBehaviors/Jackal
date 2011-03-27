@@ -44,11 +44,13 @@ import org.springframework.context.annotation.Configuration;
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
+import com.hellblazer.jackal.gossip.GossipCommunications;
 import com.hellblazer.jackal.gossip.HeartbeatState;
 import com.hellblazer.jackal.gossip.SystemView;
 import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.tcp.TcpCommunications;
+import com.hellblazer.jackal.gossip.udp.UdpCommunications;
 import com.hellblazer.jackal.nio.SocketOptions;
 
 /**
@@ -66,13 +68,23 @@ public class ControllerGossipConfiguration {
     }
 
     @Bean
-    public TcpCommunications communications() throws IOException {
+    public GossipCommunications communications() throws IOException {
+        return tcpCommunications();
+    }
+
+    protected GossipCommunications udpCommunications() throws IOException {
+        return new UdpCommunications(gossipEndpoint(),
+                                     Executors.newFixedThreadPool(3));
+    }
+
+    protected GossipCommunications tcpCommunications() throws IOException,
+                                                      UnknownHostException {
         ServerSocketChannel channel = bind(socketOptions(), gossipEndpoint());
         return new TcpCommunications("Test controller gossip endpoint handler "
                                      + partitionIdentity(), channel,
                                      getLocalAddress(channel), socketOptions(),
                                      Executors.newFixedThreadPool(3),
-                                     Executors.newFixedThreadPool(2));
+                                     Executors.newFixedThreadPool(3));
     }
 
     public InetAddress contactHost() throws UnknownHostException {
