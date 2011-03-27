@@ -183,8 +183,8 @@ public class EndToEndTest extends TestCase {
                                                                          3000,
                                                                          250,
                                                                          1.0,
-                                                                         true);
-        Gossip gossip = new Gossip(view, new Random(), communications, 1,
+                                                                         false);
+        Gossip gossip = new Gossip(view, new Random(), communications, 4,
                                    TimeUnit.SECONDS, fdFactory);
         gossip.create(receiver);
         gossip.sendHeartbeat(new HeartbeatState(

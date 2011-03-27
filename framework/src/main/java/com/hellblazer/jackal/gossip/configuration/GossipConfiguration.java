@@ -201,7 +201,7 @@ public class GossipConfiguration {
     }
 
     protected int gossipInterval() {
-        return 1;
+        return 4;
     }
 
     protected TimeUnit gossipIntervalTimeUnit() {
