@@ -50,6 +50,8 @@
 				<version>2.7.1</version>
 				<configuration>
 					<forkMode>always</forkMode>
+                    <argLine>-ea</argLine>
+                    <argLine>-Xmx512m</argLine>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -15,15 +15,19 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.gossip;
+package com.hellblazer.jackal.gossip.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 
+import com.hellblazer.jackal.gossip.Endpoint;
+import com.hellblazer.jackal.gossip.Gossip;
+import com.hellblazer.jackal.gossip.GossipCommunications;
 import com.hellblazer.jackal.nio.CommunicationsHandler;
-import com.hellblazer.jackal.nio.ServerChannelHandler;
+import com.hellblazer.jackal.nio.ServerSocketChannelHandler;
 import com.hellblazer.jackal.nio.SocketOptions;
 
 /**
@@ -32,22 +36,21 @@ import com.hellblazer.jackal.nio.SocketOptions;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  */
 
-public class Communications extends ServerChannelHandler implements
+public class TcpCommunications extends ServerSocketChannelHandler implements
         GossipCommunications {
     private Gossip gossip;
 
-    public Communications(String handlerName,
-                          InetSocketAddress endpointAddress,
-                          SocketOptions socketOptions,
-                          ExecutorService commsExec,
-                          ExecutorService dispatchExec) throws IOException {
-        super(handlerName, endpointAddress, socketOptions, commsExec,
+    public TcpCommunications(String handlerName, SelectableChannel channel,
+                      InetSocketAddress endpointAddress,
+                      SocketOptions socketOptions, ExecutorService commsExec,
+                      ExecutorService dispatchExec) throws IOException {
+        super(handlerName, channel, endpointAddress, socketOptions, commsExec,
               dispatchExec);
     }
 
     @Override
-    public GossipHandler connect(InetSocketAddress address, Endpoint endpoint,
-                                 Runnable connectAction) throws IOException {
+    public void connect(InetSocketAddress address, Endpoint endpoint,
+                        Runnable connectAction) throws IOException {
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         GossipHandler handler = new GossipHandler(gossip, this, channel);
@@ -59,7 +62,6 @@ public class Communications extends ServerChannelHandler implements
         } else {
             selectForConnect(handler, connectAction);
         }
-        return handler;
     }
 
     public void setGossip(Gossip gossip) {

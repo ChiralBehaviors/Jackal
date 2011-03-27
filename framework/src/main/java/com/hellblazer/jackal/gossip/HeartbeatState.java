@@ -17,6 +17,7 @@
  */
 package com.hellblazer.jackal.gossip;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -28,6 +29,7 @@ import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+
 
 /**
  * The heartbeat state replicated by the gossip protocol
@@ -68,15 +70,15 @@ public class HeartbeatState implements Heartbeat {
 
         candidate = new Identity(msg);
         discoveryOnly = msg.get() > 0 ? true : false;
-        heartbeatAddress = GossipHandler.readInetAddress(msg);
+        heartbeatAddress = HeartbeatState.readInetAddress(msg);
         version = msg.getLong();
         time = msg.getLong();
         msgLinks = new NodeIdSet(msg);
         preferred = msg.get() > 0 ? true : false;
         sender = new Identity(msg);
-        senderAddress = GossipHandler.readInetAddress(msg);
+        senderAddress = HeartbeatState.readInetAddress(msg);
         stable = msg.get() > 0 ? true : false;
-        testInterface = GossipHandler.readInetAddress(msg);
+        testInterface = HeartbeatState.readInetAddress(msg);
         view = new NodeIdSet(msg);
         viewNumber = msg.getLong();
         viewTimeStamp = msg.getLong();
@@ -395,7 +397,7 @@ public class HeartbeatState implements Heartbeat {
         } else {
             msg.put((byte) 0);
         }
-        GossipHandler.writeInetAddress(heartbeatAddress, msg);
+        HeartbeatState.writeInetAddress(heartbeatAddress, msg);
         msg.putLong(version);
         msg.putLong(time);
         msgLinks.writeTo(msg);
@@ -405,15 +407,42 @@ public class HeartbeatState implements Heartbeat {
             msg.put((byte) 0);
         }
         sender.writeTo(msg);
-        GossipHandler.writeInetAddress(senderAddress, msg);
+        HeartbeatState.writeInetAddress(senderAddress, msg);
         if (stable) {
             msg.put((byte) 1);
         } else {
             msg.put((byte) 0);
         }
-        GossipHandler.writeInetAddress(testInterface, msg);
+        HeartbeatState.writeInetAddress(testInterface, msg);
         view.writeTo(msg);
         msg.putLong(viewNumber);
         msg.putLong(viewTimeStamp);
+    }
+
+    public static InetSocketAddress readInetAddress(ByteBuffer msg)
+                                                                   throws UnknownHostException {
+        int length = msg.get();
+        if (length == 0) {
+            return null;
+        }
+    
+        byte[] address = new byte[length];
+        msg.get(address);
+        int port = msg.getInt();
+    
+        InetAddress inetAddress = InetAddress.getByAddress(address);
+        return new InetSocketAddress(inetAddress, port);
+    }
+
+    public static void writeInetAddress(InetSocketAddress ipaddress,
+                                        ByteBuffer bytes) {
+        if (ipaddress == null) {
+            bytes.put((byte) 0);
+            return;
+        }
+        byte[] address = ipaddress.getAddress().getAddress();
+        bytes.put((byte) address.length);
+        bytes.put(address);
+        bytes.putInt(ipaddress.getPort());
     }
 }

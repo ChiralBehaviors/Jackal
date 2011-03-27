@@ -19,20 +19,12 @@ package com.hellblazer.jackal.gossip;
 
 /**
  * 
- * Instead of providing information of a boolean nature (trust vs. suspect),
- * this failure detector outputs a suspicion level on a continuous scale. The
- * protocol samples the arrival time of heartbeats and maintains a sliding
- * window of the most recent samples. This window is used to estimate the
- * arrival time of the next heartbeat, similarly to conventional adaptive
- * failure detectors. The distribution of past samples is used as an
- * approximation for the probabilistic distribution of future heartbeat
- * messages. With this information, it is possible to compute a value phi with a
- * scale that changes dynamically to match recent network conditions.
+ * The failure detector contract
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public interface AccrualFailureDetector {
+public interface FailureDetector {
 
     /**
      * Answer true if the suspicion level of the detector has exceeded the
@@ -45,7 +37,7 @@ public interface AccrualFailureDetector {
     public abstract boolean shouldConvict(long now);
 
     /**
-     * Record the inter arrival time of a heartbeat.
+     * Record the arrival time of a heartbeat.
      */
     public abstract void record(long now);
 

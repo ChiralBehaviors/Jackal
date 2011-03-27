@@ -17,12 +17,15 @@
  */
 package com.hellblazer.jackal.gossip.configuration;
 
+import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.bind;
+import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.getLocalAddress;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.channels.ServerSocketChannel;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.concurrent.Executors;
@@ -47,13 +50,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
-import com.hellblazer.jackal.gossip.AdaptiveFailureDetectorFactory;
-import com.hellblazer.jackal.gossip.Communications;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.GossipHeartbeatProtocolFactory;
-import com.hellblazer.jackal.gossip.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.SystemView;
+import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.tcp.TcpCommunications;
 import com.hellblazer.jackal.nio.SocketOptions;
 
 /**
@@ -66,13 +69,13 @@ import com.hellblazer.jackal.nio.SocketOptions;
 public class GossipConfiguration {
 
     @Bean
-    public Communications communications() throws IOException {
-        return new Communications("Gossip Endpoint Handler for "
-                                  + partitionIdentity(), gossipEndpoint(),
-                                  socketOptions(),
-                                  Executors.newFixedThreadPool(3),
-                                  Executors.newFixedThreadPool(3));
-
+    public TcpCommunications communications() throws IOException {
+        ServerSocketChannel channel = bind(socketOptions(), gossipEndpoint());
+        return new TcpCommunications("Gossip Endpoint Handler for "
+                                     + partitionIdentity(), channel,
+                                     getLocalAddress(channel), socketOptions(),
+                                     Executors.newFixedThreadPool(3),
+                                     Executors.newFixedThreadPool(3));
     }
 
     @Bean
@@ -103,19 +106,6 @@ public class GossipConfiguration {
     @Bean
     public FailureDetectorFactory failureDetectorFactory() {
         return phiAccrualFailureDetectorFactory();
-    }
-
-    protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
-                                                       * heartbeatTimeout(),
-                                             10, 1, false       );
-    }
-
-    protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
-                                                  heartbeatInterval()
-                                                          * heartbeatTimeout(),
-                                                  200, 1.0);
     }
 
     @Bean
@@ -183,6 +173,13 @@ public class GossipConfiguration {
         return new NoSecurityImpl();
     }
 
+    protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
+        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
+                                                  heartbeatInterval()
+                                                          * heartbeatTimeout(),
+                                                  200, 1.0);
+    }
+
     protected InetSocketAddress contactAddress() throws UnknownHostException {
         return new InetSocketAddress(contactHost(), contactPort());
     }
@@ -240,6 +237,12 @@ public class GossipConfiguration {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
+        return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
+                                                       * heartbeatTimeout(),
+                                             10, 1, false);
     }
 
     protected int quarantineDelay() {

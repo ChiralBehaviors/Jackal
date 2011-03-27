@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 public class Endpoint {
     protected static Logger              logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
 
-    private final AccrualFailureDetector fd;
+    private final FailureDetector fd;
     private volatile GossipMessages      handler;
     private volatile HeartbeatState      heartbeat;
     private volatile boolean             isAlive = true;
@@ -40,7 +40,7 @@ public class Endpoint {
     }
 
     public Endpoint(HeartbeatState heartBeatState,
-                    AccrualFailureDetector failureDetector) {
+                    FailureDetector failureDetector) {
         heartbeat = heartBeatState;
         fd = failureDetector;
     }

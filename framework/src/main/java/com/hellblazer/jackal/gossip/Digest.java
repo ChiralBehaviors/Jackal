@@ -23,6 +23,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 
+
 /**
  * Contains information about a specified list of Endpoints and the largest
  * version of the state they have generated as known by the local endpoint.
@@ -48,7 +49,7 @@ public class Digest {
     private final long              version;
 
     public Digest(ByteBuffer msg) throws UnknownHostException {
-        address = GossipHandler.readInetAddress(msg);
+        address = HeartbeatState.readInetAddress(msg);
         epoch = msg.getLong();
         version = msg.getLong();
     }
@@ -127,7 +128,7 @@ public class Digest {
     }
 
     public void writeTo(ByteBuffer buffer) {
-        GossipHandler.writeInetAddress(address, buffer);
+        HeartbeatState.writeInetAddress(address, buffer);
         buffer.putLong(epoch);
         buffer.putLong(version);
     }

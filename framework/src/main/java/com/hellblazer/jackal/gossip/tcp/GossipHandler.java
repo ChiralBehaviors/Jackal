@@ -15,13 +15,10 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.gossip;
+package com.hellblazer.jackal.gossip.tcp;
 
 import static java.lang.String.format;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -29,8 +26,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.hellblazer.jackal.gossip.Digest;
+import com.hellblazer.jackal.gossip.Gossip;
+import com.hellblazer.jackal.gossip.GossipMessages;
+import com.hellblazer.jackal.gossip.HeartbeatState;
 import com.hellblazer.jackal.nio.AbstractCommunicationsHandler;
-import com.hellblazer.jackal.nio.ServerChannelHandler;
+import com.hellblazer.jackal.nio.ChannelHandler;
 
 /**
  * The communications handler imlementing the gossip wire protocol
@@ -42,36 +43,9 @@ public class GossipHandler extends AbstractCommunicationsHandler implements
         GossipMessages {
     private static final Logger log = Logger.getLogger(GossipHandler.class.getCanonicalName());
 
-    public static InetSocketAddress readInetAddress(ByteBuffer msg)
-                                                                   throws UnknownHostException {
-        int length = msg.get();
-        if (length == 0) {
-            return null;
-        }
-
-        byte[] address = new byte[length];
-        msg.get(address);
-        int port = msg.getInt();
-
-        InetAddress inetAddress = InetAddress.getByAddress(address);
-        return new InetSocketAddress(inetAddress, port);
-    }
-
-    public static void writeInetAddress(InetSocketAddress ipaddress,
-                                        ByteBuffer bytes) {
-        if (ipaddress == null) {
-            bytes.put((byte) 0);
-            return;
-        }
-        byte[] address = ipaddress.getAddress().getAddress();
-        bytes.put((byte) address.length);
-        bytes.put(address);
-        bytes.putInt(ipaddress.getPort());
-    }
-
     private final Gossip gossip;
 
-    public GossipHandler(Gossip gossip, ServerChannelHandler handler,
+    public GossipHandler(Gossip gossip, ChannelHandler handler,
                          SocketChannel channel) {
         super(handler, channel);
         this.gossip = gossip;

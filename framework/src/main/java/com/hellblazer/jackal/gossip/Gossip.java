@@ -55,6 +55,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 import com.hellblazer.jackal.gossip.Digest.DigestComparator;
+import com.hellblazer.jackal.gossip.tcp.GossipHandler;
 
 /**
  * The embodiment of the gossip protocol. This protocol replicates the Anubis

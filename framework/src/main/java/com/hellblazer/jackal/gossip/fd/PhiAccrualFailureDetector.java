@@ -15,10 +15,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.gossip;
+package com.hellblazer.jackal.gossip.fd;
 
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.hellblazer.jackal.gossip.FailureDetector;
 import com.hellblazer.jackal.util.RunningAverage;
 import com.hellblazer.jackal.util.RunningMedian;
 import com.hellblazer.jackal.util.SampledWindow;
@@ -40,7 +41,7 @@ import com.hellblazer.jackal.util.SampledWindow;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class PhiAccrualFailureDetector implements AccrualFailureDetector {
+public class PhiAccrualFailureDetector implements FailureDetector {
     private double              last;
     private final double        minInterval;
     private final ReentrantLock stateLock = new ReentrantLock();
@@ -67,7 +68,7 @@ public class PhiAccrualFailureDetector implements AccrualFailureDetector {
     }
 
     /* (non-Javadoc)
-     * @see com.hellblazer.jackal.gossip.AccrualFailureDetector#record(long)
+     * @see com.hellblazer.jackal.gossip.FailureDetector#record(long)
      */
     @Override
     public void record(long now) {
@@ -102,7 +103,7 @@ public class PhiAccrualFailureDetector implements AccrualFailureDetector {
      * reported that the Exponential Distribution to be a better approximation,
      * because of the nature of the gossip channel and its impact on latency
      * 
-     * @see com.hellblazer.jackal.gossip.AccrualFailureDetector#shouldConvict(long)
+     * @see com.hellblazer.jackal.gossip.FailureDetector#shouldConvict(long)
      */
     @Override
     public boolean shouldConvict(long now) {
@@ -120,7 +121,7 @@ public class PhiAccrualFailureDetector implements AccrualFailureDetector {
             double phi = -1 * Math.log10(Math.pow(Math.E, -1 * delta / window.value()));
             boolean shouldConvict = phi > threshold;
             if (shouldConvict) {
-                System.out.println(window);
+                System.out.println("delta: " + delta);
             }
             return shouldConvict;
         } finally {

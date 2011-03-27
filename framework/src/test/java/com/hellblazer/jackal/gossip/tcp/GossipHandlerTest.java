@@ -15,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.gossip;
+package com.hellblazer.jackal.gossip.tcp;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -30,11 +30,11 @@ import junit.framework.TestCase;
 
 import com.hellblazer.jackal.gossip.Digest;
 import com.hellblazer.jackal.gossip.Gossip;
-import com.hellblazer.jackal.gossip.GossipHandler;
 import com.hellblazer.jackal.gossip.GossipMessages;
 import com.hellblazer.jackal.gossip.HeartbeatState;
+import com.hellblazer.jackal.gossip.tcp.GossipHandler;
 import com.hellblazer.jackal.nio.AbstractCommunicationsHandler;
-import com.hellblazer.jackal.nio.ServerChannelHandler;
+import com.hellblazer.jackal.nio.ChannelHandler;
 
 /**
  * Basic testing of the gossip handler
@@ -46,7 +46,7 @@ public class GossipHandlerTest extends TestCase {
     public void testDeliverGossip() throws Exception {
         Gossip gossip = mock(Gossip.class);
         SocketChannel channel = mock(SocketChannel.class);
-        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+        ChannelHandler handler = mock(ChannelHandler.class);
 
         Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
                                     0);
@@ -76,7 +76,7 @@ public class GossipHandlerTest extends TestCase {
     public void testDeliverReply() throws Exception {
         Gossip gossip = mock(Gossip.class);
         SocketChannel channel = mock(SocketChannel.class);
-        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+        ChannelHandler handler = mock(ChannelHandler.class);
 
         Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
                                     0);
@@ -118,7 +118,7 @@ public class GossipHandlerTest extends TestCase {
     public void testDeliverUpdate() throws Exception {
         Gossip gossip = mock(Gossip.class);
         SocketChannel channel = mock(SocketChannel.class);
-        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+        ChannelHandler handler = mock(ChannelHandler.class);
         HeartbeatState state1 = new HeartbeatState(new InetSocketAddress(0));
         HeartbeatState state2 = new HeartbeatState(new InetSocketAddress(1));
         HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));
@@ -143,7 +143,7 @@ public class GossipHandlerTest extends TestCase {
     public void testGossip() throws Exception {
         Gossip gossip = mock(Gossip.class);
         SocketChannel channel = mock(SocketChannel.class);
-        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+        ChannelHandler handler = mock(ChannelHandler.class);
 
         Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
                                     0);
@@ -178,7 +178,7 @@ public class GossipHandlerTest extends TestCase {
     public void testReply() throws Exception {
         Gossip gossip = mock(Gossip.class);
         SocketChannel channel = mock(SocketChannel.class);
-        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+        ChannelHandler handler = mock(ChannelHandler.class);
 
         Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
                                     0);
@@ -227,7 +227,7 @@ public class GossipHandlerTest extends TestCase {
     public void testUpdate() throws Exception {
         Gossip gossip = mock(Gossip.class);
         SocketChannel channel = mock(SocketChannel.class);
-        ServerChannelHandler handler = mock(ServerChannelHandler.class);
+        ChannelHandler handler = mock(ChannelHandler.class);
         HeartbeatState state1 = new HeartbeatState(new InetSocketAddress(0));
         HeartbeatState state2 = new HeartbeatState(new InetSocketAddress(1));
         HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));

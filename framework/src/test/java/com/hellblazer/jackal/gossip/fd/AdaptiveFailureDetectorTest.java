@@ -1,9 +1,9 @@
-package com.hellblazer.jackal.gossip;
+package com.hellblazer.jackal.gossip.fd;
 
 import java.util.Random;
 
-import com.hellblazer.jackal.gossip.AccrualFailureDetector;
-import com.hellblazer.jackal.gossip.AdaptiveFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.FailureDetector;
+import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
 
 import junit.framework.TestCase;
 
@@ -11,7 +11,7 @@ public class AdaptiveFailureDetectorTest extends TestCase {
 
     public void testDetector() throws Exception {
 
-        AccrualFailureDetector detector = new AdaptiveFailureDetectorFactory(
+        FailureDetector detector = new AdaptiveFailureDetectorFactory(
                                                                              0.95,
                                                                              1000,
                                                                              0.95,

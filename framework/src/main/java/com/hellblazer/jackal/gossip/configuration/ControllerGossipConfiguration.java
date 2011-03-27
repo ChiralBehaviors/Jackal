@@ -17,12 +17,15 @@
  */
 package com.hellblazer.jackal.gossip.configuration;
 
+import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.bind;
+import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.getLocalAddress;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.channels.ServerSocketChannel;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Timer;
@@ -39,13 +42,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
-import com.hellblazer.jackal.gossip.AdaptiveFailureDetectorFactory;
-import com.hellblazer.jackal.gossip.Communications;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.HeartbeatState;
-import com.hellblazer.jackal.gossip.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.SystemView;
+import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.tcp.TcpCommunications;
 import com.hellblazer.jackal.nio.SocketOptions;
 
 /**
@@ -63,13 +66,13 @@ public class ControllerGossipConfiguration {
     }
 
     @Bean
-    public Communications communications() throws IOException {
-        return new Communications("Test controller gossip endpoint handler "
-                                  + partitionIdentity(), gossipEndpoint(),
-                                  socketOptions(),
-                                  Executors.newFixedThreadPool(3),
-                                  Executors.newFixedThreadPool(10));
-
+    public TcpCommunications communications() throws IOException {
+        ServerSocketChannel channel = bind(socketOptions(), gossipEndpoint());
+        return new TcpCommunications("Test controller gossip endpoint handler "
+                                     + partitionIdentity(), channel,
+                                     getLocalAddress(channel), socketOptions(),
+                                     Executors.newFixedThreadPool(3),
+                                     Executors.newFixedThreadPool(2));
     }
 
     public InetAddress contactHost() throws UnknownHostException {
@@ -91,19 +94,6 @@ public class ControllerGossipConfiguration {
     @Bean
     public FailureDetectorFactory failureDetectorFactory() {
         return phiAccrualFailureDetectorFactory();
-    }
-
-    protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
-                                                       * heartbeatTimeout(),
-                                             10, 1, false);
-    }
-
-    protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
-                                                  heartbeatInterval()
-                                                          * heartbeatTimeout(),
-                                                  200, 1.0);
     }
 
     @Bean
@@ -146,6 +136,13 @@ public class ControllerGossipConfiguration {
         return new Timer("Partition timer", true);
     }
 
+    protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
+        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
+                                                  heartbeatInterval()
+                                                          * heartbeatTimeout(),
+                                                  200, 1.0);
+    }
+
     protected Controller constructController() throws UnknownHostException {
         return new Controller(timer(), 1000, 300000, partitionIdentity(),
                               heartbeatTimeout(), heartbeatInterval());
@@ -173,6 +170,12 @@ public class ControllerGossipConfiguration {
 
     protected int node() throws UnknownHostException {
         return Identity.getProcessUniqueId();
+    }
+
+    protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
+        return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
+                                                       * heartbeatTimeout(),
+                                             10, 1, false);
     }
 
     protected int quarantineDelay() {

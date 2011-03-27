@@ -30,29 +30,45 @@ public interface GossipCommunications {
 
     /**
      * Asynchronously create a new connection to the indicated address. When the
-     * connection is established, run the connect action. Note that this is an
-     * asynchronous operation, and the handler will not be ready for
-     * communications unless and until the connectAction is run.
+     * connection is established, run the connect action.
+     * <p>
+     * Note that this is an asynchronous operation, and the handler will not be
+     * ready for communications unless and until the connectAction is run.
      * 
      * @param address
-     *            - the endpoint to create a connection to
+     *            - the address to create a connection to
      * @param endpoint
-     *            TODO
+     *            - the endpoint to connect
      * @param connectAction
      *            - the action to run when the new connection is fully
      *            established.
-     * @return the GossipHandler for this outbound connectioin
      * @throws IOException
      *             - if there is a problem creating a connection to the address
      */
-    GossipHandler connect(InetSocketAddress address, Endpoint endpoint,
-                          Runnable connectAction) throws IOException;
+    void connect(InetSocketAddress address, Endpoint endpoint,
+                 Runnable connectAction) throws IOException;
 
+    /**
+     * Answer the local address of the communcations endpoint
+     * 
+     * @return the socket address
+     */
     InetSocketAddress getLocalAddress();
 
+    /**
+     * Set the gossip service
+     * 
+     * @param gossip
+     */
     void setGossip(Gossip gossip);
 
+    /**
+     * Start the communications service
+     */
     void start();
 
+    /**
+     * Tereminate the communications service
+     */
     void terminate();
 }

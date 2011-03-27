@@ -24,5 +24,5 @@ package com.hellblazer.jackal.gossip;
  *
  */
 public interface FailureDetectorFactory {
-    AccrualFailureDetector create();
+    FailureDetector create();
 }

@@ -19,12 +19,11 @@ package com.hellblazer.jackal.nio;
 import static java.lang.String.format;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -38,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -50,8 +50,8 @@ import java.util.logging.Logger;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public abstract class ServerChannelHandler {
-    private final static Logger log = Logger.getLogger(ServerChannelHandler.class.getCanonicalName());
+public abstract class ChannelHandler {
+    private final static Logger log = Logger.getLogger(ChannelHandler.class.getCanonicalName());
 
     @SuppressWarnings("unchecked")
     public static <T> T[] newArray(Class<T> c) {
@@ -60,29 +60,27 @@ public abstract class ServerChannelHandler {
 
     private final ExecutorService                                   commsExecutor;
     private final ExecutorService                                   dispatchExecutor;
-    private final InetSocketAddress                                 endpoint;
-    private InetSocketAddress                                       localAddress;
+    private final InetSocketAddress                                 localAddress;
     private final Map<CommunicationsHandler, CommunicationsHandler> openHandlers  = new ConcurrentHashMap<CommunicationsHandler, CommunicationsHandler>();
     private final SocketOptions                                     options;
     private final BlockingDeque<CommunicationsHandler>              readQueue;
     private final AtomicBoolean                                     run           = new AtomicBoolean();
-    protected final Selector                                        selector;
+    private final Selector                                          selector;
     private final ExecutorService                                   selectService;
     private Future<?>                                               selectTask;
     private final int                                               selectTimeout = 1000;
-    private ServerSocketChannel                                     server;
-    private ServerSocket                                            serverSocket;
+    private final SelectableChannel                                 server;
     private final BlockingDeque<CommunicationsHandler>              writeQueue;
     private final String                                            name;
 
-    public ServerChannelHandler(String handlerName,
-                                InetSocketAddress endpointAddress,
-                                SocketOptions socketOptions,
-                                ExecutorService commsExec,
-                                ExecutorService dispatchExec)
-                                                             throws IOException {
+    public ChannelHandler(String handlerName, SelectableChannel channel,
+                          InetSocketAddress endpointAddress,
+                          SocketOptions socketOptions,
+                          ExecutorService commsExec,
+                          ExecutorService dispatchExec) throws IOException {
         name = handlerName;
-        endpoint = endpointAddress;
+        server = channel;
+        localAddress = endpointAddress;
         commsExecutor = commsExec;
         dispatchExecutor = dispatchExec;
         options = socketOptions;
@@ -91,9 +89,10 @@ public abstract class ServerChannelHandler {
         selectService = Executors.newSingleThreadExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r,
-                                           "Server channel handler select for "
-                                                   + name);
+                Thread daemon = new Thread(
+                                           r,
+                                           format("Server channel handler select for %s",
+                                                  name));
                 daemon.setDaemon(true);
                 daemon.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                     @Override
@@ -106,23 +105,12 @@ public abstract class ServerChannelHandler {
             }
         });
         selector = Selector.open();
-        server = ServerSocketChannel.open();
-        serverSocket = server.socket();
-        serverSocket.bind(endpoint, options.getBacklog());
-        localAddress = new InetSocketAddress(server.socket().getInetAddress(),
-                                             server.socket().getLocalPort());
         server.configureBlocking(false);
         server.register(selector, SelectionKey.OP_ACCEPT);
-        log.info(format("%s is connected, local address: %s", name,
-                        localAddress));
     }
 
     public void dispatch(Runnable command) {
         dispatchExecutor.execute(command);
-    }
-
-    public InetAddress getEndpoint() {
-        return endpoint.getAddress();
     }
 
     public InetSocketAddress getLocalAddress() {
@@ -144,12 +132,16 @@ public abstract class ServerChannelHandler {
     public void start() {
         if (run.compareAndSet(false, true)) {
             startService();
+            log.info(format("%s is started, local address: %s", name,
+                            localAddress));
         }
     }
 
     public void terminate() {
         if (run.compareAndSet(true, false)) {
             terminateService();
+            log.info(format("%s is terminated, local address: %s", name,
+                            localAddress));
         }
     }
 
@@ -167,14 +159,10 @@ public abstract class ServerChannelHandler {
         readQueue.drainTo(selectors);
         for (CommunicationsHandler handler : selectors) {
             try {
-                handler.getChannel().register(selector, SelectionKey.OP_READ,
-                                              handler);
+                register(handler.getChannel(), handler, SelectionKey.OP_READ);
             } catch (CancelledKeyException e) {
-                // ignore and queue
-                selectForRead(handler);
-            } catch (NullPointerException e) {
-                // apparently the file descriptor can be nulled
-                log.log(Level.FINEST, "anamalous null pointer exception", e);
+                // ignore and enqueue
+                selectForWrite(handler);
             }
         }
 
@@ -185,17 +173,25 @@ public abstract class ServerChannelHandler {
         writeQueue.drainTo(selectors);
         for (CommunicationsHandler handler : selectors) {
             try {
-                handler.getChannel().register(selector, SelectionKey.OP_WRITE,
-                                              handler);
+                register(handler.getChannel(), handler, SelectionKey.OP_WRITE);
             } catch (CancelledKeyException e) {
-                // ignore and queue
-                selectForWrite(handler);
-            } catch (NullPointerException e) {
-                // apparently the file descriptor can be nulled
-                if (log.isLoggable(Level.FINE)) {
-                    log.log(Level.FINEST, "anamalous null pointer exception", e);
-                }
+                // ignore and enqueue
+                selectForRead(handler);
             }
+        }
+    }
+
+    protected void register(SocketChannel channel, Object context, int operation) {
+        try {
+            channel.register(selector, operation, context);
+        } catch (NullPointerException e) {
+            // apparently the file descriptor can be nulled
+            log.log(Level.FINEST, "anamalous null pointer exception", e);
+        } catch (ClosedChannelException e) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST, "channel has been closed", e);
+            }
+            return;
         }
     }
 
@@ -205,33 +201,24 @@ public abstract class ServerChannelHandler {
 
     abstract protected CommunicationsHandler createHandler(SocketChannel accepted);
 
-    protected void disconnect() {
-        if (server == null) {
-            return; // not connected
-        }
-        try {
-            server.close();
-        } catch (IOException e) {
-        }
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
+    protected void dispatch(SelectionKey key) throws IOException {
+        if (key.isAcceptable()) {
+            handleAccept(key);
+        } else if (key.isReadable()) {
+            handleRead(key);
+        } else if (key.isWritable()) {
+            handleWrite(key);
+        } else {
+            if (log.isLoggable(Level.WARNING)) {
+                log.warning("Unhandled key: " + key);
+            }
         }
     }
 
-    protected void handleAccept(SelectionKey key,
-                                Iterator<SelectionKey> selected)
-                                                                throws IOException {
-        if (!run.get()) {
-            if (log.isLoggable(Level.INFO)) {
-                log.info("Ignoring accept as handler is not started");
-            }
-            return;
-        }
+    protected void handleAccept(SelectionKey key) throws IOException {
         if (log.isLoggable(Level.FINEST)) {
             log.finest("Handling accept");
         }
-        selected.remove();
         ServerSocketChannel server = (ServerSocketChannel) key.channel();
         SocketChannel accepted = server.accept();
         options.configure(accepted.socket());
@@ -244,74 +231,48 @@ public abstract class ServerChannelHandler {
         handler.handleAccept();
     }
 
-    protected void handleConnect(SelectionKey key,
-                                 Iterator<SelectionKey> selected) {
-        if (!run.get()) {
-            if (log.isLoggable(Level.INFO)) {
-                log.info("Ignoring connect as handler is not started");
-            }
-            return;
-        }
+    protected void handleRead(SelectionKey key) {
         if (log.isLoggable(Level.FINEST)) {
             log.finest("Handling read");
         }
-        selected.remove();
-        key.cancel();
-        try {
-            ((SocketChannel) key.channel()).finishConnect();
-        } catch (IOException e) {
-            log.log(Level.SEVERE, "Unable to finish connection", e);
-        }
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Dispatching connected action");
-        }
-        dispatch((Runnable) key.attachment());
-    }
-
-    protected void handleRead(SelectionKey key, Iterator<SelectionKey> selected) {
-        if (!run.get()) {
-            if (log.isLoggable(Level.INFO)) {
-                log.info("Ignoring read ready as handler is not started");
-            }
-            return;
-        }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Handling read");
-        }
-        selected.remove();
         key.cancel();
         final CommunicationsHandler context = (CommunicationsHandler) key.attachment();
         if (!context.getChannel().isOpen()) {
             context.close();
         } else {
-            commsExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    context.handleRead();
+            try {
+                commsExecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        context.handleRead();
+                    }
+                });
+            } catch (RejectedExecutionException e) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.log(Level.FINEST, "cannot execute read handling", e);
                 }
-            });
+            }
         }
     }
 
-    protected void handleWrite(SelectionKey key, Iterator<SelectionKey> selected) {
-        if (!run.get()) {
-            if (log.isLoggable(Level.INFO)) {
-                log.info("Ignoring write ready as handler is not started");
-            }
-            return;
-        }
+    protected void handleWrite(SelectionKey key) {
         if (log.isLoggable(Level.FINEST)) {
             log.finest("Handling write");
         }
-        selected.remove();
         key.cancel();
         final CommunicationsHandler context = (CommunicationsHandler) key.attachment();
-        commsExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                context.handleWrite();
+        try {
+            commsExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    context.handleWrite();
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST, "cannot execute write handling", e);
             }
-        });
+        }
     }
 
     protected void select() throws IOException {
@@ -333,56 +294,23 @@ public abstract class ServerChannelHandler {
 
         while (run.get() && selected.hasNext()) {
             SelectionKey key = selected.next();
-            if (key.isAcceptable()) {
-                handleAccept(key, selected);
-            } else if (key.isReadable()) {
-                handleRead(key, selected);
-            } else if (key.isWritable()) {
-                handleWrite(key, selected);
-            } else if (key.isConnectable()) {
-                handleConnect(key, selected);
-            } else {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.warning("Unhandled key: " + key);
+            selected.remove();
+            try {
+                dispatch(key);
+            } catch (CancelledKeyException e) {
+                if (log.isLoggable(Level.FINE)) {
+                    log.log(Level.FINE, format("Cancelled Key: %s", key), e);
                 }
-            }
-        }
-    }
-
-    protected void selectForConnect(CommunicationsHandler handler,
-                                    Runnable connectAction) {
-        try {
-            handler.getChannel().register(selector, SelectionKey.OP_CONNECT,
-                                          connectAction);
-        } catch (CancelledKeyException e) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
-                        String.format("Cancelled key for %s", handler), e);
-            }
-            throw new IllegalStateException(e);
-        } catch (NullPointerException e) {
-            // apparently the file descriptor can be nulled
-            if (log.isLoggable(Level.FINEST)) {
-                log.log(Level.FINEST, "anamalous null pointer exception", e);
-            }
-        } catch (ClosedChannelException e) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.log(Level.FINEST, "channel has been closed", e);
-            }
-        }
-        try {
-            selector.wakeup();
-        } catch (NullPointerException e) {
-            // Bug in JRE
-            if (log.isLoggable(Level.FINEST)) {
-                log.log(Level.FINEST, "Caught null pointer in selector wakeup",
-                        e);
             }
         }
     }
 
     protected void selectForRead(CommunicationsHandler handler) {
         readQueue.add(handler);
+        wakeup();
+    }
+
+    protected void wakeup() {
         try {
             selector.wakeup();
         } catch (NullPointerException e) {
@@ -396,7 +324,7 @@ public abstract class ServerChannelHandler {
 
     protected void selectForWrite(CommunicationsHandler handler) {
         writeQueue.add(handler);
-        selector.wakeup();
+        wakeup();
     }
 
     protected void startService() {
@@ -412,7 +340,12 @@ public abstract class ServerChannelHandler {
                         }
                     } catch (IOException e) {
                         if (log.isLoggable(Level.FINE)) {
-                            log.log(Level.FINE, "IOException when selecting: "
+                            log.log(Level.FINE, "Error when selecting: "
+                                                + server, e);
+                        }
+                    } catch (CancelledKeyException e) {
+                        if (log.isLoggable(Level.FINE)) {
+                            log.log(Level.FINE, "Error when selecting: "
                                                 + server, e);
                         }
                     } catch (Throwable e) {
@@ -426,10 +359,15 @@ public abstract class ServerChannelHandler {
 
     protected void terminateService() {
         selector.wakeup();
-        disconnect();
+        try {
+            server.close();
+        } catch (IOException e) {
+            // do not log
+        }
         try {
             selector.close();
         } catch (IOException e) {
+            // do not log
         }
         selectTask.cancel(true);
         selectService.shutdownNow();
@@ -439,6 +377,7 @@ public abstract class ServerChannelHandler {
             try {
                 iterator.next().getChannel().close();
             } catch (IOException e) {
+                // do not log
             }
             iterator.remove();
         }

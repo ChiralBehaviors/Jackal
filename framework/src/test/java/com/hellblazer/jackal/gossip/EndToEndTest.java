@@ -17,14 +17,20 @@
  */
 package com.hellblazer.jackal.gossip;
 
+import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.bind;
+import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.getLocalAddress;
+
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,12 +41,12 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-import com.hellblazer.jackal.gossip.Communications;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.HeartbeatState;
-import com.hellblazer.jackal.gossip.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.SystemView;
+import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.tcp.TcpCommunications;
 import com.hellblazer.jackal.nio.SocketOptions;
 
 /**
@@ -125,14 +131,49 @@ public class EndToEndTest extends TestCase {
                                           Identity localIdentity,
                                           Collection<InetSocketAddress> seedHosts)
                                                                                   throws IOException {
-        Communications communications = new Communications(
-                                                           "Gossip Endpoint Handler for "
-                                                                   + localIdentity,
-                                                           new InetSocketAddress(
-                                                                                 0),
-                                                           new SocketOptions(),
-                                                           Executors.newFixedThreadPool(3),
-                                                           Executors.newSingleThreadExecutor());
+        SocketOptions socketOptions = new SocketOptions();
+        ServerSocketChannel channel = bind(socketOptions,
+                                           new InetSocketAddress(0));
+        TcpCommunications communications = new TcpCommunications(
+                                                                 "Gossip Endpoint Handler for "
+                                                                         + localIdentity,
+                                                                 channel,
+                                                                 getLocalAddress(channel),
+                                                                 socketOptions,
+                                                                 Executors.newFixedThreadPool(3,
+                                                                                              new ThreadFactory() {
+
+                                                                                                  @Override
+                                                                                                  public Thread newThread(Runnable r) {
+                                                                                                      Thread t = new Thread(
+                                                                                                                            r);
+                                                                                                      t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                                                                                                          @Override
+                                                                                                          public void uncaughtException(Thread t,
+                                                                                                                                        Throwable e) {
+                                                                                                              e.printStackTrace();
+                                                                                                          }
+                                                                                                      });
+                                                                                                      return t;
+                                                                                                  }
+                                                                                              }),
+                                                                 Executors.newFixedThreadPool(2,
+                                                                                              new ThreadFactory() {
+
+                                                                                                  @Override
+                                                                                                  public Thread newThread(Runnable r) {
+                                                                                                      Thread t = new Thread(
+                                                                                                                            r);
+                                                                                                      t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                                                                                                          @Override
+                                                                                                          public void uncaughtException(Thread t,
+                                                                                                                                        Throwable e) {
+                                                                                                              e.printStackTrace();
+                                                                                                          }
+                                                                                                      });
+                                                                                                      return t;
+                                                                                                  }
+                                                                                              }));
 
         SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),

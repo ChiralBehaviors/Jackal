@@ -808,9 +808,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
              * Only bother if the connection has missed its deadline
              */
             if (con.isNotTimely(timenow, timeout)) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(String.format("Terminating untimely connection: %s",
-                                            con));
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(String.format("Terminating untimely connection: %s",
+                                           con));
                 }
 
                 /**

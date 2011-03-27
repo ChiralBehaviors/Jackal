@@ -55,20 +55,20 @@ abstract public class AbstractCommunicationsHandler implements
         return baos.toString();
     }
 
-    protected final ServerChannelHandler handler;
-    private final SocketChannel          channel;
-    private ByteBuffer                   headerIn   = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private ByteBuffer                   headerOut  = ByteBuffer.wrap(new byte[HEADER_SIZE]);
-    private ByteBuffer                   msgIn;
-    private ByteBuffer                   msgOut;
-    private volatile boolean             open       = true;
-    private State                        readState  = State.INITIAL;
-    private final Semaphore              writeGate;
-    private State                        writeState = State.INITIAL;
-    private final ReentrantLock          readLock   = new ReentrantLock();
-    private final ReentrantLock          writeLock  = new ReentrantLock();
+    protected final ChannelHandler handler;
+    private final SocketChannel    channel;
+    private ByteBuffer             headerIn   = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private ByteBuffer             headerOut  = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+    private ByteBuffer             msgIn;
+    private ByteBuffer             msgOut;
+    private volatile boolean       open       = true;
+    private State                  readState  = State.INITIAL;
+    private final Semaphore        writeGate;
+    private State                  writeState = State.INITIAL;
+    private final ReentrantLock    readLock   = new ReentrantLock();
+    private final ReentrantLock    writeLock  = new ReentrantLock();
 
-    public AbstractCommunicationsHandler(ServerChannelHandler handler,
+    public AbstractCommunicationsHandler(ChannelHandler handler,
                                          SocketChannel channel) {
         this.handler = handler;
         this.channel = channel;
@@ -143,6 +143,11 @@ abstract public class AbstractCommunicationsHandler implements
                 default:
                     throw new IllegalStateException("Invalid read state");
             }
+        } catch (Throwable e) {
+            readState = State.ERROR;
+            if (log.isLoggable(Level.INFO)) {
+                log.log(Level.INFO, "Error during read handling", e);
+            }
         } finally {
             myReadLock.unlock();
         }
@@ -181,6 +186,11 @@ abstract public class AbstractCommunicationsHandler implements
                 }
                 default:
                     throw new IllegalStateException("Invalid write state");
+            }
+        } catch (Throwable e) {
+            writeState = State.ERROR;
+            if (log.isLoggable(Level.INFO)) {
+                log.log(Level.INFO, "Error during write handling", e);
             }
         } finally {
             myWriteLock.unlock();
@@ -226,10 +236,8 @@ abstract public class AbstractCommunicationsHandler implements
     }
 
     private void readHeader() {
-        // Clear the buffer and read bytes 
-        int numBytesRead;
         try {
-            numBytesRead = channel.read(headerIn);
+            channel.read(headerIn);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
             readState = State.CLOSE;
@@ -245,10 +253,7 @@ abstract public class AbstractCommunicationsHandler implements
             return;
         }
 
-        if (numBytesRead == -1) {
-            readState = State.CLOSE;
-            shutdown();
-        } else if (!headerIn.hasRemaining()) {
+        if (!headerIn.hasRemaining()) {
             headerIn.flip();
             if (headerIn.getInt(0) != MAGIC_NUMBER) {
                 readState = State.ERROR;
@@ -269,9 +274,8 @@ abstract public class AbstractCommunicationsHandler implements
     }
 
     private void readMessage() {
-        int numBytesRead;
         try {
-            numBytesRead = channel.read(msgIn);
+            channel.read(msgIn);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
             readState = State.CLOSE;
@@ -286,27 +290,28 @@ abstract public class AbstractCommunicationsHandler implements
             shutdown();
             return;
         }
-        if (numBytesRead == -1) {
-            readState = State.CLOSE;
-            shutdown();
-        } else if (msgIn.hasRemaining()) {
+        if (msgIn.hasRemaining()) {
             selectForRead();
         } else {
-            byte[] msg = msgIn.array();
+            final byte[] msg = msgIn.array();
             readState = State.INITIAL;
             msgIn = null;
             if (log.isLoggable(Level.FINEST)) {
                 log.finest(format("delivering message: \n%s", toHex(msg)));
             }
-            deliver(msg);
+            handler.dispatch(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(msg);
+                }
+            });
             selectForRead();
         }
     }
 
     private void writeHeader() {
-        int bytesWritten;
         try {
-            bytesWritten = channel.write(headerOut);
+            channel.write(headerOut);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
             shutdown();
@@ -319,10 +324,7 @@ abstract public class AbstractCommunicationsHandler implements
             shutdown();
             return;
         }
-        if (bytesWritten == -1) {
-            writeState = State.CLOSE;
-            shutdown();
-        } else if (headerOut.hasRemaining()) {
+        if (headerOut.hasRemaining()) {
             writeState = State.HEADER;
             selectForWrite();
         } else {
@@ -332,9 +334,8 @@ abstract public class AbstractCommunicationsHandler implements
     }
 
     private void writeMessage() {
-        int bytesWritten;
         try {
-            bytesWritten = channel.write(msgOut);
+            channel.write(msgOut);
         } catch (ClosedChannelException e) {
             writeState = State.CLOSE;
             shutdown();
@@ -347,10 +348,7 @@ abstract public class AbstractCommunicationsHandler implements
             shutdown();
             return;
         }
-        if (bytesWritten == -1) {
-            writeState = State.CLOSE;
-            shutdown();
-        } else if (headerOut.hasRemaining()) {
+        if (headerOut.hasRemaining()) {
             selectForWrite();
         } else {
             writeState = State.INITIAL;

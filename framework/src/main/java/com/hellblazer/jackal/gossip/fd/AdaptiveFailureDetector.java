@@ -15,8 +15,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.gossip;
+package com.hellblazer.jackal.gossip.fd;
 
+import com.hellblazer.jackal.gossip.FailureDetector;
 import com.hellblazer.jackal.util.SkipList;
 import com.hellblazer.jackal.util.Window;
 
@@ -29,7 +30,7 @@ import com.hellblazer.jackal.util.Window;
  * 
  */
 public class AdaptiveFailureDetector extends Window implements
-        AccrualFailureDetector {
+        FailureDetector {
     private double         last   = -1.0;
     private final double   minInterval;
     private final double   scale;

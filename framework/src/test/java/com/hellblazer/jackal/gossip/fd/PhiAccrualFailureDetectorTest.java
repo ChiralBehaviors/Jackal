@@ -15,10 +15,10 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.gossip;
+package com.hellblazer.jackal.gossip.fd;
 
-import com.hellblazer.jackal.gossip.AccrualFailureDetector;
-import com.hellblazer.jackal.gossip.PhiAccrualFailureDetector;
+import com.hellblazer.jackal.gossip.FailureDetector;
+import com.hellblazer.jackal.gossip.fd.PhiAccrualFailureDetector;
 
 import junit.framework.TestCase;
 
@@ -32,7 +32,7 @@ public class PhiAccrualFailureDetectorTest extends TestCase {
 
     public void testDetector() throws Exception {
 
-        AccrualFailureDetector detector = new PhiAccrualFailureDetector(11,
+        FailureDetector detector = new PhiAccrualFailureDetector(11,
                                                                         false,
                                                                         1000,
                                                                         500, 0,

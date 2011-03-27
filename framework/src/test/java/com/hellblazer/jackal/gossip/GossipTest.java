@@ -21,15 +21,15 @@ import org.mockito.internal.verification.Times;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
-import com.hellblazer.jackal.gossip.AccrualFailureDetector;
+import com.hellblazer.jackal.gossip.FailureDetector;
 import com.hellblazer.jackal.gossip.Digest;
 import com.hellblazer.jackal.gossip.Endpoint;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.GossipCommunications;
-import com.hellblazer.jackal.gossip.GossipHandler;
 import com.hellblazer.jackal.gossip.HeartbeatState;
 import com.hellblazer.jackal.gossip.SystemView;
+import com.hellblazer.jackal.gossip.tcp.GossipHandler;
 
 public class GossipTest extends TestCase {
 
@@ -75,7 +75,7 @@ public class GossipTest extends TestCase {
         GossipCommunications communications = mock(GossipCommunications.class);
         GossipHandler gossipHandler = mock(GossipHandler.class);
         FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
-        AccrualFailureDetector fd = mock(AccrualFailureDetector.class);
+        FailureDetector fd = mock(FailureDetector.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
         InetSocketAddress localAddress = new InetSocketAddress(0);
