@@ -601,7 +601,7 @@ public class EndToEndTest extends TestCase {
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
         INITIAL_BARRIER.await(120, TimeUnit.SECONDS);
-        log.info("Initial partition stabile");
+        log.info("Initial partition stable");
         partition = new ArrayList<Node>();
         for (ConfigurableApplicationContext context : memberContexts) {
             partition.add((Node) controller.getNode(context.getBean(Identity.class)));
@@ -631,5 +631,6 @@ public class EndToEndTest extends TestCase {
         controller = null;
         partition = null;
         INITIAL_BARRIER = null;
+        Thread.sleep(1000);
     }
 }
