@@ -13,7 +13,7 @@
 	<description>Anubis based SLP</description>
 	<dependencies>
 		<dependency>
-			<groupId>com.hellblazer</groupId>
+			<groupId>com.hellblazer.anubis</groupId>
 			<artifactId>anubis</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 			<scope>compile</scope>

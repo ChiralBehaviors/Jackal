@@ -253,8 +253,8 @@ public class GossipConfiguration {
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
         return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
-                                                       * heartbeatTimeout(),
-                                             10, 1, false);
+                                                       * heartbeatTimeout(), 4,
+                                             1, false);
     }
 
     protected int quarantineDelay() {

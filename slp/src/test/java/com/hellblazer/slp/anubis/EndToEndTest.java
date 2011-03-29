@@ -20,6 +20,7 @@ import static com.hellblazer.slp.ServiceScope.SERVICE_TYPE;
 
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -39,14 +41,13 @@ import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 import org.smartfrog.services.anubis.BasicConfiguration;
-import org.smartfrog.services.anubis.partition.test.colors.ColorAllocator;
-import org.smartfrog.services.anubis.partition.test.mainconsole.Controller;
-import org.smartfrog.services.anubis.partition.test.mainconsole.ControllerConfiguration;
-import org.smartfrog.services.anubis.partition.test.mainconsole.NodeData;
+import org.smartfrog.services.anubis.partition.test.controller.Controller;
+import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
+import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -56,7 +57,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.fasterxml.uuid.NoArgGenerator;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
-import com.hellblazer.anubis.annotations.DeployedPostProcessor;
+import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.slp.InvalidSyntaxException;
 import com.hellblazer.slp.ServiceEvent;
 import com.hellblazer.slp.ServiceEvent.EventType;
@@ -74,9 +75,9 @@ import com.hellblazer.slp.ServiceURL;
  */
 public class EndToEndTest extends TestCase {
     static class Event {
-        final EventType type;
-        final UUID registration;
-        final ServiceURL url;
+        final EventType           type;
+        final UUID                registration;
+        final ServiceURL          url;
         final Map<String, Object> properties;
 
         Event(ServiceEvent event) {
@@ -126,10 +127,10 @@ public class EndToEndTest extends TestCase {
     }
 
     static class Listener implements ServiceListener {
-        int member;
-        CountDownLatch latch;
+        int                member;
+        CountDownLatch     latch;
         ApplicationContext context;
-        Set<Event> events = new CopyOnWriteArraySet<EndToEndTest.Event>();
+        Set<Event>         events = new CopyOnWriteArraySet<EndToEndTest.Event>();
 
         Listener(ApplicationContext context) {
             this.context = context;
@@ -145,7 +146,7 @@ public class EndToEndTest extends TestCase {
                     latch.countDown();
                 }
             } else {
-                System.err.println("recevied duplicate: " + marked);
+                // System.err.println("recevied duplicate: " + marked);
             }
         }
 
@@ -160,9 +161,16 @@ public class EndToEndTest extends TestCase {
     }
 
     static class MyController extends Controller {
+        public MyController(Timer timer, long checkPeriod, long expirePeriod,
+                            Identity partitionIdentity, long heartbeatTimeout,
+                            long heartbeatInterval) {
+            super(timer, checkPeriod, expirePeriod, partitionIdentity,
+                  heartbeatTimeout, heartbeatInterval);
+        }
+
         @Override
-        protected NodeData createNode(HeartbeatMsg hb) {
-            return new Node(hb, colorAllocator, this, headless);
+        protected NodeData createNode(Heartbeat hb) {
+            return new Node(hb, this);
         }
 
     }
@@ -190,27 +198,21 @@ public class EndToEndTest extends TestCase {
         }
 
         @Override
-        protected Controller constructController() {
-            return new MyController();
+        protected Controller constructController() throws UnknownHostException {
+            return new MyController(timer(), 1000, 300000, partitionIdentity(),
+                                    heartbeatTimeout(), heartbeatInterval());
         }
-
-        @Override
-        protected boolean headless() {
-            return true;
-        }
-
     }
 
     static class Node extends NodeData {
-        boolean initial = true;
-        CyclicBarrier barrier = INITIAL_BARRIER;
-        int cardinality = CONFIGS.length;
-        boolean interrupted = false;
-        boolean barrierBroken = false;
+        boolean       initial       = true;
+        CyclicBarrier barrier       = INITIAL_BARRIER;
+        int           cardinality   = CONFIGS.length;
+        boolean       interrupted   = false;
+        boolean       barrierBroken = false;
 
-        public Node(HeartbeatMsg hb, ColorAllocator colorAllocator,
-                    Controller controller, boolean headless) {
-            super(hb, colorAllocator, controller, headless);
+        public Node(Heartbeat hb, Controller controller) {
+            super(hb, controller);
         }
 
         @Override
@@ -357,18 +359,17 @@ public class EndToEndTest extends TestCase {
         }
     }
 
-    private static final Logger log = Logger.getLogger(EndToEndTest.class.getCanonicalName());
-    static final Random RANDOM = new Random(666);
-    static CyclicBarrier INITIAL_BARRIER;
-    final static Class<?>[] CONFIGS = { node0.class, node1.class, node2.class,
-                                       node3.class, node4.class, node5.class,
-                                       node6.class, node7.class, node8.class,
-                                       node9.class };
+    private static final Logger          log     = Logger.getLogger(EndToEndTest.class.getCanonicalName());
+    static final Random                  RANDOM  = new Random(666);
+    static CyclicBarrier                 INITIAL_BARRIER;
+    final static Class<?>[]              CONFIGS = { node0.class, node1.class,
+            node2.class, node3.class, node4.class, node5.class, node6.class,
+            node7.class, node8.class, node9.class };
 
-    ConfigurableApplicationContext controllerContext;
+    ConfigurableApplicationContext       controllerContext;
     List<ConfigurableApplicationContext> memberContexts;
-    MyController controller;
-    List<Node> partition;
+    MyController                         controller;
+    List<Node>                           partition;
 
     public void testSmoke() throws Exception {
         String memberIdKey = "test.member.id";

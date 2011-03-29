@@ -149,6 +149,10 @@ public abstract class ChannelHandler {
         openHandlers.put(handler, handler);
     }
 
+    /**
+     * @throws ClosedChannelException  
+     * @throws IOException 
+     */
     protected void addQueuedSelects() throws ClosedChannelException,
                                      IOException {
         if (log.isLoggable(Level.FINEST)) {

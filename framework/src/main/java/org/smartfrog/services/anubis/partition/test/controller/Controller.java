@@ -120,6 +120,9 @@ public class Controller implements HeartbeatReceiver {
         node.deliverObject(obj);
     }
 
+    /**
+     * @throws IOException  
+     */
     @Deployed
     public synchronized void deploy() throws IOException {
         timer.schedule(getTask(), checkPeriod, checkPeriod);

@@ -24,7 +24,9 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
@@ -131,12 +133,18 @@ public class LocalRegisterImpl {
     }
 
     public void deliverRequest(final RegisterMsg request) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(request);
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(request);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     /**

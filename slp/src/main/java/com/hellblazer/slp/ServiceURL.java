@@ -24,7 +24,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import com.hellblazer.anubis.util.Base64Coder;
+import com.hellblazer.jackal.util.Base64Coder;
 
 /**
  * A class representing a service url. It contains the service type, service
@@ -52,7 +52,7 @@ public class ServiceURL implements Serializable {
     public static final String DEFAULT_TRANSPORT = ""; // IP
 
     public static Object objectFromString(String objString) throws Exception {
-        byte[] byteArray = Base64Coder.decodeLines(objString);
+        byte[] byteArray = com.hellblazer.jackal.util.Base64Coder.decodeLines(objString);
         ByteArrayInputStream isr = new ByteArrayInputStream(byteArray);
         ObjectInputStream ois = new ObjectInputStream(isr);
         Object obj = ois.readObject();

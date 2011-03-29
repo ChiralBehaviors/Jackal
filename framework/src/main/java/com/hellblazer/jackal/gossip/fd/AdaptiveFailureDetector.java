@@ -74,6 +74,9 @@ public class AdaptiveFailureDetector extends Window implements
         double delta = (now - last) * scale;
         double countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
         boolean convict = countLessThanEqualTo / count >= threshold;
+        if (convict) {
+            System.out.println(this);
+        }
         return convict;
     }
 }

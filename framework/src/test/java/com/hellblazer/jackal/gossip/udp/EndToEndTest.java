@@ -152,9 +152,9 @@ public class EndToEndTest extends TestCase {
         FailureDetectorFactory fdFactory = new PhiFailureDetectorFactory(11,
                                                                          1000,
                                                                          3000,
-                                                                         250,
+                                                                         1,
                                                                          1.0,
-                                                                         false);
+                                                                         true);
         Gossip gossip = new Gossip(view, new Random(), communications, 1,
                                    TimeUnit.SECONDS, fdFactory);
         gossip.create(receiver);
