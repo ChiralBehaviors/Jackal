@@ -19,59 +19,47 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
-public class IntervalExec {
+public class IntervalExec extends Thread {
 
-    private static final Logger   log           = Logger.getLogger(IntervalExec.class.getCanonicalName()); // Use asynch wrapper...
+    private ConnectionSet connectionSet = null;
+    private long heartbeatTime = 0;
 
-    private final ConnectionSet   connectionSet;
-    private volatile long         heartbeatTime = 0;
-    private volatile long         interval      = 0;
-    private volatile long         lastCheckTime = 0;
-    private final Identity        me;
-    private final Random          random;
-    private final AtomicBoolean   running       = new AtomicBoolean();
-    private final ExecutorService service;
-    private volatile boolean      stabalizing   = false;
-    private volatile long         stabilityTime = 0;
-    private volatile boolean      testable      = false;
-    private TestMgr               testManager   = null;
-    private final String          threadName;
+    private long interval = 0;
+    private long lastCheckTime = 0;
+    private static final Logger log = Logger.getLogger(IntervalExec.class.getCanonicalName()); // Use
+    // asynch
+    // wrapper...
+
+    private Identity me = null;
+    private Random random = null;
+
+    private boolean running = false;
+    private boolean stabalizing = false;
+
+    private long stabilityTime = 0;
+    private boolean testable = false;
+    private TestMgr testManager = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
-        threadName = "Anubis: Interval Executive (node " + id.id + ")";
-        service = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r, threadName);
-                daemon.setPriority(Thread.MAX_PRIORITY);
-                daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exception", e);
-                    }
-                });
-                daemon.setDaemon(true);
-                return daemon;
-
-            }
-
-        });
+        super("Anubis: Interval Executive (node " + id.id + ")");
         me = id;
         connectionSet = cs;
         interval = i;
+        setPriority(MAX_PRIORITY);
         random = new Random(System.currentTimeMillis() + 100 * me.id);
+        setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                log.log(Level.WARNING, "Uncaught exception", e);
+            }
+        });
     }
 
     /**
@@ -87,9 +75,9 @@ public class IntervalExec {
      */
     public String getThreadStatusString() {
         StringBuffer buffer = new StringBuffer();
-        buffer.append(threadName).append(" ............................ ").setLength(30);
-        buffer.append(service.isShutdown() ? ".. is Dead " : ".. is Alive ");
-        buffer.append(running.get() ? ".. running    " : ".. terminated ");
+        buffer.append(super.getName()).append(" ............................ ").setLength(30);
+        buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
+        buffer.append(running ? ".. running    " : ".. terminated ");
         return buffer.toString();
     }
 
@@ -101,12 +89,15 @@ public class IntervalExec {
     /**
      * Connection set periodically sends heartbeat messages.
      */
-    private void heartbeatTask() {
+    @Override
+    public void run() {
+        running = true;
+
         long timenow = System.currentTimeMillis();
         heartbeatTime = timenow + random.nextInt((int) interval);
         lastCheckTime = timenow;
         synchronized (connectionSet) {
-            while (running.get()) {
+            while (running) {
                 try {
                     /**
                      * enter a sleep interval. Normally this is the regular
@@ -189,7 +180,7 @@ public class IntervalExec {
         this.interval = interval;
         heartbeatTime = System.currentTimeMillis()
                         + random.nextInt((int) interval);
-        // interrupt();
+        interrupt();
     }
 
     /**
@@ -204,26 +195,14 @@ public class IntervalExec {
         stabilityTime = s;
     }
 
-    public void start() {
-        if (running.compareAndSet(false, true)) {
-            service.submit(new Runnable() {
-                @Override
-                public void run() {
-                    heartbeatTask();
-                }
-            });
-        }
-    }
-
     /**
      * stops the connection set including shutdown on multicast communication
      * and ending the current wait period.
      */
     public void terminate() {
-        if (running.compareAndSet(true, false)) {
-            synchronized (connectionSet) {
-                connectionSet.notify();
-            }
+        synchronized (connectionSet) {
+            running = false;
+            connectionSet.notify();
         }
     }
 
