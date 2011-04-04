@@ -102,7 +102,7 @@ public class Endpoint {
 
     public void updateState(long now, HeartbeatState newHbState) {
         heartbeat = newHbState;
-        fd.record(now);
+        fd.record(heartbeat.getTime());
     }
 
     public void updateState(HeartbeatState newHbState) {

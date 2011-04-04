@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +38,7 @@ import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.registers.GlobalRegisterImpl;
 import org.smartfrog.services.anubis.locator.registers.LocalRegisterImpl;
 import org.smartfrog.services.anubis.partition.Partition;
+import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.PartitionNotification;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -55,29 +57,33 @@ public class Locator implements PartitionNotification, AnubisLocator {
         }
     }
 
-    private static final Logger             log               = Logger.getLogger(Locator.class.getCanonicalName());
-    @SuppressWarnings("rawtypes")
-    public ThreadLocal                      callingThread     = new ThreadLocal();
-    public GlobalRegisterImpl               global            = null;                                              // public for debug
-    public LocalRegisterImpl                local             = null;                                              // public for debug
-    public Integer                          me                = null;                                              // public for debug
-    private long                            heartbeatInterval = 0;
-    private long                            heartbeatTimeout  = 0;
-    private Identity                        identity          = null;
-    private InstanceGenerator               instanceGenerator = new InstanceGenerator();
-    private Integer                         leader            = null;
-    private Map<Integer, MessageConnection> links             = new HashMap<Integer, MessageConnection>();
-    private long                            maxTransDelay;
-    private Partition                       partition         = null;
-    private Random                          random;
-    private ExecutorService                 stabilityQueue;
-    private boolean                         stable            = false;
-    private ScheduledExecutorService        timers            = null;                                              // public for debug
+    private static final Logger                   log               = Logger.getLogger(Locator.class.getCanonicalName());
 
-    @Deployed
-    public void deployed() {
+    @SuppressWarnings("rawtypes")
+    public final ThreadLocal                      callingThread     = new ThreadLocal();
+    public final GlobalRegisterImpl               global;                                                                // public for debug
+    public final LocalRegisterImpl                local;                                                                 // public for debug
+    public final Integer                          me;
+    private final Identity                        identity;
+    private final InstanceGenerator               instanceGenerator = new InstanceGenerator();
+    private Integer                               leader            = null;
+    private final Map<Integer, MessageConnection> links             = new HashMap<Integer, MessageConnection>();
+    private final long                            maxTransDelay;
+    private final Partition                       partition;
+    private final Random                          random;
+    private final ExecutorService                 stabilityQueue;
+    private final AtomicBoolean                   stable            = new AtomicBoolean();
+    private final ScheduledExecutorService        timers;
+
+    public Locator(Identity partitionIdentity, PartitionManager partition,
+                   long heartbeatInterval, long heartbeatTimeout) {
+        identity = partitionIdentity;
+        this.partition = partition;
         me = Integer.valueOf(identity.id);
         maxTransDelay = heartbeatTimeout * heartbeatInterval;
+        global = new GlobalRegisterImpl(identity, this);
+        local = new LocalRegisterImpl(identity, this);
+        random = new Random(System.currentTimeMillis() + 1966 * me.longValue());
         timers = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
             @Override
@@ -94,12 +100,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
                 return daemon;
             }
         });
-        global = new GlobalRegisterImpl(identity, this);
-        local = new LocalRegisterImpl(identity, this);
-        random = new Random(System.currentTimeMillis() + 1966 * me.longValue());
-
-        global.start();
-        local.start();
         stabilityQueue = Executors.newSingleThreadExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
@@ -114,7 +114,13 @@ public class Locator implements PartitionNotification, AnubisLocator {
                 });
                 return daemon;
             }
-        });;
+        });
+    }
+
+    @Deployed
+    public void deployed() {
+        global.start();
+        local.start();
         partition.register(this);
     }
 
@@ -137,14 +143,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
         local.deregisterStability(stability);
     }
 
-    public long getHeartbeatInterval() {
-        return heartbeatInterval;
-    }
-
-    public long getHeartbeatTimeout() {
-        return heartbeatTimeout;
-    }
-
     @Override
     public Identity getIdentity() {
         return identity;
@@ -153,10 +151,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
     @Override
     public long getmaxDelay() {
         return maxTransDelay;
-    }
-
-    public Partition getPartition() {
-        return partition;
     }
 
     @Override
@@ -210,7 +204,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
      */
     @Override
     public void partitionNotification(final View view, final int leader) {
-        stabilityQueue.execute(new Runnable() { 
+        stabilityQueue.execute(new Runnable() {
             @Override
             public void run() {
                 partitionNotificationImpl(view, leader);
@@ -227,7 +221,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
          * Keep record of the current stability and which node is leader. The
          * leader holds the active global register.
          */
-        stable = view.isStable();
+        stable.set(view.isStable());
         this.leader = Integer.valueOf(leader);
 
         /**
@@ -320,7 +314,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
      * @param msg
      */
     public void sendToGlobal(RegisterMsg msg) {
-        if (stable) {
+        if (stable.get()) {
             if (leader.equals(me)) {
                 global.deliverRequest(msg);
             } else {
@@ -355,26 +349,10 @@ public class Locator implements PartitionNotification, AnubisLocator {
         }
     }
 
-    public void setHeartbeatInterval(long heartbeatInterval) {
-        this.heartbeatInterval = heartbeatInterval;
-    }
-
-    public void setHeartbeatTimeout(long heartbeatTimeout) {
-        this.heartbeatTimeout = heartbeatTimeout;
-    }
-
-    public void setIdentity(Identity myId) {
-        identity = myId;
-    }
-
-    public void setPartition(Partition partition) {
-        this.partition = partition;
-    }
-
     @PreDestroy
     public void terminate() {
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Terminating Locator");
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Terminating Locator");
         }
         stabilityQueue.shutdownNow();
         global.terminate();

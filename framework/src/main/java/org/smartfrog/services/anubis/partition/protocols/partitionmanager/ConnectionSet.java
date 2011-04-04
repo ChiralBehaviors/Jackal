@@ -541,15 +541,16 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                                                                             heartbeat);
             con = new HeartbeatConnection(identity, this, hbp, can);
             if (log.isLoggable(Level.FINEST)) {
-                log.finest("Adding new heart beat connection to: "
-                           + hb.getSender());
+                log.finest(String.format("Adding heartbeat connection: %s at: %s ",
+                                         hb.getSender(), identity));
             }
             addConnection(con);
             // should this return true?
             return true;
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("Heart beat for existing connection: " + hb.getSender());
+            log.finest(String.format("Heart beat for existing connection: %s at: %s ",
+                                     hb.getSender(), identity));
         }
         return con.receiveHeartbeat(hb);
     }
@@ -676,8 +677,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
 
     @PostConstruct
     public void start() throws Exception {
-        if (log.isLoggable(Level.INFO)) {
-            log.info(identity + " connection address is "
+        if (log.isLoggable(Level.FINE)) {
+            log.fine(identity + " connection address is "
                      + connectionServer.getAddress().toString());
         }
 

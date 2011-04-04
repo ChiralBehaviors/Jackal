@@ -403,8 +403,8 @@ public class UdpCommunications implements GossipCommunications {
                         service(packet);
                     } catch (SocketException e) {
                         if ("Socket closed".equals(e.getMessage())) {
-                            if (log.isLoggable(Level.INFO)) {
-                                log.info("Socket closed, shutting down");
+                            if (log.isLoggable(Level.FINE)) {
+                                log.fine("Socket closed, shutting down");
                                 terminate();
                                 return;
                             }

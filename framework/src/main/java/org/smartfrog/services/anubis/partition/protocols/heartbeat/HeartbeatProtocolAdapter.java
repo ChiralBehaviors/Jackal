@@ -197,9 +197,9 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
         boolean accepted = heartbeatProtocol.receiveHeartbeat(hb);
         if (log.isLoggable(Level.FINEST)) {
             if (accepted) {
-                log.finest("Heart beat accepted: " + hb);
+                log.finest(String.format("Heart beat accepted from: %s", getId()));
             } else {
-                log.finest("Heart beat rejected: " + hb);
+                log.finest(String.format("Heart beat rejected from: %s", getId()));
             }
         }
 

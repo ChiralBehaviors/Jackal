@@ -149,8 +149,8 @@ public class PartitionManager implements Partition {
 
     @PreDestroy
     public synchronized void terminate() {
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Terminating partition manager at " + identity);
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Terminating partition manager at " + identity);
         }
         timer.shutdownNow();
         terminated = true;

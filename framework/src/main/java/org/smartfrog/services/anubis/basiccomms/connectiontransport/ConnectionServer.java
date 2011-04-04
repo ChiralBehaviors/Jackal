@@ -124,8 +124,8 @@ public class ConnectionServer extends Thread {
      */
     @Override
     public void run() {
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Starting connection server");
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Starting connection server");
         }
         while (open) {
 
@@ -137,8 +137,8 @@ public class ConnectionServer extends Thread {
                 connectionFactory.createConnection(channel);
             } catch (Throwable ex) {
                 if (open) {
-                    if (log.isLoggable(Level.INFO)) {
-                        log.log(Level.INFO, "error accepting connection", ex);
+                    if (log.isLoggable(Level.WARNING)) {
+                        log.log(Level.WARNING, "error accepting connection", ex);
                     }
                 }
             }
@@ -155,8 +155,8 @@ public class ConnectionServer extends Thread {
     }
 
     public void shutdown() {
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Shutting down connection server");
+        if (log.isLoggable(Level.FINE)) {
+            log.fine("Shutting down connection server");
         }
         open = false;
         try {
@@ -178,8 +178,8 @@ public class ConnectionServer extends Thread {
 
         try {
 
-            if (log.isLoggable(Level.INFO)) {
-                log.info("Binding blocking connection server to port: " + port);
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Binding blocking connection server to port: " + port);
             }
 
             listenSocket = ServerSocketChannel.open();

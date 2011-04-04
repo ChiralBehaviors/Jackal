@@ -184,14 +184,14 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     @Override
     public void run() {
         try {
-            if (syncLog.isLoggable(Level.INFO)) {
-                syncLog.info(me.toString() + getName() + " thread started");
+            if (syncLog.isLoggable(Level.FINE)) {
+                syncLog.fine(me.toString() + getName() + " thread started");
             }
 
             runLoop();
 
-            if (syncLog.isLoggable(Level.INFO)) {
-                syncLog.info(me.toString() + getName()
+            if (syncLog.isLoggable(Level.FINE)) {
+                syncLog.fine(me.toString() + getName()
                              + " thread has terminated without throwable");
             }
         } catch (Throwable thr) {

@@ -390,7 +390,7 @@ public class EndToEndTest extends TestCase {
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+                       listener.latch.await(60, TimeUnit.SECONDS));
             assertEquals(listeners.size(), listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (Event event : listener.events) {
@@ -448,7 +448,7 @@ public class EndToEndTest extends TestCase {
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stabilty of minor partition A");
-        barrierA.await(60, TimeUnit.SECONDS);
+        barrierA.await(120, TimeUnit.SECONDS);
         log.info("Awaiting stabilty of minor partition B");
         barrierB.await(60, TimeUnit.SECONDS);
 
@@ -468,12 +468,12 @@ public class EndToEndTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
-        barrier.await(30, TimeUnit.SECONDS);
+        barrier.await(60, TimeUnit.SECONDS);
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+                       listener.latch.await(60, TimeUnit.SECONDS));
             assertEquals("listener <"
                                  + listener.member
                                  + "> has received more notifications than expected ",
@@ -554,12 +554,12 @@ public class EndToEndTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
-        barrier.await(30, TimeUnit.SECONDS);
+        barrier.await(60, TimeUnit.SECONDS);
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+                       listener.latch.await(60, TimeUnit.SECONDS));
             assertEquals("listener <"
                                  + listener.member
                                  + "> has received more notifications than expected ",
@@ -631,6 +631,6 @@ public class EndToEndTest extends TestCase {
         controller = null;
         partition = null;
         INITIAL_BARRIER = null;
-        Thread.sleep(1000);
+        Thread.sleep(2000);
     }
 }

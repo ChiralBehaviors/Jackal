@@ -57,11 +57,7 @@ public class BasicConfiguration {
 
     @Bean
     public AnubisLocator locator() {
-        Locator locator = new Locator();
-        locator.setIdentity(partitionIdentity());
-        locator.setPartition(partition());
-        locator.setHeartbeatInterval(heartbeatInterval());
-        locator.setHeartbeatTimeout(heartbeatTimeout());
+        Locator locator = new Locator(partitionIdentity(), partition(), heartbeatInterval(), heartbeatTimeout()); 
         return locator;
     }
 
@@ -142,7 +138,7 @@ public class BasicConfiguration {
     }
 
     protected long heartbeatInterval() {
-        return 2000L;
+        return 3000L;
     }
 
     protected HeartbeatProtocolFactory heartbeatProtocolFactory() {

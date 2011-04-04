@@ -232,7 +232,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("Ignoring out of band heart beat: " + hb);
+            log.finest(String.format("Heart beat rejected from: %s at: ", getId(), me));
         }
         return false;
     }
@@ -411,6 +411,11 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                 connectionSet.convertToHeartbeatConnection(this);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "MessageConnection [from: " + me + " to:" + getId() + "]";
     }
 
 }

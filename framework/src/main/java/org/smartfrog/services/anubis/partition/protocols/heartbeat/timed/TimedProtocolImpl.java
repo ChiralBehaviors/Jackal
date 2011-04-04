@@ -187,13 +187,13 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
             }
 
             if (log.isLoggable(Level.FINEST)) {
-                log.finest("Accepting heart beat: " + hb);
+                log.finest(String.format("Heart beat accepted from: %s", sender));
             }
             return true;
 
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("Rejecting heart beat: " + hb);
+            log.finest(String.format("Heart beat rejected from: %s", sender));
         }
         return false;
     }

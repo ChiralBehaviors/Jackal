@@ -136,12 +136,8 @@ public class GossipConfiguration {
 
     @Bean
     public AnubisLocator locator() {
-        Locator locator = new Locator();
-        locator.setIdentity(partitionIdentity());
-        locator.setPartition(partition());
-        locator.setHeartbeatInterval(heartbeatInterval());
-        locator.setHeartbeatTimeout(heartbeatTimeout());
-        return locator;
+        return new Locator(partitionIdentity(), partition(),
+                           heartbeatInterval(), heartbeatTimeout());
     }
 
     @Bean
