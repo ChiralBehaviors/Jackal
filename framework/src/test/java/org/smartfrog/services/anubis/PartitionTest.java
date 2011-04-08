@@ -17,13 +17,11 @@
 package org.smartfrog.services.anubis;
 
 import java.io.IOException;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -95,10 +93,8 @@ public class PartitionTest extends TestCase {
     }
 
     static class Node extends NodeData {
-        CyclicBarrier barrier       = INITIAL_BARRIER;
+        CountDownLatch latch       = INITIAL_LATCH;
         int           cardinality   = CONFIGS.length;
-        boolean       interrupted   = false;
-        boolean       barrierBroken = false;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -108,30 +104,8 @@ public class PartitionTest extends TestCase {
         protected void partitionNotification(View partition, int leader) {
             log.fine("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
-            if (partition.isStable() && partition.cardinality() == cardinality) {
-                interrupted = false;
-                barrierBroken = false;
-                Thread testThread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            barrier.await();
-                        } catch (InterruptedException e) {
-                            interrupted = true;
-                            return;
-                        } catch (BrokenBarrierException e) {
-                            barrierBroken = true;
-                        }
-                    }
-                }, "Stability test thread for: " + getIdentity());
-                testThread.setDaemon(true);
-                testThread.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        e.printStackTrace();
-                    }
-                });
-                testThread.start();
+            if (partition.isStable() && partition.cardinality() == cardinality) { 
+                            latch.countDown(); 
             }
         }
     }
@@ -314,7 +288,7 @@ public class PartitionTest extends TestCase {
 
     private static final Logger log     = Logger.getLogger(PartitionTest.class.getCanonicalName());
 
-    static CyclicBarrier        INITIAL_BARRIER;
+    static CountDownLatch        INITIAL_LATCH;
     @SuppressWarnings("rawtypes")
     final static Class[]        CONFIGS = { node0.class, node1.class,
             node2.class, node3.class, node4.class, node5.class, node6.class,
@@ -323,7 +297,7 @@ public class PartitionTest extends TestCase {
             node16.class, node17.class, node18.class, node19.class };
 
     private static void clear() {
-        INITIAL_BARRIER = null;
+        INITIAL_LATCH = null;
     }
 
     AnnotationConfigApplicationContext       controllerContext;
@@ -339,49 +313,47 @@ public class PartitionTest extends TestCase {
     public void testAsymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
-        CyclicBarrier barrierA = new CyclicBarrier(minorPartitionSize + 1);
+        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<PartitionTest.Node>();
 
-        CyclicBarrier barrierB = new CyclicBarrier(minorPartitionSize + 1);
+        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
         List<Node> partitionB = new ArrayList<PartitionTest.Node>();
 
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
                 partitionB.add(member);
-                member.barrier = barrierA;
+                member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
                 partitionA.add(member);
-                member.barrier = barrierB;
+                member.latch = latchB;
                 member.cardinality = minorPartitionSize;
             }
         }
         log.info("asymmetric partitioning: " + A);
         controller.asymPartition(A);
         log.info("Awaiting stability of minor partition A");
-        barrierA.await(60, TimeUnit.SECONDS);
+        latchA.await(60, TimeUnit.SECONDS);
         // The other partition should still be unstable.
-        assertEquals(0, barrierB.getNumberWaiting());
+        assertEquals(CONFIGS.length / 2, latchB.getCount());
 
         View viewA = partitionA.get(0).getView();
-        for (Node member : partitionA) {
-            assertFalse(member.interrupted);
-            assertFalse(member.barrierBroken);
+        for (Node member : partitionA) { 
             assertEquals(viewA, member.getView());
         }
 
         // reform
-        CyclicBarrier barrier = new CyclicBarrier(CONFIGS.length + 1);
+        CountDownLatch latch = new CountDownLatch(CONFIGS.length);
         for (Node node : partition) {
-            node.barrier = barrier;
+            node.latch = latch;
             node.cardinality = CONFIGS.length;
         }
 
         controller.clearPartitions();
         log.info("Awaiting stability of reformed major partition");
-        barrier.await(60, TimeUnit.SECONDS);
+        latch.await(60, TimeUnit.SECONDS);
     }
 
     /**
@@ -391,69 +363,65 @@ public class PartitionTest extends TestCase {
     public void testSymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
-        CyclicBarrier barrierA = new CyclicBarrier(minorPartitionSize + 1);
+        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<PartitionTest.Node>();
 
-        CyclicBarrier barrierB = new CyclicBarrier(minorPartitionSize + 1);
+        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
         List<Node> partitionB = new ArrayList<PartitionTest.Node>();
 
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
                 partitionB.add(member);
-                member.barrier = barrierA;
+                member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
                 partitionA.add(member);
-                member.barrier = barrierB;
+                member.latch = latchB;
                 member.cardinality = minorPartitionSize;
             }
         }
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stability of minor partition A");
-        barrierA.await(60, TimeUnit.SECONDS);
+        latchA.await(60, TimeUnit.SECONDS);
         log.info("Awaiting stability of minor partition B");
-        barrierB.await(60, TimeUnit.SECONDS);
+        latchB.await(60, TimeUnit.SECONDS);
 
         View viewA = partitionA.get(0).getView();
-        for (Node member : partitionA) {
-            assertFalse(member.interrupted);
-            assertFalse(member.barrierBroken);
+        for (Node member : partitionA) { 
             assertEquals(viewA, member.getView());
         }
 
         View viewB = partitionB.get(0).getView();
-        for (Node member : partitionB) {
-            assertFalse(member.interrupted);
-            assertFalse(member.barrierBroken);
+        for (Node member : partitionB) { 
             assertEquals(viewB, member.getView());
         }
 
         // reform
-        CyclicBarrier barrier = new CyclicBarrier(CONFIGS.length + 1);
+        CountDownLatch latch = new CountDownLatch(CONFIGS.length);
         for (Node node : partition) {
-            node.barrier = barrier;
+            node.latch = latch;
             node.cardinality = CONFIGS.length;
         }
 
         controller.clearPartitions();
         log.info("Awaiting stability of reformed major partition");
-        barrier.await(60, TimeUnit.SECONDS);
+        latch.await(60, TimeUnit.SECONDS);
     }
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
         log.info("Setting up initial partition");
-        INITIAL_BARRIER = new CyclicBarrier(CONFIGS.length + 1);
+        INITIAL_LATCH = new CountDownLatch(CONFIGS.length);
         controllerContext = new AnnotationConfigApplicationContext(
                                                                    MyControllerConfig.class);
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
-        INITIAL_BARRIER.await(120, TimeUnit.SECONDS);
+        INITIAL_LATCH.await(120, TimeUnit.SECONDS);
         log.info("Initial partition stable");
         partition = new ArrayList<PartitionTest.Node>();
         for (AnnotationConfigApplicationContext context : memberContexts) {

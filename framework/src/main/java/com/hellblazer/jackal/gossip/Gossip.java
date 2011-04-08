@@ -177,8 +177,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 iterator.remove();
                 state.markDead();
                 view.markDead(endpoint, now);
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(format("Endpoint %s is now DEAD on node: %s",
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(format("Endpoint %s is now DEAD on node: %s",
                                     state.getMemberString(),
                                     localState.getMemberString()));
                 }
@@ -281,7 +281,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             initial = true;
         }
         localState.updateState(HeartbeatState.toHeartbeatState(heartbeat,
-                                                               communications.getLocalAddress()));
+                                                               view.getLocalAddress()));
         if (initial) {
             endpoints.put(view.getLocalAddress(), localState);
         }

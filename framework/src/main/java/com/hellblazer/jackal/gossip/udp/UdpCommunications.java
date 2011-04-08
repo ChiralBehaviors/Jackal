@@ -345,6 +345,12 @@ public class UdpCommunications implements GossipCommunications {
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
             packet.setSocketAddress(target);
             socket.send(packet);
+        } catch (SocketException e) {
+            if (!"Socket is closed".equals(e.getMessage())) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING, "Error sending packet", e);
+                }
+            }
         } catch (IOException e) {
             if (log.isLoggable(Level.WARNING)) {
                 log.log(Level.WARNING, "Error sending packet", e);
