@@ -191,6 +191,12 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         view.cullUnreachable(now);
     }
 
+    @Override
+    public HeartbeatCommsIntf create(HeartbeatReceiver hbReceiver) {
+        receiver = hbReceiver;
+        return this;
+    }
+
     public InetSocketAddress getLocalAddress() {
         return view.getLocalAddress();
     }
@@ -244,6 +250,14 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         return theShunned.contains(id);
     }
 
+    public boolean isIgnoring(InetSocketAddress address) {
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint == null) {
+            return false;
+        }
+        return isIgnoring(endpoint.getState().getSender());
+    }
+
     /**
      * The second message in the gossip protocol. This message is sent in reply
      * to the initial gossip message sent by this node. The response is a list
@@ -290,11 +304,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     @Override
     public void setIgnoring(View ignoringUpdate) {
         ignoring.set(ignoringUpdate);
-    }
-
-    public HeartbeatCommsIntf create(HeartbeatReceiver hbReceiver) {
-        receiver = hbReceiver;
-        return this;
     }
 
     public boolean shouldConvict(InetSocketAddress address, long now) {

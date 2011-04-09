@@ -829,6 +829,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
                  */
                 if (con.isQuiesced(timenow, quiesce)) {
                     iter.remove();
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(String.format("Removed connection %s", con));
+                    }
                 }
             }
         }

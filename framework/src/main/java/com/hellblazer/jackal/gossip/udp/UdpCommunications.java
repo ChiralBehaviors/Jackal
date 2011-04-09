@@ -308,6 +308,13 @@ public class UdpCommunications implements GossipCommunications {
      *            - the message bytes
      */
     private void processInbound(InetSocketAddress sender, ByteBuffer buffer) {
+        if (gossip.isIgnoring(sender)) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("Ignoring inbound msg from: %s",
+                                         sender));
+            }
+            return;
+        }
         byte msgType = buffer.get();
         switch (msgType) {
             case GOSSIP: {
