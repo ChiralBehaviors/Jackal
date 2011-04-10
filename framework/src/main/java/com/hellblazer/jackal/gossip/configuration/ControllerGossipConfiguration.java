@@ -132,6 +132,7 @@ public class ControllerGossipConfiguration {
     public GossipSnoop snoop() throws IOException {
         Heartbeat heartbeat = new HeartbeatState(gossip().getLocalAddress(), 0,
                                                  partitionIdentity());
+        heartbeat.setTime(0);
         return new GossipSnoop(heartbeat, gossip(), heartbeatInterval(),
                                TimeUnit.MILLISECONDS);
     }

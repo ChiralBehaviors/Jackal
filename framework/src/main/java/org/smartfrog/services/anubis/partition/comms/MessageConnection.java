@@ -37,20 +37,15 @@ import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 public class MessageConnection extends HeartbeatProtocolAdapter implements
         Connection, HeartbeatProtocol, Candidate {
 
-    private IOConnection         closingImpl       = null;
-    /**
-     * Implementations
-     */
-    private IOConnection         connectionImpl    = null;
+    private static final Logger  log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
 
+    private IOConnection         closingImpl       = null;
+    private IOConnection         connectionImpl    = null;
     private ConnectionSet        connectionSet     = null;
     private boolean              disconnectPending = false;
     private boolean              ignoring          = false;
-    private static final Logger  log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
     private Identity             me                = null;
-
     private LinkedList<TimedMsg> msgQ              = new LinkedList<TimedMsg>();
-
     private boolean              terminated        = false;
 
     /**
@@ -94,12 +89,14 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             }
 
             if (connectionImpl != null) {
-                Exception e = new Exception();
-                e.fillInStackTrace();
-                log.log(Level.SEVERE,
-                        me
-                                + " attempt to assign a new implementation when one exists",
-                        e);
+                if (log.isLoggable(Level.FINE)) {
+                    Exception e = new Exception();
+                    e.fillInStackTrace();
+                    log.log(Level.FINE,
+                            me
+                                    + " attempt to assign a new implementation when one exists",
+                            e);
+                }
                 return false;
             }
 
@@ -206,6 +203,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             if (msgQ.isEmpty()) {
                 connectionSet.disconnect(getSender());
             }
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("%s disconnecting to %s", me,
+                                       getSender()));
+            }
         }
     }
 
@@ -232,7 +233,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Heart beat rejected from: %s at: ", getId(), me));
+            log.finest(String.format("Heart beat rejected from: %s at: ",
+                                     getId(), me));
         }
         return false;
     }
@@ -323,6 +325,11 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         terminated = true;
     }
 
+    @Override
+    public String toString() {
+        return "MessageConnection [from: " + me + " to:" + getId() + "]";
+    }
+
     private void checkInitiatingClose(HeartbeatMsg msg) {
         // System.out.println(me + " initiator close check on link to " + getSender() );
         /**
@@ -411,11 +418,6 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                 connectionSet.convertToHeartbeatConnection(this);
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return "MessageConnection [from: " + me + " to:" + getId() + "]";
     }
 
 }

@@ -17,6 +17,7 @@
  */
 package com.hellblazer.jackal.gossip;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -28,12 +29,12 @@ import java.util.logging.Logger;
  */
 
 public class Endpoint {
-    protected static Logger              logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
+    protected static Logger         logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
 
-    private final FailureDetector fd;
-    private volatile GossipMessages      handler;
-    private volatile HeartbeatState      heartbeat;
-    private volatile boolean             isAlive = true;
+    private final FailureDetector   fd;
+    private volatile GossipMessages handler;
+    private volatile HeartbeatState heartbeat;
+    private volatile boolean        isAlive = true;
 
     public Endpoint() {
         fd = null;
@@ -62,8 +63,8 @@ public class Endpoint {
         return heartbeat;
     }
 
-    public long getVersion() {
-        return heartbeat.getVersion();
+    public long getTime() {
+        return heartbeat.getTime();
     }
 
     public boolean isAlive() {
@@ -100,15 +101,23 @@ public class Endpoint {
         return "Endpoint " + getMemberString();
     }
 
-    public void updateState(long now, HeartbeatState newHbState) {
+    public void updateState(HeartbeatState newHbState) {
         heartbeat = newHbState;
-        fd.record(heartbeat.getTime());
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest(String.format("%s new heartbeat time: %s",
+                                        heartbeat.getSender(),
+                                        heartbeat.getTime()));
+        }
     }
 
-    public void updateState(HeartbeatState newHbState) {
-        if (heartbeat != null) {
-            newHbState.setVersion(heartbeat.getVersion() + 1L);
+    public void record(long now) {
+        fd.record(now);
+    }
+
+    public void record(HeartbeatState newHbState) {
+        if (heartbeat != newHbState) {
+            heartbeat = newHbState;
+            fd.record(heartbeat.getTime());
         }
-        heartbeat = newHbState;
     }
 }

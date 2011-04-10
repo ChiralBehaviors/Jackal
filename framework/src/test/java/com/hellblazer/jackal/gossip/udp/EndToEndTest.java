@@ -85,10 +85,10 @@ public class EndToEndTest extends TestCase {
             }
             System.out.println();
             System.out.println("Initial iteration completed");
-            for (int i = 0; i < 5; i++) {
+            for (int i = 1; i < 5; i++) {
                 updateAndAwait(i, membership, receivers, members);
                 System.out.println();
-                System.out.println("Iteration " + (i + 2) + " completed");
+                System.out.println("Iteration " + (i + 1) + " completed");
             }
         } finally {
             System.out.println();
@@ -107,14 +107,19 @@ public class EndToEndTest extends TestCase {
         }
         id = 0;
         for (Gossip member : members) {
-            member.sendHeartbeat(new HeartbeatState(new Identity(666, 0, 0),
-                                                    false,
-                                                    member.getLocalAddress(),
-                                                    iteration + 1,
-                                                    new NodeIdSet(), true,
-                                                    new Identity(666, id++, 1),
-                                                    null, false, null,
-                                                    new NodeIdSet(), 0, 0));
+            HeartbeatState heartbeat = new HeartbeatState(
+                                                          new Identity(666, 0,
+                                                                       0),
+                                                          false,
+                                                          member.getLocalAddress(),
+                                                          new NodeIdSet(),
+                                                          true,
+                                                          new Identity(666,
+                                                                       id++, 1),
+                                                          null, false, null,
+                                                          new NodeIdSet(), 0, 0);
+            heartbeat.setTime(iteration + 1);
+            member.sendHeartbeat(heartbeat);
         }
         for (int i = 0; i < membership; i++) {
             receivers[i].await(60, TimeUnit.SECONDS);
@@ -158,13 +163,16 @@ public class EndToEndTest extends TestCase {
         Gossip gossip = new Gossip(view, new Random(), communications, 1,
                                    TimeUnit.SECONDS, fdFactory);
         gossip.create(receiver);
-        gossip.sendHeartbeat(new HeartbeatState(
-                                                new Identity(666, 0, 0),
-                                                false,
-                                                communications.getLocalAddress(),
-                                                0, new NodeIdSet(), true,
-                                                localIdentity, null, false,
-                                                null, new NodeIdSet(), 0, 0));
+        HeartbeatState heartbeat = new HeartbeatState(
+                                                      new Identity(666, 0, 0),
+                                                      false,
+                                                      communications.getLocalAddress(),
+                                                      new NodeIdSet(), true,
+                                                      localIdentity, null,
+                                                      false, null,
+                                                      new NodeIdSet(), 0, 0);
+        heartbeat.setTime(0);
+        gossip.sendHeartbeat(heartbeat);
         return gossip;
     }
 
@@ -195,6 +203,7 @@ public class EndToEndTest extends TestCase {
 
         @Override
         public boolean receiveHeartbeat(Heartbeat hb) {
+            assert hb.getSender().id >= 0;
             // System.out.println("Heartbeat received: " + hb);
             int currentCount = count.incrementAndGet();
             if (currentCount % 100 == 0) {

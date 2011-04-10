@@ -23,7 +23,6 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 
-
 /**
  * Contains information about a specified list of Endpoints and the largest
  * version of the state they have generated as known by the local endpoint.
@@ -32,38 +31,32 @@ import java.util.Comparator;
  * 
  */
 public class Digest {
-    public static class DigestComparator implements Serializable, Comparator<Digest> {
+    public static class DigestComparator implements Serializable,
+            Comparator<Digest> {
         private static final long serialVersionUID = 1L;
 
         @Override
         public int compare(Digest digest1, Digest digest2) {
-            if (digest1.epoch != digest2.epoch) {
-                return (int) (digest1.epoch - digest2.epoch);
-            }
-            return (int) (digest1.version - digest2.version);
+            return (int) (digest1.time - digest2.time);
         }
     }
 
     private final InetSocketAddress address;
-    private final long              epoch;
-    private final long              version;
+    private final long              time;
 
     public Digest(ByteBuffer msg) throws UnknownHostException {
         address = HeartbeatState.readInetAddress(msg);
-        epoch = msg.getLong();
-        version = msg.getLong();
+        time = msg.getLong();
     }
 
     public Digest(InetSocketAddress socketAddress, Endpoint ep) {
         address = socketAddress;
-        epoch = ep.getEpoch();
-        version = ep.getVersion();
+        time = ep.getTime();
     }
 
-    public Digest(InetSocketAddress ep, long diffEpoch, long diffViewNumber) {
+    public Digest(InetSocketAddress ep, long diffTime) {
         address = ep;
-        epoch = diffEpoch;
-        version = diffViewNumber;
+        time = diffTime;
     }
 
     @Override
@@ -85,10 +78,7 @@ public class Digest {
         } else if (!address.equals(other.address)) {
             return false;
         }
-        if (epoch != other.epoch) {
-            return false;
-        }
-        if (version != other.version) {
+        if (time != other.time) {
             return false;
         }
         return true;
@@ -98,12 +88,8 @@ public class Digest {
         return address;
     }
 
-    public long getEpoch() {
-        return epoch;
-    }
-
-    public long getVersion() {
-        return version;
+    public long getTime() {
+        return time;
     }
 
     @Override
@@ -111,8 +97,7 @@ public class Digest {
         final int prime = 31;
         int result = 1;
         result = prime * result + (address == null ? 0 : address.hashCode());
-        result = prime * result + (int) (epoch ^ epoch >>> 32);
-        result = prime * result + (int) (version ^ version >>> 32);
+        result = prime * result + (int) (time ^ time >>> 32);
         return result;
     }
 
@@ -121,15 +106,12 @@ public class Digest {
         StringBuilder sb = new StringBuilder();
         sb.append(address);
         sb.append(":");
-        sb.append(epoch);
-        sb.append(":");
-        sb.append(version);
+        sb.append(time);
         return sb.toString();
     }
 
     public void writeTo(ByteBuffer buffer) {
         HeartbeatState.writeInetAddress(address, buffer);
-        buffer.putLong(epoch);
-        buffer.putLong(version);
+        buffer.putLong(time);
     }
 }

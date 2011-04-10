@@ -21,11 +21,11 @@ package org.smartfrog.services.anubis.partition.test.controller;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PreDestroy;
 
@@ -43,7 +43,7 @@ public class Controller implements HeartbeatReceiver {
     protected long                          heartbeatInterval;
     protected long                          heartbeatTimeout;
     protected final Identity                identity;
-    protected final Map<Identity, NodeData> nodes      = new HashMap<Identity, NodeData>();
+    protected final Map<Identity, NodeData> nodes      = new ConcurrentHashMap<Identity, NodeData>();
     private TimerTask                       task;
     private final Timer                     timer;
 
@@ -121,7 +121,7 @@ public class Controller implements HeartbeatReceiver {
     }
 
     /**
-     * @throws IOException  
+     * @throws IOException
      */
     @Deployed
     public synchronized void deploy() throws IOException {

@@ -81,6 +81,7 @@ public class GossipSnoop {
     }
 
     protected void update() {
+        state.setTime(state.getTime() + 1);
         underlying.sendHeartbeat(state);
     }
 

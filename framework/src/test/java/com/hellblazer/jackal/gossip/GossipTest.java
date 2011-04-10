@@ -42,22 +42,14 @@ public class GossipTest extends TestCase {
         InetSocketAddress localAddress = new InetSocketAddress(0);
         when(view.getLocalAddress()).thenReturn(localAddress);
 
-        Digest digest1 = new Digest(new InetSocketAddress("google.com", 1), 0,
-                                    3);
-        Digest digest2 = new Digest(new InetSocketAddress("google.com", 2), 0,
-                                    1);
-        Digest digest3 = new Digest(new InetSocketAddress("google.com", 3), 2,
-                                    1);
-        Digest digest4 = new Digest(new InetSocketAddress("google.com", 4), 0,
-                                    3);
-        Digest digest1a = new Digest(new InetSocketAddress("google.com", 1), 0,
-                                     -1);
-        Digest digest2a = new Digest(new InetSocketAddress("google.com", 2), 0,
-                                     -1);
-        Digest digest3a = new Digest(new InetSocketAddress("google.com", 3), 2,
-                                     -1);
-        Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), 0,
-                                     -1);
+        Digest digest1 = new Digest(new InetSocketAddress("google.com", 1), 3);
+        Digest digest2 = new Digest(new InetSocketAddress("google.com", 2), 1);
+        Digest digest3 = new Digest(new InetSocketAddress("google.com", 3), 1);
+        Digest digest4 = new Digest(new InetSocketAddress("google.com", 4), 3);
+        Digest digest1a = new Digest(new InetSocketAddress("google.com", 1), -1);
+        Digest digest2a = new Digest(new InetSocketAddress("google.com", 2), -1);
+        Digest digest3a = new Digest(new InetSocketAddress("google.com", 3), -1);
+        Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), -1);
 
         Gossip gossip = new Gossip(view, random, communications, 4,
                                    TimeUnit.DAYS, fdFactory);
@@ -86,33 +78,33 @@ public class GossipTest extends TestCase {
         InetSocketAddress address3 = new InetSocketAddress(3);
         InetSocketAddress address4 = new InetSocketAddress(4);
 
-        Digest digest1 = new Digest(address1, 1, 3);
-        Digest digest2 = new Digest(address2, 1, 1);
-        Digest digest3 = new Digest(address3, 3, 4);
-        Digest digest4 = new Digest(address4, 4, 3);
+        Digest digest1 = new Digest(address1, 2);
+        Digest digest2 = new Digest(address2, 1);
+        Digest digest3 = new Digest(address3, 4);
+        Digest digest4 = new Digest(address4, 3);
 
-        Digest digest1a = new Digest(address1, 1, 0);
-        Digest digest3a = new Digest(address3, 3, 3);
+        Digest digest1a = new Digest(address1, 1);
+        Digest digest3a = new Digest(address3, 3);
 
         HeartbeatState state1 = new HeartbeatState(null,
                                                    new Identity(666, 1, 0),
                                                    address1);
-        state1.setVersion(1);
+        state1.setTime(1);
 
         HeartbeatState state2 = new HeartbeatState(null,
                                                    new Identity(666, 2, 2),
                                                    address2);
-        state2.setVersion(2);
+        state2.setTime(2);
 
         HeartbeatState state3 = new HeartbeatState(null,
                                                    new Identity(666, 3, 3),
                                                    address3);
-        state3.setVersion(3);
+        state3.setTime(3);
 
         HeartbeatState state4 = new HeartbeatState(null,
                                                    new Identity(666, 4, 4),
                                                    address4);
-        state4.setVersion(4);
+        state4.setTime(4);
 
         Gossip gossip = new Gossip(view, random, communications, 4,
                                    TimeUnit.DAYS, fdFactory);
@@ -207,36 +199,32 @@ public class GossipTest extends TestCase {
         HeartbeatState state1 = new HeartbeatState(null,
                                                    new Identity(666, 1, 0),
                                                    address1);
-        state1.setVersion(1);
+        state1.setTime(1);
 
         HeartbeatState state2 = new HeartbeatState(null,
                                                    new Identity(666, 2, 2),
                                                    address2);
-        state2.setVersion(2);
+        state2.setTime(1);
 
         HeartbeatState state3 = new HeartbeatState(null,
                                                    new Identity(666, 3, 3),
                                                    address3);
-        state3.setVersion(3);
+        state3.setTime(3);
 
         HeartbeatState state4 = new HeartbeatState(null,
                                                    new Identity(666, 4, 4),
                                                    address4);
-        state4.setVersion(4);
+        state4.setTime(1);
 
-        when(ep1.getEpoch()).thenReturn(0L);
-        when(ep1.getVersion()).thenReturn(0L);
+        when(ep1.getTime()).thenReturn(0L);
         when(ep1.getState()).thenReturn(state1);
 
-        when(ep2.getEpoch()).thenReturn(3L);
-        when(ep2.getVersion()).thenReturn(1L);
+        when(ep2.getTime()).thenReturn(1L);
 
-        when(ep3.getEpoch()).thenReturn(3L);
-        when(ep3.getVersion()).thenReturn(0L);
+        when(ep3.getTime()).thenReturn(0L);
         when(ep3.getState()).thenReturn(state3);
 
-        when(ep4.getEpoch()).thenReturn(4L);
-        when(ep4.getVersion()).thenReturn(5L);
+        when(ep4.getTime()).thenReturn(5L);
 
         Gossip gossip = new Gossip(view, random, communications, 4,
                                    TimeUnit.DAYS, fdFactory) {
@@ -259,26 +247,22 @@ public class GossipTest extends TestCase {
         endpoints.put(address3, ep3);
         endpoints.put(address4, ep4);
 
-        long now = System.currentTimeMillis();
         gossip.apply(asList(state1, state2, state3, state4));
 
-        verify(ep1).getEpoch();
-        verify(ep1, new Times(2)).getVersion();
-        verify(ep1).updateState(now, state1);
+        verify(ep1, new Times(2)).getTime();
+        verify(ep1).record(state1);
         verify(ep1).getState();
         verifyNoMoreInteractions(ep1);
 
-        verify(ep2).getEpoch();
+        verify(ep2).getTime();
         verifyNoMoreInteractions(ep2);
 
-        verify(ep3).getEpoch();
-        verify(ep3, new Times(2)).getVersion();
-        verify(ep3).updateState(now, state3);
+        verify(ep3, new Times(2)).getTime();
+        verify(ep3).record(state3);
         verify(ep3).getState();
         verifyNoMoreInteractions(ep3);
 
-        verify(ep4).getEpoch();
-        verify(ep4).getVersion();
+        verify(ep4).getTime();
         verifyNoMoreInteractions(ep4);
 
         verify(communications).setGossip(gossip);

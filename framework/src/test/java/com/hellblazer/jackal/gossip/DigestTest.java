@@ -35,28 +35,22 @@ import com.hellblazer.jackal.gossip.Digest.DigestComparator;
 public class DigestTest extends TestCase {
     public void testBasic() throws Exception {
         InetSocketAddress address = new InetSocketAddress("google.com", 80);
-        Digest s = new Digest(address, 666, 667);
-        assertEquals(666, s.getEpoch());
-        assertEquals(667, s.getVersion());
+        Digest s = new Digest(address, 667);
+        assertEquals(667, s.getTime());
         assertEquals(address, s.getAddress());
         byte[] bytes = new byte[GossipMessages.DIGEST_BYTE_SIZE];
         ByteBuffer msg = ByteBuffer.wrap(bytes);
         s.writeTo(msg);
         msg.flip();
         Digest d = new Digest(msg);
-        assertEquals(666, d.getEpoch());
-        assertEquals(667, d.getVersion());
+        assertEquals(667, d.getTime());
         assertEquals(address, d.getAddress());
         DigestComparator comparator = new DigestComparator();
         assertEquals(0, comparator.compare(s, d));
 
-        Digest l = new Digest(address, 665, 667);
-        assertEquals(-1, comparator.compare(l, d));
-        Digest l2 = new Digest(address, 666, 666);
+        Digest l2 = new Digest(address, 666);
         assertEquals(-1, comparator.compare(l2, d));
-        Digest g = new Digest(address, 667, 666);
-        assertEquals(1, comparator.compare(g, d));
-        Digest g2 = new Digest(address, 666, 668);
+        Digest g2 = new Digest(address, 668);
         assertEquals(1, comparator.compare(g2, d));
     }
 }

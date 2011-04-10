@@ -202,8 +202,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         TimedMsg tm = (TimedMsg) msg;
 
         if (tm.getOrder() != receiveCount) {
-            log.severe(format("%s connection transport has delivered a message out of order - shutting down",
-                              me));
+            log.severe(format("%s connection transport has delivered a message out of order - shutting down.  Expected: %s, received: %s",
+                              me, receiveCount, tm.getOrder()));
             shutdown();
             return;
         }

@@ -30,14 +30,28 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
-
 /**
  * The heartbeat state replicated by the gossip protocol
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class HeartbeatState implements Heartbeat {
+public class HeartbeatState implements Heartbeat, Cloneable {
+
+    public static InetSocketAddress readInetAddress(ByteBuffer msg)
+                                                                   throws UnknownHostException {
+        int length = msg.get();
+        if (length == 0) {
+            return null;
+        }
+
+        byte[] address = new byte[length];
+        msg.get(address);
+        int port = msg.getInt();
+
+        InetAddress inetAddress = InetAddress.getByAddress(address);
+        return new InetSocketAddress(inetAddress, port);
+    }
 
     public static HeartbeatState toHeartbeatState(Heartbeat heartbeat,
                                                   InetSocketAddress heartbeatAddress) {
@@ -45,6 +59,18 @@ public class HeartbeatState implements Heartbeat {
             return (HeartbeatState) heartbeat;
         }
         return new HeartbeatState(heartbeat, heartbeatAddress);
+    }
+
+    public static void writeInetAddress(InetSocketAddress ipaddress,
+                                        ByteBuffer bytes) {
+        if (ipaddress == null) {
+            bytes.put((byte) 0);
+            return;
+        }
+        byte[] address = ipaddress.getAddress().getAddress();
+        bytes.put((byte) address.length);
+        bytes.put(address);
+        bytes.putInt(ipaddress.getPort());
     }
 
     private volatile Identity          candidate;
@@ -56,11 +82,12 @@ public class HeartbeatState implements Heartbeat {
     private InetSocketAddress          senderAddress;
     private volatile boolean           stable        = false;
     private volatile InetSocketAddress testInterface;
-    private volatile long              time;
-    private volatile long              version       = 0;
+    private volatile long              time          = -1;
     private NodeIdSet                  view;
     private volatile long              viewNumber    = 0;
+
     private volatile long              viewTimeStamp = View.undefinedTimeStamp;
+
     private volatile byte[]            binaryCache;
 
     public HeartbeatState(ByteBuffer buffer) throws UnknownHostException {
@@ -71,7 +98,6 @@ public class HeartbeatState implements Heartbeat {
         candidate = new Identity(msg);
         discoveryOnly = msg.get() > 0 ? true : false;
         heartbeatAddress = HeartbeatState.readInetAddress(msg);
-        version = msg.getLong();
         time = msg.getLong();
         msgLinks = new NodeIdSet(msg);
         preferred = msg.get() > 0 ? true : false;
@@ -97,7 +123,7 @@ public class HeartbeatState implements Heartbeat {
     }
 
     public HeartbeatState(Identity candidate, boolean discoveryOnly,
-                          InetSocketAddress heartbeatAddress, long version,
+                          InetSocketAddress heartbeatAddress,
                           NodeIdSet msgLinks, boolean preferred,
                           Identity sender, InetSocketAddress senderAddress,
                           boolean stable, InetSocketAddress testInterface,
@@ -105,7 +131,6 @@ public class HeartbeatState implements Heartbeat {
         this.candidate = candidate;
         this.discoveryOnly = discoveryOnly;
         this.heartbeatAddress = heartbeatAddress;
-        this.version = version;
         this.msgLinks = msgLinks;
         this.preferred = preferred;
         this.sender = sender;
@@ -117,29 +142,27 @@ public class HeartbeatState implements Heartbeat {
         viewTimeStamp = viewTimestamp;
     }
 
-    public HeartbeatState(InetSocketAddress heartbeatAddress, long version,
-                          Identity sender) {
-        this.discoveryOnly = true;
-        this.heartbeatAddress = heartbeatAddress;
-        this.version = version;
-        candidate = new Identity(-1, -1, -1);
-        msgLinks = new NodeIdSet(1);
-        sender = new Identity(-1, -1, -1);
-        view = new NodeIdSet(1);
-        this.sender = sender;
-    }
-
     public HeartbeatState(InetSocketAddress address) {
         candidate = new Identity(-1, -1, -1);
         msgLinks = new NodeIdSet(1);
         sender = new Identity(-1, -1, -1);
         heartbeatAddress = address;
         view = new NodeIdSet(1);
-        version = -1;
+    }
+
+    public HeartbeatState(InetSocketAddress heartbeatAddress, long version,
+                          Identity sender) {
+        discoveryOnly = true;
+        this.heartbeatAddress = heartbeatAddress;
+        candidate = new Identity(-1, -1, -1);
+        msgLinks = new NodeIdSet(1);
+        view = new NodeIdSet(1);
+        this.sender = sender;
     }
 
     protected HeartbeatState(InetSocketAddress address, Identity id,
                              InetSocketAddress hbAddress) {
+        assert id.id >= 0;
         sender = id;
         senderAddress = address;
         view = new NodeIdSet(1);
@@ -211,9 +234,6 @@ public class HeartbeatState implements Heartbeat {
         } else if (!testInterface.equals(other.testInterface)) {
             return false;
         }
-        if (version != other.version) {
-            return false;
-        }
         if (view == null) {
             if (other.view != null) {
                 return false;
@@ -268,10 +288,6 @@ public class HeartbeatState implements Heartbeat {
         return time;
     }
 
-    public long getVersion() {
-        return version;
-    }
-
     @Override
     public View getView() {
         return new BitView(stable, view, viewTimeStamp);
@@ -299,7 +315,6 @@ public class HeartbeatState implements Heartbeat {
         result = prime * result + (stable ? 1231 : 1237);
         result = prime * result
                  + (testInterface == null ? 0 : testInterface.hashCode());
-        result = prime * result + (int) (version ^ version >>> 32);
         result = prime * result + (view == null ? 0 : view.hashCode());
         result = prime * result + (int) (viewNumber ^ viewNumber >>> 32);
         result = prime * result + (int) (viewTimeStamp ^ viewTimeStamp >>> 32);
@@ -345,11 +360,6 @@ public class HeartbeatState implements Heartbeat {
         invalidateCache();
     }
 
-    public void setVersion(long l) {
-        version = l;
-        invalidateCache();
-    }
-
     @Override
     public void setView(View v) {
         view = v.toBitSet();
@@ -372,7 +382,7 @@ public class HeartbeatState implements Heartbeat {
     @Override
     public String toString() {
         return "HeartbeatState [" + sender + " | " + heartbeatAddress
-               + ", version=" + version + "]";
+               + ", time=" + time + "]";
     }
 
     public synchronized void writeTo(ByteBuffer buffer) {
@@ -380,8 +390,13 @@ public class HeartbeatState implements Heartbeat {
         buffer.put(binaryCache);
     }
 
-    private synchronized void invalidateCache() {
-        binaryCache = null;
+    @Override
+    protected HeartbeatState clone() {
+        try {
+            return (HeartbeatState) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException();
+        }
     }
 
     private void fillCache() {
@@ -398,7 +413,6 @@ public class HeartbeatState implements Heartbeat {
             msg.put((byte) 0);
         }
         HeartbeatState.writeInetAddress(heartbeatAddress, msg);
-        msg.putLong(version);
         msg.putLong(time);
         msgLinks.writeTo(msg);
         if (preferred) {
@@ -419,30 +433,7 @@ public class HeartbeatState implements Heartbeat {
         msg.putLong(viewTimeStamp);
     }
 
-    public static InetSocketAddress readInetAddress(ByteBuffer msg)
-                                                                   throws UnknownHostException {
-        int length = msg.get();
-        if (length == 0) {
-            return null;
-        }
-    
-        byte[] address = new byte[length];
-        msg.get(address);
-        int port = msg.getInt();
-    
-        InetAddress inetAddress = InetAddress.getByAddress(address);
-        return new InetSocketAddress(inetAddress, port);
-    }
-
-    public static void writeInetAddress(InetSocketAddress ipaddress,
-                                        ByteBuffer bytes) {
-        if (ipaddress == null) {
-            bytes.put((byte) 0);
-            return;
-        }
-        byte[] address = ipaddress.getAddress().getAddress();
-        bytes.put((byte) address.length);
-        bytes.put(address);
-        bytes.putInt(ipaddress.getPort());
+    private synchronized void invalidateCache() {
+        binaryCache = null;
     }
 }

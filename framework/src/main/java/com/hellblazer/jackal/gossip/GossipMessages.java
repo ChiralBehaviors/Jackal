@@ -46,11 +46,9 @@ public interface GossipMessages {
                                       + INET_ADDRESS_MAX_BYTE_SIZE // testInterface
                                       + NODE_ID_SET_MAX_BYTE_SIZE // view
                                       + 4 // viewNumber
-                                      + 4 // viewTimeStamp 
-                                      + 4; // version
+                                      + 4; // viewTimeStamp 
     int  DIGEST_BYTE_SIZE           = INET_ADDRESS_MAX_BYTE_SIZE // address
-                                    + 8 // epoch
-                                    + 8;  // version
+                                    + 8;  // timestamp
 
     /**
      * Close the communications connection

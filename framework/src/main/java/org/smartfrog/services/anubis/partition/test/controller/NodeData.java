@@ -259,4 +259,9 @@ public class NodeData {
         return new BitView().copyView(partition).merge(ignoring);
     }
 
+    @Override
+    public String toString() {
+        return "NodeData [id=" + nodeId + "]";
+    }
+
 }

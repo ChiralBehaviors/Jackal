@@ -48,14 +48,10 @@ public class GossipHandlerTest extends TestCase {
         SocketChannel channel = mock(SocketChannel.class);
         ChannelHandler handler = mock(ChannelHandler.class);
 
-        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
-                                    0);
-        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 0,
-                                    1);
-        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 2,
-                                    0);
-        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 0,
-                                    3);
+        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0);
+        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 1);
+        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 0);
+        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 3);
         byte[] bytes = new byte[4 * GossipMessages.DIGEST_BYTE_SIZE + 1 + 4];
         ByteBuffer msg = ByteBuffer.wrap(bytes);
         msg.put(GossipMessages.GOSSIP);
@@ -78,14 +74,10 @@ public class GossipHandlerTest extends TestCase {
         SocketChannel channel = mock(SocketChannel.class);
         ChannelHandler handler = mock(ChannelHandler.class);
 
-        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
-                                    0);
-        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 0,
-                                    1);
-        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 2,
-                                    0);
-        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 0,
-                                    3);
+        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0);
+        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 1);
+        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 0);
+        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 3);
         HeartbeatState state1 = new HeartbeatState(new InetSocketAddress(0));
         HeartbeatState state2 = new HeartbeatState(new InetSocketAddress(1));
         HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));
@@ -145,14 +137,10 @@ public class GossipHandlerTest extends TestCase {
         SocketChannel channel = mock(SocketChannel.class);
         ChannelHandler handler = mock(ChannelHandler.class);
 
-        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
-                                    0);
-        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 0,
-                                    1);
-        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 2,
-                                    0);
-        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 0,
-                                    3);
+        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0);
+        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 1);
+        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 0);
+        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 3);
         byte[] bytes = new byte[4 * GossipMessages.DIGEST_BYTE_SIZE + 1 + 4];
         ByteBuffer msg = ByteBuffer.wrap(bytes);
         msg.put(GossipMessages.GOSSIP);
@@ -180,14 +168,10 @@ public class GossipHandlerTest extends TestCase {
         SocketChannel channel = mock(SocketChannel.class);
         ChannelHandler handler = mock(ChannelHandler.class);
 
-        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0,
-                                    0);
-        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 0,
-                                    1);
-        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 2,
-                                    0);
-        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 0,
-                                    3);
+        Digest digest1 = new Digest(new InetSocketAddress("google.com", 0), 0);
+        Digest digest2 = new Digest(new InetSocketAddress("google.com", 1), 1);
+        Digest digest3 = new Digest(new InetSocketAddress("google.com", 2), 0);
+        Digest digest4 = new Digest(new InetSocketAddress("google.com", 3), 3);
         HeartbeatState state1 = new HeartbeatState(new InetSocketAddress(0));
         HeartbeatState state2 = new HeartbeatState(new InetSocketAddress(1));
         HeartbeatState state3 = new HeartbeatState(new InetSocketAddress(2));

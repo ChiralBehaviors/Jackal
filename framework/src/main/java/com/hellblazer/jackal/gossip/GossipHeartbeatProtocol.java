@@ -48,6 +48,7 @@ public class GossipHeartbeatProtocol extends BitView implements
     private long                         time             = 0;
     private long                         viewNumber       = 0;
     private final InetSocketAddress      heartbeatAddress;
+    private final Identity               me;
 
     public GossipHeartbeatProtocol(Heartbeat hb, ViewListener vl,
                                    Heartbeat sharedHeartbeat,
@@ -63,6 +64,7 @@ public class GossipHeartbeatProtocol extends BitView implements
         gossip = gossipService;
         heartbeatAddress = ((HeartbeatState) hb).getHeartbeatAddress();
         assert heartbeatAddress != null;
+        me = sharedHeartbeat.getSender();
     }
 
     @Override
@@ -108,6 +110,7 @@ public class GossipHeartbeatProtocol extends BitView implements
          * delivery is not guaranteed!)
          */
         if (hb.getTime() > time) {
+            gossip.update(hb, address);
             time = hb.getTime();
             boolean viewChanged = false;
             boolean timeStampChanged = false;
@@ -145,13 +148,15 @@ public class GossipHeartbeatProtocol extends BitView implements
             }
 
             if (log.isLoggable(Level.FINEST)) {
-                log.finest("Accepting heart beat: " + hb);
+                log.finest(String.format("Accepting heartbeat on: %s from: %s viewchange: %s",
+                                         me, hb.getSender(), viewChanged));
             }
             return true;
 
         }
         if (log.isLoggable(Level.FINEST)) {
-            log.finest("Rejecting heart beat: " + hb);
+            log.finest(String.format("Rejecting heartbeat on: %s from: %s", me,
+                                     hb.getSender()));
         }
         return false;
     }
@@ -159,6 +164,7 @@ public class GossipHeartbeatProtocol extends BitView implements
     @Override
     public void setTime(long t) {
         time = t;
+        gossip.record(t, address);
     }
 
     @Override

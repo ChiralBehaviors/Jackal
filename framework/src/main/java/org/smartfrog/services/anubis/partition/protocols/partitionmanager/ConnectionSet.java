@@ -372,6 +372,12 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     public synchronized void disconnect(Identity id) {
         msgLinks.remove(id.id);
+        connectionView.remove(id);
+        Connection connection = connections.remove(id);
+        if (connection != null) {
+            msgConnections.remove(connection);
+            connection.terminate();
+        }
     }
 
     /**
@@ -481,7 +487,10 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     @Override
     public synchronized void newView(Identity id, View v) {
-
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("New view: %s on: %s from: %s", v,
+                                     identity, id));
+        }
         changeInViews = true;
         connectionView.destablize();
         stablizing = false;
@@ -516,7 +525,16 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     @Override
     public synchronized void newViewTime(Identity id, View v) {
         if (changeInViews || !stablizing) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("New view time: %s on: %s from: %s, changeInViews: %s, stabilzing: %s",
+                                         v, identity, id, changeInViews,
+                                         stablizing));
+            }
             return;
+        }
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("New view time: %s on: %s from: %s", v,
+                                     identity, id));
         }
 
         if (isBetterTimeStamp(v.getTimeStamp())) {
@@ -622,6 +640,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         /**
          * prepare the heartbeat with the latest information
          */
+        heartbeat.setMsgLinks(msgLinks);
         heartbeat.setTime(timenow);
         heartbeat.setView(connectionView);
         heartbeat.setViewNumber(viewNumber);

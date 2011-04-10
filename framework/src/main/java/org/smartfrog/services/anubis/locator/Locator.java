@@ -216,6 +216,10 @@ public class Locator implements PartitionNotification, AnubisLocator {
      * PartitionNotification interface
      */
     public void partitionNotificationImpl(View view, int leader) {
+        if (log.isLoggable(Level.FINER)) {
+            log.finer(String.format("Partition view: %s, leader: %s, on member %s",
+                                   view, leader, me));
+        }
 
         /**
          * Keep record of the current stability and which node is leader. The

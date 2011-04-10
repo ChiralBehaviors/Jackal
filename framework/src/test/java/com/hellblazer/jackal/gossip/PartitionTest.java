@@ -108,8 +108,8 @@ public class PartitionTest extends TestCase {
     }
 
     static class Node extends NodeData {
-        CountDownLatch latch     = INITIAL_LATCH;
-        int            cardinality = CONFIGS.length;
+        private CountDownLatch latch       = INITIAL_LATCH;
+        int                    cardinality = CONFIGS.length;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -120,8 +120,16 @@ public class PartitionTest extends TestCase {
             log.finer("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
             if (partition.isStable() && partition.cardinality() == cardinality) {
-                latch.countDown();
+                getLatch().countDown();
             }
+        }
+
+        void setLatch(CountDownLatch latch) {
+            this.latch = latch;
+        }
+
+        CountDownLatch getLatch() {
+            return latch;
         }
     }
 
@@ -365,12 +373,12 @@ public class PartitionTest extends TestCase {
         for (Node member : partition) {
             if (i++ % 2 == 0) {
                 partitionB.add(member);
-                member.latch = latchA;
+                member.setLatch(latchA);
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
                 partitionA.add(member);
-                member.latch = latchB;
+                member.setLatch(latchB);
                 member.cardinality = minorPartitionSize;
             }
         }
@@ -386,8 +394,8 @@ public class PartitionTest extends TestCase {
 
         // reform
         CountDownLatch latch = new CountDownLatch(CONFIGS.length);
-        for (Node node : partition) { 
-            node.latch = latch;
+        for (Node node : partition) {
+            node.setLatch(latch);
             node.cardinality = CONFIGS.length;
         }
 
@@ -413,12 +421,12 @@ public class PartitionTest extends TestCase {
         for (Node member : partition) {
             if (i++ % 2 == 0) {
                 partitionB.add(member);
-                member.latch = latchA;
+                member.setLatch(latchA);
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
                 partitionA.add(member);
-                member.latch = latchB;
+                member.setLatch(latchB);
                 member.cardinality = minorPartitionSize;
             }
         }
@@ -430,19 +438,19 @@ public class PartitionTest extends TestCase {
         latchB.await(60, TimeUnit.SECONDS);
 
         View viewA = partitionA.get(0).getView();
-        for (Node member : partitionA) { 
+        for (Node member : partitionA) {
             assertEquals(viewA, member.getView());
         }
 
         View viewB = partitionB.get(0).getView();
-        for (Node member : partitionB) { 
+        for (Node member : partitionB) {
             assertEquals(viewB, member.getView());
         }
 
         // reform
         CountDownLatch latch = new CountDownLatch(CONFIGS.length);
         for (Node node : partition) {
-            node.latch = latch;
+            node.setLatch(latch);
             node.cardinality = CONFIGS.length;
         }
 
@@ -469,7 +477,8 @@ public class PartitionTest extends TestCase {
             partition = new ArrayList<PartitionTest.Node>();
             for (AnnotationConfigApplicationContext context : memberContexts) {
                 Node member = (Node) controller.getNode(context.getBean(Identity.class));
-                assertNotNull(member);
+                assertNotNull("Can't find node: "
+                                      + context.getBean(Identity.class), member);
                 partition.add(member);
             }
         } finally {
