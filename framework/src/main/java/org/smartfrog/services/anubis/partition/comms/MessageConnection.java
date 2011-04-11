@@ -203,9 +203,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             if (msgQ.isEmpty()) {
                 connectionSet.disconnect(getSender());
             }
-            if (log.isLoggable(Level.FINE)) {
-                log.fine(String.format("%s disconnecting to %s", me,
-                                       getSender()));
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST, String.format("%s disconnecting from %s",
+                                                    me, getSender()));
             }
         }
     }
@@ -233,8 +233,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Heart beat rejected from: %s at: ",
-                                     getId(), me));
+            log.finest(String.format("Non message connection heartbeat rejected from: %s at: %s",
+                                     hb.getSender(), me));
         }
         return false;
     }

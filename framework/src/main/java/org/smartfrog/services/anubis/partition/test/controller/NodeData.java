@@ -96,6 +96,10 @@ public class NodeData {
         return ignoring.toString();
     }
 
+    public View getPartition() {
+        return partition;
+    }
+
     public String getPartitionString() {
         return partition.toBitSet().toString();
     }
@@ -194,6 +198,11 @@ public class NodeData {
         connection.sendObject(new SetTimingMsg(interval, timeout));
     }
 
+    @Override
+    public String toString() {
+        return "NodeData [id=" + nodeId + "]";
+    }
+
     protected void ignoring(IgnoringMsg ignoringMsg) {
         ignoring = ignoringMsg.ignoring;
         update();
@@ -257,11 +266,6 @@ public class NodeData {
 
     private View partOrIgnoring(View partition, View ignoring) {
         return new BitView().copyView(partition).merge(ignoring);
-    }
-
-    @Override
-    public String toString() {
-        return "NodeData [id=" + nodeId + "]";
     }
 
 }

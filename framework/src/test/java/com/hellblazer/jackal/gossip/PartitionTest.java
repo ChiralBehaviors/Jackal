@@ -387,9 +387,9 @@ public class PartitionTest extends TestCase {
         log.info("Awaiting stability of minor partition A");
         latchA.await(60, TimeUnit.SECONDS);
 
-        View viewA = partitionA.get(0).getView();
+        View viewA = partitionA.get(0).getPartition();
         for (Node member : partitionA) {
-            assertEquals(viewA, member.getView());
+            assertEquals(viewA, member.getPartition());
         }
 
         // reform
@@ -437,14 +437,14 @@ public class PartitionTest extends TestCase {
         log.info("Awaiting stability of minor partition B");
         latchB.await(60, TimeUnit.SECONDS);
 
-        View viewA = partitionA.get(0).getView();
+        View viewA = partitionA.get(0).getPartition();
         for (Node member : partitionA) {
-            assertEquals(viewA, member.getView());
+            assertEquals(viewA, member.getPartition());
         }
 
-        View viewB = partitionB.get(0).getView();
+        View viewB = partitionB.get(0).getPartition();
         for (Node member : partitionB) {
-            assertEquals(viewB, member.getView());
+            assertEquals(viewB, member.getPartition());
         }
 
         // reform

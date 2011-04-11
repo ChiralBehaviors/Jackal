@@ -21,9 +21,8 @@ package org.smartfrog.services.anubis.partition;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetAddress;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -44,9 +43,9 @@ public class PartitionManager implements Partition {
 
     static final int                         UNDEFINED_LEADER = -1;
     private static final Logger              log              = Logger.getLogger(PartitionManager.class.getCanonicalName()); //TODO Need to wrap Async
-    
+
     private final Identity                   identity;
-    private final Set<PartitionNotification> notificationSet  = new HashSet<PartitionNotification>();
+    private final Set<PartitionNotification> notificationSet  = new CopyOnWriteArraySet<PartitionNotification>();
     private int                              notifiedLeader   = UNDEFINED_LEADER;
     private View                             notifiedView;
     private PartitionProtocol                partitionProtocol;
@@ -113,17 +112,20 @@ public class PartitionManager implements Partition {
 
         if (view.isStable() && leader == identity.id
             && notifiedLeader != leader && notifiedLeader != UNDEFINED_LEADER) {
-            log.severe("Leader changed to me on stabalization, old leader = "
+            log.severe("Leader changed to me on stabilization, old leader = "
                        + notifiedLeader + ", new leader = " + leader
                        + ", view = " + view);
         }
 
+        if (log.isLoggable(Level.FINEST)) { 
+            log.log(Level.FINEST,
+                    String.format("%s notified: %s", identity, view));
+        }
+
         notifiedView = new BitView(view);
         notifiedLeader = leader;
-        @SuppressWarnings("unchecked")
-        Iterator<PartitionNotification> iter = ((Set<PartitionNotification>) ((HashSet<PartitionNotification>) notificationSet).clone()).iterator();
-        while (iter.hasNext()) {
-            safePartitionNotification(iter.next(), notifiedView, notifiedLeader);
+        for (PartitionNotification p : notificationSet) {
+            safePartitionNotification(p, notifiedView, notifiedLeader);
         }
     }
 
@@ -131,10 +133,8 @@ public class PartitionManager implements Partition {
         if (terminated) {
             return;
         }
-        @SuppressWarnings("unchecked")
-        Iterator<PartitionNotification> iter = ((Set<PartitionNotification>) ((HashSet<PartitionNotification>) notificationSet).clone()).iterator();
-        while (iter.hasNext()) {
-            safeObjectNotification(iter.next(), obj, sender, time);
+        for (PartitionNotification p : notificationSet) {
+            safeObjectNotification(p, obj, sender, time);
         }
     }
 

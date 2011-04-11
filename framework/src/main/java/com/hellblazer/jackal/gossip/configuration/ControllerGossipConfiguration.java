@@ -49,6 +49,7 @@ import com.hellblazer.jackal.gossip.HeartbeatState;
 import com.hellblazer.jackal.gossip.SystemView;
 import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.tcp.TcpCommunications;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
 import com.hellblazer.jackal.nio.SocketOptions;
@@ -186,9 +187,13 @@ public class ControllerGossipConfiguration {
     }
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(14, 1000, heartbeatInterval()
-                                                       * heartbeatTimeout(), 4,
+        return new PhiFailureDetectorFactory(6, 1000, heartbeatInterval(), 1,
                                              1, false);
+    }
+
+    protected FailureDetectorFactory timedFailureDetectorFactory() {
+        return new TimedFailureDetectorFactory(heartbeatInterval()
+                                               * heartbeatTimeout());
     }
 
     protected int quarantineDelay() {

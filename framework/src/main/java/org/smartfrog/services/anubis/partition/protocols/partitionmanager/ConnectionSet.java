@@ -372,12 +372,14 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     public synchronized void disconnect(Identity id) {
         msgLinks.remove(id.id);
+        /*
         connectionView.remove(id);
         Connection connection = connections.remove(id);
         if (connection != null) {
             msgConnections.remove(connection);
             connection.terminate();
         }
+        */
     }
 
     /**
@@ -488,8 +490,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     @Override
     public synchronized void newView(Identity id, View v) {
         if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("New view: %s on: %s from: %s", v,
-                                     identity, id));
+            log.log(Level.FINEST, String.format("New view: %s on: %s from: %s",
+                                                v, identity, id));
         }
         changeInViews = true;
         connectionView.destablize();
@@ -606,6 +608,12 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         if (sendingHeartbeats) {
             msgConDelayedDelete.add(con);
             return;
+        }
+
+        if (log.isLoggable(Level.FINEST)) {
+            log.log(Level.FINEST,
+                    String.format("Removing connection: %s from: %s",
+                                  con.getSender(), identity));
         }
 
         /**

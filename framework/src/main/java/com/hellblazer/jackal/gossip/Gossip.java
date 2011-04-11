@@ -317,8 +317,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     public boolean shouldConvict(InetSocketAddress address, long now) {
         Endpoint endpoint = endpoints.get(address);
-        return endpoint == null || isIgnoring(endpoint.getState().getSender())
-               || endpoint.shouldConvict(now);
+        return endpoint == null || endpoint.shouldConvict(now);
     }
 
     @Override
