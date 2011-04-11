@@ -202,10 +202,8 @@ public class EndToEndTest extends TestCase {
     }
 
     static class Node extends NodeData {
-        CountDownLatch latch       = INITIAL_LATCH;
+        CountDownLatch latch         = INITIAL_LATCH;
         int            cardinality   = CONFIGS.length;
-        boolean        interrupted   = false;
-        boolean        barrierBroken = false;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -213,10 +211,12 @@ public class EndToEndTest extends TestCase {
 
         @Override
         protected void partitionNotification(View partition, int leader) {
-            log.fine("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
-            if (partition.isStable() && partition.cardinality() == cardinality) { 
+            if (partition.isStable() && partition.cardinality() == cardinality) {
+                log.info("Stabilized: " + partition);
                 latch.countDown();
+            } else { 
+                log.fine("Unstable Partition notification: " + partition);
             }
         }
     }
@@ -364,7 +364,7 @@ public class EndToEndTest extends TestCase {
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+                       listener.latch.await(60, TimeUnit.SECONDS));
             assertEquals(listeners.size(), listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (Event event : listener.events) {
@@ -381,6 +381,7 @@ public class EndToEndTest extends TestCase {
     public void testSymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
+        BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<Node>();
 
@@ -390,14 +391,15 @@ public class EndToEndTest extends TestCase {
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.latch = latchB;
                 member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
             }
         }
 
@@ -422,9 +424,19 @@ public class EndToEndTest extends TestCase {
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stabilty of minor partition A");
-        latchA.await(30, TimeUnit.SECONDS);
+        assertTrue("minor partition A did not stabilize",
+                   latchA.await(120, TimeUnit.SECONDS));
         log.info("Awaiting stabilty of minor partition B");
-        latchB.await(30, TimeUnit.SECONDS);
+        assertTrue("minor partition B did not stabilize",
+                   latchB.await(120, TimeUnit.SECONDS));
+
+        for (Node member : partitionA) {
+            assertEquals(A, member.getPartition());
+        }
+
+        for (Node member : partitionB) {
+            assertEquals(B, member.getPartition());
+        }
 
         for (ApplicationContext context : memberContexts) {
             HashMap<String, Object> properties = new HashMap<String, Object>();
@@ -442,12 +454,13 @@ public class EndToEndTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
-        latch.await(30, TimeUnit.SECONDS);
+        assertTrue("reformed partition did not stabilize",
+                   latch.await(60, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+                       listener.latch.await(60, TimeUnit.SECONDS));
             assertEquals("listener <"
                                  + listener.member
                                  + "> has received more notifications than expected ",
@@ -510,7 +523,8 @@ public class EndToEndTest extends TestCase {
         log.info("asymmetric partitioning: " + A);
         controller.asymPartition(A);
         log.info("Awaiting stabilty of minor partition A");
-        latchA.await(30, TimeUnit.SECONDS);
+        assertTrue("minor partition A did not stabilize",
+                   latchA.await(60, TimeUnit.SECONDS));
 
         for (ApplicationContext context : memberContexts) {
             HashMap<String, Object> properties = new HashMap<String, Object>();
@@ -528,12 +542,13 @@ public class EndToEndTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
-        latch.await(30, TimeUnit.SECONDS);
+        assertTrue("reformed partition did not stabilize",
+                   latch.await(60, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+                       listener.latch.await(60, TimeUnit.SECONDS));
             assertEquals("listener <"
                                  + listener.member
                                  + "> has received more notifications than expected ",
@@ -574,11 +589,18 @@ public class EndToEndTest extends TestCase {
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
-        INITIAL_LATCH.await(120, TimeUnit.SECONDS);
-        log.info("Initial partition stable");
-        partition = new ArrayList<Node>();
-        for (ConfigurableApplicationContext context : memberContexts) {
-            partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+        boolean success = false;
+        try {
+            success = INITIAL_LATCH.await(120, TimeUnit.SECONDS);
+            log.info("Initial partition stable");
+            partition = new ArrayList<Node>();
+            for (ConfigurableApplicationContext context : memberContexts) {
+                partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+            }
+        } finally {
+            if (!success) {
+                tearDown();
+            }
         }
     }
 

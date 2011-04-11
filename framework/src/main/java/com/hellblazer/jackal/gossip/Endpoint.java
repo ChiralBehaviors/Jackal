@@ -93,7 +93,7 @@ public class Endpoint {
      *         than the conviction threshold
      */
     public boolean shouldConvict(long now) {
-        return fd.shouldConvict(now);
+        return !heartbeat.isDiscoveryOnly() && fd.shouldConvict(now);
     }
 
     @Override

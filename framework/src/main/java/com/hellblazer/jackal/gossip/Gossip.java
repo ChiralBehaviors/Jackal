@@ -78,10 +78,10 @@ import com.hellblazer.jackal.gossip.Digest.DigestComparator;
  * 
  */
 public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
-    private final static Logger                              log       = Logger.getLogger(Gossip.class.getCanonicalName());
+    private final static Logger                              log             = Logger.getLogger(Gossip.class.getCanonicalName());
 
     private final GossipCommunications                       communications;
-    private final ConcurrentMap<InetSocketAddress, Endpoint> endpoints = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
+    private final ConcurrentMap<InetSocketAddress, Endpoint> endpoints       = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
     private final Random                                     entropy;
     private final Endpoint                                   localState;
     private final SystemView                                 view;
@@ -91,9 +91,10 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private final ScheduledExecutorService                   scheduler;
     private final ExecutorService                            dispatcher;
     private HeartbeatReceiver                                receiver;
-    private final AtomicReference<View>                      ignoring  = new AtomicReference<View>();
-    private final AtomicBoolean                              running   = new AtomicBoolean();
+    private final AtomicReference<View>                      ignoring        = new AtomicReference<View>();
+    private final AtomicBoolean                              running         = new AtomicBoolean();
     private final FailureDetectorFactory                     fdFactory;
+    private volatile boolean                                 isDiscoveryOnly = false;                                               // TODO fix this ugly hack
 
     /**
      * 
@@ -213,7 +214,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the mechanism to send the gossip message to a peer
      */
     public void gossip() {
-        List<Digest> digests = randomDigests();
+        List<Digest> digests;
+        if (isDiscoveryOnly) {
+            digests = Arrays.asList(new Digest(view.getLocalAddress(),
+                                               localState));
+        } else {
+            digests = randomDigests();
+        }
         if (digests.size() > 0) {
             InetSocketAddress member = gossipWithTheLiving(digests);
             gossipWithTheDead(digests);
@@ -288,7 +295,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             addUpdatedState(deltaState, addr, digest.getTime());
         }
         if (!deltaState.isEmpty()) {
-            if (log.isLoggable(Level.INFO)) {
+            if (log.isLoggable(Level.FINEST)) {
                 log.finest(String.format("Member: %s sending update states: %s",
                                          getId(), deltaState));
             }
@@ -303,11 +310,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         if (localState.getState() == null) {
             initial = true;
         }
-        localState.updateState(HeartbeatState.toHeartbeatState(heartbeat,
-                                                               view.getLocalAddress()).clone());
+        HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
+                                                                        view.getLocalAddress());
+        localState.updateState(heartbeatState);
         if (initial) {
             endpoints.put(view.getLocalAddress(), localState);
         }
+        isDiscoveryOnly = heartbeatState.isDiscoveryOnly();
     }
 
     @Override
@@ -317,7 +326,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     public boolean shouldConvict(InetSocketAddress address, long now) {
         Endpoint endpoint = endpoints.get(address);
-        return endpoint == null || endpoint.shouldConvict(now);
+        return endpoint == null || isIgnoring(endpoint.getState().getSender())
+               || endpoint.shouldConvict(now);
     }
 
     @Override
@@ -518,7 +528,10 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 if (remoteTime > localTime) {
                     deltaDigests.add(new Digest(digest.getAddress(), localTime));
                 } else if (remoteTime < localTime) {
-                    addUpdatedState(deltaState, digest.getAddress(), remoteTime);
+                    if (!isDiscoveryOnly) {
+                        addUpdatedState(deltaState, digest.getAddress(),
+                                        remoteTime);
+                    }
                 }
             } else {
                 deltaDigests.add(new Digest(digest.getAddress(), -1));
@@ -671,17 +684,24 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         }
     }
 
-    public void record(long t, InetSocketAddress address) {
+    public boolean record(long t, InetSocketAddress address) {
         Endpoint endpoint = endpoints.get(address);
-        if (endpoint != null) {
+        if (endpoint != null && !isIgnoring(endpoint.getState().getSender())) {
             endpoint.record(t);
+            return true;
         }
+        return false;
     }
 
-    public void update(Heartbeat hb, InetSocketAddress address) {
+    public boolean update(Heartbeat hb, InetSocketAddress address) {
+        if (isIgnoring(hb.getSender())) {
+            return false;
+        }
         Endpoint endpoint = endpoints.get(address);
         if (endpoint != null) {
             endpoint.updateState(HeartbeatState.toHeartbeatState(hb, address));
+            return true;
         }
+        return false;
     }
 }

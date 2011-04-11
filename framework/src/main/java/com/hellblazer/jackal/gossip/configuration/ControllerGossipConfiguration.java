@@ -171,7 +171,7 @@ public class ControllerGossipConfiguration {
     }
 
     protected int gossipInterval() {
-        return 2;
+        return 1;
     }
 
     protected TimeUnit gossipIntervalTimeUnit() {
@@ -187,7 +187,7 @@ public class ControllerGossipConfiguration {
     }
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(6, 1000, heartbeatInterval(), 1,
+        return new PhiFailureDetectorFactory(3.5, 1000, heartbeatInterval(), 1,
                                              1, false);
     }
 
@@ -197,7 +197,7 @@ public class ControllerGossipConfiguration {
     }
 
     protected int quarantineDelay() {
-        return 1000;
+        return (int) (heartbeatInterval() * (heartbeatTimeout() + 1));
     }
 
     protected Collection<InetSocketAddress> seedHosts()

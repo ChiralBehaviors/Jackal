@@ -210,7 +210,7 @@ public class GossipConfiguration {
     }
 
     protected int gossipInterval() {
-        return 2;
+        return 1;
     }
 
     protected TimeUnit gossipIntervalTimeUnit() {
@@ -249,7 +249,7 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(6, 1000, heartbeatInterval(), 1,
+        return new PhiFailureDetectorFactory(12, 1000, heartbeatInterval(), 30,
                                              1, false);
     }
 
@@ -259,7 +259,7 @@ public class GossipConfiguration {
     }
 
     protected int quarantineDelay() {
-        return 1000;
+        return (int) (heartbeatInterval() * (heartbeatTimeout() + 1));
     }
 
     protected Collection<InetSocketAddress> seedHosts()

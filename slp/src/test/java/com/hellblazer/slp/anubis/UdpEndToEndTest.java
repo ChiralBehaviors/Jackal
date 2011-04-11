@@ -214,8 +214,8 @@ public class UdpEndToEndTest extends TestCase {
     }
 
     static class Node extends NodeData {
-        CountDownLatch      latch             = INITIAL_LATCH;
-        int                 cardinality       = CONFIGS.length;
+        CountDownLatch latch       = INITIAL_LATCH;
+        int            cardinality = CONFIGS.length;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -425,6 +425,7 @@ public class UdpEndToEndTest extends TestCase {
     public void teztSymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
+        BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<Node>();
 
@@ -434,14 +435,15 @@ public class UdpEndToEndTest extends TestCase {
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.latch = latchB;
                 member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
             }
         }
 
@@ -466,9 +468,19 @@ public class UdpEndToEndTest extends TestCase {
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stabilty of minor partition A");
-        latchA.await(30, TimeUnit.SECONDS);
+        assertTrue("minor partition A did not stabilize",
+                   latchA.await(30, TimeUnit.SECONDS));
         log.info("Awaiting stabilty of minor partition B");
-        latchB.await(30, TimeUnit.SECONDS);
+        assertTrue("minor partition B did not stabilize",
+                   latchB.await(30, TimeUnit.SECONDS));
+
+        for (Node member : partitionA) {
+            assertEquals(A, member.getPartition());
+        }
+
+        for (Node member : partitionB) {
+            assertEquals(B, member.getPartition());
+        }
 
         for (ApplicationContext context : memberContexts) {
             HashMap<String, Object> properties = new HashMap<String, Object>();
@@ -486,7 +498,8 @@ public class UdpEndToEndTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
-        latch.await(30, TimeUnit.SECONDS);
+        assertTrue("reformed partition did not stabilize",
+                   latch.await(30, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
@@ -522,12 +535,12 @@ public class UdpEndToEndTest extends TestCase {
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.latch = latchB;
                 member.cardinality = minorPartitionSize;
             }
@@ -554,7 +567,12 @@ public class UdpEndToEndTest extends TestCase {
         log.info("asymmetric partitioning: " + A);
         controller.asymPartition(A);
         log.info("Awaiting stabilty of minor partition A");
-        latchA.await(30, TimeUnit.SECONDS);
+        assertTrue("minor partition did not stabilize",
+                   latchA.await(30, TimeUnit.SECONDS));
+
+        for (Node member : partitionA) {
+            assertEquals(A, member.getPartition());
+        }
 
         for (ApplicationContext context : memberContexts) {
             HashMap<String, Object> properties = new HashMap<String, Object>();
@@ -572,7 +590,8 @@ public class UdpEndToEndTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
-        latch.await(30, TimeUnit.SECONDS);
+        assertTrue("reformed partition did not stabilize",
+                   latch.await(30, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
@@ -606,11 +625,19 @@ public class UdpEndToEndTest extends TestCase {
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
-        INITIAL_LATCH.await(120, TimeUnit.SECONDS);
-        log.info("Initial partition stable");
-        partition = new ArrayList<Node>();
-        for (ConfigurableApplicationContext context : memberContexts) {
-            partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+        boolean success = false;
+        try {
+            success = INITIAL_LATCH.await(120, TimeUnit.SECONDS);
+            assertTrue("Initial partition did not stabilize", success);
+            log.info("Initial partition stable");
+            partition = new ArrayList<Node>();
+            for (ConfigurableApplicationContext context : memberContexts) {
+                partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+            }
+        } finally {
+            if (!success) {
+                tearDown();
+            }
         }
     }
 

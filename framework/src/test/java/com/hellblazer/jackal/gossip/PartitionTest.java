@@ -117,10 +117,13 @@ public class PartitionTest extends TestCase {
 
         @Override
         protected void partitionNotification(View partition, int leader) {
-            log.finer("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
             if (partition.isStable() && partition.cardinality() == cardinality) {
+                log.fine(String.format("Partition notification is stable, counting down latch: %s",
+                                       partition));
                 getLatch().countDown();
+            } else {
+                log.fine(String.format("Not counting down latch: %s", partition));
             }
         }
 
@@ -372,12 +375,12 @@ public class PartitionTest extends TestCase {
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.setLatch(latchA);
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.setLatch(latchB);
                 member.cardinality = minorPartitionSize;
             }
@@ -385,11 +388,11 @@ public class PartitionTest extends TestCase {
         log.info("asymmetric partitioning: " + A);
         controller.asymPartition(A);
         log.info("Awaiting stability of minor partition A");
-        latchA.await(60, TimeUnit.SECONDS);
+        assertTrue("minor partition A did not achieve stability",
+                   latchA.await(180, TimeUnit.SECONDS));
 
-        View viewA = partitionA.get(0).getPartition();
         for (Node member : partitionA) {
-            assertEquals(viewA, member.getPartition());
+            assertEquals(A, member.getPartition());
         }
 
         // reform
@@ -401,7 +404,8 @@ public class PartitionTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stability of reformed major partition");
-        latch.await(60, TimeUnit.SECONDS);
+        assertTrue("reformed partition did not achieve stability",
+                   latch.await(60, TimeUnit.SECONDS));
     }
 
     /**
@@ -411,6 +415,7 @@ public class PartitionTest extends TestCase {
     public void testSymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
+        BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<PartitionTest.Node>();
 
@@ -420,31 +425,32 @@ public class PartitionTest extends TestCase {
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.setLatch(latchA);
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.setLatch(latchB);
                 member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
             }
         }
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stability of minor partition A");
-        latchA.await(60, TimeUnit.SECONDS);
+        assertTrue("minor partition A did not achieve stability",
+                   latchA.await(120, TimeUnit.SECONDS));
         log.info("Awaiting stability of minor partition B");
-        latchB.await(60, TimeUnit.SECONDS);
+        assertTrue("minor partition B did not achieve stability",
+                   latchB.await(120, TimeUnit.SECONDS));
 
-        View viewA = partitionA.get(0).getPartition();
         for (Node member : partitionA) {
-            assertEquals(viewA, member.getPartition());
+            assertEquals(A, member.getPartition());
         }
 
-        View viewB = partitionB.get(0).getPartition();
         for (Node member : partitionB) {
-            assertEquals(viewB, member.getPartition());
+            assertEquals(B, member.getPartition());
         }
 
         // reform
@@ -456,7 +462,8 @@ public class PartitionTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stability of reformed major partition");
-        latch.await(60, TimeUnit.SECONDS);
+        assertTrue("reformed partition did not achieve stability",
+                   latch.await(60, TimeUnit.SECONDS));
     }
 
     @Override
@@ -468,11 +475,13 @@ public class PartitionTest extends TestCase {
                                                                    MyControllerConfig.class);
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
+        log.info("Test interface controller ID: "
+                 + controllerContext.getBean(Identity.class));
         log.info("Awaiting initial partition stability");
         boolean success = false;
         try {
-            INITIAL_LATCH.await(60, TimeUnit.SECONDS);
-            success = true;
+            success = INITIAL_LATCH.await(120, TimeUnit.SECONDS);
+            assertTrue("Initial partition did not acheive stability", success);
             log.info("Initial partition stable");
             partition = new ArrayList<PartitionTest.Node>();
             for (AnnotationConfigApplicationContext context : memberContexts) {

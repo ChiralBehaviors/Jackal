@@ -163,8 +163,8 @@ public class GossipHeartbeatProtocol extends BitView implements
 
     @Override
     public void setTime(long t) {
-        time = t;
         gossip.record(t, address);
+        time = t;
     }
 
     @Override
