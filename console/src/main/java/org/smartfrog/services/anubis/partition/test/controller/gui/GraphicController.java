@@ -32,25 +32,24 @@ import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 import com.hellblazer.jackal.annotations.Deployed;
 
 /**
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
- *
+ * 
  */
 public class GraphicController extends Controller {
     public GraphicController(Timer timer, long checkPeriod, long expirePeriod,
                              Identity partitionIdentity, long heartbeatTimeout,
                              long heartbeatInterval) {
-        super(timer, checkPeriod, expirePeriod, partitionIdentity, heartbeatTimeout,
-              heartbeatInterval);
+        super(timer, checkPeriod, expirePeriod, partitionIdentity,
+              heartbeatTimeout, heartbeatInterval);
     }
 
-    private ColorAllocator colorAllocator = new ColorAllocator();
-    private MainConsoleFrame consoleFrame;
+    private ColorAllocator      colorAllocator = new ColorAllocator();
+    private MainConsoleFrame    consoleFrame;
     private AsymetryReportFrame asymetryReport = null;
 
     public synchronized void asymPartition(String nodeStr) {
@@ -156,7 +155,7 @@ public class GraphicController extends Controller {
         symPartition(partition);
     }
 
-    protected NodeData createNode(HeartbeatMsg hb) {
+    protected NodeData createNode(Heartbeat hb) {
         NodeData nodeData;
         nodeData = new GraphicNodeData(hb, colorAllocator, this);
         return nodeData;

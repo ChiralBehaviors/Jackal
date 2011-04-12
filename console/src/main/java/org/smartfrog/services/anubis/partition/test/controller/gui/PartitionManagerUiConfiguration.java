@@ -20,14 +20,22 @@ import java.net.UnknownHostException;
 
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class PartitionManagerUiConfiguration extends ControllerConfiguration {
 
+    public static void main(String[] argv) { 
+        new AnnotationConfigApplicationContext(
+                                               PartitionManagerUiConfiguration.class);
+    }
+
     @Override
     protected Controller constructController() throws UnknownHostException {
-        return new GraphicController(timer(), 1000, 300000, partitionIdentity(), heartbeatTimeout(), heartbeatInterval());
+        return new GraphicController(timer(), 1000, 300000,
+                                     partitionIdentity(), heartbeatTimeout(),
+                                     heartbeatInterval());
     }
 
 }

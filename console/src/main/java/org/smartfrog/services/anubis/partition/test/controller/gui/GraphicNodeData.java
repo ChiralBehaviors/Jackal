@@ -24,20 +24,20 @@ import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
-import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 /**
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
- *
+ * 
  */
 public class GraphicNodeData extends NodeData {
-    private NodeButton button;
+    private NodeButton     button;
     private ColorAllocator colorAllocator;
-    private Color partitionColor = Color.lightGray;
-    private NodeFrame window;
+    private Color          partitionColor = Color.lightGray;
+    private NodeFrame      window;
 
-    public GraphicNodeData(HeartbeatMsg hb, ColorAllocator colorAllocator,
+    public GraphicNodeData(Heartbeat hb, ColorAllocator colorAllocator,
                            Controller controller) {
         super(hb, controller);
         this.colorAllocator = colorAllocator;
