@@ -94,7 +94,7 @@ public class PartitionTest extends TestCase {
 
     static class Node extends NodeData {
         CountDownLatch latch       = INITIAL_LATCH;
-        int           cardinality   = CONFIGS.length;
+        int            cardinality = CONFIGS.length;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -104,8 +104,8 @@ public class PartitionTest extends TestCase {
         protected void partitionNotification(View partition, int leader) {
             log.fine("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
-            if (partition.isStable() && partition.cardinality() == cardinality) { 
-                            latch.countDown(); 
+            if (partition.isStable() && partition.cardinality() == cardinality) {
+                latch.countDown();
             }
         }
     }
@@ -288,7 +288,7 @@ public class PartitionTest extends TestCase {
 
     private static final Logger log     = Logger.getLogger(PartitionTest.class.getCanonicalName());
 
-    static CountDownLatch        INITIAL_LATCH;
+    static CountDownLatch       INITIAL_LATCH;
     @SuppressWarnings("rawtypes")
     final static Class[]        CONFIGS = { node0.class, node1.class,
             node2.class, node3.class, node4.class, node5.class, node6.class,
@@ -313,6 +313,8 @@ public class PartitionTest extends TestCase {
     public void testAsymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
+        BitView B = new BitView();
+        BitView All = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<PartitionTest.Node>();
 
@@ -321,15 +323,17 @@ public class PartitionTest extends TestCase {
 
         int i = 0;
         for (Node member : partition) {
+            All.add(member.getIdentity());
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.latch = latchB;
                 member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
             }
         }
         log.info("asymmetric partitioning: " + A);
@@ -339,9 +343,8 @@ public class PartitionTest extends TestCase {
         // The other partition should still be unstable.
         assertEquals(CONFIGS.length / 2, latchB.getCount());
 
-        View viewA = partitionA.get(0).getView();
-        for (Node member : partitionA) { 
-            assertEquals(viewA, member.getView());
+        for (Node member : partitionA) {
+            assertEquals(A, member.getView());
         }
 
         // reform
@@ -354,6 +357,10 @@ public class PartitionTest extends TestCase {
         controller.clearPartitions();
         log.info("Awaiting stability of reformed major partition");
         latch.await(60, TimeUnit.SECONDS);
+
+        for (Node member : partition) {
+            assertEquals(All, member.getView());
+        }
     }
 
     /**
@@ -390,12 +397,12 @@ public class PartitionTest extends TestCase {
         latchB.await(60, TimeUnit.SECONDS);
 
         View viewA = partitionA.get(0).getView();
-        for (Node member : partitionA) { 
+        for (Node member : partitionA) {
             assertEquals(viewA, member.getView());
         }
 
         View viewB = partitionB.get(0).getView();
-        for (Node member : partitionB) { 
+        for (Node member : partitionB) {
             assertEquals(viewB, member.getView());
         }
 

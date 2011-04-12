@@ -372,11 +372,13 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      */
     public synchronized void disconnect(Identity id) {
         msgLinks.remove(id.id);
+        /*
         Connection connection = connections.remove(id);
         if (connection != null) {
             msgConnections.remove(connection);
             connection.terminate();
         }
+        */
     }
 
     /**

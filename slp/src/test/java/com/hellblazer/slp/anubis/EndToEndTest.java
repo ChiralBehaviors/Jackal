@@ -202,8 +202,8 @@ public class EndToEndTest extends TestCase {
     }
 
     static class Node extends NodeData {
-        CountDownLatch latch         = INITIAL_LATCH;
-        int            cardinality   = CONFIGS.length;
+        CountDownLatch latch       = INITIAL_LATCH;
+        int            cardinality = CONFIGS.length;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -211,13 +211,14 @@ public class EndToEndTest extends TestCase {
 
         @Override
         protected void partitionNotification(View partition, int leader) {
-            super.partitionNotification(partition, leader);
             if (partition.isStable() && partition.cardinality() == cardinality) {
                 log.info("Stabilized: " + partition);
                 latch.countDown();
-            } else { 
-                log.fine("Unstable Partition notification: " + partition);
+            } else {
+                log.info(String.format("Notification: %s, stable: %s",
+                                       partition, partition.isStable()));
             }
+            super.partitionNotification(partition, leader);
         }
     }
 
@@ -303,12 +304,14 @@ public class EndToEndTest extends TestCase {
 
     static class slpConfig extends BasicConfiguration {
 
+        /*
         @Bean
         public ServiceScope anubisScope() {
             return new AnubisScope(stateName(), locator(),
                                    Executors.newSingleThreadExecutor(),
                                    uuidGenerator());
         }
+        */
 
         @Override
         public int getMagic() {
@@ -364,7 +367,7 @@ public class EndToEndTest extends TestCase {
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(60, TimeUnit.SECONDS));
+                       listener.latch.await(30, TimeUnit.SECONDS));
             assertEquals(listeners.size(), listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (Event event : listener.events) {
@@ -403,6 +406,7 @@ public class EndToEndTest extends TestCase {
             }
         }
 
+        /*
         String memberIdKey = "test.member.id";
         String roundKey = "test.round";
         ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
@@ -420,15 +424,15 @@ public class EndToEndTest extends TestCase {
             properties.put(roundKey, 1);
             context.getBean(ServiceScope.class).register(url, properties);
         }
-
+         */
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stabilty of minor partition A");
         assertTrue("minor partition A did not stabilize",
-                   latchA.await(120, TimeUnit.SECONDS));
+                   latchA.await(60, TimeUnit.SECONDS));
         log.info("Awaiting stabilty of minor partition B");
         assertTrue("minor partition B did not stabilize",
-                   latchB.await(120, TimeUnit.SECONDS));
+                   latchB.await(60, TimeUnit.SECONDS));
 
         for (Node member : partitionA) {
             assertEquals(A, member.getPartition());
@@ -437,6 +441,7 @@ public class EndToEndTest extends TestCase {
         for (Node member : partitionB) {
             assertEquals(B, member.getPartition());
         }
+        /*
 
         for (ApplicationContext context : memberContexts) {
             HashMap<String, Object> properties = new HashMap<String, Object>();
@@ -444,6 +449,7 @@ public class EndToEndTest extends TestCase {
             properties.put(roundKey, 2);
             context.getBean(ServiceScope.class).register(url, properties);
         }
+        */
 
         // reform
         CountDownLatch latch = new CountDownLatch(CONFIGS.length);
@@ -455,8 +461,9 @@ public class EndToEndTest extends TestCase {
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
         assertTrue("reformed partition did not stabilize",
-                   latch.await(60, TimeUnit.SECONDS));
+                   latch.await(30, TimeUnit.SECONDS));
 
+        /*
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
@@ -477,11 +484,13 @@ public class EndToEndTest extends TestCase {
                          + "> did not receive messages from all members: "
                          + sent, listeners.size(), sent.size());
         }
+        */
     }
 
     public void testAsymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
+        BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<Node>();
 
@@ -491,14 +500,15 @@ public class EndToEndTest extends TestCase {
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.latch = latchB;
                 member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
             }
         }
 
@@ -543,12 +553,12 @@ public class EndToEndTest extends TestCase {
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
         assertTrue("reformed partition did not stabilize",
-                   latch.await(60, TimeUnit.SECONDS));
+                   latch.await(30, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
-                       listener.latch.await(60, TimeUnit.SECONDS));
+                       listener.latch.await(30, TimeUnit.SECONDS));
             assertEquals("listener <"
                                  + listener.member
                                  + "> has received more notifications than expected ",
