@@ -223,7 +223,7 @@ public class UdpEndToEndTest extends TestCase {
 
         @Override
         protected void partitionNotification(View partition, int leader) {
-            log.fine("Partition notification: " + partition);
+            log.info("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
             if (partition.isStable() && partition.cardinality() == cardinality) {
                 latch.countDown();
@@ -422,7 +422,7 @@ public class UdpEndToEndTest extends TestCase {
         }
     }
 
-    public void teztSymmetricPartition() throws Exception {
+    public void testSymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
         BitView B = new BitView();
@@ -499,7 +499,7 @@ public class UdpEndToEndTest extends TestCase {
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
         assertTrue("reformed partition did not stabilize",
-                   latch.await(30, TimeUnit.SECONDS));
+                   latch.await(60, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
@@ -523,7 +523,7 @@ public class UdpEndToEndTest extends TestCase {
         }
     }
 
-    public void teztAsymmetricPartition() throws Exception {
+    public void testAsymmetricPartition() throws Exception {
         int minorPartitionSize = CONFIGS.length / 2;
         BitView A = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);

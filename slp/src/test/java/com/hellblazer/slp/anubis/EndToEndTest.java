@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 import org.smartfrog.services.anubis.BasicConfiguration;
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
@@ -212,10 +213,10 @@ public class EndToEndTest extends TestCase {
         @Override
         protected void partitionNotification(View partition, int leader) {
             if (partition.isStable() && partition.cardinality() == cardinality) {
-                log.info("Stabilized: " + partition);
+                log.fine("Stabilized: " + partition);
                 latch.countDown();
             } else {
-                log.info(String.format("Notification: %s, stable: %s",
+                log.fine(String.format("Notification: %s, stable: %s",
                                        partition, partition.isStable()));
             }
             super.partitionNotification(partition, leader);
@@ -304,14 +305,12 @@ public class EndToEndTest extends TestCase {
 
     static class slpConfig extends BasicConfiguration {
 
-        /*
         @Bean
         public ServiceScope anubisScope() {
             return new AnubisScope(stateName(), locator(),
                                    Executors.newSingleThreadExecutor(),
                                    uuidGenerator());
         }
-        */
 
         @Override
         public int getMagic() {
@@ -332,7 +331,7 @@ public class EndToEndTest extends TestCase {
         }
 
         protected NoArgGenerator uuidGenerator() {
-            return new RandomBasedGenerator(RANDOM);
+            return new RandomBasedGenerator(new Random(node()));
         }
     }
 
@@ -347,6 +346,7 @@ public class EndToEndTest extends TestCase {
     List<ConfigurableApplicationContext> memberContexts;
     MyController                         controller;
     List<Node>                           partition;
+    List<ConnectionSet>                  connectionSets;
 
     public void testSmoke() throws Exception {
         String memberIdKey = "test.member.id";
@@ -406,7 +406,6 @@ public class EndToEndTest extends TestCase {
             }
         }
 
-        /*
         String memberIdKey = "test.member.id";
         String roundKey = "test.round";
         ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
@@ -424,12 +423,11 @@ public class EndToEndTest extends TestCase {
             properties.put(roundKey, 1);
             context.getBean(ServiceScope.class).register(url, properties);
         }
-         */
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stabilty of minor partition A");
-        assertTrue("minor partition A did not stabilize",
-                   latchA.await(60, TimeUnit.SECONDS));
+        boolean stability = latchA.await(60, TimeUnit.SECONDS);
+        assertTrue("minor partition A did not stabilize", stability);
         log.info("Awaiting stabilty of minor partition B");
         assertTrue("minor partition B did not stabilize",
                    latchB.await(60, TimeUnit.SECONDS));
@@ -441,7 +439,6 @@ public class EndToEndTest extends TestCase {
         for (Node member : partitionB) {
             assertEquals(B, member.getPartition());
         }
-        /*
 
         for (ApplicationContext context : memberContexts) {
             HashMap<String, Object> properties = new HashMap<String, Object>();
@@ -449,7 +446,6 @@ public class EndToEndTest extends TestCase {
             properties.put(roundKey, 2);
             context.getBean(ServiceScope.class).register(url, properties);
         }
-        */
 
         // reform
         CountDownLatch latch = new CountDownLatch(CONFIGS.length);
@@ -463,7 +459,6 @@ public class EndToEndTest extends TestCase {
         assertTrue("reformed partition did not stabilize",
                    latch.await(30, TimeUnit.SECONDS));
 
-        /*
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
                                + "> has not received all notifications",
@@ -484,7 +479,6 @@ public class EndToEndTest extends TestCase {
                          + "> did not receive messages from all members: "
                          + sent, listeners.size(), sent.size());
         }
-        */
     }
 
     public void testAsymmetricPartition() throws Exception {
@@ -611,6 +605,11 @@ public class EndToEndTest extends TestCase {
             if (!success) {
                 tearDown();
             }
+        }
+
+        connectionSets = new ArrayList<ConnectionSet>();
+        for (ConfigurableApplicationContext context : memberContexts) {
+            connectionSets.add(context.getBean(ConnectionSet.class));
         }
     }
 

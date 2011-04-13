@@ -96,7 +96,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * local identification
      */
     private final Identity                  identity;
-    private final View                      ignoring            = new BitView();
+    private volatile View                   ignoring            = new BitView();
     private final IntervalExec              intervalExec;
     private final LeaderMgr                 leaderMgr;
     private final LeaderProtocolFactory     leaderProtocolFactory;
@@ -285,6 +285,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         MessageConnection mcon = new MessageConnection(identity, this,
                                                        hbcon.getProtocol(),
                                                        hbcon.getCandidate());
+        if (isIgnoring(hbcon.getSender())) {
+            mcon.setIgnoring(true);
+        }
         connections.put(hbcon.getSender(), mcon);
         msgConnections.add(mcon);
 
@@ -306,6 +309,10 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
          * asynchronous build of the implementation.
          */
         return mcon;
+    }
+
+    private boolean isIgnoring(Identity id) {
+        return testable && ignoring.contains(id);
     }
 
     /**
@@ -351,7 +358,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
             connections.put(mcon.getSender(), mcon);
             msgConnections.add(mcon);
 
-            if (testable && ignoring.contains(mcon.getSender())) {
+            if (isIgnoring(mcon.getSender())) {
                 if (log.isLoggable(Level.FINEST)) {
                     log.finest("Ignoring connection to " + con.getSender());
                 }
@@ -679,11 +686,15 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         if (!testable) {
             return;
         }
+        if (ignoring == null) {
+            ignoring = new BitView();
+        }
+        this.ignoring = ignoring;
 
         heartbeatComms.setIgnoring(ignoring);
 
         for (MessageConnection mcon : msgConnections) {
-            if (ignoring != null && ignoring.contains(mcon.getSender())) {
+            if (isIgnoring(mcon.getSender())) {
                 mcon.setIgnoring(true);
             } else {
                 mcon.setIgnoring(false);
