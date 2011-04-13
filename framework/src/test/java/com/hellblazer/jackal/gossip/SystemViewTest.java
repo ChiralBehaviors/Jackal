@@ -90,7 +90,7 @@ public class SystemViewTest extends TestCase {
 
         view.markAlive(live4);
         view.markAlive(live5);
-        assertNull(view.getRandomSeedMember(local));
+        assertNotNull(view.getRandomSeedMember(local));
     }
 
     public void testLiveMembers() throws Exception {

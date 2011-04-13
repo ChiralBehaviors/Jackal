@@ -210,24 +210,19 @@ public class SystemView {
     public InetSocketAddress getRandomSeedMember(InetSocketAddress member) {
         if (member == null) {
             return getRandomMember(seeds);
-        }
-        if (seeds.contains(member)) {
+        } else if (seeds.contains(member)) {
             return null;
         }
-        if (live.size() < seeds.size()) {
-            int size = seeds.size();
-            if (size > 0) {
-                if (size == 1 && seeds.contains(localAddress)) {
-                    return null;
-                }
+        if (seeds.size() == 0
+            || (seeds.size() == 1 && seeds.contains(localAddress))) {
+            return null;
+        }
 
-                if (live.size() == 0) {
-                    return getRandomMember(seeds);
-                }
-                if (entropy.nextDouble() <= seedCommunicationProbability()) {
-                    return getRandomMember(seeds);
-                }
-            }
+        if (live.size() == 0) {
+            return getRandomMember(seeds);
+        }
+        if (entropy.nextDouble() <= (seeds.size() / (double) (live.size() + unreachable.size()))) {
+            return getRandomMember(seeds);
         }
         return null;
     }
@@ -241,7 +236,7 @@ public class SystemView {
      *         available
      */
     public InetSocketAddress getRandomUnreachableMember() {
-        if (entropy.nextDouble() < unreachableCommunicationsProbability()) {
+        if (entropy.nextDouble() < (unreachable.size() / ((double) live.size() + 1))) {
             return getRandomMember(unreachable.keySet());
         }
         return null;
@@ -312,13 +307,5 @@ public class SystemView {
         log.info(format("We should have found the selected random member of the supplied endpoint set: %s",
                         index));
         return null;
-    }
-
-    protected double seedCommunicationProbability() {
-        return seeds.size() / (double) (live.size() + unreachable.size());
-    }
-
-    protected double unreachableCommunicationsProbability() {
-        return unreachable.size() / ((double) live.size() + 1);
     }
 }

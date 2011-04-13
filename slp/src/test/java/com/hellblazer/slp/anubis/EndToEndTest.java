@@ -593,7 +593,11 @@ public class EndToEndTest extends TestCase {
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
-        boolean success = false;
+        boolean success = false; 
+        connectionSets = new ArrayList<ConnectionSet>();
+        for (ConfigurableApplicationContext context : memberContexts) {
+            connectionSets.add(context.getBean(ConnectionSet.class));
+        }
         try {
             success = INITIAL_LATCH.await(120, TimeUnit.SECONDS);
             log.info("Initial partition stable");
@@ -605,11 +609,6 @@ public class EndToEndTest extends TestCase {
             if (!success) {
                 tearDown();
             }
-        }
-
-        connectionSets = new ArrayList<ConnectionSet>();
-        for (ConfigurableApplicationContext context : memberContexts) {
-            connectionSets.add(context.getBean(ConnectionSet.class));
         }
     }
 

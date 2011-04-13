@@ -19,11 +19,9 @@ package org.smartfrog.services.anubis;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
@@ -48,20 +46,21 @@ public class Node {
     private int                                           maxSleep;
     private AnubisProvider                                provider;
     private int                                           messagesToSend;
-    private CyclicBarrier                                 barrier;
+    private CountDownLatch                                endLatch;
+    private CountDownLatch                                startLatch;
     private String                                        instance;
-    private CountDownLatch                                latch            = new CountDownLatch(
+    private CountDownLatch                                launchLatch      = new CountDownLatch(
                                                                                                 1);
+    private int                                           cardinality;
 
     private ArrayList<SendHistory>                        sendHistory      = new ArrayList<SendHistory>();
     private ConcurrentHashMap<String, List<ValueHistory>> receiveHistory   = new ConcurrentHashMap<String, List<ValueHistory>>();
     private ArrayList<StabilityHistory>                   stabilityHistory = new ArrayList<StabilityHistory>();
-    private CyclicBarrier                                 startBarrier;
 
-    public Node(AnnotationConfigApplicationContext context, String stateName)
-                                                                             throws Exception {
+    public Node(AnnotationConfigApplicationContext context, String stateName,
+                int c) throws Exception {
         this.context = context;
-
+        this.cardinality = c;
         PartitionManager pm = context.getBean(PartitionManager.class);
         pm.register(new PartitionNotification() {
 
@@ -71,9 +70,9 @@ public class Node {
 
             @Override
             public void partitionNotification(View view, int leader) {
-                if (view.isStable() && view.cardinality() == 7) {
+                if (view.isStable() && view.cardinality() == cardinality) {
                     System.out.println("Launching");
-                    latch.countDown();
+                    launchLatch.countDown();
                 } else {
                     System.out.println("Not launching: " + view);
                 }
@@ -130,8 +129,12 @@ public class Node {
         return receiveHistory.get(instance);
     }
 
-    public void setEndBarrier(CyclicBarrier barrier) {
-        this.barrier = barrier;
+    public void setEndLatch(CountDownLatch latch) {
+        endLatch = latch;
+    }
+
+    public void setStartLatch(CountDownLatch latch) {
+        startLatch = latch;
     }
 
     public void setMaxSleep(int maxSleep) {
@@ -140,10 +143,6 @@ public class Node {
 
     public void setMessagesToSend(int messagesToSend) {
         this.messagesToSend = messagesToSend;
-    }
-
-    public void setStartBarrier(CyclicBarrier startBarrier) {
-        this.startBarrier = startBarrier;
     }
 
     public void shutDown() {
@@ -155,12 +154,10 @@ public class Node {
             @Override
             public void run() {
                 try {
-                    latch.await();
-                    startBarrier.await();
+                    launchLatch.await();
+                    startLatch.countDown();
+                    startLatch.await();
                 } catch (InterruptedException e1) {
-                    return;
-                } catch (BrokenBarrierException e1) {
-                    e1.printStackTrace();
                     return;
                 }
                 for (int counter = 0; counter < messagesToSend; counter++) {
@@ -177,11 +174,10 @@ public class Node {
                 }
                 try {
                     Thread.sleep(2000);
-                    barrier.await();
+                    endLatch.countDown();
+                    endLatch.await();
                 } catch (InterruptedException e) {
                     return;
-                } catch (BrokenBarrierException e) {
-                    e.printStackTrace();
                 }
             }
         }, "Run Thread for: " + context.getBean(Identity.class).toString());

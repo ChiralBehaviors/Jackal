@@ -31,12 +31,14 @@ import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -358,6 +360,7 @@ public class PartitionTest extends TestCase {
     AnnotationConfigApplicationContext       controllerContext;
     List<AnnotationConfigApplicationContext> memberContexts;
     List<Node>                               partition;
+    List<ConnectionSet>                      connectionSets;
 
     /**
      * Test that a partition can form two asymmetric partitions, with one
@@ -475,8 +478,10 @@ public class PartitionTest extends TestCase {
                                                                    MyControllerConfig.class);
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
-        log.info("Test interface controller ID: "
-                 + controllerContext.getBean(Identity.class));
+        connectionSets = new ArrayList<ConnectionSet>();
+        for (ConfigurableApplicationContext context : memberContexts) {
+            connectionSets.add(context.getBean(ConnectionSet.class));
+        }
         log.info("Awaiting initial partition stability");
         boolean success = false;
         try {

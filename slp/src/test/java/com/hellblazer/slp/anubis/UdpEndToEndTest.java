@@ -223,7 +223,7 @@ public class UdpEndToEndTest extends TestCase {
 
         @Override
         protected void partitionNotification(View partition, int leader) {
-            log.info("Partition notification: " + partition);
+            log.fine("Partition notification: " + partition);
             super.partitionNotification(partition, leader);
             if (partition.isStable() && partition.cardinality() == cardinality) {
                 latch.countDown();

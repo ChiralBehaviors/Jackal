@@ -19,7 +19,7 @@ package org.smartfrog.services.anubis;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
@@ -120,21 +120,22 @@ public class SmokeTest extends TestCase {
         ArrayList<Node> nodes = new ArrayList<Node>();
         Class<?>[] configurations = new Class[] { testA.class, testB.class,
                 testC.class, testD.class, testE.class, testF.class, testG.class };
-        CyclicBarrier startBarrier = new CyclicBarrier(configurations.length);
-        CyclicBarrier endBarrier = new CyclicBarrier(configurations.length + 1);
+        CountDownLatch startLatch = new CountDownLatch(configurations.length);
+        CountDownLatch endLatch = new CountDownLatch(configurations.length);
         for (Class<?> config : configurations) {
             nodes.add(getNode(config, stateName, messageCount, maxSleep,
-                              startBarrier, endBarrier));
+                              startLatch, endLatch, configurations.length));
         }
         for (Node node : nodes) {
             node.start();
         }
-        endBarrier.await(2, TimeUnit.MINUTES);
+        endLatch.await(2, TimeUnit.MINUTES);
         for (Node node : nodes) {
             node.shutDown();
         }
         for (Node sender : nodes) {
             List<SendHistory> sent = sender.getSendHistory();
+            assertEquals(messageCount, sent.size());
             for (Node receiver : nodes) {
                 List<ValueHistory> received = receiver.getValueHistory(sender.getInstance());
                 assertNotNull("Received no history from "
@@ -167,13 +168,13 @@ public class SmokeTest extends TestCase {
     }
 
     Node getNode(Class<?> config, String stateName, int messageCount,
-                 int maxSleep, CyclicBarrier startBarrier,
-                 CyclicBarrier endBarrier) throws Exception {
+                 int maxSleep, CountDownLatch startLatch,
+                 CountDownLatch endLatch, int cardinality) throws Exception {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
                                                                                         config);
-        Node node = new Node(ctx, stateName);
-        node.setStartBarrier(startBarrier);
-        node.setEndBarrier(endBarrier);
+        Node node = new Node(ctx, stateName, cardinality);
+        node.setStartLatch(startLatch);
+        node.setEndLatch(endLatch);
         node.setMaxSleep(maxSleep);
         node.setMessagesToSend(messageCount);
         return node;
