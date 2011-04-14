@@ -72,10 +72,14 @@ public class SmokeTest extends TestCase {
             return new InetSocketAddress(contactHost(), testPort);
         }
 
+        InetSocketAddress seedContact2() throws UnknownHostException {
+            return new InetSocketAddress(contactHost(), testPort + 2);
+        }
+
         @Override
         protected Collection<InetSocketAddress> seedHosts()
                                                            throws UnknownHostException {
-            return asList(seedContact());
+            return asList(seedContact(), seedContact2());
         }
     }
 
@@ -139,6 +143,12 @@ public class SmokeTest extends TestCase {
         public int node() {
             return 6;
         }
+
+        @Override
+        protected InetSocketAddress gossipEndpoint()
+                                                    throws UnknownHostException {
+            return seedContact2();
+        }
     }
 
     public void testInProcess() throws Exception {
@@ -158,7 +168,7 @@ public class SmokeTest extends TestCase {
             node.start();
         }
         boolean finished = endLatch.await(2, TimeUnit.MINUTES);
-        assertTrue(finished);
+        assertTrue("Test never completed", finished);
         for (Node node : nodes) {
             node.shutDown();
         }

@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -388,6 +389,7 @@ public class UdpEndToEndTest extends TestCase {
     List<ConfigurableApplicationContext> memberContexts;
     MyController                         controller;
     List<Node>                           partition;
+    List<ConnectionSet>                      connectionSets;
 
     public void testSmoke() throws Exception {
         String memberIdKey = "test.member.id";
@@ -590,8 +592,9 @@ public class UdpEndToEndTest extends TestCase {
 
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
+        boolean stable = latch.await(30, TimeUnit.SECONDS);
         assertTrue("reformed partition did not stabilize",
-                   latch.await(30, TimeUnit.SECONDS));
+                   stable);
 
         for (Listener listener : listeners) {
             assertTrue("listener <" + listener.member
@@ -624,6 +627,10 @@ public class UdpEndToEndTest extends TestCase {
                                                                    MyControllerConfig.class);
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
+        connectionSets = new ArrayList<ConnectionSet>();
+        for (ConfigurableApplicationContext context : memberContexts) {
+            connectionSets.add(context.getBean(ConnectionSet.class));
+        }
         log.info("Awaiting initial partition stability");
         boolean success = false;
         try {
