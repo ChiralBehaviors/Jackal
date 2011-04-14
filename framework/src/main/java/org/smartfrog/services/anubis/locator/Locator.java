@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -204,12 +205,18 @@ public class Locator implements PartitionNotification, AnubisLocator {
      */
     @Override
     public void partitionNotification(final View view, final int leader) {
-        stabilityQueue.execute(new Runnable() {
-            @Override
-            public void run() {
-                partitionNotificationImpl(view, leader);
+        try {
+            stabilityQueue.execute(new Runnable() {
+                @Override
+                public void run() {
+                    partitionNotificationImpl(view, leader);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest("rejecting partition notification due to shutdown");
             }
-        });
+        }
     }
 
     /**
@@ -218,7 +225,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
     public void partitionNotificationImpl(View view, int leader) {
         if (log.isLoggable(Level.FINER)) {
             log.finer(String.format("Partition view: %s, leader: %s, on member %s",
-                                   view, leader, me));
+                                    view, leader, me));
         }
 
         /**
