@@ -136,6 +136,9 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
      */
     @Override
     public boolean isNotTimely(long timenow, long timebound) {
+        if (terminated) {
+            return true;
+        }
         return timenow - pingTime > timebound;
     }
 

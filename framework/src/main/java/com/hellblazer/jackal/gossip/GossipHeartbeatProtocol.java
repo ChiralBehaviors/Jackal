@@ -84,6 +84,9 @@ public class GossipHeartbeatProtocol extends BitView implements
 
     @Override
     public boolean isNotTimely(long timenow, long timebound) {
+        if (terminated) {
+            return true;
+        }
         // return timenow - time > timebound || time - timenow > timebound;
         return gossip.shouldConvict(heartbeatAddress, timenow);
     }

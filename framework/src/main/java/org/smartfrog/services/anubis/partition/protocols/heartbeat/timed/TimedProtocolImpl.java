@@ -95,6 +95,9 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      */
     @Override
     public boolean isNotTimely(long timenow, long timebound) {
+        if (terminated) {
+            return true;
+        }
         return timenow - time > timebound || time - timenow > timebound;
     }
 

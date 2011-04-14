@@ -157,7 +157,8 @@ public class SmokeTest extends TestCase {
         for (Node node : nodes) {
             node.start();
         }
-        endLatch.await(2, TimeUnit.MINUTES);
+        boolean finished = endLatch.await(2, TimeUnit.MINUTES);
+        assertTrue(finished);
         for (Node node : nodes) {
             node.shutDown();
         }
