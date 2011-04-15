@@ -291,7 +291,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 readAmount = sockChan.read(rxHeader);
                 if (readAmount == -1) {
                     cleanup(key);
-                    messageConnection.terminate();
+                    if (messageConnection != null) {
+                        messageConnection.terminate();
+                    }
                     return null;
                 }
             } catch (IOException ioe) {
@@ -299,7 +301,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                     log.log(Level.FINE, "Failed to read socket channel", ioe);
                 }
                 cleanup(key);
-                messageConnection.terminate();
+                if (messageConnection != null) {
+                    messageConnection.terminate();
+                }
                 return null;
             } catch (NotYetConnectedException nycex) {
                 if (log.isLoggable(Level.WARNING)) {
@@ -357,12 +361,16 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 }
                 if (readAmount == -1) {
                     cleanup(key);
-                    messageConnection.terminate();
+                    if (messageConnection != null) {
+                        messageConnection.terminate();
+                    }
                     return null;
                 }
             } catch (IOException ioe) {
                 cleanup(key);
-                messageConnection.terminate();
+                if (messageConnection != null) {
+                    messageConnection.terminate();
+                }
                 if (log.isLoggable(Level.WARNING)) {
                     log.log(Level.WARNING,
                             "MNH: IOException reading the object", ioe);
