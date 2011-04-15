@@ -77,4 +77,14 @@ public class ListenerProxy extends NameData implements Serializable {
     public boolean uridPreceeds(ListenerProxy lp) {
         return lp != null && uniqueRegId < lp.uniqueRegId;
     }
+
+    @Override
+    public boolean equals(Object obj) { 
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

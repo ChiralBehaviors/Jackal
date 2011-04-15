@@ -50,7 +50,7 @@ public class SmokeTest extends TestCase {
 
         static {
             String port = System.getProperty("com.hellblazer.jackal.gossip.test.port",
-                                             "23001");
+                                             "53001");
             testPort = Integer.parseInt(port);
         }
 

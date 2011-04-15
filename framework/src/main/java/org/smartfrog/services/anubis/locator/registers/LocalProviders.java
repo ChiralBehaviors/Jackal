@@ -37,10 +37,10 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class LocalProviders {
     private class ProviderInfo {
-        public Map<String, ProviderInstance> instances = new HashMap<String, ProviderInstance>();
+        public Map<String, ProviderInstance>     instances = new HashMap<String, ProviderInstance>();
         public Map<ListenerProxy, ListenerProxy> listeners = new HashMap<ListenerProxy, ListenerProxy>();
-        public Map<String, AnubisProvider> providers = new HashMap<String, AnubisProvider>();
-        public ProviderProxy proxy;
+        public Map<String, AnubisProvider>       providers = new HashMap<String, AnubisProvider>();
+        public ProviderProxy                     proxy;
 
         public ProviderInfo(AnubisProvider provider) {
             proxy = new ProviderProxy(provider.getName(), me);
@@ -48,27 +48,29 @@ public class LocalProviders {
 
         @Override
         public String toString() {
-            String str = "    " + proxy + " has " + instances.size()
-                         + " instances " + providers.size() + " providers "
-                         + listeners.size() + " listeners \n";
-            str += "        at nodes: ";
+            StringBuilder builder = new StringBuilder();
+            builder.append("    " + proxy + " has " + instances.size()
+                           + " instances " + providers.size() + " providers "
+                           + listeners.size() + " listeners \n");
+            builder.append("        at nodes: ");
 
             Iterator<ListenerProxy> iter = listeners.values().iterator();
             while (iter.hasNext()) {
-                str += iter.next().node.toString() + " ";
+                builder.append(iter.next().node).append(" ");
             }
 
-            return str + "\n";
+            builder.append("\n");
+            return builder.toString();
         }
     }
 
-    private SetMap<Object, ListenerProxy> listenersByNode = new SetMap<Object, ListenerProxy>(); // node-->Set of listeners
+    private SetMap<Object, ListenerProxy> listenersByNode = new SetMap<Object, ListenerProxy>();                      // node-->Set of listeners
 
-    private Locator locator = null;
-    private static final Logger log = Logger.getLogger(LocalProviders.class.getCanonicalName());
+    private Locator                       locator         = null;
+    private static final Logger           log             = Logger.getLogger(LocalProviders.class.getCanonicalName());
 
-    private Integer me = null;
-    private Map<String, Object> providers = new HashMap<String, Object>(); // name-->record
+    private Integer                       me              = null;
+    private Map<String, Object>           providers       = new HashMap<String, Object>();                            // name-->record
 
     /**
      * Constructor
@@ -423,26 +425,25 @@ public class LocalProviders {
 
     @Override
     public synchronized String toString() {
-
-        String str = "Remote Listeners By Node:\n";
+        StringBuilder builder = new StringBuilder();
+        builder.append("Remote Listeners By Node:\n");
         Iterator<Object> iter = listenersByNode.keySet().iterator();
         while (iter.hasNext()) {
             Integer node = (Integer) iter.next();
-            str += "    " + node;
-            for (Iterator<ListenerProxy> iter2 = listenersByNode.getSet(node).iterator(); iter2.hasNext(); str += " "
-                                                                                                                  + iter2.next().name) {
+            builder.append("    " + node);
+            for (Iterator<ListenerProxy> iter2 = listenersByNode.getSet(node).iterator(); iter2.hasNext(); builder.append(" ").append(iter2.next().name)) {
                 ;
             }
-            str += "\n";
+            builder.append("\n");
         }
 
-        str += "\nProviders:\n";
+        builder.append("\nProviders:\n");
         iter = providers.values().iterator();
         while (iter.hasNext()) {
-            str += ((ProviderInfo) iter.next()).toString();
+            builder.append(iter.next());
         }
-        str += "\n";
-        return str;
+        builder.append("\n");
+        return builder.toString();
     }
 
 }

@@ -57,7 +57,9 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
 
     public PingHeartbeatMsg(PingHeartbeatMsg pinghb) {
         super(pinghb);
-        pings = pinghb.pings;
+        synchronized (this) {
+            pings = pinghb.pings;
+        }
     }
 
     /**

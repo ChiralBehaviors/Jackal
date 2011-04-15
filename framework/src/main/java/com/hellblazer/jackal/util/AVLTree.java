@@ -7,11 +7,11 @@ import java.util.Comparator;
 import java.util.Iterator;
 
 public class AVLTree<E> implements SortedCollection<E> {
-    public class myIterator implements Iterator<E> {
+    public class MyIterator implements Iterator<E> {
         private ArrayList<E> _list;
         private E            _next;
 
-        public myIterator(ArrayList<E> els) {
+        public MyIterator(ArrayList<E> els) {
             _next = null;
             _list = els;
 
@@ -205,23 +205,23 @@ public class AVLTree<E> implements SortedCollection<E> {
 
             case INORDER: {
                 inorder(_root);
-                return new myIterator(_myElements);
+                return new MyIterator(_myElements);
             }
             case PREORDER: {
                 preorder(_root);
-                return new myIterator(_myElements);
+                return new MyIterator(_myElements);
             }
             case POSTORDER: {
                 postorder(_root);
-                return new myIterator(_myElements);
+                return new MyIterator(_myElements);
             }
             case BYLEVEL: {
                 bylevel(_root, 0, new ArrayList<ArrayList<E>>());
-                return new myIterator(_myElements);
+                return new MyIterator(_myElements);
             }
             default: {
                 inorder(_root);
-                return new myIterator(_myElements);
+                return new MyIterator(_myElements);
             }
         }
     }

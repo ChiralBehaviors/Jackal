@@ -157,4 +157,17 @@ public class SelfConnection extends BitView implements Connection,
     public boolean winsAgainst(Candidate c) {
         return candidate.winsAgainst(c);
     }
+
+    @Override
+    public boolean equals(Object obj) { 
+        if (obj instanceof SelfConnection) {
+            return me.equals(((SelfConnection) obj).me);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return me.hashCode();
+    }
 }

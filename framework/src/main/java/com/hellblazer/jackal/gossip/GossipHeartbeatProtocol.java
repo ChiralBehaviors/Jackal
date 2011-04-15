@@ -175,4 +175,13 @@ public class GossipHeartbeatProtocol extends BitView implements
         terminated = true;
     }
 
+    @Override
+    public int hashCode() { 
+        return address.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
 }

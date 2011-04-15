@@ -48,9 +48,9 @@ public class LocalListeners {
      */
     private class ListenerInfo {
 
-        public Set<AnubisListener> listeners = new HashSet<AnubisListener>();
+        public Set<AnubisListener>             listeners = new HashSet<AnubisListener>();
         public Map<NameData, ProviderInstance> providers = new HashMap<NameData, ProviderInstance>(); // instance --> name
-        public ListenerProxy proxy = null;
+        public ListenerProxy                   proxy     = null;
 
         public ListenerInfo(String name, AnubisListener l) {
             proxy = new ListenerProxy(name, me, uniqueRegId++);
@@ -59,27 +59,24 @@ public class LocalListeners {
 
         @Override
         public String toString() {
-            String str = proxy.toString() + " has " + listeners.size()
-                         + " listeners and " + providers.size()
-                         + " providers:\n";
-            for (Iterator<ProviderInstance> iter = providers.values().iterator(); iter.hasNext(); str += "        "
-                                                                                                         + iter.next().toString()
-                                                                                                         + "\n") {
+            StringBuilder builder = new StringBuilder();
+            builder.append(proxy).append(" has ").append(listeners.size()).append(" listeners and ").append(providers.size()).append(" providers:\n");
+            for (Iterator<ProviderInstance> iter = providers.values().iterator(); iter.hasNext(); builder.append("        ").append(iter.next()).append("\n")) {
                 ;
             }
-            return str;
+            return builder.toString();
         }
     }
 
     /**
      * listeners maps names-->ListenerInfo records.
      */
-    private Map<String, Object> listeners = new HashMap<String, Object>();
-    private Locator locator = null;
+    private Map<String, Object>           listeners       = new HashMap<String, Object>();
+    private Locator                       locator         = null;
 
-    private static final Logger log = Logger.getLogger(LocalListeners.class.getCanonicalName());
+    private static final Logger           log             = Logger.getLogger(LocalListeners.class.getCanonicalName());
 
-    private Integer me = null;
+    private Integer                       me              = null;
     /**
      * providersByNode maps nodes-->Set of names. This data structure keeps a
      * record of the names being provided at each node. When a partition occurs
@@ -87,7 +84,7 @@ public class LocalListeners {
      * be removed from the listenerInfo records.
      */
     private SetMap<Object, ProviderProxy> providersByNode = new SetMap<Object, ProviderProxy>();
-    private long uniqueRegId = 0;;
+    private long                          uniqueRegId     = 0;                                                         ;
 
     public LocalListeners(Locator l, Integer id) {
         locator = l;
@@ -356,26 +353,23 @@ public class LocalListeners {
     @Override
     public synchronized String toString() {
         Iterator<Object> iter;
-
-        String str = "Remote Providers by node:\n";
+        StringBuilder builder = new StringBuilder();
+        builder.append("Remote Providers by node:\n");
         iter = providersByNode.keySet().iterator();
         while (iter.hasNext()) {
             Integer node = (Integer) iter.next();
-            str += "    " + node;
-            for (Iterator<ProviderProxy> iter2 = providersByNode.getSet(node).iterator(); iter2.hasNext(); str += " "
-                                                                                                                  + iter2.next().name) {
+            builder.append("    ").append(node);
+            for (Iterator<ProviderProxy> iter2 = providersByNode.getSet(node).iterator(); iter2.hasNext(); builder.append(" ").append(iter2.next().name)) {
                 ;
             }
-            str += "\n";
+            builder.append("\n");
         }
 
-        str += "\nListeners:\n";
-        for (iter = listeners.values().iterator(); iter.hasNext(); str += "    "
-                                                                          + ((ListenerInfo) iter.next()).toString()
-                                                                          + "\n") {
+        builder.append("\nListeners:\n");
+        for (iter = listeners.values().iterator(); iter.hasNext(); builder.append("    ").append(iter.next()).append("\n")) {
             ;
         }
-        str += "\n";
-        return str;
+        builder.append("\n");
+        return builder.toString();
     }
 }

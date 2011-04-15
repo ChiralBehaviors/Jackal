@@ -44,11 +44,11 @@ public class BitView implements View, Cloneable, Serializable {
         return bv;
     }
 
-    protected boolean stable = true;
+    protected boolean   stable    = true;
 
-    protected long timeStamp = View.undefinedTimeStamp;
+    protected long      timeStamp = View.undefinedTimeStamp;
 
-    protected NodeIdSet view = null;
+    protected NodeIdSet view      = null;
 
     public BitView() {
         view = new NodeIdSet();
@@ -140,6 +140,11 @@ public class BitView implements View, Cloneable, Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return view.hashCode();
+    }
+
+    @Override
     public boolean equalsView(View v) {
         return view.equals(v.toBitSet());
     }
@@ -218,15 +223,16 @@ public class BitView implements View, Cloneable, Serializable {
 
     @Override
     public String toString() {
-        String str = "<";
-        str += timeStamp + "|";
-        str += isStable() ? "stable: " : "unstable: ";
+        StringBuilder builder = new StringBuilder();
+        builder.append("<");
+        builder.append("|");
+        builder.append(isStable() ? "stable: " : "unstable: ");
         for (int i = 0; i < size(); i++) {
             if (contains(i)) {
-                str += i + " ";
+                builder.append(" ");
             }
         }
-        str += ">";
-        return str;
+        builder.append(">");
+        return builder.toString();
     }
 }

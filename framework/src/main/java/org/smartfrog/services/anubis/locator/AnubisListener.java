@@ -127,14 +127,15 @@ abstract public class AnubisListener {
 
     @Override
     public String toString() {
-        String ret = "Listener " + getName() + "=[size=" + size()
-                     + ", mostRecentUpdate=" + getUpdateTime() + ", values=[";
+        StringBuilder builder = new StringBuilder();
+        builder.append("Listener " + getName() + "=[size=" + size()
+                     + ", mostRecentUpdate=" + getUpdateTime() + ", values=[");
         Iterator<AnubisValue> iter = values().iterator();
         while (iter.hasNext()) {
-            ret += iter.next().toString();
+            builder.append(iter.next());
         }
-        ret += "]";
-        return ret;
+        builder.append("]");
+        return builder.toString();
     }
 
     public synchronized Collection<AnubisValue> values() {

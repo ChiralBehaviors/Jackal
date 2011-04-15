@@ -279,28 +279,29 @@ public class GlobalRegisterImpl {
                    + "** NOT ACTIVE **\n";
         }
 
-        String str = "Providers By Node:\n";
+        StringBuilder builder = new StringBuilder();
+        builder.append("Providers By Node:\n");
         Iterator<Entry<Integer, Set<ProviderProxy>>> iter = providersByNode.entrySet().iterator();
 
         while (iter.hasNext()) {
             Entry<Integer, Set<ProviderProxy>> entry = iter.next();
             Iterator<ProviderProxy> piter = entry.getValue().iterator();
             while (piter.hasNext()) {
-                str += "    " + piter.next().toString() + "\n";
+                builder.append("    ").append(piter.next()).append("\n");
             }
         }
 
-        str += "\nPending Listeners:\n";
+        builder.append("\nPending Listeners:\n");
         Iterator<Entry<Integer, Set<ListenerProxy>>> iter2 = listenersByNode.entrySet().iterator();
         while (iter.hasNext()) {
             Entry<Integer, Set<ListenerProxy>> entry = iter2.next();
             Iterator<ListenerProxy> piter = entry.getValue().iterator();
             while (piter.hasNext()) {
                 ListenerProxy listener = piter.next();
-                str += "    " + listener.toString() + "\n";
+                builder.append("    ").append(listener).append("\n");
             }
         }
-        return str;
+        return builder.toString();
     }
 
     /**

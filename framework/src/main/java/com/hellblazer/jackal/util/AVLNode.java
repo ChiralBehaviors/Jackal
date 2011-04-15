@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 public class AVLNode<E> {
 
-    int          balanceFactor = 0;                 // balance factor.
     AVLNode<E>   _parent;
     E            _data;                             // data held by the AVLNode
     AVLNode<E>   _left;                             // His left son.

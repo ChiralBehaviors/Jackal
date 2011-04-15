@@ -46,12 +46,13 @@ public class Test {
         }
 
         public void display() {
-            String str = "Listener " + getName() + " has values:";
-            for (Iterator<?> iter = values().iterator(); iter.hasNext(); str += " "
-                                                                                + iter.next().toString()) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Listener " + getName() + " has values:");
+            for (Iterator<?> iter = values().iterator(); iter.hasNext(); builder.append(" "
+                                                                                + iter.next().toString())) {
                 ;
             }
-            driver.println(str);
+            driver.println(builder.toString());
         }
 
         @Override

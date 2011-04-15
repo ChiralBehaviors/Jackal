@@ -388,7 +388,7 @@ public class UdpCommunications implements GossipCommunications {
                                buffer);
             } catch (BufferOverflowException e) {
                 if (log.isLoggable(Level.WARNING)) {
-                    log.warning(format("Invalid message: %s", buffer.array()));
+                    log.warning(format("Invalid message: %s", prettyPrint(packet.getSocketAddress(), buffer.array())));
                 }
             }
         } else {

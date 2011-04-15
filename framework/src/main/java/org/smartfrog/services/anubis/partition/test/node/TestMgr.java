@@ -49,7 +49,7 @@ public class TestMgr {
     private ConnectionSet             connectionSet = null;
     private Identity                  identity;
     private volatile long             lastStats     = 0;
-    private PartitionManager    partitionManager;
+    private PartitionManager          partitionManager;
     private final StatsManager        statistics    = new StatsManager();
     private volatile long             statsInterval = STATSRATE * 1000;                         // adjusts with heartbeat
     // timing
@@ -65,9 +65,7 @@ public class TestMgr {
 
     public void closing(TestConnection connection) {
         partitionManager.deregister(connection);
-        synchronized (connections) {
-            connections.remove(connection);
-        }
+        connections.remove(connection);
     }
 
     public InetSocketAddress getAddress() {
@@ -100,9 +98,7 @@ public class TestMgr {
         TestConnection connection = new TestConnection(channel, this,
                                                        threadName);
         if (connection.connected()) {
-            synchronized (connections) {
-                connections.add(connection);
-            }
+            connections.add(connection);
             partitionManager.register(connection);
             updateStatus(connection);
             updateTiming(connection);

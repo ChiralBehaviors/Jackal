@@ -153,13 +153,14 @@ public class Controller implements HeartbeatReceiver {
     }
 
     public String nodesToString() {
-        String str = "Nodes Table\n===========\n";
+        StringBuilder builder = new StringBuilder();
+        builder.append("Nodes Table\n===========\n");
         Iterator<Map.Entry<Identity, NodeData>> iter = nodes.entrySet().iterator();
         while (iter.hasNext()) {
             Map.Entry<Identity, NodeData> entry = iter.next();
-            str += entry.getKey() + "--->" + entry.getValue();
+            builder.append(entry.getKey() + "--->" + entry.getValue());
         }
-        return str;
+        return builder.toString();
     }
 
     public void removeNode(NodeData nodeData) {

@@ -250,4 +250,13 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
         sharedData.clearPingBit(me);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
