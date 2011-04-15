@@ -28,24 +28,19 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class IntervalExec extends Thread {
 
-    private ConnectionSet connectionSet = null;
-    private long heartbeatTime = 0;
+    private static final Logger log           = Logger.getLogger(IntervalExec.class.getCanonicalName());
 
-    private long interval = 0;
-    private long lastCheckTime = 0;
-    private static final Logger log = Logger.getLogger(IntervalExec.class.getCanonicalName()); // Use
-    // asynch
-    // wrapper...
-
-    private Identity me = null;
-    private Random random = null;
-
-    private boolean running = false;
-    private boolean stabalizing = false;
-
-    private long stabilityTime = 0;
-    private boolean testable = false;
-    private TestMgr testManager = null;
+    private final ConnectionSet connectionSet;
+    private long                heartbeatTime = 0;
+    private volatile long       interval      = 0;
+    private long                lastCheckTime = 0;
+    private final Identity      me;
+    private final Random        random;
+    private volatile boolean    running       = false;
+    private volatile long       stabilityTime = 0;
+    private boolean             stabilizing   = false;
+    private boolean             testable      = false;
+    private volatile TestMgr    testManager   = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
         super("Anubis: Interval Executive (node " + id.id + ")");
@@ -66,7 +61,7 @@ public class IntervalExec extends Thread {
      * prevent the interval executive from checking for stability times
      */
     public void clearStability() {
-        stabalizing = false;
+        stabilizing = false;
         stabilityTime = 0;
     }
 
@@ -106,7 +101,7 @@ public class IntervalExec extends Thread {
                      * heartbeat interval then wake up at the stability interval
                      * end as defined by stabilityTime.
                      */
-                    timenow = stabalizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
+                    timenow = stabilizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
                                                                                            stabilityTime)
                                                                           : sleepInterval(timenow,
                                                                                           heartbeatTime);
@@ -156,7 +151,7 @@ public class IntervalExec extends Thread {
                     /**
                      * check for stability - only done on a stability boundary
                      */
-                    if (stabalizing && timenow >= stabilityTime) {
+                    if (stabilizing && timenow >= stabilityTime) {
 
                         /**
                          * If testing then produce delay info
@@ -191,7 +186,7 @@ public class IntervalExec extends Thread {
      *            - the time that stability is expected.
      */
     public void setStability(long s) {
-        stabalizing = true;
+        stabilizing = true;
         stabilityTime = s;
     }
 
@@ -219,18 +214,20 @@ public class IntervalExec extends Thread {
 
         lastCheckTime = timenow;
 
-        if (!stabalizing || stabilityTime > heartbeatTime) {
+        if (!stabilizing || stabilityTime > heartbeatTime) {
             earliest = heartbeatTime;
         } else {
             earliest = stabilityTime;
         }
 
         delay = timenow - earliest;
+        
 
         if (delay > 15000) {
             log.severe("IntervalExec may have observed a system time adjustment - overslept by "
                        + delay
                        + "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
+            System.out.println(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s", timenow, stabilityTime, heartbeatTime));
         } else if (delay > 200) {
             if (log.isLoggable(Level.INFO)) {
                 log.info("IntervalExec overslept by " + delay
