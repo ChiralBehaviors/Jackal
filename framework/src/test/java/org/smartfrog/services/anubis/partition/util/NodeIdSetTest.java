@@ -92,4 +92,21 @@ public class NodeIdSetTest extends TestCase {
 
         large.overlap(small);
     }
+    
+    public void testClone() {
+        NodeIdSet original = new NodeIdSet();
+        original.add(1);
+        original.add(9);
+        original.add(0);
+        
+        assertEquals(3, original.cardinality());
+        
+        NodeIdSet clone = original.clone();
+        assertEquals(3, clone.cardinality());
+        
+        assertTrue(clone.contains(0));
+        assertTrue(clone.contains(1));
+        assertTrue(clone.contains(9));
+        
+    }
 }

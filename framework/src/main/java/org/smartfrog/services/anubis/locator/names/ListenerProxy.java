@@ -39,7 +39,7 @@ public class ListenerProxy extends NameData implements Serializable {
     private static final long serialVersionUID = 1L;
     private long uniqueRegId;
 
-    public ListenerProxy(String name, Integer node, long uniqueRegId) {
+    public ListenerProxy(String name, int node, long uniqueRegId) {
         super(name, node);
         this.uniqueRegId = uniqueRegId;
     }

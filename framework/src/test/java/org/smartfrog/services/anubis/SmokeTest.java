@@ -172,11 +172,8 @@ public class SmokeTest extends TestCase {
                  CountDownLatch endLatch, int cardinality) throws Exception {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
                                                                                         config);
-        Node node = new Node(ctx, stateName, cardinality);
-        node.setStartLatch(startLatch);
-        node.setEndLatch(endLatch);
-        node.setMaxSleep(maxSleep);
-        node.setMessagesToSend(messageCount);
+        Node node = new Node(ctx, stateName, cardinality, startLatch, endLatch,
+                             maxSleep, messageCount);
         return node;
     }
 }

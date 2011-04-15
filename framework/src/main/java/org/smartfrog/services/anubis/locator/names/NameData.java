@@ -25,9 +25,9 @@ public class NameData implements Serializable {
 
     private static final long serialVersionUID = 1L;
     public String name;
-    public Integer node;
+    public int node;
 
-    public NameData(String name, Integer node) {
+    public NameData(String name, int node) {
         this.name = name;
         this.node = node;
     }
@@ -44,13 +44,13 @@ public class NameData implements Serializable {
     public boolean equals(Object obj) {
         if (obj instanceof NameData) {
             return name.equals(((NameData) obj).name)
-                   && node.equals(((NameData) obj).node);
+                   && node == ((NameData) obj).node;
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return name.hashCode() + node.hashCode();
+        return name.hashCode() + node;
     }
 }

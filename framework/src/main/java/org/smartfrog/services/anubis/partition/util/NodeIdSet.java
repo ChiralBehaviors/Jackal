@@ -21,6 +21,7 @@ package org.smartfrog.services.anubis.partition.util;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
@@ -34,11 +35,7 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
 public class NodeIdSet implements Serializable, Cloneable, WireSizes {
 
-    private static final int DEFAULT_SIZE = 33;
-
-    /**
-     * 
-     */
+    private static final int  DEFAULT_SIZE     = 33;
     private static final long serialVersionUID = 1L;
 
     public static NodeIdSet readWireForm(ByteBuffer bytes, int idx, int len) {
@@ -122,12 +119,14 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      * @return BitSet
      */
     @Override
-    public Object clone() {
-        NodeIdSet cloneBS = new NodeIdSet(size());
-        byte[] cloneStorage = cloneBS.getBytes();
-        for (int i = 0; i < storage.length; ++i) {
-            cloneStorage[i] = storage[i];
+    public NodeIdSet clone() {
+        NodeIdSet cloneBS;
+        try {
+            cloneBS = (NodeIdSet) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException("Unable to clone!", e);
         }
+        cloneBS.storage = Arrays.copyOf(storage, storage.length);
         return cloneBS;
     }
 

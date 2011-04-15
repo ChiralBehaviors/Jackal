@@ -71,22 +71,22 @@ public class LocalListeners {
     /**
      * listeners maps names-->ListenerInfo records.
      */
-    private Map<String, Object>           listeners       = new HashMap<String, Object>();
-    private Locator                       locator         = null;
+    private Map<String, ListenerInfo>      listeners       = new HashMap<String, ListenerInfo>();
+    private Locator                        locator         = null;
 
-    private static final Logger           log             = Logger.getLogger(LocalListeners.class.getCanonicalName());
+    private static final Logger            log             = Logger.getLogger(LocalListeners.class.getCanonicalName());
 
-    private Integer                       me              = null;
+    private int                            me;
     /**
      * providersByNode maps nodes-->Set of names. This data structure keeps a
      * record of the names being provided at each node. When a partition occurs
      * we pick out absent nodes and use the names to find providers that should
      * be removed from the listenerInfo records.
      */
-    private SetMap<Object, ProviderProxy> providersByNode = new SetMap<Object, ProviderProxy>();
-    private long                          uniqueRegId     = 0;                                                         ;
+    private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
+    private long                           uniqueRegId     = 0;                                                         ;
 
-    public LocalListeners(Locator l, Integer id) {
+    public LocalListeners(Locator l, int id) {
         locator = l;
         me = id;
     }
@@ -107,13 +107,13 @@ public class LocalListeners {
          * Iterate through the providersByNode mapSet looking for nodes that are
          * not in the view.
          */
-        Iterator<Object> nodeIter = providersByNode.keySet().iterator();
+        Iterator<Integer> nodeIter = providersByNode.keySet().iterator();
         while (nodeIter.hasNext()) {
 
             /**
              * Get the next node - step past it if it is still in the view.
              */
-            Integer node = (Integer) nodeIter.next();
+            Integer node = nodeIter.next();
             if (view.contains(node.intValue())) {
                 continue;
             }
@@ -129,7 +129,7 @@ public class LocalListeners {
             while (nameIter.hasNext()) {
 
                 ProviderProxy proxy = nameIter.next();
-                ListenerInfo info = (ListenerInfo) listeners.get(proxy.name);
+                ListenerInfo info = listeners.get(proxy.name);
 
                 for (ProviderInstance instance = info.providers.remove(proxy); instance != null; instance = info.providers.remove(proxy)) {
 
@@ -163,7 +163,7 @@ public class LocalListeners {
         /**
          * Remove this listener from the set of listeners
          */
-        ListenerInfo info = (ListenerInfo) listeners.get(listener.getName());
+        ListenerInfo info = listeners.get(listener.getName());
         info.listeners.remove(listener);
 
         /**
@@ -224,7 +224,7 @@ public class LocalListeners {
         /**
          * Get the info, if it does not contain this instance just return now.
          */
-        ListenerInfo info = (ListenerInfo) listeners.get(provider.name);
+        ListenerInfo info = listeners.get(provider.name);
         if (info.providers.remove(provider) == null) {
             if (log.isLoggable(Level.FINER)) {
                 log.finer(me + ": listeners did not know removed " + provider);
@@ -268,7 +268,7 @@ public class LocalListeners {
         /**
          * get the listener info for this provider name
          */
-        ListenerInfo info = (ListenerInfo) listeners.get(provider.name);
+        ListenerInfo info = listeners.get(provider.name);
 
         /**
          * put the provider instance in the set of providers. If the provider
@@ -309,7 +309,7 @@ public class LocalListeners {
          * listener info and add the new listener.
          */
         if (listeners.containsKey(listener.getName())) {
-            info = (ListenerInfo) listeners.get(listener.getName());
+            info = listeners.get(listener.getName());
             info.listeners.add(listener);
         }
 
@@ -343,21 +343,21 @@ public class LocalListeners {
         if (log.isLoggable(Level.FINE)) {
             log.fine("Reregistering all listeners");
         }
-        Iterator<Object> iter = listeners.values().iterator();
+        Iterator<ListenerInfo> iter = listeners.values().iterator();
         while (iter.hasNext()) {
-            ListenerInfo info = (ListenerInfo) iter.next();
+            ListenerInfo info = iter.next();
             locator.sendToGlobal(RegisterMsg.registerListener(info.proxy));
         }
     }
 
     @Override
     public synchronized String toString() {
-        Iterator<Object> iter;
+        Iterator<Integer> iter;
         StringBuilder builder = new StringBuilder();
         builder.append("Remote Providers by node:\n");
         iter = providersByNode.keySet().iterator();
         while (iter.hasNext()) {
-            Integer node = (Integer) iter.next();
+            Integer node = iter.next();
             builder.append("    ").append(node);
             for (Iterator<ProviderProxy> iter2 = providersByNode.getSet(node).iterator(); iter2.hasNext(); builder.append(" ").append(iter2.next().name)) {
                 ;
@@ -365,8 +365,9 @@ public class LocalListeners {
             builder.append("\n");
         }
 
+        Iterator<ListenerInfo> iter2;
         builder.append("\nListeners:\n");
-        for (iter = listeners.values().iterator(); iter.hasNext(); builder.append("    ").append(iter.next()).append("\n")) {
+        for (iter2 = listeners.values().iterator(); iter2.hasNext(); builder.append("    ").append(iter.next()).append("\n")) {
             ;
         }
         builder.append("\n");

@@ -122,7 +122,7 @@ public class BitView implements View, Cloneable, Serializable {
 
     public BitView copyView(View v) {
         stable = v.isStable();
-        view = (NodeIdSet) v.toBitSet().clone();
+        view = v.toBitSet().clone();
         timeStamp = v.getTimeStamp();
         return this;
     }
@@ -229,7 +229,7 @@ public class BitView implements View, Cloneable, Serializable {
         builder.append(isStable() ? "stable: " : "unstable: ");
         for (int i = 0; i < size(); i++) {
             if (contains(i)) {
-                builder.append(" ");
+                builder.append(i).append(" ");
             }
         }
         builder.append(">");

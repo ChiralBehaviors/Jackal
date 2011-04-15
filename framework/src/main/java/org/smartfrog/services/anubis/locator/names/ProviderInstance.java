@@ -25,19 +25,19 @@ import org.smartfrog.services.anubis.locator.ValueData;
 public class ProviderInstance extends NameData {
 
     private static final long serialVersionUID = 1L;
-    public String instance;
+    public final String instance;
     public long time;
     public ValueData value;
 
     public ProviderInstance(AnubisProvider provider, String instance,
-                            Integer node) {
+                            int node) {
         super(provider.getName(), node);
         time = provider.getTime();
         this.instance = instance;
         value = provider.getValueData();
     }
 
-    public ProviderInstance(String name, String instance, Integer node,
+    public ProviderInstance(String name, String instance, int node,
                             long time, ValueData value) {
         super(name, node);
         this.time = time;

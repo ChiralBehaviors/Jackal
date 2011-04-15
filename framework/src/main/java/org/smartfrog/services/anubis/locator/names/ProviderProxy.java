@@ -44,7 +44,7 @@ public class ProviderProxy extends NameData implements Serializable {
      */
     private static final long serialVersionUID = 1L;
 
-    public ProviderProxy(String name, Integer node) {
+    public ProviderProxy(String name, int node) {
         super(name, node);
     }
 

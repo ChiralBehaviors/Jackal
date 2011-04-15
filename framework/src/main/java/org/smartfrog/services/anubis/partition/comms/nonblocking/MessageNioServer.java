@@ -323,6 +323,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                     }
                     try {
                         SocketChannel clientChannel = server.accept();
+                        clientChannel.socket().setTcpNoDelay(true);
                         clientChannel.configureBlocking(false);
                         MessageNioHandler conHandler = new MessageNioHandler(
                                                                              selector,

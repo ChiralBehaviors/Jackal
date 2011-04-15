@@ -17,16 +17,16 @@
 package org.smartfrog.services.anubis;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
-import org.smartfrog.services.anubis.locator.AnubisStability;
 import org.smartfrog.services.anubis.locator.AnubisValue;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.PartitionNotification;
@@ -40,27 +40,42 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  * 
  */
 public class Node {
-    static Random                                         RANDOM           = new Random(
-                                                                                        666);
-    private AnnotationConfigApplicationContext            context;
-    private int                                           maxSleep;
-    private AnubisProvider                                provider;
-    private int                                           messagesToSend;
-    private CountDownLatch                                endLatch;
-    private CountDownLatch                                startLatch;
-    private String                                        instance;
-    private CountDownLatch                                launchLatch      = new CountDownLatch(
-                                                                                                1);
-    private int                                           cardinality;
+    static Random RANDOM = new Random(666);
 
-    private ArrayList<SendHistory>                        sendHistory      = new ArrayList<SendHistory>();
-    private ConcurrentHashMap<String, List<ValueHistory>> receiveHistory   = new ConcurrentHashMap<String, List<ValueHistory>>();
-    private ArrayList<StabilityHistory>                   stabilityHistory = new ArrayList<StabilityHistory>();
+    public static int getIdentity(String instanceString) {
+        return Integer.parseInt(instanceString.substring(0,
+                                                         instanceString.indexOf('/')));
+    }
+
+    private final AnnotationConfigApplicationContext context;
+    private final int                                maxSleep;
+    private final AnubisProvider                     provider;
+    private final int                                messagesToSend;
+    private final CountDownLatch                     endLatch;
+    private final CountDownLatch                     startLatch;
+    private String                                   instance;
+    private final CountDownLatch                     launchLatch        = new CountDownLatch(
+                                                                                             1);
+    private final int                                cardinality;
+    private final ArrayList<SendHistory>             sendHistory        = new ArrayList<SendHistory>();
+    private final Map<Integer, List<ValueHistory>>   receiveHistory     = new HashMap<Integer, List<ValueHistory>>();
+
+    private final Map<Integer, CountDownLatch>       msgReceivedLatches = new HashMap<Integer, CountDownLatch>();
 
     public Node(AnnotationConfigApplicationContext context, String stateName,
-                int c) throws Exception {
+                int c, CountDownLatch startLatch, CountDownLatch endLatch,
+                int maxSleep, int messageCount) throws Exception {
         this.context = context;
-        this.cardinality = c;
+        cardinality = c;
+        this.startLatch = startLatch;
+        this.endLatch = endLatch;
+        this.maxSleep = maxSleep;
+        messagesToSend = messageCount;
+        for (int i = 0; i < cardinality; i++) {
+            receiveHistory.put(i, new CopyOnWriteArrayList<ValueHistory>());
+            msgReceivedLatches.put(i, new CountDownLatch(messageCount));
+        }
+
         PartitionManager pm = context.getBean(PartitionManager.class);
         pm.register(new PartitionNotification() {
 
@@ -71,7 +86,7 @@ public class Node {
             @Override
             public void partitionNotification(View view, int leader) {
                 if (view.isStable() && view.cardinality() == cardinality) {
-                    System.out.println("Launching");
+                    System.out.println("Launching: " + view);
                     launchLatch.countDown();
                 } else {
                     System.out.println("Not launching: " + view);
@@ -82,36 +97,22 @@ public class Node {
         AnubisListener listener = new AnubisListener(stateName) {
             @Override
             public void newValue(AnubisValue value) {
-                List<ValueHistory> newHistory = new CopyOnWriteArrayList<ValueHistory>();
-                List<ValueHistory> history = receiveHistory.putIfAbsent(value.getInstance(),
-                                                                        newHistory);
-                if (history == null) {
-                    history = newHistory;
+                if (value.getValue() == null) {
+                    return;
                 }
-                history.add(new ValueHistory(value, Action.NEW));
+                int identity = getIdentity(value.getInstance());
+                receiveHistory.get(identity).add(new ValueHistory(value,
+                                                                  Action.NEW));
+                msgReceivedLatches.get(identity).countDown();
             }
 
             @Override
             public void removeValue(AnubisValue value) {
-                List<ValueHistory> newHistory = new CopyOnWriteArrayList<ValueHistory>();
-                List<ValueHistory> history = receiveHistory.putIfAbsent(value.getInstance(),
-                                                                        newHistory);
-                if (history == null) {
-                    history = newHistory;
-                }
-                history.add(new ValueHistory(value, Action.REMOVE));
+                System.out.println("Received a remove!");
             }
         };
         provider = new AnubisProvider(stateName);
-        AnubisStability stability = new AnubisStability() {
-            @Override
-            public void stability(boolean stable, long timeRef) {
-                stabilityHistory.add(new StabilityHistory(stable, timeRef));
-            }
-        };
-
         AnubisLocator locator = context.getBean(AnubisLocator.class);
-        locator.registerStability(stability);
         locator.registerListener(listener);
         locator.registerProvider(provider);
         instance = provider.getInstance();
@@ -126,23 +127,7 @@ public class Node {
     }
 
     public List<ValueHistory> getValueHistory(String instance) {
-        return receiveHistory.get(instance);
-    }
-
-    public void setEndLatch(CountDownLatch latch) {
-        endLatch = latch;
-    }
-
-    public void setStartLatch(CountDownLatch latch) {
-        startLatch = latch;
-    }
-
-    public void setMaxSleep(int maxSleep) {
-        this.maxSleep = maxSleep;
-    }
-
-    public void setMessagesToSend(int messagesToSend) {
-        this.messagesToSend = messagesToSend;
+        return receiveHistory.get(getIdentity(instance));
     }
 
     public void shutDown() {
@@ -173,7 +158,9 @@ public class Node {
                     sendHistory.add(sent);
                 }
                 try {
-                    Thread.sleep(2000);
+                    for (CountDownLatch latch : msgReceivedLatches.values()) {
+                        latch.await();
+                    }
                     endLatch.countDown();
                     endLatch.await();
                 } catch (InterruptedException e) {
