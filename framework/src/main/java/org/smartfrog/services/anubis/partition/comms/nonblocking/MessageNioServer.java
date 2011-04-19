@@ -105,7 +105,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             server.register(selector, SelectionKey.OP_ACCEPT);
         } catch (Exception e) {
             if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "", e);
+                asyncLog.log(Level.WARNING, "error creating server", e);
             }
         }
         setName("Anubis: Nio Message Server (node " + me.id + ")");
@@ -173,7 +173,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                                            wireSecurity);
         } catch (Exception ex) {
             if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "", ex);
+                asyncLog.log(Level.WARNING,
+                             String.format("Cannot initiate connection to %s",
+                                           con.getSender()), ex);
             }
             return;
         }
@@ -294,7 +296,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                 }
                             } catch (Exception e) {
                                 if (asyncLog.isLoggable(Level.WARNING)) {
-                                    asyncLog.log(Level.WARNING, "", e);
+                                    asyncLog.log(Level.WARNING, "error registering selector", e);
                                 }
                             }
 
@@ -340,7 +342,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                         conHandler.setConnected(true);
                     } catch (Exception e) {
                         if (asyncLog.isLoggable(Level.WARNING)) {
-                            asyncLog.log(Level.WARNING, "", e);
+                            asyncLog.log(Level.WARNING, "Error accepting connection", e);
                         }
                     }
 

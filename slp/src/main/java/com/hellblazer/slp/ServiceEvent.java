@@ -17,6 +17,7 @@
 package com.hellblazer.slp;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * The service lifecycle event.
@@ -29,22 +30,58 @@ public class ServiceEvent implements Serializable {
         MODIFIED, REGISTERED, UNREGISTERED
     }
 
-    private static final long serialVersionUID = 1L;
-    protected EventType type;
+    private static final long      serialVersionUID = 1L;
+    private final ServiceReference reference;
+    private final UUID             sequence;
+    private final EventType        type;
 
-    protected ServiceReference reference;
-
-    public ServiceEvent(EventType type, ServiceReference reference) {
+    public ServiceEvent(EventType type, ServiceReference reference,
+                        UUID sequence) {
         this.type = type;
         this.reference = reference;
+        this.sequence = sequence;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        ServiceEvent other = (ServiceEvent) obj;
+        if (sequence == null) {
+            if (other.sequence != null) {
+                return false;
+            }
+        } else if (!sequence.equals(other.sequence)) {
+            return false;
+        }
+        return true;
     }
 
     public ServiceReference getReference() {
         return reference;
     }
 
+    public UUID getSequence() {
+        return sequence;
+    }
+
     public EventType getType() {
         return type;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (sequence == null ? 0 : sequence.hashCode());
+        return result;
     }
 
     @Override

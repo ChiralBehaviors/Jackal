@@ -17,6 +17,7 @@
 package com.hellblazer.slp.anubis;
 
 import static com.hellblazer.slp.ServiceScope.SERVICE_TYPE;
+import static com.hellblazer.slp.anubis.AnubisScope.MEMBER_IDENTITY;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -125,14 +126,17 @@ public class EndToEndTest extends TestCase {
     }
 
     static class Listener implements ServiceListener {
-        int                member;
-        CountDownLatch     latch;
-        ApplicationContext context;
-        Set<Event>         events = new CopyOnWriteArraySet<EndToEndTest.Event>();
+        int                                member;
+        ApplicationContext                 context;
+        final Map<Integer, CountDownLatch> latches = new HashMap<Integer, CountDownLatch>();
+        Set<Event>                         events  = new CopyOnWriteArraySet<Event>();
 
-        Listener(ApplicationContext context) {
+        Listener(ApplicationContext context, int cardinality, int expectedCount) {
             this.context = context;
             member = context.getBean(Identity.class).id;
+            for (int i = 0; i < cardinality; i++) {
+                latches.put(i, new CountDownLatch(expectedCount));
+            }
         }
 
         @Override
@@ -140,9 +144,12 @@ public class EndToEndTest extends TestCase {
             log.fine("updated <" + member + "> with: " + event);
             Event marked = new Event(event);
             if (events.add(marked)) {
-                if (latch != null) {
-                    latch.countDown();
+                Integer id = (Integer) event.getReference().getProperties().get(MEMBER_IDENTITY);
+                CountDownLatch latch = latches.get(id);
+                if (latch == null) {
+                    throw new IllegalStateException("unknown identity: " + id);
                 }
+                latch.countDown();
             } else {
                 // System.err.println("recevied duplicate: " + marked);
             }
@@ -155,6 +162,12 @@ public class EndToEndTest extends TestCase {
 
         void unregister() {
             context.getBean(ServiceScope.class).removeServiceListener(this);
+        }
+
+        void await(long timeout, TimeUnit unit) throws InterruptedException {
+            for (CountDownLatch latch : latches.values()) {
+                latch.await(timeout, unit);
+            }
         }
     }
 
@@ -353,9 +366,7 @@ public class EndToEndTest extends TestCase {
         ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
         List<Listener> listeners = new ArrayList<Listener>();
         for (ApplicationContext context : memberContexts) {
-            CountDownLatch latch = new CountDownLatch(memberContexts.size());
-            Listener listener = new Listener(context);
-            listener.latch = latch;
+            Listener listener = new Listener(context, memberContexts.size(), 1);
             listeners.add(listener);
             listener.register(getQuery("*"));
         }
@@ -365,9 +376,7 @@ public class EndToEndTest extends TestCase {
             context.getBean(ServiceScope.class).register(url, properties);
         }
         for (Listener listener : listeners) {
-            assertTrue("listener <" + listener.member
-                               + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+            listener.await(30, TimeUnit.SECONDS);
             assertEquals(listeners.size(), listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (Event event : listener.events) {
@@ -411,9 +420,7 @@ public class EndToEndTest extends TestCase {
         ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
         List<Listener> listeners = new ArrayList<Listener>();
         for (ApplicationContext context : memberContexts) {
-            CountDownLatch latch = new CountDownLatch(memberContexts.size() * 2);
-            Listener listener = new Listener(context);
-            listener.latch = latch;
+            Listener listener = new Listener(context, memberContexts.size(), 2);
             listeners.add(listener);
             listener.register(getQuery("*"));
         }
@@ -460,9 +467,7 @@ public class EndToEndTest extends TestCase {
                    latch.await(30, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
-            assertTrue("listener <" + listener.member
-                               + "> has not received all notifications",
-                       listener.latch.await(60, TimeUnit.SECONDS));
+            listener.await(60, TimeUnit.SECONDS);
             assertEquals("listener <"
                                  + listener.member
                                  + "> has received more notifications than expected ",
@@ -511,9 +516,7 @@ public class EndToEndTest extends TestCase {
         ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
         List<Listener> listeners = new ArrayList<Listener>();
         for (ApplicationContext context : memberContexts) {
-            CountDownLatch latch = new CountDownLatch(memberContexts.size() * 2);
-            Listener listener = new Listener(context);
-            listener.latch = latch;
+            Listener listener = new Listener(context, memberContexts.size(), 2);
             listeners.add(listener);
             listener.register(getQuery("*"));
         }
@@ -550,9 +553,7 @@ public class EndToEndTest extends TestCase {
                    latch.await(30, TimeUnit.SECONDS));
 
         for (Listener listener : listeners) {
-            assertTrue("listener <" + listener.member
-                               + "> has not received all notifications",
-                       listener.latch.await(30, TimeUnit.SECONDS));
+            listener.await(30, TimeUnit.SECONDS);
             assertEquals("listener <"
                                  + listener.member
                                  + "> has received more notifications than expected ",
@@ -593,13 +594,14 @@ public class EndToEndTest extends TestCase {
         memberContexts = createMembers();
         controller = (MyController) controllerContext.getBean(Controller.class);
         log.info("Awaiting initial partition stability");
-        boolean success = false; 
+        boolean success = false;
         connectionSets = new ArrayList<ConnectionSet>();
         for (ConfigurableApplicationContext context : memberContexts) {
             connectionSets.add(context.getBean(ConnectionSet.class));
         }
         try {
             success = INITIAL_LATCH.await(120, TimeUnit.SECONDS);
+            assertTrue("Initial partition did not stabilize", success);
             log.info("Initial partition stable");
             partition = new ArrayList<Node>();
             for (ConfigurableApplicationContext context : memberContexts) {

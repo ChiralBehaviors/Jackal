@@ -54,18 +54,17 @@ import com.hellblazer.slp.ServiceURL;
 
 /**
  * A <link>ServiceScope</link> using Anubis as the underlying support
- * infrastructure.  Service events are delivered reliably and in the 
- * proper order to all members of a partition.  When new members are
- * added to the partition, previous members will synchronize these 
- * members with existing service registrations.  When members leave,
- * existing members will be notified that the services published by
- * these members have been unregistered.
+ * infrastructure. Service events are delivered reliably and in the proper order
+ * to all members of a partition. When new members are added to the partition,
+ * previous members will synchronize these members with existing service
+ * registrations. When members leave, existing members will be notified that the
+ * services published by these members have been unregistered.
  * 
  * <p>
- * The interface is non blocking regardless of the stability or instability
- * of the underlying partition's membership view.  Service lifecycle events
- * produced by services of this member will only be sent when the partition
- * member view is stable.
+ * The interface is non blocking regardless of the stability or instability of
+ * the underlying partition's membership view. Service lifecycle events produced
+ * by services of this member will only be sent when the partition member view
+ * is stable.
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
@@ -73,7 +72,7 @@ import com.hellblazer.slp.ServiceURL;
 public class AnubisScope implements ServiceScope {
     static class Gate {
         private boolean isOpen;
-        private int generation;
+        private int     generation;
 
         // BLOCKS-UNTIL: opened-since(generation on entry)
         public synchronized void await() throws InterruptedException {
@@ -116,8 +115,8 @@ public class AnubisScope implements ServiceScope {
 
     static class Message implements Serializable {
         private static final long serialVersionUID = 1L;
-        final MessageType type;
-        final Serializable body;
+        final MessageType         type;
+        final Serializable        body;
 
         Message(MessageType type, Serializable body) {
             this.type = type;
@@ -146,23 +145,24 @@ public class AnubisScope implements ServiceScope {
         }
     }
 
-    public static final String MEMBER_IDENTITY = "anubis.member.identity";
+    public static final String                                  MEMBER_IDENTITY = "anubis.member.identity";
 
-    private static final Logger log = Logger.getLogger(AnubisScope.class.getCanonicalName());
-    private final AnubisLocator locator;
-    private final Listener stateListener;
-    private final AnubisProvider stateProvider;
-    private final Map<ServiceListener, Filter> listeners = new ConcurrentHashMap<ServiceListener, Filter>();
-    private final ExecutorService executor;
-    private final Map<UUID, ServiceReferenceImpl> myServices = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
-    private final ConcurrentHashMap<UUID, ServiceReferenceImpl> systemServices = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
-    private final NoArgGenerator uuidGenerator;
-    private final int identity;
-    private final Gate updateGate = new Gate();
-    private final Stability stability = new Stability();
-    private final BlockingQueue<Message> outboundMsgs = new LinkedBlockingQueue<Message>();
-    private Thread outboundProcessingThread;
-    private final AtomicBoolean run = new AtomicBoolean(false);
+    private static final Logger                                 log             = Logger.getLogger(AnubisScope.class.getCanonicalName());
+    private final AnubisLocator                                 locator;
+    private final Listener                                      stateListener;
+    private final AnubisProvider                                stateProvider;
+    private final Map<ServiceListener, Filter>                  listeners       = new ConcurrentHashMap<ServiceListener, Filter>();
+    private final ExecutorService                               executor;
+    private final Map<UUID, ServiceReferenceImpl>               myServices      = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
+    private final ConcurrentHashMap<UUID, ServiceReferenceImpl> systemServices  = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
+    private final NoArgGenerator                                uuidGenerator;
+    private final int                                           identity;
+    private final Gate                                          updateGate      = new Gate();
+    private final Stability                                     stability       = new Stability();
+    private final BlockingQueue<Message>                        outboundMsgs    = new LinkedBlockingQueue<Message>();
+    private Thread                                              outboundProcessingThread;
+    private final AtomicBoolean                                 run             = new AtomicBoolean(
+                                                                                                    false);
 
     public AnubisScope(String stateName, AnubisLocator lctr,
                        ExecutorService execService, NoArgGenerator generator) {
@@ -194,7 +194,8 @@ public class AnubisScope implements ServiceScope {
                     try {
                         listener.serviceChanged(new ServiceEvent(
                                                                  EventType.REGISTERED,
-                                                                 ref));
+                                                                 ref,
+                                                                 uuidGenerator.generate()));
                     } catch (Throwable e) {
                         log.log(Level.SEVERE,
                                 "Error when notifying listener on reference "
@@ -407,7 +408,8 @@ public class AnubisScope implements ServiceScope {
                                 try {
                                     listener.serviceChanged(new ServiceEvent(
                                                                              type,
-                                                                             reference));
+                                                                             reference,
+                                                                             uuidGenerator.generate()));
                                 } catch (Throwable e) {
                                     log.log(Level.SEVERE,
                                             "Error when notifying listener on reference "

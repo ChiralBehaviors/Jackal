@@ -37,16 +37,16 @@ import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 public class MessageConnection extends HeartbeatProtocolAdapter implements
         Connection, HeartbeatProtocol, Candidate {
 
-    private static final Logger  log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
+    private static final Logger        log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
 
-    private IOConnection         closingImpl       = null;
-    private IOConnection         connectionImpl    = null;
-    private ConnectionSet        connectionSet     = null;
-    private boolean              disconnectPending = false;
-    private boolean              ignoring          = false;
-    private Identity             me                = null;
-    private LinkedList<TimedMsg> msgQ              = new LinkedList<TimedMsg>();
-    private boolean              terminated        = false;
+    private volatile IOConnection      closingImpl       = null;
+    private volatile IOConnection      connectionImpl    = null;
+    private final ConnectionSet        connectionSet;
+    private volatile boolean           disconnectPending = false;
+    private volatile boolean           ignoring          = false;
+    private final Identity             me;
+    private final LinkedList<TimedMsg> msgQ              = new LinkedList<TimedMsg>();
+    private volatile boolean           terminated        = false;
 
     /**
      * Constructor used to create a MessageConnection when the implementation is
@@ -70,6 +70,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         super(hbp, can);
         me = id;
         connectionSet = cs;
+        if (connectionSet.isIgnoring(getId())) {
+            ignoring = true;
+        }
     }
 
     /**

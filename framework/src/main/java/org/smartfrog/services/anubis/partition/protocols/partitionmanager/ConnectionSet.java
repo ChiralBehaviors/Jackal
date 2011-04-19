@@ -311,7 +311,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return mcon;
     }
 
-    private boolean isIgnoring(Identity id) {
+    public synchronized boolean isIgnoring(Identity id) {
         return testable && ignoring.contains(id);
     }
 

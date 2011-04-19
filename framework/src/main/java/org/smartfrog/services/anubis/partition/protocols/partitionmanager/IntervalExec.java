@@ -221,17 +221,25 @@ public class IntervalExec extends Thread {
         }
 
         delay = timenow - earliest;
-        
 
         if (delay > 15000) {
             log.severe("IntervalExec may have observed a system time adjustment - overslept by "
                        + delay
                        + "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
-            System.out.println(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s", timenow, stabilityTime, heartbeatTime));
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s",
+                                       timenow, delay, stabilityTime,
+                                       heartbeatTime));
+            }
         } else if (delay > 200) {
             if (log.isLoggable(Level.INFO)) {
                 log.info("IntervalExec overslept by " + delay
                          + "ms - this is a scheduling delay or time adjustment");
+            }
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s",
+                                       timenow, delay, stabilityTime,
+                                       heartbeatTime));
             }
         }
     }
@@ -265,7 +273,10 @@ public class IntervalExec extends Thread {
      */
     private long sleepInterval(long timenow, long wakeup) {
         try {
-            connectionSet.wait(wakeup - timenow);
+            long delay = wakeup - timenow;
+            if (delay > 0) {
+                connectionSet.wait(delay);
+            }
         } catch (InterruptedException ex) {
         }
         return System.currentTimeMillis();
