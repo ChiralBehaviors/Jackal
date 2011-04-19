@@ -21,20 +21,10 @@ import static java.util.Arrays.asList;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
-
-import org.smartfrog.services.anubis.Action;
-import org.smartfrog.services.anubis.Node;
-import org.smartfrog.services.anubis.SendHistory;
-import org.smartfrog.services.anubis.ValueHistory;
+import org.smartfrog.services.anubis.SmokeTest;
 import org.smartfrog.services.anubis.partition.util.Identity;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
@@ -44,7 +34,7 @@ import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class SmokeTest extends TestCase {
+public class UdpSmokeTest extends SmokeTest {
     static class noTestCfg extends GossipConfiguration {
         static final int testPort;
 
@@ -151,68 +141,9 @@ public class SmokeTest extends TestCase {
         }
     }
 
-    public void testInProcess() throws Exception {
-        String stateName = "Whip It";
-        int maxSleep = 500;
-        int messageCount = 10;
-        ArrayList<Node> nodes = new ArrayList<Node>();
-        Class<?>[] configurations = new Class[] { testA.class, testB.class,
-                testC.class, testD.class, testE.class, testF.class, testG.class };
-        CountDownLatch startLatch = new CountDownLatch(configurations.length);
-        CountDownLatch endLatch = new CountDownLatch(configurations.length);
-        for (Class<?> config : configurations) {
-            nodes.add(getNode(config, stateName, messageCount, maxSleep,
-                              startLatch, endLatch, configurations.length));
-        }
-        for (Node node : nodes) {
-            node.start();
-        }
-        boolean finished = endLatch.await(2, TimeUnit.MINUTES);
-        assertTrue("Test never completed", finished);
-        for (Node node : nodes) {
-            node.shutDown();
-        }
-        for (Node sender : nodes) {
-            List<SendHistory> sent = sender.getSendHistory();
-            assertEquals(messageCount, sent.size());
-            for (Node receiver : nodes) {
-                List<ValueHistory> received = receiver.getValueHistory(sender.getInstance());
-                assertNotNull("Received no history from "
-                                      + sender.getInstance(), received);
-                int lastCounter = -1;
-                boolean first = true;
-                List<ValueHistory> filtered = new ArrayList<ValueHistory>();
-                for (ValueHistory msg : received) {
-                    if (msg.value == null) {
-                        continue;
-                    }
-                    filtered.add(msg);
-                    assertEquals(Action.NEW, msg.action);
-                    if (first) {
-                        first = false;
-                        lastCounter = (Integer) msg.value;
-                    } else {
-                        int counter = (Integer) msg.value;
-                        assertEquals(String.format("invalid msg received by %s : %s",
-                                                   receiver.getInstance(), msg),
-                                     lastCounter + 1, counter);
-                        lastCounter = counter;
-                    }
-                }
-                for (int i = 0; i < sent.size(); i++) {
-                    assertEquals(sent.get(i).value, filtered.get(i).value);
-                }
-            }
-        }
-    }
-
-    Node getNode(Class<?> config, String stateName, int messageCount,
-                 int maxSleep, CountDownLatch startLatch,
-                 CountDownLatch endLatch, int cardinality) throws Exception {
-        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
-                                                                                        config);
-        Node node = new Node(ctx, stateName, cardinality, startLatch, endLatch,
-                             maxSleep, messageCount);
-        return node;
+    @Override
+    protected Class<?>[] getConfigurations() {
+        return new Class[] { testA.class, testB.class, testC.class,
+                testD.class, testE.class, testF.class, testG.class };
     }
 }

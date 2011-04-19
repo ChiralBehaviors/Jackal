@@ -17,15 +17,12 @@
  */
 package com.hellblazer.jackal.gossip.configuration;
 
-import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.bind;
-import static com.hellblazer.jackal.nio.ServerSocketChannelHandler.getLocalAddress;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.nio.channels.ServerSocketChannel;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Timer;
@@ -50,9 +47,7 @@ import com.hellblazer.jackal.gossip.SystemView;
 import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
-import com.hellblazer.jackal.gossip.tcp.TcpCommunications;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
-import com.hellblazer.jackal.nio.SocketOptions;
 
 /**
  * Gossip based configuration for the partition manager testing.
@@ -70,21 +65,7 @@ public class ControllerGossipConfiguration {
 
     @Bean
     public GossipCommunications communications() throws IOException {
-        return udpCommunications();
-    }
-
-    protected GossipCommunications udpCommunications() throws IOException {
         return new UdpCommunications(gossipEndpoint(),
-                                     Executors.newFixedThreadPool(3));
-    }
-
-    protected GossipCommunications tcpCommunications() throws IOException,
-                                                      UnknownHostException {
-        ServerSocketChannel channel = bind(socketOptions(), gossipEndpoint());
-        return new TcpCommunications("Test controller gossip endpoint handler "
-                                     + partitionIdentity(), channel,
-                                     getLocalAddress(channel), socketOptions(),
-                                     Executors.newFixedThreadPool(3),
                                      Executors.newFixedThreadPool(3));
     }
 
@@ -203,10 +184,6 @@ public class ControllerGossipConfiguration {
     protected Collection<InetSocketAddress> seedHosts()
                                                        throws UnknownHostException {
         return asList(gossipEndpoint());
-    }
-
-    protected SocketOptions socketOptions() {
-        return new SocketOptions();
     }
 
     protected int unreachableNodeDelay() {

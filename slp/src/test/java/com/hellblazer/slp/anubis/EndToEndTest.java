@@ -116,6 +116,7 @@ abstract public class EndToEndTest extends TestCase {
     }
 
     static class Listener implements ServiceListener {
+        final Logger                       log     = Logger.getLogger(ServiceListener.class.getCanonicalName());
         ApplicationContext                 context;
         Set<Event>                         events  = new CopyOnWriteArraySet<Event>();
         final Map<Integer, CountDownLatch> latches = new HashMap<Integer, CountDownLatch>();
@@ -185,6 +186,7 @@ abstract public class EndToEndTest extends TestCase {
     static class Node extends NodeData {
         int            cardinality;
         CountDownLatch latch;
+        final Logger   log = Logger.getLogger(Node.class.getCanonicalName());
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -203,7 +205,6 @@ abstract public class EndToEndTest extends TestCase {
         }
     }
 
-    private static final Logger          log     = Logger.getLogger(EndToEndTest.class.getCanonicalName());
     static final Random                  RANDOM  = new Random(666);
     final Class<?>[]                     configs = getConfigs();
     List<ConnectionSet>                  connectionSets;
@@ -211,8 +212,97 @@ abstract public class EndToEndTest extends TestCase {
     MyController                         controller;
     ConfigurableApplicationContext       controllerContext;
     CountDownLatch                       initialLatch;
+    final Logger                         log     = getLogger();
+
     List<ConfigurableApplicationContext> memberContexts;
+
     List<Node>                           partition;
+
+    public void testAsymmetricPartition() throws Exception {
+        int minorPartitionSize = configs.length / 2;
+        BitView A = new BitView();
+        BitView B = new BitView();
+        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
+        List<Node> partitionA = new ArrayList<Node>();
+
+        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
+        List<Node> partitionB = new ArrayList<Node>();
+
+        int i = 0;
+        for (Node member : partition) {
+            if (i++ % 2 == 0) {
+                partitionA.add(member);
+                member.latch = latchA;
+                member.cardinality = minorPartitionSize;
+                A.add(member.getIdentity());
+            } else {
+                partitionB.add(member);
+                member.latch = latchB;
+                member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
+            }
+        }
+
+        String memberIdKey = "test.member.id";
+        String roundKey = "test.round";
+        ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
+        List<Listener> listeners = new ArrayList<Listener>();
+        for (ApplicationContext context : memberContexts) {
+            Listener listener = new Listener(context, memberContexts.size(), 2);
+            listeners.add(listener);
+            listener.register(getQuery("*"));
+        }
+        for (ApplicationContext context : memberContexts) {
+            HashMap<String, Object> properties = new HashMap<String, Object>();
+            properties.put(memberIdKey, context.getBean(Identity.class).id);
+            properties.put(roundKey, 1);
+            context.getBean(ServiceScope.class).register(url, properties);
+        }
+
+        log.info("asymmetric partitioning: " + A);
+        controller.asymPartition(A);
+        log.info("Awaiting stabilty of minor partition A");
+        assertTrue("minor partition A did not stabilize",
+                   latchA.await(60, TimeUnit.SECONDS));
+
+        for (ApplicationContext context : memberContexts) {
+            HashMap<String, Object> properties = new HashMap<String, Object>();
+            properties.put(memberIdKey, context.getBean(Identity.class).id);
+            properties.put(roundKey, 2);
+            context.getBean(ServiceScope.class).register(url, properties);
+        }
+
+        // reform
+        CountDownLatch latch = new CountDownLatch(configs.length);
+        for (Node node : partition) {
+            node.latch = latch;
+            node.cardinality = configs.length;
+        }
+
+        controller.clearPartitions();
+        log.info("Awaiting stabilty of reformed major partition");
+        assertTrue("reformed partition did not stabilize",
+                   latch.await(30, TimeUnit.SECONDS));
+
+        for (Listener listener : listeners) {
+            listener.await(30, TimeUnit.SECONDS);
+            assertEquals("listener <"
+                                 + listener.member
+                                 + "> has received more notifications than expected ",
+                         listeners.size() * 2, listener.events.size());
+            HashSet<Integer> sent = new HashSet<Integer>();
+            for (Event event : listener.events) {
+                assertEquals(EventType.REGISTERED, event.type);
+                assertEquals(url, event.url);
+                sent.add((Integer) event.properties.get(memberIdKey));
+                assertEquals(event.properties.get(AnubisScope.MEMBER_IDENTITY),
+                             event.properties.get(memberIdKey));
+            }
+            assertEquals("listener <" + listener.member
+                         + "> did not receive messages from all members: "
+                         + sent, listeners.size(), sent.size());
+        }
+    }
 
     public void testSmoke() throws Exception {
         String memberIdKey = "test.member.id";
@@ -339,92 +429,6 @@ abstract public class EndToEndTest extends TestCase {
         }
     }
 
-    public void testAsymmetricPartition() throws Exception {
-        int minorPartitionSize = configs.length / 2;
-        BitView A = new BitView();
-        BitView B = new BitView();
-        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionA = new ArrayList<Node>();
-
-        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionB = new ArrayList<Node>();
-
-        int i = 0;
-        for (Node member : partition) {
-            if (i++ % 2 == 0) {
-                partitionA.add(member);
-                member.latch = latchA;
-                member.cardinality = minorPartitionSize;
-                A.add(member.getIdentity());
-            } else {
-                partitionB.add(member);
-                member.latch = latchB;
-                member.cardinality = minorPartitionSize;
-                B.add(member.getIdentity());
-            }
-        }
-
-        String memberIdKey = "test.member.id";
-        String roundKey = "test.round";
-        ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
-        List<Listener> listeners = new ArrayList<Listener>();
-        for (ApplicationContext context : memberContexts) {
-            Listener listener = new Listener(context, memberContexts.size(), 2);
-            listeners.add(listener);
-            listener.register(getQuery("*"));
-        }
-        for (ApplicationContext context : memberContexts) {
-            HashMap<String, Object> properties = new HashMap<String, Object>();
-            properties.put(memberIdKey, context.getBean(Identity.class).id);
-            properties.put(roundKey, 1);
-            context.getBean(ServiceScope.class).register(url, properties);
-        }
-
-        log.info("asymmetric partitioning: " + A);
-        controller.asymPartition(A);
-        log.info("Awaiting stabilty of minor partition A");
-        assertTrue("minor partition A did not stabilize",
-                   latchA.await(60, TimeUnit.SECONDS));
-
-        for (ApplicationContext context : memberContexts) {
-            HashMap<String, Object> properties = new HashMap<String, Object>();
-            properties.put(memberIdKey, context.getBean(Identity.class).id);
-            properties.put(roundKey, 2);
-            context.getBean(ServiceScope.class).register(url, properties);
-        }
-
-        // reform
-        CountDownLatch latch = new CountDownLatch(configs.length);
-        for (Node node : partition) {
-            node.latch = latch;
-            node.cardinality = configs.length;
-        }
-
-        controller.clearPartitions();
-        log.info("Awaiting stabilty of reformed major partition");
-        assertTrue("reformed partition did not stabilize",
-                   latch.await(30, TimeUnit.SECONDS));
-
-        for (Listener listener : listeners) {
-            listener.await(30, TimeUnit.SECONDS);
-            assertEquals("listener <"
-                                 + listener.member
-                                 + "> has received more notifications than expected ",
-                         listeners.size() * 2, listener.events.size());
-            HashSet<Integer> sent = new HashSet<Integer>();
-            for (Event event : listener.events) {
-                assertEquals(EventType.REGISTERED, event.type);
-                assertEquals(url, event.url);
-                sent.add((Integer) event.properties.get(memberIdKey));
-                assertEquals(event.properties.get(AnubisScope.MEMBER_IDENTITY),
-                             event.properties.get(memberIdKey));
-            }
-            assertEquals("listener <" + listener.member
-                         + "> did not receive messages from all members: "
-                         + sent, listeners.size(), sent.size());
-        }
-    }
-
     private List<ConfigurableApplicationContext> createMembers() {
         ArrayList<ConfigurableApplicationContext> contexts = new ArrayList<ConfigurableApplicationContext>();
         for (Class<?> config : configs) {
@@ -440,6 +444,8 @@ abstract public class EndToEndTest extends TestCase {
     abstract protected Class<?>[] getConfigs();
 
     abstract protected Class<?> getControllerConfig();
+
+    abstract protected Logger getLogger();
 
     @Override
     protected void setUp() throws Exception {

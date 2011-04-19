@@ -16,8 +16,6 @@
  */
 package org.smartfrog.services.anubis;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -28,25 +26,22 @@ import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 
 /**
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class PartitionTest extends TestCase {
-    static class MyController extends Controller {
+abstract public class PartitionTest extends TestCase {
+    public static class MyController extends Controller {
+        int            cardinality;
+        CountDownLatch latch;
 
         public MyController(Timer timer, long checkPeriod, long expirePeriod,
                             Identity partitionIdentity, long heartbeatTimeout,
@@ -57,44 +52,18 @@ public class PartitionTest extends TestCase {
 
         @Override
         protected NodeData createNode(Heartbeat hb) {
-            return new Node(hb, this);
+            Node node = new Node(hb, this);
+            node.cardinality = cardinality;
+            node.latch = latch;
+            return node;
         }
 
     }
 
-    @Configuration
-    static class MyControllerConfig extends ControllerConfiguration {
-        @Override
-        @Bean
-        public DeployedPostProcessor deployedPostProcessor() {
-            return new DeployedPostProcessor();
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-
-        @Override
-        public int magic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        protected Controller constructController() throws UnknownHostException {
-            return new MyController(timer(), 1000, 300000, partitionIdentity(),
-                                    heartbeatTimeout(), heartbeatInterval());
-        }
-
-    }
-
-    static class Node extends NodeData {
-        CountDownLatch latch       = INITIAL_LATCH;
-        int            cardinality = CONFIGS.length;
+    public static class Node extends NodeData {
+        int            cardinality;
+        CountDownLatch latch;
+        final Logger   log = Logger.getLogger(Node.class.getCanonicalName());
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -110,265 +79,21 @@ public class PartitionTest extends TestCase {
         }
     }
 
-    @Configuration
-    static class node0 extends nodeCfg {
-        @Override
-        public int node() {
-            return 0;
-        }
-    }
-
-    @Configuration
-    static class node1 extends nodeCfg {
-        @Override
-        public int node() {
-            return 1;
-        }
-    }
-
-    @Configuration
-    static class node10 extends nodeCfg {
-        @Override
-        public int node() {
-            return 10;
-        }
-    }
-
-    @Configuration
-    static class node11 extends nodeCfg {
-        @Override
-        public int node() {
-            return 11;
-        }
-    }
-
-    @Configuration
-    static class node12 extends nodeCfg {
-        @Override
-        public int node() {
-            return 12;
-        }
-    }
-
-    @Configuration
-    static class node13 extends nodeCfg {
-        @Override
-        public int node() {
-            return 13;
-        }
-    }
-
-    @Configuration
-    static class node14 extends nodeCfg {
-        @Override
-        public int node() {
-            return 14;
-        }
-    }
-
-    @Configuration
-    static class node15 extends nodeCfg {
-        @Override
-        public int node() {
-            return 15;
-        }
-    }
-
-    @Configuration
-    static class node16 extends nodeCfg {
-        @Override
-        public int node() {
-            return 16;
-        }
-    }
-
-    @Configuration
-    static class node17 extends nodeCfg {
-        @Override
-        public int node() {
-            return 17;
-        }
-    }
-
-    @Configuration
-    static class node18 extends nodeCfg {
-        @Override
-        public int node() {
-            return 18;
-        }
-    }
-
-    @Configuration
-    static class node19 extends nodeCfg {
-        @Override
-        public int node() {
-            return 19;
-        }
-    }
-
-    @Configuration
-    static class node2 extends nodeCfg {
-        @Override
-        public int node() {
-            return 2;
-        }
-    }
-
-    @Configuration
-    static class node3 extends nodeCfg {
-        @Override
-        public int node() {
-            return 3;
-        }
-    }
-
-    @Configuration
-    static class node4 extends nodeCfg {
-        @Override
-        public int node() {
-            return 4;
-        }
-    }
-
-    @Configuration
-    static class node5 extends nodeCfg {
-        @Override
-        public int node() {
-            return 5;
-        }
-    }
-
-    @Configuration
-    static class node6 extends nodeCfg {
-        @Override
-        public int node() {
-            return 6;
-        }
-    }
-
-    @Configuration
-    static class node7 extends nodeCfg {
-        @Override
-        public int node() {
-            return 7;
-        }
-    }
-
-    @Configuration
-    static class node8 extends nodeCfg {
-        @Override
-        public int node() {
-            return 8;
-        }
-    }
-
-    @Configuration
-    static class node9 extends nodeCfg {
-        @Override
-        public int node() {
-            return 9;
-        }
-    }
-
-    static class nodeCfg extends BasicConfiguration {
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-    }
-
-    private static final Logger log     = Logger.getLogger(PartitionTest.class.getCanonicalName());
-
-    static CountDownLatch       INITIAL_LATCH;
     @SuppressWarnings("rawtypes")
-    final static Class[]        CONFIGS = { node0.class, node1.class,
-            node2.class, node3.class, node4.class, node5.class, node6.class,
-            node7.class, node8.class, node9.class, node10.class, node11.class,
-            node12.class, node13.class, node14.class, node15.class,
-            node16.class, node17.class, node18.class, node19.class };
-
-    private static void clear() {
-        INITIAL_LATCH = null;
-    }
-
-    AnnotationConfigApplicationContext       controllerContext;
-    List<AnnotationConfigApplicationContext> memberContexts;
+    final Class[]                            configs = getConfigs();
     MyController                             controller;
-
+    AnnotationConfigApplicationContext       controllerContext;
+    CountDownLatch                           initialLatch;
+    final Logger                             log     = getLogger();
+    List<AnnotationConfigApplicationContext> memberContexts;
     List<Node>                               partition;
-
-    /**
-     * Test that a partition can form two asymmetric partitions, with one
-     * stabilizing, and then reform the original partition.
-     */
-    public void testAsymmetricPartition() throws Exception {
-        int minorPartitionSize = CONFIGS.length / 2;
-        BitView A = new BitView();
-        BitView B = new BitView();
-        BitView All = new BitView();
-        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionA = new ArrayList<PartitionTest.Node>();
-
-        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionB = new ArrayList<PartitionTest.Node>();
-
-        int i = 0;
-        for (Node member : partition) {
-            All.add(member.getIdentity());
-            if (i++ % 2 == 0) {
-                partitionA.add(member);
-                member.latch = latchA;
-                member.cardinality = minorPartitionSize;
-                A.add(member.getIdentity());
-            } else {
-                partitionB.add(member);
-                member.latch = latchB;
-                member.cardinality = minorPartitionSize;
-                B.add(member.getIdentity());
-            }
-        }
-        log.info("asymmetric partitioning: " + A);
-        controller.asymPartition(A);
-        log.info("Awaiting stability of minor partition A");
-        latchA.await(60, TimeUnit.SECONDS);
-        // The other partition should still be unstable.
-        assertEquals(CONFIGS.length / 2, latchB.getCount());
-
-        for (Node member : partitionA) {
-            assertEquals(A, member.getView());
-        }
-
-        // reform
-        CountDownLatch latch = new CountDownLatch(CONFIGS.length);
-        for (Node node : partition) {
-            node.latch = latch;
-            node.cardinality = CONFIGS.length;
-        }
-
-        controller.clearPartitions();
-        log.info("Awaiting stability of reformed major partition");
-        latch.await(60, TimeUnit.SECONDS);
-
-        for (Node member : partition) {
-            assertEquals(All, member.getView());
-        }
-    }
 
     /**
      * Test that a partition can form two stable sub partions and then reform
      * the original partition.
      */
     public void testSymmetricPartition() throws Exception {
-        int minorPartitionSize = CONFIGS.length / 2;
+        int minorPartitionSize = configs.length / 2;
         BitView A = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<PartitionTest.Node>();
@@ -407,10 +132,10 @@ public class PartitionTest extends TestCase {
         }
 
         // reform
-        CountDownLatch latch = new CountDownLatch(CONFIGS.length);
+        CountDownLatch latch = new CountDownLatch(configs.length);
         for (Node node : partition) {
             node.latch = latch;
-            node.cardinality = CONFIGS.length;
+            node.cardinality = configs.length;
         }
 
         controller.clearPartitions();
@@ -418,21 +143,105 @@ public class PartitionTest extends TestCase {
         latch.await(60, TimeUnit.SECONDS);
     }
 
+    /**
+     * Test that a partition can form two asymmetric partitions, with one
+     * stabilizing, and then reform the original partition.
+     */
+    public void testAsymmetricPartition() throws Exception {
+        int minorPartitionSize = configs.length / 2;
+        BitView A = new BitView();
+        BitView B = new BitView();
+        BitView All = new BitView();
+        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
+        List<Node> partitionA = new ArrayList<PartitionTest.Node>();
+
+        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
+        List<Node> partitionB = new ArrayList<PartitionTest.Node>();
+
+        int i = 0;
+        for (Node member : partition) {
+            All.add(member.getIdentity());
+            if (i++ % 2 == 0) {
+                partitionA.add(member);
+                member.latch = latchA;
+                member.cardinality = minorPartitionSize;
+                A.add(member.getIdentity());
+            } else {
+                partitionB.add(member);
+                member.latch = latchB;
+                member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
+            }
+        }
+        log.info("asymmetric partitioning: " + A);
+        controller.asymPartition(A);
+        log.info("Awaiting stability of minor partition A");
+        latchA.await(60, TimeUnit.SECONDS);
+        // The other partition should still be unstable.
+        assertEquals(configs.length / 2, latchB.getCount());
+
+        for (Node member : partitionA) {
+            assertEquals(A, member.getView());
+        }
+
+        // reform
+        CountDownLatch latch = new CountDownLatch(configs.length);
+        for (Node node : partition) {
+            node.latch = latch;
+            node.cardinality = configs.length;
+        }
+
+        controller.clearPartitions();
+        log.info("Awaiting stability of reformed major partition");
+        latch.await(60, TimeUnit.SECONDS);
+
+        for (Node member : partition) {
+            assertEquals(All, member.getView());
+        }
+    }
+
+    private List<AnnotationConfigApplicationContext> createMembers() {
+        ArrayList<AnnotationConfigApplicationContext> contexts = new ArrayList<AnnotationConfigApplicationContext>();
+        for (Class<?> config : configs) {
+            contexts.add(new AnnotationConfigApplicationContext(config));
+        }
+        return contexts;
+    }
+
+    abstract protected Class<?>[] getConfigs();
+
+    abstract protected Class<?> getControllerConfig();
+
+    abstract protected Logger getLogger();
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
         log.info("Setting up initial partition");
-        INITIAL_LATCH = new CountDownLatch(CONFIGS.length);
+        initialLatch = new CountDownLatch(configs.length);
         controllerContext = new AnnotationConfigApplicationContext(
-                                                                   MyControllerConfig.class);
-        memberContexts = createMembers();
+                                                                   getControllerConfig());
         controller = (MyController) controllerContext.getBean(Controller.class);
+        controller.cardinality = configs.length;
+        controller.latch = initialLatch;
+        memberContexts = createMembers();
         log.info("Awaiting initial partition stability");
-        INITIAL_LATCH.await(120, TimeUnit.SECONDS);
-        log.info("Initial partition stable");
-        partition = new ArrayList<PartitionTest.Node>();
-        for (AnnotationConfigApplicationContext context : memberContexts) {
-            partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+        boolean success = false;
+        try {
+            success = initialLatch.await(120, TimeUnit.SECONDS);
+            assertTrue("Initial partition did not acheive stability", success);
+            log.info("Initial partition stable");
+            partition = new ArrayList<PartitionTest.Node>();
+            for (AnnotationConfigApplicationContext context : memberContexts) {
+                Node member = (Node) controller.getNode(context.getBean(Identity.class));
+                assertNotNull("Can't find node: "
+                                      + context.getBean(Identity.class), member);
+                partition.add(member);
+            }
+        } finally {
+            if (!success) {
+                tearDown();
+            }
         }
     }
 
@@ -458,14 +267,6 @@ public class PartitionTest extends TestCase {
         memberContexts = null;
         controller = null;
         partition = null;
-        clear();
-    }
-
-    private List<AnnotationConfigApplicationContext> createMembers() {
-        ArrayList<AnnotationConfigApplicationContext> contexts = new ArrayList<AnnotationConfigApplicationContext>();
-        for (Class<?> config : CONFIGS) {
-            contexts.add(new AnnotationConfigApplicationContext(config));
-        }
-        return contexts;
+        initialLatch = null;
     }
 }
