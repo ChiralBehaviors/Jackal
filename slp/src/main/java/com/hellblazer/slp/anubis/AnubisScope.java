@@ -194,8 +194,7 @@ public class AnubisScope implements ServiceScope {
                     try {
                         listener.serviceChanged(new ServiceEvent(
                                                                  EventType.REGISTERED,
-                                                                 ref,
-                                                                 uuidGenerator.generate()));
+                                                                 ref));
                     } catch (Throwable e) {
                         log.log(Level.SEVERE,
                                 "Error when notifying listener on reference "
@@ -408,8 +407,7 @@ public class AnubisScope implements ServiceScope {
                                 try {
                                     listener.serviceChanged(new ServiceEvent(
                                                                              type,
-                                                                             reference,
-                                                                             uuidGenerator.generate()));
+                                                                             reference));
                                 } catch (Throwable e) {
                                     log.log(Level.SEVERE,
                                             "Error when notifying listener on reference "
