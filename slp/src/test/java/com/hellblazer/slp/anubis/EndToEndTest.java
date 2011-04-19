@@ -19,8 +19,6 @@ package com.hellblazer.slp.anubis;
 import static com.hellblazer.slp.ServiceScope.SERVICE_TYPE;
 import static com.hellblazer.slp.anubis.AnubisScope.MEMBER_IDENTITY;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,16 +30,13 @@ import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
-import org.smartfrog.services.anubis.BasicConfiguration;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -51,12 +46,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
-import com.fasterxml.uuid.NoArgGenerator;
-import com.fasterxml.uuid.impl.RandomBasedGenerator;
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.slp.InvalidSyntaxException;
 import com.hellblazer.slp.ServiceEvent;
 import com.hellblazer.slp.ServiceEvent.EventType;
@@ -72,12 +62,12 @@ import com.hellblazer.slp.ServiceURL;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class EndToEndTest extends TestCase {
+abstract public class EndToEndTest extends TestCase {
     static class Event {
-        final EventType           type;
-        final UUID                registration;
-        final ServiceURL          url;
         final Map<String, Object> properties;
+        final UUID                registration;
+        final EventType           type;
+        final ServiceURL          url;
 
         Event(ServiceEvent event) {
             type = event.getType();
@@ -126,10 +116,10 @@ public class EndToEndTest extends TestCase {
     }
 
     static class Listener implements ServiceListener {
-        int                                member;
         ApplicationContext                 context;
-        final Map<Integer, CountDownLatch> latches = new HashMap<Integer, CountDownLatch>();
         Set<Event>                         events  = new CopyOnWriteArraySet<Event>();
+        final Map<Integer, CountDownLatch> latches = new HashMap<Integer, CountDownLatch>();
+        int                                member;
 
         Listener(ApplicationContext context, int cardinality, int expectedCount) {
             this.context = context;
@@ -155,6 +145,12 @@ public class EndToEndTest extends TestCase {
             }
         }
 
+        void await(long timeout, TimeUnit unit) throws InterruptedException {
+            for (CountDownLatch latch : latches.values()) {
+                latch.await(timeout, unit);
+            }
+        }
+
         void register(String query) throws BeansException,
                                    InvalidSyntaxException {
             context.getBean(ServiceScope.class).addServiceListener(this, query);
@@ -163,15 +159,12 @@ public class EndToEndTest extends TestCase {
         void unregister() {
             context.getBean(ServiceScope.class).removeServiceListener(this);
         }
-
-        void await(long timeout, TimeUnit unit) throws InterruptedException {
-            for (CountDownLatch latch : latches.values()) {
-                latch.await(timeout, unit);
-            }
-        }
     }
 
     static class MyController extends Controller {
+        int            cardinality;
+        CountDownLatch latch;
+
         public MyController(Timer timer, long checkPeriod, long expirePeriod,
                             Identity partitionIdentity, long heartbeatTimeout,
                             long heartbeatInterval) {
@@ -181,43 +174,17 @@ public class EndToEndTest extends TestCase {
 
         @Override
         protected NodeData createNode(Heartbeat hb) {
-            return new Node(hb, this);
+            Node node = new Node(hb, this);
+            node.cardinality = cardinality;
+            node.latch = latch;
+            return node;
         }
 
-    }
-
-    @Configuration
-    static class MyControllerConfig extends ControllerConfiguration {
-        @Override
-        @Bean
-        public DeployedPostProcessor deployedPostProcessor() {
-            return new DeployedPostProcessor();
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-
-        @Override
-        public int magic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        protected Controller constructController() throws UnknownHostException {
-            return new MyController(timer(), 1000, 300000, partitionIdentity(),
-                                    heartbeatTimeout(), heartbeatInterval());
-        }
     }
 
     static class Node extends NodeData {
-        CountDownLatch latch       = INITIAL_LATCH;
-        int            cardinality = CONFIGS.length;
+        int            cardinality;
+        CountDownLatch latch;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -236,130 +203,16 @@ public class EndToEndTest extends TestCase {
         }
     }
 
-    @Configuration
-    static class node0 extends slpConfig {
-        @Override
-        public int node() {
-            return 0;
-        }
-    }
-
-    @Configuration
-    static class node1 extends slpConfig {
-        @Override
-        public int node() {
-            return 1;
-        }
-    }
-
-    @Configuration
-    static class node2 extends slpConfig {
-        @Override
-        public int node() {
-            return 2;
-        }
-    }
-
-    @Configuration
-    static class node3 extends slpConfig {
-        @Override
-        public int node() {
-            return 3;
-        }
-    }
-
-    @Configuration
-    static class node4 extends slpConfig {
-        @Override
-        public int node() {
-            return 4;
-        }
-    }
-
-    @Configuration
-    static class node5 extends slpConfig {
-        @Override
-        public int node() {
-            return 5;
-        }
-    }
-
-    @Configuration
-    static class node6 extends slpConfig {
-        @Override
-        public int node() {
-            return 6;
-        }
-    }
-
-    @Configuration
-    static class node7 extends slpConfig {
-        @Override
-        public int node() {
-            return 7;
-        }
-    }
-
-    @Configuration
-    static class node8 extends slpConfig {
-        @Override
-        public int node() {
-            return 8;
-        }
-    }
-
-    @Configuration
-    static class node9 extends slpConfig {
-        @Override
-        public int node() {
-            return 9;
-        }
-    }
-
-    static class slpConfig extends BasicConfiguration {
-
-        @Bean
-        public ServiceScope anubisScope() {
-            return new AnubisScope(stateName(), locator(),
-                                   Executors.newSingleThreadExecutor(),
-                                   uuidGenerator());
-        }
-
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-
-        protected String stateName() {
-            return "Test Scope";
-        }
-
-        protected NoArgGenerator uuidGenerator() {
-            return new RandomBasedGenerator(new Random(node()));
-        }
-    }
-
     private static final Logger          log     = Logger.getLogger(EndToEndTest.class.getCanonicalName());
     static final Random                  RANDOM  = new Random(666);
-    static CountDownLatch                INITIAL_LATCH;
-    final static Class<?>[]              CONFIGS = { node0.class, node1.class,
-            node2.class, node3.class, node4.class, node5.class, node6.class,
-            node7.class, node8.class, node9.class };
-
-    ConfigurableApplicationContext       controllerContext;
-    List<ConfigurableApplicationContext> memberContexts;
-    MyController                         controller;
-    List<Node>                           partition;
+    final Class<?>[]                     configs = getConfigs();
     List<ConnectionSet>                  connectionSets;
+
+    MyController                         controller;
+    ConfigurableApplicationContext       controllerContext;
+    CountDownLatch                       initialLatch;
+    List<ConfigurableApplicationContext> memberContexts;
+    List<Node>                           partition;
 
     public void testSmoke() throws Exception {
         String memberIdKey = "test.member.id";
@@ -391,7 +244,7 @@ public class EndToEndTest extends TestCase {
     }
 
     public void testSymmetricPartition() throws Exception {
-        int minorPartitionSize = CONFIGS.length / 2;
+        int minorPartitionSize = configs.length / 2;
         BitView A = new BitView();
         BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
@@ -455,10 +308,10 @@ public class EndToEndTest extends TestCase {
         }
 
         // reform
-        CountDownLatch latch = new CountDownLatch(CONFIGS.length);
+        CountDownLatch latch = new CountDownLatch(configs.length);
         for (Node node : partition) {
             node.latch = latch;
-            node.cardinality = CONFIGS.length;
+            node.cardinality = configs.length;
         }
 
         controller.clearPartitions();
@@ -487,7 +340,7 @@ public class EndToEndTest extends TestCase {
     }
 
     public void testAsymmetricPartition() throws Exception {
-        int minorPartitionSize = CONFIGS.length / 2;
+        int minorPartitionSize = configs.length / 2;
         BitView A = new BitView();
         BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
@@ -541,10 +394,10 @@ public class EndToEndTest extends TestCase {
         }
 
         // reform
-        CountDownLatch latch = new CountDownLatch(CONFIGS.length);
+        CountDownLatch latch = new CountDownLatch(configs.length);
         for (Node node : partition) {
             node.latch = latch;
-            node.cardinality = CONFIGS.length;
+            node.cardinality = configs.length;
         }
 
         controller.clearPartitions();
@@ -574,7 +427,7 @@ public class EndToEndTest extends TestCase {
 
     private List<ConfigurableApplicationContext> createMembers() {
         ArrayList<ConfigurableApplicationContext> contexts = new ArrayList<ConfigurableApplicationContext>();
-        for (Class<?> config : CONFIGS) {
+        for (Class<?> config : configs) {
             contexts.add(new AnnotationConfigApplicationContext(config));
         }
         return contexts;
@@ -584,15 +437,21 @@ public class EndToEndTest extends TestCase {
         return "(" + SERVICE_TYPE + "=" + serviceType + ")";
     }
 
+    abstract protected Class<?>[] getConfigs();
+
+    abstract protected Class<?> getControllerConfig();
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
         log.info("Setting up initial partition");
-        INITIAL_LATCH = new CountDownLatch(CONFIGS.length);
+        initialLatch = new CountDownLatch(configs.length);
         controllerContext = new AnnotationConfigApplicationContext(
-                                                                   MyControllerConfig.class);
-        memberContexts = createMembers();
+                                                                   getControllerConfig());
         controller = (MyController) controllerContext.getBean(Controller.class);
+        controller.cardinality = configs.length;
+        controller.latch = initialLatch;
+        memberContexts = createMembers();
         log.info("Awaiting initial partition stability");
         boolean success = false;
         connectionSets = new ArrayList<ConnectionSet>();
@@ -600,7 +459,7 @@ public class EndToEndTest extends TestCase {
             connectionSets.add(context.getBean(ConnectionSet.class));
         }
         try {
-            success = INITIAL_LATCH.await(120, TimeUnit.SECONDS);
+            success = initialLatch.await(120, TimeUnit.SECONDS);
             assertTrue("Initial partition did not stabilize", success);
             log.info("Initial partition stable");
             partition = new ArrayList<Node>();
@@ -636,7 +495,7 @@ public class EndToEndTest extends TestCase {
         memberContexts = null;
         controller = null;
         partition = null;
-        INITIAL_LATCH = null;
+        initialLatch = null;
         Thread.sleep(2000);
     }
 }

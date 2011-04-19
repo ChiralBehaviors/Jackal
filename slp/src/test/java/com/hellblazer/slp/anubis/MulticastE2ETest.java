@@ -1,30 +1,13 @@
-/** (C) Copyright 2010 Hal Hildebrand, All Rights Reserved
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
 package com.hellblazer.slp.anubis;
 
-import static java.util.Arrays.asList;
-
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
+import java.util.Random;
 import java.util.concurrent.Executors;
 
+import org.smartfrog.services.anubis.BasicConfiguration;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
+import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,26 +15,21 @@ import org.springframework.context.annotation.Configuration;
 import com.fasterxml.uuid.NoArgGenerator;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
-import com.hellblazer.jackal.gossip.configuration.ControllerGossipConfiguration;
-import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
 import com.hellblazer.slp.ServiceScope;
 
-/**
- * 
- * Functionally test the scope across multiple members in different failure
- * scenarios.
- * 
- * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
- * 
- */
-public class UdpEndToEndTest extends EndToEndTest {
+public class MulticastE2ETest extends EndToEndTest {
 
     @Configuration
-    static class MyControllerConfig extends ControllerGossipConfiguration {
+    static class MyControllerConfig extends ControllerConfiguration {
         @Override
         @Bean
         public DeployedPostProcessor deployedPostProcessor() {
             return new DeployedPostProcessor();
+        }
+
+        @Override
+        public int heartbeatGroupTTL() {
+            return 0;
         }
 
         @Override
@@ -68,20 +46,6 @@ public class UdpEndToEndTest extends EndToEndTest {
             return new MyController(timer(), 1000, 300000, partitionIdentity(),
                                     heartbeatTimeout(), heartbeatInterval());
         }
-
-        @Override
-        protected Collection<InetSocketAddress> seedHosts()
-                                                           throws UnknownHostException {
-            return asList(seedContact1(), seedContact2());
-        }
-
-        InetSocketAddress seedContact1() throws UnknownHostException {
-            return new InetSocketAddress(contactHost(), testPort1);
-        }
-
-        InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress(contactHost(), testPort2);
-        }
     }
 
     @Configuration
@@ -90,12 +54,6 @@ public class UdpEndToEndTest extends EndToEndTest {
         public int node() {
             return 0;
         }
-
-        @Override
-        protected InetSocketAddress gossipEndpoint()
-                                                    throws UnknownHostException {
-            return seedContact1();
-        }
     }
 
     @Configuration
@@ -103,12 +61,6 @@ public class UdpEndToEndTest extends EndToEndTest {
         @Override
         public int node() {
             return 1;
-        }
-
-        @Override
-        protected InetSocketAddress gossipEndpoint()
-                                                    throws UnknownHostException {
-            return seedContact2();
         }
     }
 
@@ -176,7 +128,7 @@ public class UdpEndToEndTest extends EndToEndTest {
         }
     }
 
-    static class slpConfig extends GossipConfiguration {
+    static class slpConfig extends BasicConfiguration {
 
         @Bean
         public ServiceScope anubisScope() {
@@ -195,9 +147,8 @@ public class UdpEndToEndTest extends EndToEndTest {
         }
 
         @Override
-        protected Collection<InetSocketAddress> seedHosts()
-                                                           throws UnknownHostException {
-            return asList(seedContact1(), seedContact2());
+        public int heartbeatGroupTTL() {
+            return 0;
         }
 
         protected String stateName() {
@@ -205,29 +156,8 @@ public class UdpEndToEndTest extends EndToEndTest {
         }
 
         protected NoArgGenerator uuidGenerator() {
-            return new RandomBasedGenerator(RANDOM);
+            return new RandomBasedGenerator(new Random(node()));
         }
-
-        InetSocketAddress seedContact1() throws UnknownHostException {
-            return new InetSocketAddress(contactHost(), testPort1);
-        }
-
-        InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress(contactHost(), testPort2);
-        }
-    }
-
-    static int testPort1;
-
-    static int testPort2;
-
-    static {
-        String port = System.getProperty("com.hellblazer.jackal.gossip.test.port.1",
-                                         "24010");
-        testPort1 = Integer.parseInt(port);
-        port = System.getProperty("com.hellblazer.jackal.gossip.test.port.2",
-                                  "24020");
-        testPort2 = Integer.parseInt(port);
     }
 
     @Override
@@ -241,4 +171,5 @@ public class UdpEndToEndTest extends EndToEndTest {
     protected Class<?> getControllerConfig() {
         return MyControllerConfig.class;
     }
+
 }
