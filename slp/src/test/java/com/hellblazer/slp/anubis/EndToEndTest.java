@@ -25,9 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.Timer;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -66,7 +65,7 @@ abstract public class EndToEndTest extends TestCase {
     static class Listener implements ServiceListener {
         final Logger                       log     = Logger.getLogger(ServiceListener.class.getCanonicalName());
         ApplicationContext                 context;
-        Set<ServiceEvent>                  events  = new CopyOnWriteArraySet<ServiceEvent>();
+        List<ServiceEvent>                  events  = new CopyOnWriteArrayList<ServiceEvent>();
         final Map<Integer, CountDownLatch> latches = new HashMap<Integer, CountDownLatch>();
         int                                member;
 
@@ -110,7 +109,7 @@ abstract public class EndToEndTest extends TestCase {
         }
 
         void reset(int cardinality) {
-            events = new CopyOnWriteArraySet<ServiceEvent>();
+            events = new CopyOnWriteArrayList<ServiceEvent>();
             for (int i = 0; i < cardinality; i++) {
                 latches.put(i, new CountDownLatch(1));
             }
@@ -122,7 +121,7 @@ abstract public class EndToEndTest extends TestCase {
         }
 
         public void reset(BitView b) {
-            events = new CopyOnWriteArraySet<ServiceEvent>();
+            events = new CopyOnWriteArrayList<ServiceEvent>();
             latches.clear();
             for (int i : b) {
                 latches.put(i, new CountDownLatch(1));
@@ -174,7 +173,7 @@ abstract public class EndToEndTest extends TestCase {
     }
 
     static final Random                  RANDOM  = new Random(666);
-    
+
     final Class<?>[]                     configs = getConfigs();
     List<ConnectionSet>                  connectionSets;
     MyController                         controller;
@@ -198,10 +197,14 @@ abstract public class EndToEndTest extends TestCase {
             properties.put(memberIdKey, context.getBean(Identity.class).id);
             context.getBean(ServiceScope.class).register(url, properties);
         }
+
         for (Listener listener : listeners) {
             assertTrue(String.format("Listener: %s did not receive all events",
                                      listener),
                        listener.await(30, TimeUnit.SECONDS));
+        }
+
+        for (Listener listener : listeners) {
             assertEquals(listeners.size(), listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
@@ -258,10 +261,14 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             listener.await(30, TimeUnit.SECONDS);
+        }
+
+        for (Listener listener : listeners) {
             assertEquals("listener <"
                                  + listener.member
-                                 + "> has received an invalid number of notifications",
-                         listeners.size(), listener.events.size());
+                                 + "> has received an invalid number of notifications: "
+                                 + listener.events, listeners.size(),
+                         listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
                 assertEquals(EventType.REGISTERED, event.getType());
@@ -310,10 +317,14 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             listener.await(30, TimeUnit.SECONDS);
+        }
+
+        for (Listener listener : listeners) {
             assertEquals("listener <"
                                  + listener.member
-                                 + "> has received more notifications than expected ",
-                         A.cardinality(), listener.events.size());
+                                 + "> has received more notifications than expected: "
+                                 + listener.events, A.cardinality(),
+                         listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
                 assertEquals(EventType.REGISTERED, event.getType());
@@ -383,10 +394,14 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             listener.await(30, TimeUnit.SECONDS);
+        }
+
+        for (Listener listener : listeners) {
             assertEquals("listener <"
                                  + listener.member
-                                 + "> has received an invalid number of notifications",
-                         listeners.size(), listener.events.size());
+                                 + "> has received an invalid number of notifications :"
+                                 + listener.events, listeners.size(),
+                         listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
                 assertEquals(EventType.REGISTERED, event.getType());
@@ -425,10 +440,16 @@ abstract public class EndToEndTest extends TestCase {
         for (Listener listener : listeners) {
             if (A.contains(listener.member)) {
                 listener.await(30, TimeUnit.SECONDS);
+            }
+        }
+
+        for (Listener listener : listeners) {
+            if (A.contains(listener.member)) {
                 assertEquals("listener <"
                                      + listener.member
-                                     + "> has received more notifications than expected ",
-                             A.cardinality(), listener.events.size());
+                                     + "> has received more notifications than expected :"
+                                     + listener.events, A.cardinality(),
+                             listener.events.size());
                 HashSet<Integer> sent = new HashSet<Integer>();
                 for (ServiceEvent event : listener.events) {
                     assertEquals(EventType.REGISTERED, event.getType());
