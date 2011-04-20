@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -63,93 +62,42 @@ import com.hellblazer.slp.ServiceURL;
  * 
  */
 abstract public class EndToEndTest extends TestCase {
-    static class Event {
-        final Map<String, Object> properties;
-        final UUID                registration;
-        final EventType           type;
-        final ServiceURL          url;
-
-        Event(ServiceEvent event) {
-            type = event.getType();
-            url = event.getReference().getUrl();
-            properties = new HashMap<String, Object>(
-                                                     event.getReference().getProperties());
-            registration = ((ServiceReferenceImpl) event.getReference()).getRegistration();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            Event other = (Event) obj;
-            if (registration == null) {
-                if (other.registration != null) {
-                    return false;
-                }
-            } else if (!registration.equals(other.registration)) {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result
-                     + (registration == null ? 0 : registration.hashCode());
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return "Event [type=" + type + ", registration=" + registration
-                   + ", url=" + url + ", properties=" + properties + "]";
-        }
-    }
 
     static class Listener implements ServiceListener {
         final Logger                       log     = Logger.getLogger(ServiceListener.class.getCanonicalName());
         ApplicationContext                 context;
-        Set<Event>                         events  = new CopyOnWriteArraySet<Event>();
+        Set<ServiceEvent>                  events  = new CopyOnWriteArraySet<ServiceEvent>();
         final Map<Integer, CountDownLatch> latches = new HashMap<Integer, CountDownLatch>();
         int                                member;
 
-        Listener(ApplicationContext context, int cardinality, int expectedCount) {
+        Listener(ApplicationContext context, int cardinality) {
             this.context = context;
             member = context.getBean(Identity.class).id;
-            for (int i = 0; i < cardinality; i++) {
-                latches.put(i, new CountDownLatch(expectedCount));
-            }
+            reset(cardinality);
         }
 
         @Override
         public void serviceChanged(ServiceEvent event) {
             log.fine("updated <" + member + "> with: " + event);
-            Event marked = new Event(event);
-            if (events.add(marked)) {
+            if (events.add(event)) {
                 Integer id = (Integer) event.getReference().getProperties().get(MEMBER_IDENTITY);
                 CountDownLatch latch = latches.get(id);
                 if (latch == null) {
-                    throw new IllegalStateException("unknown identity: " + id);
+                    log.fine("uknown update from: " + id);
+                } else {
+                    latch.countDown();
                 }
-                latch.countDown();
             } else {
                 // System.err.println("recevied duplicate: " + marked);
             }
         }
 
-        void await(long timeout, TimeUnit unit) throws InterruptedException {
+        boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+            boolean success = false;
             for (CountDownLatch latch : latches.values()) {
-                latch.await(timeout, unit);
+                success |= latch.await(timeout, unit);
             }
+            return success;
         }
 
         void register(String query) throws BeansException,
@@ -159,6 +107,26 @@ abstract public class EndToEndTest extends TestCase {
 
         void unregister() {
             context.getBean(ServiceScope.class).removeServiceListener(this);
+        }
+
+        void reset(int cardinality) {
+            events = new CopyOnWriteArraySet<ServiceEvent>();
+            for (int i = 0; i < cardinality; i++) {
+                latches.put(i, new CountDownLatch(1));
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Listener [member=" + member + "]";
+        }
+
+        public void reset(BitView b) {
+            events = new CopyOnWriteArraySet<ServiceEvent>();
+            latches.clear();
+            for (int i : b) {
+                latches.put(i, new CountDownLatch(1));
+            }
         }
     }
 
@@ -206,110 +174,22 @@ abstract public class EndToEndTest extends TestCase {
     }
 
     static final Random                  RANDOM  = new Random(666);
+    
     final Class<?>[]                     configs = getConfigs();
     List<ConnectionSet>                  connectionSets;
-
     MyController                         controller;
     ConfigurableApplicationContext       controllerContext;
     CountDownLatch                       initialLatch;
     final Logger                         log     = getLogger();
-
     List<ConfigurableApplicationContext> memberContexts;
-
     List<Node>                           partition;
-
-    public void testAsymmetricPartition() throws Exception {
-        int minorPartitionSize = configs.length / 2;
-        BitView A = new BitView();
-        BitView B = new BitView();
-        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionA = new ArrayList<Node>();
-
-        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionB = new ArrayList<Node>();
-
-        int i = 0;
-        for (Node member : partition) {
-            if (i++ % 2 == 0) {
-                partitionA.add(member);
-                member.latch = latchA;
-                member.cardinality = minorPartitionSize;
-                A.add(member.getIdentity());
-            } else {
-                partitionB.add(member);
-                member.latch = latchB;
-                member.cardinality = minorPartitionSize;
-                B.add(member.getIdentity());
-            }
-        }
-
-        String memberIdKey = "test.member.id";
-        String roundKey = "test.round";
-        ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
-        List<Listener> listeners = new ArrayList<Listener>();
-        for (ApplicationContext context : memberContexts) {
-            Listener listener = new Listener(context, memberContexts.size(), 2);
-            listeners.add(listener);
-            listener.register(getQuery("*"));
-        }
-        for (ApplicationContext context : memberContexts) {
-            HashMap<String, Object> properties = new HashMap<String, Object>();
-            properties.put(memberIdKey, context.getBean(Identity.class).id);
-            properties.put(roundKey, 1);
-            context.getBean(ServiceScope.class).register(url, properties);
-        }
-
-        log.info("asymmetric partitioning: " + A);
-        controller.asymPartition(A);
-        log.info("Awaiting stabilty of minor partition A");
-        assertTrue("minor partition A did not stabilize",
-                   latchA.await(60, TimeUnit.SECONDS));
-
-        for (ApplicationContext context : memberContexts) {
-            HashMap<String, Object> properties = new HashMap<String, Object>();
-            properties.put(memberIdKey, context.getBean(Identity.class).id);
-            properties.put(roundKey, 2);
-            context.getBean(ServiceScope.class).register(url, properties);
-        }
-
-        // reform
-        CountDownLatch latch = new CountDownLatch(configs.length);
-        for (Node node : partition) {
-            node.latch = latch;
-            node.cardinality = configs.length;
-        }
-
-        controller.clearPartitions();
-        log.info("Awaiting stabilty of reformed major partition");
-        assertTrue("reformed partition did not stabilize",
-                   latch.await(30, TimeUnit.SECONDS));
-
-        for (Listener listener : listeners) {
-            listener.await(30, TimeUnit.SECONDS);
-            assertEquals("listener <"
-                                 + listener.member
-                                 + "> has received more notifications than expected ",
-                         listeners.size() * 2, listener.events.size());
-            HashSet<Integer> sent = new HashSet<Integer>();
-            for (Event event : listener.events) {
-                assertEquals(EventType.REGISTERED, event.type);
-                assertEquals(url, event.url);
-                sent.add((Integer) event.properties.get(memberIdKey));
-                assertEquals(event.properties.get(AnubisScope.MEMBER_IDENTITY),
-                             event.properties.get(memberIdKey));
-            }
-            assertEquals("listener <" + listener.member
-                         + "> did not receive messages from all members: "
-                         + sent, listeners.size(), sent.size());
-        }
-    }
 
     public void testSmoke() throws Exception {
         String memberIdKey = "test.member.id";
         ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
         List<Listener> listeners = new ArrayList<Listener>();
         for (ApplicationContext context : memberContexts) {
-            Listener listener = new Listener(context, memberContexts.size(), 1);
+            Listener listener = new Listener(context, memberContexts.size());
             listeners.add(listener);
             listener.register(getQuery("*"));
         }
@@ -319,15 +199,17 @@ abstract public class EndToEndTest extends TestCase {
             context.getBean(ServiceScope.class).register(url, properties);
         }
         for (Listener listener : listeners) {
-            listener.await(30, TimeUnit.SECONDS);
+            assertTrue(String.format("Listener: %s did not receive all events",
+                                     listener),
+                       listener.await(30, TimeUnit.SECONDS));
             assertEquals(listeners.size(), listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
-            for (Event event : listener.events) {
-                assertEquals(EventType.REGISTERED, event.type);
-                assertEquals(url, event.url);
-                sent.add((Integer) event.properties.get(memberIdKey));
-                assertEquals(event.properties.get(AnubisScope.MEMBER_IDENTITY),
-                             event.properties.get(memberIdKey));
+            for (ServiceEvent event : listener.events) {
+                assertEquals(EventType.REGISTERED, event.getType());
+                assertEquals(url, event.getReference().getUrl());
+                sent.add((Integer) event.getReference().getProperties().get(memberIdKey));
+                assertEquals(event.getReference().getProperties().get(AnubisScope.MEMBER_IDENTITY),
+                             event.getReference().getProperties().get(memberIdKey));
             }
             assertEquals(listeners.size(), sent.size());
         }
@@ -363,7 +245,7 @@ abstract public class EndToEndTest extends TestCase {
         ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
         List<Listener> listeners = new ArrayList<Listener>();
         for (ApplicationContext context : memberContexts) {
-            Listener listener = new Listener(context, memberContexts.size(), 2);
+            Listener listener = new Listener(context, memberContexts.size());
             listeners.add(listener);
             listener.register(getQuery("*"));
         }
@@ -373,6 +255,35 @@ abstract public class EndToEndTest extends TestCase {
             properties.put(roundKey, 1);
             context.getBean(ServiceScope.class).register(url, properties);
         }
+
+        for (Listener listener : listeners) {
+            listener.await(30, TimeUnit.SECONDS);
+            assertEquals("listener <"
+                                 + listener.member
+                                 + "> has received an invalid number of notifications",
+                         listeners.size(), listener.events.size());
+            HashSet<Integer> sent = new HashSet<Integer>();
+            for (ServiceEvent event : listener.events) {
+                assertEquals(EventType.REGISTERED, event.getType());
+                assertEquals(url, event.getReference().getUrl());
+                sent.add((Integer) event.getReference().getProperties().get(memberIdKey));
+                assertEquals(event.getReference().getProperties().get(AnubisScope.MEMBER_IDENTITY),
+                             event.getReference().getProperties().get(memberIdKey));
+            }
+            assertEquals("listener <" + listener.member
+                         + "> did not receive messages from all members: "
+                         + sent, listeners.size(), sent.size());
+        }
+
+        i = 0;
+        for (Listener listener : listeners) {
+            if (i++ % 2 == 0) {
+                listener.reset(A);
+            } else {
+                listener.reset(B);
+            }
+        }
+
         log.info("symmetric partitioning: " + A);
         controller.symPartition(A);
         log.info("Awaiting stabilty of minor partition A");
@@ -397,6 +308,25 @@ abstract public class EndToEndTest extends TestCase {
             context.getBean(ServiceScope.class).register(url, properties);
         }
 
+        for (Listener listener : listeners) {
+            listener.await(30, TimeUnit.SECONDS);
+            assertEquals("listener <"
+                                 + listener.member
+                                 + "> has received more notifications than expected ",
+                         A.cardinality(), listener.events.size());
+            HashSet<Integer> sent = new HashSet<Integer>();
+            for (ServiceEvent event : listener.events) {
+                assertEquals(EventType.REGISTERED, event.getType());
+                assertEquals(url, event.getReference().getUrl());
+                sent.add((Integer) event.getReference().getProperties().get(memberIdKey));
+                assertEquals(event.getReference().getProperties().get(AnubisScope.MEMBER_IDENTITY),
+                             event.getReference().getProperties().get(memberIdKey));
+            }
+            assertEquals("listener <" + listener.member
+                         + "> did not receive messages from all members: "
+                         + sent, A.cardinality(), sent.size());
+        }
+
         // reform
         CountDownLatch latch = new CountDownLatch(configs.length);
         for (Node node : partition) {
@@ -408,25 +338,122 @@ abstract public class EndToEndTest extends TestCase {
         log.info("Awaiting stabilty of reformed major partition");
         assertTrue("reformed partition did not stabilize",
                    latch.await(30, TimeUnit.SECONDS));
+    }
+
+    public void testAsymmetricPartition() throws Exception {
+        int minorPartitionSize = configs.length / 2;
+        BitView A = new BitView();
+        BitView B = new BitView();
+        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
+        List<Node> partitionA = new ArrayList<Node>();
+
+        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
+        List<Node> partitionB = new ArrayList<Node>();
+
+        int i = 0;
+        for (Node member : partition) {
+            if (i++ % 2 == 0) {
+                partitionA.add(member);
+                member.latch = latchA;
+                member.cardinality = minorPartitionSize;
+                A.add(member.getIdentity());
+            } else {
+                partitionB.add(member);
+                member.latch = latchB;
+                member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
+            }
+        }
+
+        String memberIdKey = "test.member.id";
+        String roundKey = "test.round";
+        ServiceURL url = new ServiceURL("service:http://foo.bar/drink-me");
+        List<Listener> listeners = new ArrayList<Listener>();
+        for (ApplicationContext context : memberContexts) {
+            Listener listener = new Listener(context, memberContexts.size());
+            listeners.add(listener);
+            listener.register(getQuery("*"));
+        }
+        for (ApplicationContext context : memberContexts) {
+            HashMap<String, Object> properties = new HashMap<String, Object>();
+            properties.put(memberIdKey, context.getBean(Identity.class).id);
+            properties.put(roundKey, 1);
+            context.getBean(ServiceScope.class).register(url, properties);
+        }
 
         for (Listener listener : listeners) {
-            listener.await(60, TimeUnit.SECONDS);
+            listener.await(30, TimeUnit.SECONDS);
             assertEquals("listener <"
                                  + listener.member
-                                 + "> has received more notifications than expected ",
-                         listeners.size() * 2, listener.events.size());
+                                 + "> has received an invalid number of notifications",
+                         listeners.size(), listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
-            for (Event event : listener.events) {
-                assertEquals(EventType.REGISTERED, event.type);
-                assertEquals(url, event.url);
-                sent.add((Integer) event.properties.get(memberIdKey));
-                assertEquals(event.properties.get(AnubisScope.MEMBER_IDENTITY),
-                             event.properties.get(memberIdKey));
+            for (ServiceEvent event : listener.events) {
+                assertEquals(EventType.REGISTERED, event.getType());
+                assertEquals(url, event.getReference().getUrl());
+                sent.add((Integer) event.getReference().getProperties().get(memberIdKey));
+                assertEquals(event.getReference().getProperties().get(AnubisScope.MEMBER_IDENTITY),
+                             event.getReference().getProperties().get(memberIdKey));
             }
             assertEquals("listener <" + listener.member
                          + "> did not receive messages from all members: "
                          + sent, listeners.size(), sent.size());
         }
+
+        i = 0;
+        for (Listener listener : listeners) {
+            if (i++ % 2 == 0) {
+                listener.reset(A);
+            } else {
+                listener.reset(B);
+            }
+        }
+
+        log.info("asymmetric partitioning: " + A);
+        controller.asymPartition(A);
+        log.info("Awaiting stabilty of minor partition A");
+        assertTrue("minor partition A did not stabilize",
+                   latchA.await(60, TimeUnit.SECONDS));
+
+        for (ApplicationContext context : memberContexts) {
+            HashMap<String, Object> properties = new HashMap<String, Object>();
+            properties.put(memberIdKey, context.getBean(Identity.class).id);
+            properties.put(roundKey, 2);
+            context.getBean(ServiceScope.class).register(url, properties);
+        }
+
+        for (Listener listener : listeners) {
+            if (A.contains(listener.member)) {
+                listener.await(30, TimeUnit.SECONDS);
+                assertEquals("listener <"
+                                     + listener.member
+                                     + "> has received more notifications than expected ",
+                             A.cardinality(), listener.events.size());
+                HashSet<Integer> sent = new HashSet<Integer>();
+                for (ServiceEvent event : listener.events) {
+                    assertEquals(EventType.REGISTERED, event.getType());
+                    assertEquals(url, event.getReference().getUrl());
+                    sent.add((Integer) event.getReference().getProperties().get(memberIdKey));
+                    assertEquals(event.getReference().getProperties().get(AnubisScope.MEMBER_IDENTITY),
+                                 event.getReference().getProperties().get(memberIdKey));
+                }
+                assertEquals("listener <" + listener.member
+                             + "> did not receive messages from all members: "
+                             + sent, A.cardinality(), sent.size());
+            }
+        }
+
+        // reform
+        CountDownLatch latch = new CountDownLatch(configs.length);
+        for (Node node : partition) {
+            node.latch = latch;
+            node.cardinality = configs.length;
+        }
+
+        controller.clearPartitions();
+        log.info("Awaiting stabilty of reformed major partition");
+        assertTrue("reformed partition did not stabilize",
+                   latch.await(30, TimeUnit.SECONDS));
     }
 
     private List<ConfigurableApplicationContext> createMembers() {

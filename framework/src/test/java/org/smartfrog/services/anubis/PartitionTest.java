@@ -95,6 +95,7 @@ abstract public class PartitionTest extends TestCase {
     public void testSymmetricPartition() throws Exception {
         int minorPartitionSize = configs.length / 2;
         BitView A = new BitView();
+        BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
         List<Node> partitionA = new ArrayList<PartitionTest.Node>();
 
@@ -104,14 +105,15 @@ abstract public class PartitionTest extends TestCase {
         int i = 0;
         for (Node member : partition) {
             if (i++ % 2 == 0) {
-                partitionB.add(member);
+                partitionA.add(member);
                 member.latch = latchA;
                 member.cardinality = minorPartitionSize;
                 A.add(member.getIdentity());
             } else {
-                partitionA.add(member);
+                partitionB.add(member);
                 member.latch = latchB;
                 member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
             }
         }
         log.info("symmetric partitioning: " + A);
@@ -120,15 +122,13 @@ abstract public class PartitionTest extends TestCase {
         latchA.await(60, TimeUnit.SECONDS);
         log.info("Awaiting stability of minor partition B");
         latchB.await(60, TimeUnit.SECONDS);
-
-        View viewA = partitionA.get(0).getView();
+ 
         for (Node member : partitionA) {
-            assertEquals(viewA, member.getView());
+            assertEquals(A, member.getPartition());
         }
-
-        View viewB = partitionB.get(0).getView();
+ 
         for (Node member : partitionB) {
-            assertEquals(viewB, member.getView());
+            assertEquals(B, member.getPartition());
         }
 
         // reform
@@ -181,7 +181,7 @@ abstract public class PartitionTest extends TestCase {
         assertEquals(configs.length / 2, latchB.getCount());
 
         for (Node member : partitionA) {
-            assertEquals(A, member.getView());
+            assertEquals(A, member.getPartition());
         }
 
         // reform
@@ -196,7 +196,7 @@ abstract public class PartitionTest extends TestCase {
         latch.await(60, TimeUnit.SECONDS);
 
         for (Node member : partition) {
-            assertEquals(All, member.getView());
+            assertEquals(All, member.getPartition());
         }
     }
 

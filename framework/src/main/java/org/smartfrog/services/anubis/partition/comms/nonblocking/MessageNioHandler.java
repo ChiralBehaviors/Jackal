@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
+import static java.lang.String.format;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -46,8 +48,6 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
 import com.hellblazer.jackal.util.HexDump;
-
-import static java.lang.String.*;
 
 public class MessageNioHandler implements SendingListener, IOConnection,
         WireSizes {
@@ -291,9 +291,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 readAmount = sockChan.read(rxHeader);
                 if (readAmount == -1) {
                     cleanup(key);
-                    if (messageConnection != null) {
-                        messageConnection.terminate();
-                    }
                     return null;
                 }
             } catch (IOException ioe) {
@@ -301,9 +298,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                     log.log(Level.FINE, "Failed to read socket channel", ioe);
                 }
                 cleanup(key);
-                if (messageConnection != null) {
-                    messageConnection.terminate();
-                }
                 return null;
             } catch (NotYetConnectedException nycex) {
                 if (log.isLoggable(Level.WARNING)) {
@@ -368,9 +362,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 }
             } catch (IOException ioe) {
                 cleanup(key);
-                if (messageConnection != null) {
-                    messageConnection.terminate();
-                }
                 if (log.isLoggable(Level.WARNING)) {
                     log.log(Level.WARNING,
                             "MNH: IOException reading the object", ioe);
@@ -646,12 +637,17 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: cleanup is being called");
         }
+        boolean closed;
         synchronized (this) {
+            closed = !writingOK;
             writingOK = false;
         }
         deadKeys.add(key);
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Cleanup is called - socket has gone away");
+        }
+        if (messageConnection != null && !closed) {
+            messageConnection.terminate();
         }
     }
 

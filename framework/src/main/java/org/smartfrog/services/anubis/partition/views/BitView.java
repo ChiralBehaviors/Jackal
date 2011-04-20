@@ -20,11 +20,14 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.views;
 
 import java.io.Serializable;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 
-public class BitView implements View, Cloneable, Serializable {
+public class BitView implements View, Cloneable, Serializable,
+        Iterable<Integer> {
 
     private static final long serialVersionUID = 1L;
 
@@ -234,5 +237,45 @@ public class BitView implements View, Cloneable, Serializable {
         }
         builder.append(">");
         return builder.toString();
+    }
+
+    @Override
+    public Iterator<Integer> iterator() {
+        int i = 0;
+        for (i = 0; i < size(); i++) {
+            if (contains(i)) {
+                break;
+            }
+        }
+        final int startPos = i;
+        return new Iterator<Integer>() {
+            int index = startPos;
+
+            @Override
+            public boolean hasNext() {
+                return contains(index);
+            }
+
+            @Override
+            public Integer next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                int value = index;
+                int i = index + 1;
+                for (; i < size(); i++) {
+                    if (contains(i)) {
+                        break;
+                    }
+                }
+                index = i;
+                return value;
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 }
