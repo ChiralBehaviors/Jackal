@@ -31,24 +31,32 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  * 
  */
 abstract public class SmokeTest extends TestCase {
-    private final Class<?>[] configurations = getConfigurations() ;
-
+    private final Class<?>[] configurations = getConfigurations();
 
     public void testInProcess() throws Exception {
         String stateName = "Whip It";
         int maxSleep = 500;
         int messageCount = 10;
-        ArrayList<Node> nodes = new ArrayList<Node>(); 
+        ArrayList<Node> nodes = new ArrayList<Node>();
+        CountDownLatch launchLatch = new CountDownLatch(configurations.length);
         CountDownLatch startLatch = new CountDownLatch(configurations.length);
         CountDownLatch endLatch = new CountDownLatch(configurations.length);
         for (Class<?> config : configurations) {
             nodes.add(getNode(config, stateName, messageCount, maxSleep,
-                              startLatch, endLatch, configurations.length));
+                              launchLatch, startLatch, endLatch,
+                              configurations.length));
         }
+        boolean stabilized = launchLatch.await(60, TimeUnit.SECONDS);
+        assertTrue("Partition did not stabilize", stabilized);
+        System.out.println("Partition stabilized");
         for (Node node : nodes) {
             node.start();
         }
-        assertTrue(endLatch.await(2, TimeUnit.MINUTES));
+        boolean started = startLatch.await(60, TimeUnit.SECONDS);
+        assertTrue("Not all nodes started", started); 
+        System.out.println("Partition started");
+        boolean ended = endLatch.await(60, TimeUnit.SECONDS);
+        assertTrue("Not all messages were received: " + findMissing(nodes), ended);
         for (Node node : nodes) {
             node.shutDown();
         }
@@ -86,15 +94,26 @@ abstract public class SmokeTest extends TestCase {
         }
     }
 
+    private String findMissing(ArrayList<Node> nodes) { 
+        StringBuilder builder = new StringBuilder();
+        for (Node node: nodes) {
+            if (node.isMissingMessages()) {
+                builder.append(node.report());
+            }
+        }
+        return builder.toString();
+    }
+
     abstract protected Class<?>[] getConfigurations();
 
     Node getNode(Class<?> config, String stateName, int messageCount,
-                 int maxSleep, CountDownLatch startLatch,
-                 CountDownLatch endLatch, int cardinality) throws Exception {
+                 int maxSleep, CountDownLatch launchLatch,
+                 CountDownLatch startLatch, CountDownLatch endLatch,
+                 int cardinality) throws Exception {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
                                                                                         config);
-        Node node = new Node(ctx, stateName, cardinality, startLatch, endLatch,
-                             maxSleep, messageCount);
+        Node node = new Node(ctx, stateName, cardinality, launchLatch,
+                             startLatch, endLatch, maxSleep, messageCount);
         return node;
     }
 }

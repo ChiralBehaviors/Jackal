@@ -226,7 +226,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             selector.wakeup();
         } catch (Exception e) {
             if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "", e);
+                asyncLog.log(Level.WARNING, "Cannot start connection", e);
             }
         }
 

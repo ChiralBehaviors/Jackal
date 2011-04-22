@@ -77,7 +77,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     private static final Logger             log                 = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
 
-    private boolean                         changeInViews       = false;
+    private volatile boolean                changeInViews       = false;
     private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
     private final IOConnectionServer        connectionServer;
     private final BitView                   connectionView      = new BitView();
@@ -90,7 +90,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     /**
      * Timing information
      */
-    private long                            heartbeatInterval   = 0;
+    private volatile long                   heartbeatInterval   = 0;
     private final HeartbeatProtocolFactory  heartbeatProtocolFactory;
     /**
      * local identification
@@ -428,7 +428,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return heartbeat;
     }
 
-    public synchronized long getInterval() {
+    public long getInterval() {
         return heartbeatInterval;
     }
 
@@ -471,7 +471,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         return builder.toString();
     }
 
-    public synchronized long getTimeout() {
+    public long getTimeout() {
         return timeout / heartbeatInterval;
     }
 
@@ -702,7 +702,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         }
     }
 
-    public synchronized void setTiming(long interval, long timeout) {
+    public void setTiming(long interval, long timeout) {
         heartbeatInterval = interval;
         this.timeout = interval * timeout;
         stability = interval * (timeout + 1);
@@ -750,7 +750,7 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     }
 
     @Override
-    public synchronized String toString() {
+    public String toString() {
         StringBuffer str = new StringBuffer();
         str.append("\n").append(identity).append(" ConnectionSet view: ").append(super.toString());
         str.append("\n==================================================");
@@ -896,11 +896,8 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
      * @return
      */
     private boolean consistent(long timenow) {
-        Iterator<Connection> iter = connections.values().iterator();
         connectionView.setTimeStamp(timenow + stability);
-        while (iter.hasNext()) {
-            Connection con = iter.next();
-
+        for (Connection con : connections.values()) {
             /**
              * if an active connection and it is not self then check it is
              * consistent with self and check its stability time

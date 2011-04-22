@@ -353,7 +353,8 @@ public class UdpCommunications implements GossipCommunications {
             packet.setSocketAddress(target);
             socket.send(packet);
         } catch (SocketException e) {
-            if (!"Socket is closed".equals(e.getMessage())) {
+            if (!"Socket is closed".equals(e.getMessage())
+                && !"Bad file descriptor".equals(e.getMessage())) {
                 if (log.isLoggable(Level.WARNING)) {
                     log.log(Level.WARNING, "Error sending packet", e);
                 }
@@ -388,7 +389,9 @@ public class UdpCommunications implements GossipCommunications {
                                buffer);
             } catch (BufferOverflowException e) {
                 if (log.isLoggable(Level.WARNING)) {
-                    log.warning(format("Invalid message: %s", prettyPrint(packet.getSocketAddress(), buffer.array())));
+                    log.warning(format("Invalid message: %s",
+                                       prettyPrint(packet.getSocketAddress(),
+                                                   buffer.array())));
                 }
             }
         } else {

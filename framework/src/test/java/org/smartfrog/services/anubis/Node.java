@@ -54,8 +54,7 @@ public class Node {
     private final CountDownLatch                     endLatch;
     private final CountDownLatch                     startLatch;
     private String                                   instance;
-    private final CountDownLatch                     launchLatch        = new CountDownLatch(
-                                                                                             1);
+    private final CountDownLatch                     launchLatch;
     private final int                                cardinality;
     private final ArrayList<SendHistory>             sendHistory        = new ArrayList<SendHistory>();
     private final Map<Integer, List<ValueHistory>>   receiveHistory     = new HashMap<Integer, List<ValueHistory>>();
@@ -63,10 +62,12 @@ public class Node {
     private final Map<Integer, CountDownLatch>       msgReceivedLatches = new HashMap<Integer, CountDownLatch>();
 
     public Node(AnnotationConfigApplicationContext context, String stateName,
-                int c, CountDownLatch startLatch, CountDownLatch endLatch,
-                int maxSleep, int messageCount) throws Exception {
+                int c, CountDownLatch launchLatch, CountDownLatch startLatch,
+                CountDownLatch endLatch, int maxSleep, int messageCount)
+                                                                        throws Exception {
         this.context = context;
         cardinality = c;
+        this.launchLatch = launchLatch;
         this.startLatch = startLatch;
         this.endLatch = endLatch;
         this.maxSleep = maxSleep;
@@ -86,10 +87,10 @@ public class Node {
             @Override
             public void partitionNotification(View view, int leader) {
                 if (view.isStable() && view.cardinality() == cardinality) {
-                    System.out.println("Launching: " + view);
-                    launchLatch.countDown();
+                    // System.out.println("Launching: " + view + " : " + instance);
+                    Node.this.launchLatch.countDown();
                 } else {
-                    System.out.println("Not launching: " + view);
+                    // System.out.println("Not launching: " + view + " : " + instance);
                 }
             }
         });
@@ -139,7 +140,6 @@ public class Node {
             @Override
             public void run() {
                 try {
-                    launchLatch.await();
                     startLatch.countDown();
                     startLatch.await();
                 } catch (InterruptedException e1) {
@@ -171,5 +171,28 @@ public class Node {
 
         daemon.setDaemon(true);
         daemon.start();
+    }
+
+    public boolean isMissingMessages() {
+        for (CountDownLatch latch : msgReceivedLatches.values()) {
+            if (latch.getCount() > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String report() {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<Integer, CountDownLatch> entry : msgReceivedLatches.entrySet()) {
+            if (entry.getValue().getCount() > 0) {
+                builder.append(String.format("Node %s didn't receive %s messages from %s",
+                                             instance,
+                                             entry.getValue().getCount(),
+                                             entry.getKey()));
+                builder.append(", ");
+            }
+        }
+        return builder.toString();
     }
 }

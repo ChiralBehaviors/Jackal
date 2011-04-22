@@ -64,13 +64,13 @@ public class LocalProviders {
         }
     }
 
-    private SetMap<Object, ListenerProxy> listenersByNode = new SetMap<Object, ListenerProxy>();                      // node-->Set of listeners
+    private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();                     // node-->Set of listeners
 
-    private Locator                       locator         = null;
-    private static final Logger           log             = Logger.getLogger(LocalProviders.class.getCanonicalName());
+    private Locator                        locator         = null;
+    private static final Logger            log             = Logger.getLogger(LocalProviders.class.getCanonicalName());
 
-    private Integer                       me              = null;
-    private Map<String, Object>           providers       = new HashMap<String, Object>();                            // name-->record
+    private Integer                        me              = null;
+    private Map<String, ProviderInfo>      providers       = new HashMap<String, ProviderInfo>();                      // name-->record
 
     /**
      * Constructor
@@ -102,7 +102,7 @@ public class LocalProviders {
          * Get the info associated with this provider's name and the matching
          * existing registration (if it exists).
          */
-        ProviderInfo info = (ProviderInfo) providers.get(listener.name);
+        ProviderInfo info = providers.get(listener.name);
         ListenerProxy existingReg = info.listeners.get(listener);
 
         /**
@@ -182,13 +182,13 @@ public class LocalProviders {
         /**
          * Iterate over all the nodes
          */
-        Iterator<Object> nodeIter = listenersByNode.keySet().iterator();
+        Iterator<Integer> nodeIter = listenersByNode.keySet().iterator();
         while (nodeIter.hasNext()) {
 
             /**
              * If the node is in the view skip over it
              */
-            Integer node = (Integer) nodeIter.next();
+            Integer node = nodeIter.next();
             if (view.contains(node.intValue())) {
                 continue;
             }
@@ -200,7 +200,7 @@ public class LocalProviders {
             Iterator<ListenerProxy> listenerIter = listenersByNode.getSet(node).iterator();
             while (listenerIter.hasNext()) {
                 ListenerProxy listener = listenerIter.next();
-                ProviderInfo info = (ProviderInfo) providers.get(listener.name);
+                ProviderInfo info = providers.get(listener.name);
                 // the following line is unchanged with maps
                 info.listeners.remove(listener);
             }
@@ -226,7 +226,7 @@ public class LocalProviders {
          * Get the info associated with this provider's name. Remove the records
          * for the instance data and the provider from the info.
          */
-        ProviderInfo info = (ProviderInfo) providers.get(provider.getName());
+        ProviderInfo info = providers.get(provider.getName());
         ProviderInstance instance = info.instances.remove(provider.getInstance());
         /**
          * If there was no instance record (and hance no provider record) then
@@ -281,7 +281,7 @@ public class LocalProviders {
          * Get the info associated with this provider's name. If there is no
          * instance then return now.
          */
-        ProviderInfo info = (ProviderInfo) providers.get(provider.getName());
+        ProviderInfo info = providers.get(provider.getName());
         ProviderInstance instance = info.instances.get(provider.getInstance());
         if (instance == null) {
             return;
@@ -296,10 +296,7 @@ public class LocalProviders {
         /**
          * Inform any listners that there is a new value
          */
-        Iterator<ListenerProxy> iter = info.listeners.values().iterator();
-        while (iter.hasNext()) {
-
-            ListenerProxy listener = iter.next();
+        for (ListenerProxy listener : info.listeners.values()) {
             locator.sendToLocal(RegisterMsg.providerValue(instance),
                                 listener.node);
         }
@@ -336,13 +333,11 @@ public class LocalProviders {
          */
         if (providers.containsKey(provider.getName())) {
 
-            ProviderInfo info = (ProviderInfo) providers.get(provider.getName());
+            ProviderInfo info = providers.get(provider.getName());
             info.providers.put(instance.instance, provider);
             info.instances.put(instance.instance, instance);
 
-            Iterator<ListenerProxy> iter = info.listeners.values().iterator();
-            while (iter.hasNext()) {
-                ListenerProxy listener = iter.next();
+            for (ListenerProxy listener : info.listeners.values()) {
                 locator.sendToLocal(RegisterMsg.providerValue(instance),
                                     listener.node);
             }
@@ -380,7 +375,7 @@ public class LocalProviders {
          * Get the info associated with this provider's name and the existing
          * registration.
          */
-        ProviderInfo info = (ProviderInfo) providers.get(listener.name);
+        ProviderInfo info = providers.get(listener.name);
         ListenerProxy existingReg = info.listeners.get(listener);
 
         /**
@@ -416,9 +411,7 @@ public class LocalProviders {
         if (log.isLoggable(Level.FINE)) {
             log.fine("Reregistering all providers");
         }
-        Iterator<Object> iter = providers.values().iterator();
-        while (iter.hasNext()) {
-            ProviderInfo info = (ProviderInfo) iter.next();
+        for (ProviderInfo info : providers.values()) {
             locator.sendToGlobal(RegisterMsg.registerProvider(info.proxy));
         }
     }
@@ -427,9 +420,9 @@ public class LocalProviders {
     public synchronized String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append("Remote Listeners By Node:\n");
-        Iterator<Object> iter = listenersByNode.keySet().iterator();
+        Iterator<Integer> iter = listenersByNode.keySet().iterator();
         while (iter.hasNext()) {
-            Integer node = (Integer) iter.next();
+            Integer node = iter.next();
             builder.append("    " + node);
             for (Iterator<ListenerProxy> iter2 = listenersByNode.getSet(node).iterator(); iter2.hasNext(); builder.append(" ").append(iter2.next().name)) {
                 ;
@@ -438,9 +431,8 @@ public class LocalProviders {
         }
 
         builder.append("\nProviders:\n");
-        iter = providers.values().iterator();
-        while (iter.hasNext()) {
-            builder.append(iter.next());
+        for (ProviderInfo info : providers.values()) {
+            builder.append(info);
         }
         builder.append("\n");
         return builder.toString();
