@@ -287,8 +287,8 @@ public class LocalListeners {
         /**
          * Inform all the listeners of this new value
          */
-        for (Iterator<AnubisListener> iter = info.listeners.iterator(); iter.hasNext(); iter.next().newValue(provider)) {
-            ;
+        for (AnubisListener listener : info.listeners) {
+            listener.newValue(provider);
         }
     }
 

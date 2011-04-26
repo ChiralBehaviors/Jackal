@@ -301,7 +301,12 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         if (thisEndInitiatesConnectionsTo(hbcon.getSender())) {
             getConnectionServer().initiateConnection(identity, mcon, heartbeat);
         } else {
-            heartbeatComms.sendHeartbeat(heartbeat);
+            if (log.isLoggable(Level.INFO)) {
+                log.info(String.format("Waiting for callback from: %s on: %s",
+                                       id, identity));
+            }
+            heartbeatComms.sendHeartbeat(prepartHeartbeat(System.currentTimeMillis() + 1),
+                                         node);
         }
 
         /**
@@ -587,6 +592,11 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         }
         if (connectionView.contains(id)) {
             partitionProtocol.receiveObject(obj, id, time);
+        } else {
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(String.format("Ignoring received object: %s from: %s on: %s as it is not in our view",
+                                         obj, id, identity));
+            }
         }
     }
 
@@ -652,18 +662,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         sendingHeartbeats = true;
 
         /**
-         * prepare the heartbeat with the latest information
-         */
-        heartbeat.setMsgLinks(msgLinks);
-        heartbeat.setTime(timenow);
-        heartbeat.setView(connectionView);
-        heartbeat.setViewNumber(viewNumber);
-        heartbeat.setCandidate(leaderMgr.getLeader());
-
-        /**
          * send the heartbeat using multicast for heartbeat connections
          */
-        heartbeatComms.sendHeartbeat(heartbeat);
+        heartbeatComms.sendHeartbeat(prepartHeartbeat(timenow));
 
         /**
          * send the heartbeat on message connections.
@@ -680,6 +681,18 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
             removeConnection(con);
         }
         msgConDelayedDelete.clear();
+    }
+
+    private Heartbeat prepartHeartbeat(long timenow) {
+        /**
+         * prepare the heartbeat with the latest information
+         */
+        heartbeat.setMsgLinks(msgLinks);
+        heartbeat.setTime(timenow);
+        heartbeat.setView(connectionView);
+        heartbeat.setViewNumber(viewNumber);
+        heartbeat.setCandidate(leaderMgr.getLeader());
+        return heartbeat;
     }
 
     public synchronized void setIgnoring(View ignoring) {

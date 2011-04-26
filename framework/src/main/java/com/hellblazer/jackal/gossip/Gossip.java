@@ -265,6 +265,15 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         return isIgnoring(endpoint.getState().getSender());
     }
 
+    public boolean record(long t, InetSocketAddress address) {
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint != null && !isIgnoring(endpoint.getState().getSender())) {
+            endpoint.record(t);
+            return true;
+        }
+        return false;
+    }
+
     /**
      * The second message in the gossip protocol. This message is sent in reply
      * to the initial gossip message sent by this node. The response is a list
@@ -320,6 +329,21 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
+    public void sendHeartbeat(Heartbeat heartbeat, Identity node) {
+        HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
+                                                                        view.getLocalAddress());
+        sendHeartbeat(heartbeatState);
+        for (Endpoint endpoint : endpoints.values()) {
+            if (node.equals(endpoint.getId())) {
+                List<Digest> digests = Collections.emptyList();
+                endpoint.getHandler().reply(digests,
+                                            Arrays.asList(heartbeatState));
+                return;
+            }
+        }
+    }
+
+    @Override
     public void setIgnoring(View ignoringUpdate) {
         ignoring.set(ignoringUpdate);
     }
@@ -350,6 +374,18 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             gossipTask.cancel(true);
             gossipTask = null;
         }
+    }
+
+    public boolean update(Heartbeat hb, InetSocketAddress address) {
+        if (isIgnoring(hb.getSender())) {
+            return false;
+        }
+        Endpoint endpoint = endpoints.get(address);
+        if (endpoint != null) {
+            endpoint.updateState(HeartbeatState.toHeartbeatState(hb, address));
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -682,26 +718,5 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Sorted gossip digests are : %s", digests));
         }
-    }
-
-    public boolean record(long t, InetSocketAddress address) {
-        Endpoint endpoint = endpoints.get(address);
-        if (endpoint != null && !isIgnoring(endpoint.getState().getSender())) {
-            endpoint.record(t);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean update(Heartbeat hb, InetSocketAddress address) {
-        if (isIgnoring(hb.getSender())) {
-            return false;
-        }
-        Endpoint endpoint = endpoints.get(address);
-        if (endpoint != null) {
-            endpoint.updateState(HeartbeatState.toHeartbeatState(hb, address));
-            return true;
-        }
-        return false;
     }
 }

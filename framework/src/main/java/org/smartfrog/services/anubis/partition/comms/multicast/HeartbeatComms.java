@@ -21,6 +21,7 @@ package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,15 +37,40 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurityExcepti
 
 public class HeartbeatComms extends MulticastComms implements
         HeartbeatCommsIntf {
-    private static final Logger log = Logger.getLogger(HeartbeatComms.class.getCanonicalName());
-    private HeartbeatReceiver connectionSet = null;
+    private static final Logger         log      = Logger.getLogger(HeartbeatComms.class.getCanonicalName())
+    ;
+    private final HeartbeatReceiver     connectionSet;
     /**
      * for testing purposes
      */
-    private View ignoring = null;
-    private Object ingnoringMonitor = new Object();
-    private Identity me = null;
-    private WireSecurity wireSecurity = null;
+    private final AtomicReference<View> ignoring = new AtomicReference<View>();
+    private final Identity              me;
+    private final WireSecurity          wireSecurity;
+
+    /**
+     * Set up multicast comms - uses default network interface
+     * 
+     * @param address
+     *            - multicast address
+     * @param cs
+     *            - connection set
+     * @param threadName
+     *            - name for multicast server thread
+     * @param id
+     *            - local identify
+     * @param sec
+     *            - security module
+     * @throws Exception
+     */
+    public HeartbeatComms(MulticastAddress address, HeartbeatReceiver cs,
+                          String threadName, Identity id, WireSecurity sec)
+                                                                           throws IOException {
+        super(threadName, address);
+        me = id;
+        connectionSet = cs;
+        wireSecurity = sec;
+        setPriority(Thread.MAX_PRIORITY);
+    }
 
     /**
      * Set up multicast coms specifying the network interface
@@ -74,36 +100,10 @@ public class HeartbeatComms extends MulticastComms implements
         setPriority(Thread.MAX_PRIORITY);
     }
 
-    /**
-     * Set up multicast comms - uses default network interface
-     * 
-     * @param address
-     *            - multicast address
-     * @param cs
-     *            - connection set
-     * @param threadName
-     *            - name for multicast server thread
-     * @param id
-     *            - local identify
-     * @param sec
-     *            - security module
-     * @throws Exception
-     */
-    public HeartbeatComms(MulticastAddress address, HeartbeatReceiver cs,
-                          String threadName, Identity id, WireSecurity sec)
-                                                                           throws IOException {
-        super(threadName, address);
-        me = id;
-        connectionSet = cs;
-        wireSecurity = sec;
-        setPriority(Thread.MAX_PRIORITY);
-    }
-
     @Override
     public boolean isIgnoring(Identity id) {
-        synchronized (ingnoringMonitor) {
-            return ignoring != null && ignoring.contains(id);
-        }
+        View test = ignoring.get();
+        return test != null && test.contains(id);
     }
 
     /**
@@ -113,13 +113,18 @@ public class HeartbeatComms extends MulticastComms implements
      *            message to send.
      */
     @Override
-    public void sendHeartbeat(Heartbeat heartbeat) { 
+    public void sendHeartbeat(Heartbeat heartbeat) {
         HeartbeatMsg msg = HeartbeatMsg.toHeartbeatMsg(heartbeat);
         try {
             super.sendObject(wireSecurity.toWireForm(msg));
         } catch (Exception ex) {
             log.log(Level.SEVERE, "Error sending heartbeat message", ex);
         }
+    }
+
+    @Override
+    public void sendHeartbeat(Heartbeat heartbeat, Identity node) {
+        sendHeartbeat(heartbeat);
     }
 
     /**
@@ -132,9 +137,7 @@ public class HeartbeatComms extends MulticastComms implements
      */
     @Override
     public void setIgnoring(View ignoringUpdate) {
-        synchronized (ingnoringMonitor) {
-            ignoring = ignoringUpdate.isEmpty() ? null : ignoringUpdate;
-        }
+        ignoring.set(ignoringUpdate.isEmpty() ? null : ignoringUpdate);
     }
 
     /**

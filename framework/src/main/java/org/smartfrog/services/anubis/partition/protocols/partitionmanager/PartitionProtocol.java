@@ -30,8 +30,6 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 
-import com.hellblazer.jackal.annotations.Deployed;
-
 public class PartitionProtocol {
 
     private volatile boolean       changed       = false;
@@ -46,6 +44,7 @@ public class PartitionProtocol {
         this.identity = identity;
         this.partitionMgr = partitionMgr;
         this.partitionMgr.setPartitionProtocol(this);
+        leader = identity;
     }
 
     /**
@@ -75,27 +74,10 @@ public class PartitionProtocol {
      */
     public MessageConnection connect(int id) {
         return connectionSet.connect(id);
-    }
-
-    @Deployed
-    public void deploy() {
-        leader = identity;
-    }
-
-    public ConnectionSet getConnectionSet() {
-        return connectionSet;
-    }
-
-    public Identity getIdentity() {
-        return identity;
-    }
+    } 
 
     public InetAddress getNodeAddress(int id) {
         return connectionSet.getNodeAddress(id);
-    }
-
-    public PartitionManager getPartitionMgr() {
-        return partitionMgr;
     }
 
     /**
@@ -130,7 +112,7 @@ public class PartitionProtocol {
         }
     }
 
-    public void setConnectionSet(ConnectionSet connectionSet) {
+    void setConnectionSet(ConnectionSet connectionSet) {
         this.connectionSet = connectionSet;
     }
 

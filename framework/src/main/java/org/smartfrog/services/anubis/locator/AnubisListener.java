@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -129,7 +130,7 @@ abstract public class AnubisListener {
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append("Listener " + getName() + "=[size=" + size()
-                     + ", mostRecentUpdate=" + getUpdateTime() + ", values=[");
+                       + ", mostRecentUpdate=" + getUpdateTime() + ", values=[");
         Iterator<AnubisValue> iter = values().iterator();
         while (iter.hasNext()) {
             builder.append(iter.next());
@@ -151,14 +152,22 @@ abstract public class AnubisListener {
     private void safeNewValue(final AnubisValue v) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
-        ScheduledFuture<?> task = timers.schedule(new Runnable() {
+        ScheduledFuture<?> task;
+        try {
+            task = timers.schedule(new Runnable() {
 
-            @Override
-            public void run() {
-                log.warning("User API Upcall took >200ms in newValue(p) where p="
-                            + v);
+                @Override
+                public void run() {
+                    log.warning("User API Upcall took >200ms in newValue(p) where p="
+                                + v);
+                }
+            }, 200, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINER)) {
+                log.fine("Rejecting new value due to shutdown");
             }
-        }, 200, TimeUnit.MILLISECONDS);
+            return;
+        }
         try {
             newValue(v);
         } catch (Throwable ex) {
@@ -184,14 +193,22 @@ abstract public class AnubisListener {
         long timein = System.currentTimeMillis();
         long timeout = 0;
 
-        ScheduledFuture<?> task = timers.schedule(new Runnable() {
+        ScheduledFuture<?> task;
+        try {
+            task = timers.schedule(new Runnable() {
 
-            @Override
-            public void run() {
-                log.warning("User API Upcall took >200ms in removeValue(p) where p="
-                            + v);
+                @Override
+                public void run() {
+                    log.warning("User API Upcall took >200ms in removeValue(p) where p="
+                                + v);
+                }
+            }, 200, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINER)) {
+                log.fine("Rejecting new value due to shutdown");
             }
-        }, 200, TimeUnit.MILLISECONDS);
+            return;
+        }
 
         try {
             removeValue(v);

@@ -41,15 +41,15 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class GlobalRegisterImpl {
 
-    private boolean                        active          = true;
-    private DebugFrame                     debug           = null;
-    private SetMap<String, ListenerProxy>  listenersByName = new SetMap<String, ListenerProxy>();
-    private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
-    private Locator                        locator         = null;
-    private static final Logger            log             = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
-    private int                            me              = -1;
-    private SetMap<String, ProviderProxy>  providersByName = new SetMap<String, ProviderProxy>();
-    private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
+    private volatile boolean                     active          = true;
+    private DebugFrame                           debug           = null;
+    private final SetMap<String, ListenerProxy>  listenersByName = new SetMap<String, ListenerProxy>();
+    private final SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
+    private final Locator                        locator;
+    private static final Logger                  log             = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
+    private final int                            me;
+    private final SetMap<String, ProviderProxy>  providersByName = new SetMap<String, ProviderProxy>();
+    private final SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
 
     /**
      * RequestServer is required to avoid a potential deadlock between the local
@@ -61,7 +61,7 @@ public class GlobalRegisterImpl {
      * create a queue of requests for the global and service the queue with a
      * single thread.
      */
-    private final ExecutorService          requestServer;
+    private final ExecutorService                requestServer;
 
     /**
      * Constructor - sets the local

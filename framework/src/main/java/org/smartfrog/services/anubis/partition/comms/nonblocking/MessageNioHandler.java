@@ -30,6 +30,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -76,7 +77,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     private MessageConnection              messageConnection   = null;
     private int                            objectSize          = -1;
 
-    private boolean                        open                = false;
+    private final AtomicBoolean            open                = new AtomicBoolean();
     private long                           receiveCount        = INITIAL_MSG_ORDER;
     private ByteBuffer                     rxHeader            = null;
     private boolean                        rxHeaderAlreadyRead = false;
@@ -132,6 +133,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: call to close results in call to cleanup");
         }
+        if (!open.compareAndSet(true, false)) {
+            return;
+        }
         SelectionKey selKey = sc.keyFor(selector);
         if (selKey != null) {
             cleanup(sc.keyFor(selector));
@@ -157,7 +161,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: connected is being called");
         }
-        return open;
+        return open.get();
     }
 
     public void deliverObject(ByteBuffer fullRxBuffer) {
@@ -355,9 +359,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                 }
                 if (readAmount == -1) {
                     cleanup(key);
-                    if (messageConnection != null) {
-                        messageConnection.terminate();
-                    }
                     return null;
                 }
             } catch (IOException ioe) {
@@ -514,11 +515,11 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         return returnedInt;
     }
 
-    public void setConnected(boolean conValue) {
+    void setConnected(boolean conValue) {
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Setting open to " + conValue);
         }
-        open = conValue;
+        open.set(conValue);
     }
 
     @Override
@@ -533,7 +534,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: shutdown is being called");
         }
-        open = false;
         closing();
         // close the socket channel
         close();
@@ -637,18 +637,14 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: cleanup is being called");
         }
-        boolean closed;
         synchronized (this) {
-            closed = !writingOK;
             writingOK = false;
         }
         deadKeys.add(key);
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Cleanup is called - socket has gone away");
         }
-        if (messageConnection != null && !closed) {
-            messageConnection.terminate();
-        }
+        shutdown();
     }
 
     private void initialMsg(TimedMsg tm) {

@@ -54,6 +54,10 @@ public class Endpoint {
         return handler;
     }
 
+    public Object getId() {
+        return heartbeat.getSender();
+    }
+
     public String getMemberString() {
         return "[" + heartbeat.getSender() + " : "
                + heartbeat.getHeartbeatAddress() + "]";
@@ -77,6 +81,17 @@ public class Endpoint {
 
     public void markDead() {
         isAlive = false;
+    }
+
+    public void record(HeartbeatState newHbState) {
+        if (heartbeat != newHbState) {
+            heartbeat = newHbState;
+            fd.record(heartbeat.getTime());
+        }
+    }
+
+    public void record(long now) {
+        fd.record(now);
     }
 
     public void setCommunications(GossipMessages communications) {
@@ -107,17 +122,6 @@ public class Endpoint {
             logger.finest(String.format("%s new heartbeat time: %s",
                                         heartbeat.getSender(),
                                         heartbeat.getTime()));
-        }
-    }
-
-    public void record(long now) {
-        fd.record(now);
-    }
-
-    public void record(HeartbeatState newHbState) {
-        if (heartbeat != newHbState) {
-            heartbeat = newHbState;
-            fd.record(heartbeat.getTime());
         }
     }
 }

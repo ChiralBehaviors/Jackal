@@ -37,11 +37,11 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
      */
     private ConnectionSet connectionSet = null;
 
-    private Identity me = null;
+    private Identity      me            = null;
     /**
      * Connection - includes Sender
      */
-    private boolean terminated = false;
+    private boolean       terminated    = false;
 
     /**
      * Constructor - creates and instance of a HeartbeatConnection using an
@@ -94,8 +94,9 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
              * connection should be converted to a messaging connection
              */
             if (hb.getMsgLinks().contains(me.id)) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("converting heart beat connection to message connection");
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(String.format("converting heart beat connection to message connection: %s",
+                                           this));
                 }
                 connectionSet.convertToMessageConnection(this);
                 return true;

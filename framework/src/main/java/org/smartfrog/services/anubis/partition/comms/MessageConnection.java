@@ -127,6 +127,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         super.terminate();
         connectionSet.removeConnection(this);
         msgQ.clear();
+        terminated = true;
     }
 
     /**
@@ -263,6 +264,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * deal with too many messages!
              */
             if (connectionImpl == null) {
+                log.info(String.format("Queueing msg on: %s", this));
                 msgQ.addLast(msg);
                 return;
             }
@@ -273,6 +275,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * remote node, has terminated.
              */
             if (!connectionImpl.connected()) {
+                log.info(String.format("Message dropped due to closed connection: %s",
+                                       this));
                 return;
             }
 
@@ -388,11 +392,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                  && msgQ.isEmpty()) {
             // System.out.println(me + " entering close on connection to " +  getSender() );
             closingImpl = connectionImpl;
+            closingImpl.silent();
             connectionImpl = null;
             try {
-
                 closingImpl.send(connectionSet.getHeartbeat().toClose());
-
             } catch (Exception ex) {
                 log.log(Level.SEVERE,
                         me + "failed to marshall close message - not sent to "

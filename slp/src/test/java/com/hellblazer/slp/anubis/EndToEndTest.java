@@ -65,7 +65,7 @@ abstract public class EndToEndTest extends TestCase {
     static class Listener implements ServiceListener {
         final Logger                       log     = Logger.getLogger(ServiceListener.class.getCanonicalName());
         ApplicationContext                 context;
-        List<ServiceEvent>                  events  = new CopyOnWriteArrayList<ServiceEvent>();
+        List<ServiceEvent>                 events  = new CopyOnWriteArrayList<ServiceEvent>();
         final Map<Integer, CountDownLatch> latches = new HashMap<Integer, CountDownLatch>();
         int                                member;
 
@@ -201,7 +201,7 @@ abstract public class EndToEndTest extends TestCase {
         for (Listener listener : listeners) {
             assertTrue(String.format("Listener: %s did not receive all events",
                                      listener),
-                       listener.await(30, TimeUnit.SECONDS));
+                       listener.await(60, TimeUnit.SECONDS));
         }
 
         for (Listener listener : listeners) {
@@ -260,7 +260,9 @@ abstract public class EndToEndTest extends TestCase {
         }
 
         for (Listener listener : listeners) {
-            listener.await(30, TimeUnit.SECONDS);
+            assertTrue(String.format("Listener: %s did not receive all events",
+                                     listener),
+                       listener.await(60, TimeUnit.SECONDS));
         }
 
         for (Listener listener : listeners) {
@@ -316,7 +318,9 @@ abstract public class EndToEndTest extends TestCase {
         }
 
         for (Listener listener : listeners) {
-            listener.await(30, TimeUnit.SECONDS);
+            assertTrue(String.format("Listener: %s did not receive all events",
+                                     listener),
+                       listener.await(60, TimeUnit.SECONDS));
         }
 
         for (Listener listener : listeners) {
@@ -348,7 +352,7 @@ abstract public class EndToEndTest extends TestCase {
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
         assertTrue("reformed partition did not stabilize",
-                   latch.await(30, TimeUnit.SECONDS));
+                   latch.await(60, TimeUnit.SECONDS));
     }
 
     public void testAsymmetricPartition() throws Exception {
@@ -393,7 +397,9 @@ abstract public class EndToEndTest extends TestCase {
         }
 
         for (Listener listener : listeners) {
-            listener.await(30, TimeUnit.SECONDS);
+            assertTrue(String.format("Listener: %s did not receive all events",
+                                     listener),
+                       listener.await(60, TimeUnit.SECONDS));
         }
 
         for (Listener listener : listeners) {
@@ -439,7 +445,9 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             if (A.contains(listener.member)) {
-                listener.await(30, TimeUnit.SECONDS);
+                assertTrue(String.format("Listener: %s did not receive all events",
+                                         listener),
+                           listener.await(60, TimeUnit.SECONDS));
             }
         }
 
@@ -474,7 +482,7 @@ abstract public class EndToEndTest extends TestCase {
         controller.clearPartitions();
         log.info("Awaiting stabilty of reformed major partition");
         assertTrue("reformed partition did not stabilize",
-                   latch.await(30, TimeUnit.SECONDS));
+                   latch.await(60, TimeUnit.SECONDS));
     }
 
     private List<ConfigurableApplicationContext> createMembers() {

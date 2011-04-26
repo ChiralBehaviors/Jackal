@@ -91,15 +91,15 @@ public class LocalRegisterImpl {
         }
     }
 
-    public Set<AnubisStability> stabilityNotifications = new HashSet<AnubisStability>();
-    public boolean              stable                 = true;
-    public long                 timeRef                = -1;
-    private DebugFrame          debug                  = null;
-    private LocalListeners      listeners              = null;
-    private static final Logger log                    = Logger.getLogger(LocalRegisterImpl.class.getCanonicalName());
-    private Identity            me                     = null;
-    private Integer             node                   = null;
-    private LocalProviders      providers              = null;
+    private final Set<AnubisStability> stabilityNotifications = new HashSet<AnubisStability>();
+    private volatile boolean           stable                 = true;
+    private volatile long              timeRef                = -1;
+    private DebugFrame                 debug                  = null;
+    private final LocalListeners       listeners;
+    private static final Logger        log                    = Logger.getLogger(LocalRegisterImpl.class.getCanonicalName());
+    private final Identity             me;
+    private final Integer              node;
+    private final LocalProviders       providers;
 
     /**
      * RequestServer is required to avoid a potential deadlock between the local
@@ -111,7 +111,7 @@ public class LocalRegisterImpl {
      * create a queue of requests for the global and service the queue with a
      * single thread.
      */
-    private ExecutorService     requestServer;
+    private ExecutorService            requestServer;
 
     public LocalRegisterImpl(Identity id, Locator locator) {
         me = id;

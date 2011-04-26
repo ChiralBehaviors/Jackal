@@ -46,17 +46,18 @@ abstract public class SmokeTest extends TestCase {
                               launchLatch, startLatch, endLatch,
                               configurations.length));
         }
-        boolean stabilized = launchLatch.await(60, TimeUnit.SECONDS);
+        boolean stabilized = launchLatch.await(120, TimeUnit.SECONDS);
         assertTrue("Partition did not stabilize", stabilized);
         System.out.println("Partition stabilized");
         for (Node node : nodes) {
             node.start();
         }
         boolean started = startLatch.await(60, TimeUnit.SECONDS);
-        assertTrue("Not all nodes started", started); 
+        assertTrue("Not all nodes started", started);
         System.out.println("Partition started");
         boolean ended = endLatch.await(60, TimeUnit.SECONDS);
-        assertTrue("Not all messages were received: " + findMissing(nodes), ended);
+        assertTrue("Not all messages were received: " + findMissing(nodes),
+                   ended);
         for (Node node : nodes) {
             node.shutDown();
         }
@@ -94,9 +95,9 @@ abstract public class SmokeTest extends TestCase {
         }
     }
 
-    private String findMissing(ArrayList<Node> nodes) { 
+    private String findMissing(ArrayList<Node> nodes) {
         StringBuilder builder = new StringBuilder();
-        for (Node node: nodes) {
+        for (Node node : nodes) {
             if (node.isMissingMessages()) {
                 builder.append(node.report());
             }
