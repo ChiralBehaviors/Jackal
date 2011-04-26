@@ -19,6 +19,8 @@ package com.hellblazer.jackal.gossip;
 
 import java.util.List;
 
+import org.smartfrog.services.anubis.partition.util.Identity;
+
 /**
  * The communications interface used by the gossip protocol
  * 
@@ -29,6 +31,7 @@ public interface GossipMessages {
     byte GOSSIP                     = 0;
     byte REPLY                      = 1;
     byte UPDATE                     = 2;
+    byte CONNECT_TO                 = 3;
     int  INET_ADDRESS_V6_BYTE_SIZE  = 16;
     int  INET_ADDRESS_MAX_BYTE_SIZE = INET_ADDRESS_V6_BYTE_SIZE // address
                                     + 1 // addressLength
@@ -87,5 +90,13 @@ public interface GossipMessages {
      *            - the list of heartbeat states requested.
      */
     void update(List<HeartbeatState> deltaState);
+
+    /**
+     * Request that remote node connect to the local node
+     * 
+     * @param node
+     *            - the identity of the local node
+     */
+    void requestConnection(Identity node);
 
 }

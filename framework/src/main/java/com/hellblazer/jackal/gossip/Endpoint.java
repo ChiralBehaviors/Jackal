@@ -20,6 +20,8 @@ package com.hellblazer.jackal.gossip;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.smartfrog.services.anubis.partition.util.Identity;
+
 /**
  * The Endpoint keeps track of the heartbeat state and the failure detector for
  * remote clients
@@ -54,7 +56,7 @@ public class Endpoint {
         return handler;
     }
 
-    public Object getId() {
+    public Identity getId() {
         return heartbeat.getSender();
     }
 

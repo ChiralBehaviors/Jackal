@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.TestCase;
 
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
@@ -126,7 +126,7 @@ public class EndToEndTest extends TestCase {
         }
     }
 
-    protected Gossip createCommunications(HeartbeatReceiver receiver,
+    protected Gossip createCommunications(ConnectionManager receiver,
                                           Identity localIdentity,
                                           Collection<InetSocketAddress> seedHosts)
                                                                                   throws IOException {
@@ -176,7 +176,7 @@ public class EndToEndTest extends TestCase {
         return gossip;
     }
 
-    private static class Receiver implements HeartbeatReceiver {
+    private static class Receiver implements ConnectionManager {
         private static final AtomicInteger count = new AtomicInteger();
 
         private final CountDownLatch[]     latches;
@@ -214,6 +214,11 @@ public class EndToEndTest extends TestCase {
 
             latches[hb.getSender().id].countDown();
             return false;
+        }
+
+        @Override
+        public void connectTo(Identity peer) {
+            throw new UnsupportedOperationException();
         }
     }
 }

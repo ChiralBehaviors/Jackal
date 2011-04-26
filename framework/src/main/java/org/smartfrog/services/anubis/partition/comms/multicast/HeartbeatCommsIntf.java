@@ -26,7 +26,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public interface HeartbeatCommsIntf extends CommsTestIntf {
     void sendHeartbeat(Heartbeat msg);
 
-    void sendHeartbeat(Heartbeat heartbeat, Identity node);
+    void requestConnect(Heartbeat heartbeat, Identity node);
 
     void start();
 

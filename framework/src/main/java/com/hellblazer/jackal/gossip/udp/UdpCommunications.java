@@ -16,6 +16,7 @@
  */
 package com.hellblazer.jackal.gossip.udp;
 
+import static com.hellblazer.jackal.gossip.GossipMessages.CONNECT_TO;
 import static com.hellblazer.jackal.gossip.GossipMessages.DIGEST_BYTE_SIZE;
 import static com.hellblazer.jackal.gossip.GossipMessages.GOSSIP;
 import static com.hellblazer.jackal.gossip.GossipMessages.REPLY;
@@ -46,6 +47,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.smartfrog.services.anubis.partition.util.Identity;
 
 import com.hellblazer.jackal.gossip.Digest;
 import com.hellblazer.jackal.gossip.Endpoint;
@@ -83,6 +86,17 @@ public class UdpCommunications implements GossipCommunications {
         public void reply(List<Digest> digests, List<HeartbeatState> states) {
             sendDigests(digests, REPLY);
             update(states);
+        }
+
+        @Override
+        public void requestConnection(Identity node) {
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+            buffer.order(ByteOrder.BIG_ENDIAN);
+            buffer.position(4);
+            buffer.put(CONNECT_TO);
+            node.writeTo(buffer);
+            buffer.flip();
+            send(buffer, target);
         }
 
         @Override
@@ -329,13 +343,32 @@ public class UdpCommunications implements GossipCommunications {
                 handleUpdate(buffer);
                 break;
             }
+            case CONNECT_TO: {
+                handleConnectTo(buffer);
+                break;
+            } 
             default: {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("invalid message type: %s from: %s",
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(format("invalid message type: %s from: %s",
                                       msgType, this));
                 }
             }
         }
+    }
+
+    private void handleConnectTo(ByteBuffer buffer) {
+        Identity peer;
+        try {
+            peer = new Identity(buffer);
+        } catch (Throwable e) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.log(Level.WARNING,
+                        "Cannot deserialize identity. Ignoring the connection request.",
+                        e);
+            }
+            return;
+        }
+        gossip.connectTo(peer);
     }
 
     /**

@@ -94,9 +94,9 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
              * connection should be converted to a messaging connection
              */
             if (hb.getMsgLinks().contains(me.id)) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(String.format("converting heart beat connection to message connection: %s",
-                                           this));
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(String.format("converting heart beat connection to message connection: %s",
+                                            this));
                 }
                 connectionSet.convertToMessageConnection(this);
                 return true;

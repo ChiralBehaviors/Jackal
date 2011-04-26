@@ -49,7 +49,7 @@ import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
@@ -90,7 +90,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private final TimeUnit                                   intervalUnit;
     private final ScheduledExecutorService                   scheduler;
     private final ExecutorService                            dispatcher;
-    private HeartbeatReceiver                                receiver;
+    private ConnectionManager                                receiver;
     private final AtomicReference<View>                      ignoring        = new AtomicReference<View>();
     private final AtomicBoolean                              running         = new AtomicBoolean();
     private final FailureDetectorFactory                     fdFactory;
@@ -193,7 +193,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
-    public HeartbeatCommsIntf create(HeartbeatReceiver hbReceiver) {
+    public HeartbeatCommsIntf create(ConnectionManager hbReceiver) {
         receiver = hbReceiver;
         return this;
     }
@@ -329,17 +329,24 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
-    public void sendHeartbeat(Heartbeat heartbeat, Identity node) {
+    public void requestConnect(Heartbeat heartbeat, Identity node) {
         HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
                                                                         view.getLocalAddress());
         sendHeartbeat(heartbeatState);
         for (Endpoint endpoint : endpoints.values()) {
             if (node.equals(endpoint.getId())) {
-                List<Digest> digests = Collections.emptyList();
-                endpoint.getHandler().reply(digests,
-                                            Arrays.asList(heartbeatState));
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(String.format("Requested connection from: %s on: %s",
+                                           node, localState.getId()));
+                }
+                endpoint.getHandler().requestConnection(localState.getId());
                 return;
             }
+        }
+
+        if (log.isLoggable(Level.WARNING)) {
+            log.warning(String.format("Requested connection from: %s on: %s denied, as no endpoint found",
+                                      node, localState.getId()));
         }
     }
 
@@ -421,6 +428,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     protected void apply(List<HeartbeatState> remoteStates) {
         for (HeartbeatState remoteState : remoteStates) {
             InetSocketAddress endpoint = remoteState.getHeartbeatAddress();
+            if (endpoint == null) {
+                if (log.isLoggable(Level.FINE)) {
+                    log.fine(String.format("endpoint heartbeat address is null: "
+                                           + remoteState));
+                }
+                continue;
+            }
             if (endpoint.equals(view.getLocalAddress())) {
                 continue;
             }
@@ -718,5 +732,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Sorted gossip digests are : %s", digests));
         }
+    }
+
+    public void connectTo(Identity peer) {
+        if (log.isLoggable(Level.INFO)) {
+            log.info(String.format("Connect request on: %s from: %s",
+                                   localState.getId(), peer));
+        }
+        receiver.connectTo(peer);
     }
 }

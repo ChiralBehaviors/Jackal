@@ -29,14 +29,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PreDestroy;
 
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 import com.hellblazer.jackal.annotations.Deployed;
 
-public class Controller implements HeartbeatReceiver {
+public class Controller implements ConnectionManager {
     private long                            checkPeriod;
     private long                            expirePeriod;
     private BitView                         globalView = new BitView();
@@ -213,5 +213,10 @@ public class Controller implements HeartbeatReceiver {
         NodeData nodeData;
         nodeData = new NodeData(hb, this);
         return nodeData;
+    }
+
+    @Override
+    public void connectTo(Identity peer) {
+        throw new UnsupportedOperationException();
     }
 }

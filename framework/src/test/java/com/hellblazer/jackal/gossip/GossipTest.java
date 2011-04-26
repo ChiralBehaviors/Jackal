@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.TestCase;
 
 import org.mockito.internal.verification.Times;
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class GossipTest extends TestCase {
@@ -120,7 +120,7 @@ public class GossipTest extends TestCase {
 
     public void testApplyDiscover() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
-        HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
+        ConnectionManager receiver = mock(ConnectionManager.class);
         FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
@@ -168,7 +168,7 @@ public class GossipTest extends TestCase {
 
     public void testApplyUpdate() throws Exception {
         GossipCommunications communications = mock(GossipCommunications.class);
-        final HeartbeatReceiver receiver = mock(HeartbeatReceiver.class);
+        final ConnectionManager receiver = mock(ConnectionManager.class);
         FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);

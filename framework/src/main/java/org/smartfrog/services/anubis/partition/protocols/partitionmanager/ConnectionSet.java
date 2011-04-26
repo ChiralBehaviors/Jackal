@@ -44,7 +44,6 @@ import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsInt
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatConnection;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderMgr;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
@@ -74,7 +73,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
  * @author Paul Murray
  * @version 1.0
  */
-public class ConnectionSet implements ViewListener, HeartbeatReceiver {
+public class ConnectionSet implements ViewListener, ConnectionManager {
     private static final Logger             log                 = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
 
     private volatile boolean                changeInViews       = false;
@@ -301,12 +300,12 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         if (thisEndInitiatesConnectionsTo(hbcon.getSender())) {
             getConnectionServer().initiateConnection(identity, mcon, heartbeat);
         } else {
-            if (log.isLoggable(Level.INFO)) {
-                log.info(String.format("Waiting for callback from: %s on: %s",
-                                       id, identity));
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Waiting for callback from: %s on: %s",
+                                        id, identity));
             }
-            heartbeatComms.sendHeartbeat(prepartHeartbeat(System.currentTimeMillis() + 1),
-                                         node);
+            heartbeatComms.requestConnect(prepartHeartbeat(System.currentTimeMillis() + 1),
+                                          node);
         }
 
         /**
@@ -593,9 +592,9 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
         if (connectionView.contains(id)) {
             partitionProtocol.receiveObject(obj, id, time);
         } else {
-            if (log.isLoggable(Level.SEVERE)) {
-                log.severe(String.format("Ignoring received object: %s from: %s on: %s as it is not in our view",
-                                         obj, id, identity));
+            if (log.isLoggable(Level.FINE)) {
+                log.fine(String.format("Ignoring received object: %s from: %s on: %s as it is not in our view",
+                                       obj, id, identity));
             }
         }
     }
@@ -954,5 +953,20 @@ public class ConnectionSet implements ViewListener, HeartbeatReceiver {
     private boolean isBetterTimeStamp(long timeStamp) {
         return timeStamp != View.undefinedTimeStamp
                && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
+    }
+
+    @Override
+    public synchronized void connectTo(Identity peer) {
+        Connection con = connections.get(peer);
+        if (con == null) {
+            log.warning(String.format("Connection requested to: %s on: %s ignored as there is no heartbeat connection found",
+                                      peer, identity));
+        }
+        if (con instanceof HeartbeatConnection) {
+            log.info("Converting connection: " + con);
+            convertToMessageConnection((HeartbeatConnection) con);
+        } else {
+            log.info("Connection already established: " + con);
+        }
     }
 }

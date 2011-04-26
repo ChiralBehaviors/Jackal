@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
@@ -49,7 +49,7 @@ public class MulticastHeartbeatCommsFactory implements HeartbeatCommsFactory {
      * @see org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory#create(org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver)
      */
     @Override
-    public HeartbeatCommsIntf create(HeartbeatReceiver cs) throws IOException {
+    public HeartbeatCommsIntf create(ConnectionManager cs) throws IOException {
         return new HeartbeatComms(address, inf, cs, threadName, id,
                                   wireSecurity);
     }

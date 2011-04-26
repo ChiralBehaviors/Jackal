@@ -264,7 +264,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * deal with too many messages!
              */
             if (connectionImpl == null) {
-                log.info(String.format("Queueing msg on: %s", this));
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Queueing msg on: %s", this));
+                }
                 msgQ.addLast(msg);
                 return;
             }
@@ -275,8 +277,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * remote node, has terminated.
              */
             if (!connectionImpl.connected()) {
-                log.info(String.format("Message dropped due to closed connection: %s",
-                                       this));
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Message dropped due to closed connection: %s",
+                                             this));
+                }
                 return;
             }
 
@@ -284,6 +288,11 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * If the connectionImpl exists and it is connected then just send
              * on it.
              */
+            if (!(msg instanceof Heartbeat)) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Sending msg on: %s", this));
+                }
+            }
             connectionImpl.send(msg);
         }
     }

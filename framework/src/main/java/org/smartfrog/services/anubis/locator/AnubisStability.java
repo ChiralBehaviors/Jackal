@@ -19,6 +19,7 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.locator;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -72,14 +73,20 @@ abstract public class AnubisStability {
 
         long timein = System.currentTimeMillis();
         long timeout = 0;
-        ScheduledFuture<?> task = timers.schedule(new Runnable() {
+        ScheduledFuture<?> task;
+        try {
+            task = timers.schedule(new Runnable() {
 
-            @Override
-            public void run() {
-                log.warning("User API Upcall took >200ms in stability(s,t) where s="
-                            + isStable + ", t=" + timeRef);
-            }
-        }, 200, TimeUnit.MILLISECONDS);
+                @Override
+                public void run() {
+                    log.warning("User API Upcall took >200ms in stability(s,t) where s="
+                                + isStable + ", t=" + timeRef);
+                }
+            }, 200, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            log.finest("Rejecting stability notification due to shutdown");
+            return;
+        }
         try {
             stability(isStable, timeRef);
         } catch (Throwable ex) {

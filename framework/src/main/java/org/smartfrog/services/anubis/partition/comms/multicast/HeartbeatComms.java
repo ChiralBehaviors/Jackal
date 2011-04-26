@@ -123,7 +123,7 @@ public class HeartbeatComms extends MulticastComms implements
     }
 
     @Override
-    public void sendHeartbeat(Heartbeat heartbeat, Identity node) {
+    public void requestConnect(Heartbeat heartbeat, Identity node) {
         sendHeartbeat(heartbeat);
     }
 
