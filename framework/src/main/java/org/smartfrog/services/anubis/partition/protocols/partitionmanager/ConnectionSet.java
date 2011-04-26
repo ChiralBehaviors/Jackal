@@ -228,8 +228,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * required id then return null to indicate failure.
          */
         if (!connectionView.contains(id)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("No valid connection for id: " + id);
+            if (log.isLoggable(Level.INFO)) {
+                log.info("No valid connection for id: " + id + " on: "
+                         + identity.id);
             }
             return null;
         }
@@ -266,8 +267,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          */
         if (con instanceof MessageConnection) {
             ((MessageConnection) con).connect();
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("connection already established for: " + node);
+            if (log.isLoggable(Level.INFO)) {
+                log.info("connection already established for: " + id + " on: "
+                         + identity.id);
             }
             return (MessageConnection) con;
         }
@@ -277,8 +279,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * connection, but there is a heartbeat connection. Convert the
          * heartbeat connection to a message connection.
          */
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("Converting heartbeat connection for: " + node);
+        if (log.isLoggable(Level.INFO)) {
+            log.info("Converting heartbeat connection for: " + id + " on: "
+                     + identity.id);
         }
         HeartbeatConnection hbcon = (HeartbeatConnection) con;
         MessageConnection mcon = new MessageConnection(identity, this,
@@ -298,6 +301,8 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * created.
          */
         if (thisEndInitiatesConnectionsTo(hbcon.getSender())) {
+            log.info("Initiating connection to: " + id + " on: "
+                     + identity.id);
             getConnectionServer().initiateConnection(identity, mcon, heartbeat);
         } else {
             if (log.isLoggable(Level.FINER)) {

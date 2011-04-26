@@ -124,6 +124,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * method.
      */
     public void closing() {
+        System.out.println("Closing: " + this);
         super.terminate();
         connectionSet.removeConnection(this);
         msgQ.clear();
