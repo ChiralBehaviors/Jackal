@@ -228,9 +228,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * required id then return null to indicate failure.
          */
         if (!connectionView.contains(id)) {
-            if (log.isLoggable(Level.INFO)) {
-                log.info("No valid connection for id: " + id + " on: "
-                         + identity.id);
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("No valid connection for id: " + id + " on: "
+                          + identity.id);
             }
             return null;
         }
@@ -267,9 +267,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          */
         if (con instanceof MessageConnection) {
             ((MessageConnection) con).connect();
-            if (log.isLoggable(Level.INFO)) {
-                log.info("connection already established for: " + id + " on: "
-                         + identity.id);
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("connection already established for: " + id + " on: "
+                          + identity.id);
             }
             return (MessageConnection) con;
         }
@@ -279,9 +279,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * connection, but there is a heartbeat connection. Convert the
          * heartbeat connection to a message connection.
          */
-        if (log.isLoggable(Level.INFO)) {
-            log.info("Converting heartbeat connection for: " + id + " on: "
-                     + identity.id);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("Converting heartbeat connection for: " + id + " on: "
+                      + identity.id);
         }
         HeartbeatConnection hbcon = (HeartbeatConnection) con;
         MessageConnection mcon = new MessageConnection(identity, this,
@@ -301,12 +301,15 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * created.
          */
         if (thisEndInitiatesConnectionsTo(hbcon.getSender())) {
-            log.info("Initiating connection to: " + id + " on: " + identity.id);
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("Initiating connection to: " + id + " on: "
+                          + identity.id);
+            }
             getConnectionServer().initiateConnection(identity, mcon, heartbeat);
         } else {
-            if (log.isLoggable(Level.INFO)) {
-                log.info(String.format("Waiting for callback from: %s on: %s",
-                                       id, identity));
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Waiting for callback from: %s on: %s",
+                                        id, identity));
             }
             heartbeatComms.requestConnect(heartbeat, node);
         }
@@ -962,14 +965,20 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     public synchronized void connectTo(Identity peer) {
         Connection con = connections.get(peer);
         if (con == null) {
-            log.warning(String.format("Connection requested to: %s on: %s ignored as there is no heartbeat connection found",
-                                      peer, identity));
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Connection requested to: %s on: %s ignored as there is no heartbeat connection found",
+                                        peer, identity));
+            }
         }
         if (con instanceof HeartbeatConnection) {
-            log.info("Converting connection: " + con);
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("Converting connection: " + con);
+            }
             convertToMessageConnection((HeartbeatConnection) con);
         } else {
-            log.info("Connection already established: " + con);
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("Connection already established: " + con);
+            }
         }
     }
 }

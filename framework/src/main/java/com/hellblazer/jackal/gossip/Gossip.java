@@ -335,9 +335,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         sendHeartbeat(heartbeatState);
         for (Endpoint endpoint : endpoints.values()) {
             if (node.equals(endpoint.getId())) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(String.format("Requested connection from: %s on: %s",
-                                           node, localState.getId()));
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(String.format("Requested connection from: %s on: %s",
+                                            node, localState.getId()));
                 }
                 endpoint.getHandler().requestConnection(localState.getId());
                 return;
@@ -735,9 +735,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     public void connectTo(Identity peer) {
-        if (log.isLoggable(Level.INFO)) {
-            log.info(String.format("Connect request on: %s from: %s",
-                                   localState.getId(), peer));
+        if (log.isLoggable(Level.FINER)) {
+            log.finer(String.format("Connect request on: %s from: %s",
+                                    localState.getId(), peer));
         }
         receiver.connectTo(peer);
     }

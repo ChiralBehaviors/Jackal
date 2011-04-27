@@ -399,8 +399,8 @@ public class LocalProviders {
          */
         info.listeners.remove(listener);
         listenersByNode.remove(listener.node, listener);
-        if (log.isLoggable(Level.INFO)) {
-            log.info(me + ": provider info removed " + listener);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer(me + ": provider info removed " + listener);
         }
     }
 

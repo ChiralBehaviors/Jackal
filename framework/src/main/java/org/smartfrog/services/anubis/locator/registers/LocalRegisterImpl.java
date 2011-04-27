@@ -120,7 +120,6 @@ public class LocalRegisterImpl {
         listeners = new LocalListeners(locator, node);
         timeRef = me.epoch;
         requestServer = Executors.newSingleThreadExecutor(new ThreadFactory() {
-
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
@@ -155,13 +154,20 @@ public class LocalRegisterImpl {
      * @param listener
      */
     public void deregisterListener(final AnubisListener listener) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(new UserListenerRequest(UserListenerRequest.Deregister,
-                                                listener));
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(new UserListenerRequest(
+                                                    UserListenerRequest.Deregister,
+                                                    listener));
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     /**
@@ -172,13 +178,20 @@ public class LocalRegisterImpl {
      * @param provider
      */
     public void deregisterProvider(final AnubisProvider provider) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(new UserProviderRequest(UserProviderRequest.Deregister,
-                                                provider, null, 0));
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(new UserProviderRequest(
+                                                    UserProviderRequest.Deregister,
+                                                    provider, null, 0));
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     /**
@@ -188,14 +201,20 @@ public class LocalRegisterImpl {
      *            AnubisStability
      */
     public void deregisterStability(final AnubisStability stability) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(new UserStabilityRequest(
-                                                 UserStabilityRequest.Deregister,
-                                                 stability));
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(new UserStabilityRequest(
+                                                     UserStabilityRequest.Deregister,
+                                                     stability));
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     /**
@@ -204,28 +223,42 @@ public class LocalRegisterImpl {
      * @param provider
      */
     public void newProviderValue(final AnubisProvider provider) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(new UserProviderRequest(UserProviderRequest.NewValue,
-                                                provider,
-                                                provider.getValueData(),
-                                                provider.getTime()));
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(new UserProviderRequest(
+                                                    UserProviderRequest.NewValue,
+                                                    provider,
+                                                    provider.getValueData(),
+                                                    provider.getTime()));
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     /**
      * @param listener
      */
     public void registerListener(final AnubisListener listener) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(new UserListenerRequest(UserListenerRequest.Register,
-                                                listener));
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(new UserListenerRequest(
+                                                    UserListenerRequest.Register,
+                                                    listener));
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     /**
@@ -236,15 +269,22 @@ public class LocalRegisterImpl {
      * @param provider
      */
     public void registerProvider(final AnubisProvider provider) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(new UserProviderRequest(UserProviderRequest.Register,
-                                                provider,
-                                                provider.getValueData(),
-                                                provider.getTime()));
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(new UserProviderRequest(
+                                                    UserProviderRequest.Register,
+                                                    provider,
+                                                    provider.getValueData(),
+                                                    provider.getTime()));
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     /**
@@ -254,13 +294,20 @@ public class LocalRegisterImpl {
      *            AnubisStability
      */
     public void registerStability(final AnubisStability stability) {
-        requestServer.execute(new Runnable() {
-            @Override
-            public void run() {
-                deliver(new UserStabilityRequest(UserStabilityRequest.Register,
-                                                 stability));
+        try {
+            requestServer.execute(new Runnable() {
+                @Override
+                public void run() {
+                    deliver(new UserStabilityRequest(
+                                                     UserStabilityRequest.Register,
+                                                     stability));
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINE)) {
+                log.fine("Rejecting message due to shutdown");
             }
-        });
+        }
     }
 
     public synchronized void removeDebugFrame() {
@@ -330,52 +377,39 @@ public class LocalRegisterImpl {
     }
 
     private void deliver(RegisterMsg msg) {
-
         switch (msg.type) {
-
             case RegisterMsg.ProviderValue:
 
                 listeners.providerValue((ProviderInstance) msg.data);
                 updateDebugFrame();
                 break;
-
             case RegisterMsg.ProviderNotPresent:
-
                 listeners.providerNotPresent((ProviderInstance) msg.data);
                 updateDebugFrame();
                 break;
-
             case RegisterMsg.AddListener:
-
                 providers.addListener((ListenerProxy) msg.data);
                 updateDebugFrame();
                 break;
-
             case RegisterMsg.RemoveListener:
-
                 providers.removeListener((ListenerProxy) msg.data);
                 updateDebugFrame();
                 break;
-
             default:
                 log.severe(me + " *** Local received unexpected message " + msg);
         }
     }
 
     private void deliver(UserListenerRequest request) {
-
         switch (request.type) {
-
             case UserListenerRequest.Register:
                 listeners.register(request.listener);
                 updateDebugFrame();
                 break;
-
             case UserListenerRequest.Deregister:
                 listeners.deregister(request.listener);
                 updateDebugFrame();
                 break;
-
             default:
                 log.severe(me
                            + " *** Local register encountered unknown user stability request type: "
@@ -384,23 +418,17 @@ public class LocalRegisterImpl {
     }
 
     private void deliver(UserProviderRequest request) {
-
         switch (request.type) {
-
             case UserProviderRequest.Register:
                 providers.register(request.provider, request.value,
                                    request.time);
                 updateDebugFrame();
                 break;
-
             case UserProviderRequest.Deregister:
-
                 providers.deregister(request.provider);
                 updateDebugFrame();
                 break;
-
             case UserProviderRequest.NewValue:
-
                 providers.newValue(request.provider, request.value,
                                    request.time);
                 updateDebugFrame();
@@ -414,18 +442,15 @@ public class LocalRegisterImpl {
     }
 
     private void deliver(UserStabilityRequest request) {
-
         switch (request.type) {
 
             case UserStabilityRequest.Register:
                 stabilityNotifications.add(request.stability);
                 request.stability.notifyStability(stable, timeRef);
                 break;
-
             case UserStabilityRequest.Deregister:
                 stabilityNotifications.remove(request.stability);
                 break;
-
             default:
                 log.severe(me
                            + " *** Local register encountered unknown user stability request type: "

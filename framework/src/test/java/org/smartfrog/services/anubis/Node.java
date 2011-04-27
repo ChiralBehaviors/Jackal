@@ -53,18 +53,20 @@ public class Node {
     private final int                                messagesToSend;
     private final CountDownLatch                     endLatch;
     private final CountDownLatch                     startLatch;
-    private String                                   instance;
     private final CountDownLatch                     launchLatch;
     private final int                                cardinality;
     private final ArrayList<SendHistory>             sendHistory        = new ArrayList<SendHistory>();
     private final Map<Integer, List<ValueHistory>>   receiveHistory     = new HashMap<Integer, List<ValueHistory>>();
 
     private final Map<Integer, CountDownLatch>       msgReceivedLatches = new HashMap<Integer, CountDownLatch>();
+    AnubisLocator                                    locator;
+    private String                                   stateName;
 
     public Node(AnnotationConfigApplicationContext context, String stateName,
                 int c, CountDownLatch launchLatch, CountDownLatch startLatch,
                 CountDownLatch endLatch, int maxSleep, int messageCount)
                                                                         throws Exception {
+        this.stateName = stateName;
         this.context = context;
         cardinality = c;
         this.launchLatch = launchLatch;
@@ -76,9 +78,10 @@ public class Node {
             receiveHistory.put(i, new CopyOnWriteArrayList<ValueHistory>());
             msgReceivedLatches.put(i, new CountDownLatch(messageCount));
         }
-
-        PartitionManager pm = context.getBean(PartitionManager.class);
-        pm.register(new PartitionNotification() {
+        provider = new AnubisProvider(stateName);
+        PartitionManager partitionManager = context.getBean(PartitionManager.class);
+        locator = context.getBean(AnubisLocator.class);
+        partitionManager.register(new PartitionNotification() {
 
             @Override
             public void objectNotification(Object obj, int sender, long time) {
@@ -94,7 +97,25 @@ public class Node {
                 }
             }
         });
+    }
 
+    public String getInstance() {
+        return provider.getInstance();
+    }
+
+    public List<SendHistory> getSendHistory() {
+        return sendHistory;
+    }
+
+    public List<ValueHistory> getValueHistory(String instance) {
+        return receiveHistory.get(getIdentity(instance));
+    }
+
+    public void shutDown() {
+        context.close();
+    }
+
+    public void start() {
         AnubisListener listener = new AnubisListener(stateName) {
             @Override
             public void newValue(AnubisValue value) {
@@ -112,30 +133,8 @@ public class Node {
                 System.out.println("Received a remove!");
             }
         };
-        provider = new AnubisProvider(stateName);
-        AnubisLocator locator = context.getBean(AnubisLocator.class);
         locator.registerListener(listener);
         locator.registerProvider(provider);
-        instance = provider.getInstance();
-    }
-
-    public String getInstance() {
-        return instance;
-    }
-
-    public List<SendHistory> getSendHistory() {
-        return sendHistory;
-    }
-
-    public List<ValueHistory> getValueHistory(String instance) {
-        return receiveHistory.get(getIdentity(instance));
-    }
-
-    public void shutDown() {
-        context.close();
-    }
-
-    public void start() {
         Thread daemon = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -187,7 +186,7 @@ public class Node {
         for (Map.Entry<Integer, CountDownLatch> entry : msgReceivedLatches.entrySet()) {
             if (entry.getValue().getCount() > 0) {
                 builder.append(String.format("Node %s didn't receive %s messages from %s",
-                                             getIdentity(instance),
+                                             getIdentity(provider.getInstance()),
                                              entry.getValue().getCount(),
                                              entry.getKey()));
                 builder.append(", ");

@@ -88,9 +88,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
         synchronized (msgQ) {
             if (terminated) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(String.format("Not assigning impl as connection is terminated: %s",
-                                           this));
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(String.format("Not assigning impl as connection is terminated: %s",
+                                            this));
                 }
                 return false;
             }
@@ -110,9 +110,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             connectionImpl = impl;
             connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
 
-            if (log.isLoggable(Level.INFO)) {
-                log.info(String.format("Assigning impl: %s, msg queue size: %s",
-                                       this, msgQ.size()));
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Assigning impl: %s, msg queue size: %s",
+                                        this, msgQ.size()));
             }
 
             while (!msgQ.isEmpty()) {
@@ -120,8 +120,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             }
 
             if (disconnectPending) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.info(String.format("Disconnecting: %s", this));
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(String.format("Disconnecting: %s", this));
                 }
                 connectionSet.disconnect(getSender());
             }
@@ -136,7 +136,6 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * method.
      */
     public void closing() {
-        System.out.println("Closing: " + this);
         super.terminate();
         connectionSet.removeConnection(this);
         msgQ.clear();

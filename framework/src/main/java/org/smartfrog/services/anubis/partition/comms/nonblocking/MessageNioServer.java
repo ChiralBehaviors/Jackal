@@ -22,6 +22,7 @@ package org.smartfrog.services.anubis.partition.comms.nonblocking;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -224,6 +225,10 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             }
             pendingNewChannels.put(sendingChannel, mnh);
             selector.wakeup();
+        } catch (ClosedByInterruptException e) {
+            if (asyncLog.isLoggable(Level.FINE)) {
+                asyncLog.log(Level.FINE, "Connection closed", e);
+            }
         } catch (Exception e) {
             if (asyncLog.isLoggable(Level.WARNING)) {
                 asyncLog.log(Level.WARNING, "Cannot start connection", e);
@@ -296,7 +301,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                 }
                             } catch (Exception e) {
                                 if (asyncLog.isLoggable(Level.WARNING)) {
-                                    asyncLog.log(Level.WARNING, "error registering selector", e);
+                                    asyncLog.log(Level.WARNING,
+                                                 "error registering selector",
+                                                 e);
                                 }
                             }
 
@@ -342,7 +349,8 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                         conHandler.setConnected(true);
                     } catch (Exception e) {
                         if (asyncLog.isLoggable(Level.WARNING)) {
-                            asyncLog.log(Level.WARNING, "Error accepting connection", e);
+                            asyncLog.log(Level.WARNING,
+                                         "Error accepting connection", e);
                         }
                     }
 

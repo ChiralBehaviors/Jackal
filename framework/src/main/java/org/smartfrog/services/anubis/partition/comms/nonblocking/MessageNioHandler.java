@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -619,14 +620,25 @@ public class MessageNioHandler implements SendingListener, IOConnection,
                     selector.wakeup();
                 }
             }
+        } catch (ClosedByInterruptException e) {
+            if (log.isLoggable(Level.FINER)) {
+                log.log(Level.FINER,
+                        "shutting down handler due to other side closing", e);
+            }
+            shutdown();
         } catch (IOException ioe) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ioe);
+            if (log.isLoggable(Level.WARNING) && !isClose(ioe)) {
+                log.log(Level.WARNING, "shutting down handler", ioe);
             }
             shutdown();
         }
 
         return returnedInt;
+    }
+
+    private boolean isClose(IOException ioe) {
+        return "Broken pipe".equals(ioe.getMessage())
+               || "Connection reset by peer".equals(ioe.getMessage());
     }
 
     // private methods
