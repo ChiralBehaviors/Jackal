@@ -440,6 +440,10 @@ public class Locator implements PartitionNotification, AnubisLocator {
                 }
                 links.put(node, con);
             }
+            if (log.isLoggable(Level.INFO)) {
+                log.info(String.format("Sending message: %s on: %s destined for: %s",
+                                         obj, me, node));
+            }
             con.sendObject(obj);
         }
     }

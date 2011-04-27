@@ -187,7 +187,7 @@ public class Node {
         for (Map.Entry<Integer, CountDownLatch> entry : msgReceivedLatches.entrySet()) {
             if (entry.getValue().getCount() > 0) {
                 builder.append(String.format("Node %s didn't receive %s messages from %s",
-                                             instance,
+                                             getIdentity(instance),
                                              entry.getValue().getCount(),
                                              entry.getKey()));
                 builder.append(", ");

@@ -88,14 +88,18 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
         synchronized (msgQ) {
             if (terminated) {
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(String.format("Not assigning impl as connection is terminated: %s",
+                                           this));
+                }
                 return false;
             }
 
             if (connectionImpl != null) {
-                if (log.isLoggable(Level.FINE)) {
+                if (log.isLoggable(Level.SEVERE)) {
                     Exception e = new Exception();
                     e.fillInStackTrace();
-                    log.log(Level.FINE,
+                    log.log(Level.SEVERE,
                             me
                                     + " attempt to assign a new implementation when one exists",
                             e);
@@ -106,11 +110,19 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             connectionImpl = impl;
             connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
 
+            if (log.isLoggable(Level.INFO)) {
+                log.info(String.format("Assigning impl: %s, msg queue size: %s",
+                                       this, msgQ.size()));
+            }
+
             while (!msgQ.isEmpty()) {
                 connectionImpl.send(msgQ.removeFirst());
             }
 
             if (disconnectPending) {
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(String.format("Disconnecting: %s", this));
+                }
                 connectionSet.disconnect(getSender());
             }
         }
@@ -344,7 +356,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
     @Override
     public String toString() {
-        return "MessageConnection [from: " + me + " to:" + getId() + "]";
+        return "MessageConnection [from: " + me.id + " to: " + getId().id + "]";
     }
 
     private void checkInitiatingClose(HeartbeatMsg msg) {

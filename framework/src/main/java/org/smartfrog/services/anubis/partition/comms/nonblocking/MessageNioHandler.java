@@ -726,9 +726,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * do log its occurance.
          */
         if (!hbmsg.getMsgLinks().contains(me.id)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.severe(format("%s incoming connection from %s when neither end wants the connection",
-                                  me, con.getSender()));
+            if (log.isLoggable(Level.WARNING)) {
+                log.warning(format("%s incoming connection from %s when neither end wants the connection",
+                                   me, con.getSender()));
                 // next two lines removed to allow this case
                 // shutdown();
                 // return;
@@ -769,8 +769,8 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          */
         if (!connectionSet.useNewMessageConnection(messageConnection)) {
             if (log.isLoggable(Level.FINER)) {
-                log.severe(format("%s Concurrent creation of message connections from %s",
-                                  me, messageConnection.getSender()));
+                log.finer(format("%s Concurrent creation of message connections from %s",
+                                 me, messageConnection.getSender()));
             }
             shutdown();
             return;

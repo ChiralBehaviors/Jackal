@@ -163,6 +163,7 @@ public class AnubisScope implements ServiceScope {
     private Thread                                              outboundProcessingThread;
     private final AtomicBoolean                                 run             = new AtomicBoolean(
                                                                                                     false);
+    private final AtomicBoolean                                 registered      = new AtomicBoolean();
 
     public AnubisScope(String stateName, AnubisLocator lctr,
                        ExecutorService execService, NoArgGenerator generator) {
@@ -172,8 +173,6 @@ public class AnubisScope implements ServiceScope {
         stateProvider = new AnubisProvider(stateName);
         stateListener = new Listener(stateName);
         locator.registerStability(stability);
-        locator.registerProvider(stateProvider);
-        locator.registerListener(stateListener);
         uuidGenerator = generator;
     }
 
@@ -468,6 +467,10 @@ public class AnubisScope implements ServiceScope {
     }
 
     protected void sync() {
+        if (!registered.compareAndSet(false, true)) {
+            locator.registerProvider(stateProvider);
+            locator.registerListener(stateListener);
+        }
         try {
             outboundMsgs.put(new Message(
                                          MessageType.SYNC,

@@ -297,20 +297,18 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * If this end is initiating then start and initiator. If the other end
          * is initiating then blast an extra heartbeat to speed up the other end
          * getting the indication to initiate. In either case this is an
-         * asynchrnous operation to complete the message connection just
+         * asynchronous operation to complete the message connection just
          * created.
          */
         if (thisEndInitiatesConnectionsTo(hbcon.getSender())) {
-            log.info("Initiating connection to: " + id + " on: "
-                     + identity.id);
+            log.info("Initiating connection to: " + id + " on: " + identity.id);
             getConnectionServer().initiateConnection(identity, mcon, heartbeat);
         } else {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Waiting for callback from: %s on: %s",
-                                        id, identity));
+            if (log.isLoggable(Level.INFO)) {
+                log.info(String.format("Waiting for callback from: %s on: %s",
+                                       id, identity));
             }
-            heartbeatComms.requestConnect(prepartHeartbeat(System.currentTimeMillis() + 1),
-                                          node);
+            heartbeatComms.requestConnect(heartbeat, node);
         }
 
         /**
@@ -668,7 +666,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         /**
          * send the heartbeat using multicast for heartbeat connections
          */
-        heartbeatComms.sendHeartbeat(prepartHeartbeat(timenow));
+        heartbeatComms.sendHeartbeat(prepareHeartbeat(timenow));
 
         /**
          * send the heartbeat on message connections.
@@ -687,7 +685,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         msgConDelayedDelete.clear();
     }
 
-    private Heartbeat prepartHeartbeat(long timenow) {
+    private Heartbeat prepareHeartbeat(long timenow) {
         /**
          * prepare the heartbeat with the latest information
          */
