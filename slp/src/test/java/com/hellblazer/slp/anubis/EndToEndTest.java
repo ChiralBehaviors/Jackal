@@ -92,9 +92,9 @@ abstract public class EndToEndTest extends TestCase {
         }
 
         boolean await(long timeout, TimeUnit unit) throws InterruptedException {
-            boolean success = false;
+            boolean success = true;
             for (CountDownLatch latch : latches.values()) {
-                success |= latch.await(timeout, unit);
+                success &= latch.await(timeout, unit);
             }
             return success;
         }
