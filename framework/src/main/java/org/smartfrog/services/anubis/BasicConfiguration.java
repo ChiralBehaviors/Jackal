@@ -38,7 +38,7 @@ public class BasicConfiguration {
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
-                                 heartbeatTimeout(), false);
+                                 heartbeatTimeout(), false, alwaysReconnect());
     }
 
     public InetAddress contactHost() throws UnknownHostException {
@@ -57,7 +57,8 @@ public class BasicConfiguration {
 
     @Bean
     public AnubisLocator locator() {
-        Locator locator = new Locator(partitionIdentity(), partition(), heartbeatInterval(), heartbeatTimeout()); 
+        Locator locator = new Locator(partitionIdentity(), partition(),
+                                      heartbeatInterval(), heartbeatTimeout());
         return locator;
     }
 
@@ -93,6 +94,10 @@ public class BasicConfiguration {
     @Bean
     public WireSecurity wireSecurity() {
         return new NoSecurityImpl();
+    }
+
+    protected boolean alwaysReconnect() {
+        return true;
     }
 
     protected InetSocketAddress contactAddress() throws UnknownHostException {

@@ -80,7 +80,7 @@ public class GossipConfiguration {
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
-                                 heartbeatTimeout(), false);
+                                 heartbeatTimeout(), false, alwaysReconnect());
     }
 
     public InetAddress contactHost() throws UnknownHostException {
@@ -170,6 +170,10 @@ public class GossipConfiguration {
                                                   200, 1.0);
     }
 
+    protected boolean alwaysReconnect() {
+        return true;
+    }
+
     protected InetSocketAddress contactAddress() throws UnknownHostException {
         return new InetSocketAddress(contactHost(), contactPort());
     }
@@ -234,11 +238,6 @@ public class GossipConfiguration {
                                              1, false);
     }
 
-    protected FailureDetectorFactory timedFailureDetectorFactory() {
-        return new TimedFailureDetectorFactory(heartbeatInterval()
-                                               * heartbeatTimeout());
-    }
-
     protected int quarantineDelay() {
         return (int) (heartbeatInterval() * (heartbeatTimeout() + 1));
     }
@@ -246,7 +245,12 @@ public class GossipConfiguration {
     protected Collection<InetSocketAddress> seedHosts()
                                                        throws UnknownHostException {
         return asList(gossipEndpoint());
-    } 
+    }
+
+    protected FailureDetectorFactory timedFailureDetectorFactory() {
+        return new TimedFailureDetectorFactory(heartbeatInterval()
+                                               * heartbeatTimeout());
+    }
 
     protected int unreachableNodeDelay() {
         return 500000;

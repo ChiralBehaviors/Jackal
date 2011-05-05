@@ -126,6 +126,8 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private volatile long                   timeout             = 0;
     private volatile long                   viewNumber          = 0;
 
+    private final boolean                   alwaysReconnect;
+
     public ConnectionSet(InetSocketAddress connectionAddress,
                          Identity identity,
                          HeartbeatCommsFactory heartbeatCommsFactory,
@@ -133,8 +135,8 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                          LeaderProtocolFactory leaderProtocolFactory,
                          HeartbeatProtocolFactory heartbeatProtocolFactory,
                          PartitionProtocol partitionProtocol, long interval,
-                         long timeout, boolean isPreferredLeaderNode)
-                                                                     throws IOException {
+                         long timeout, boolean isPreferredLeaderNode,
+                         boolean alwaysReconnect) throws IOException {
         this.identity = identity;
         this.leaderProtocolFactory = leaderProtocolFactory;
         this.heartbeatProtocolFactory = heartbeatProtocolFactory;
@@ -177,6 +179,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          */
         connections.put(identity, self);
         connectionView.add(identity);
+        this.alwaysReconnect = alwaysReconnect;
     }
 
     /**
@@ -204,6 +207,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             stablizing = false;
             intervalExec.clearStability();
             partitionProtocol.stableView();
+            if (alwaysReconnect) {
+                reconnect();
+            }
         }
 
         /**
@@ -321,8 +327,25 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         return mcon;
     }
 
-    public synchronized boolean isIgnoring(Identity id) {
-        return testable && ignoring.contains(id);
+    @Override
+    public synchronized void connectTo(Identity peer) {
+        Connection con = connections.get(peer);
+        if (con == null) {
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Connection requested to: %s on: %s ignored as there is no heartbeat connection found",
+                                        peer, identity));
+            }
+        }
+        if (con instanceof HeartbeatConnection) {
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("Converting connection: " + con);
+            }
+            convertToMessageConnection((HeartbeatConnection) con);
+        } else {
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("Connection already established: " + con);
+            }
+        }
     }
 
     /**
@@ -487,6 +510,10 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
 
     public View getView() {
         return connectionView;
+    }
+
+    public synchronized boolean isIgnoring(Identity id) {
+        return testable && ignoring.contains(id);
     }
 
     /**
@@ -686,18 +713,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             removeConnection(con);
         }
         msgConDelayedDelete.clear();
-    }
-
-    private Heartbeat prepareHeartbeat(long timenow) {
-        /**
-         * prepare the heartbeat with the latest information
-         */
-        heartbeat.setMsgLinks(msgLinks);
-        heartbeat.setTime(timenow);
-        heartbeat.setView(connectionView);
-        heartbeat.setViewNumber(viewNumber);
-        heartbeat.setCandidate(leaderMgr.getLeader());
-        return heartbeat;
     }
 
     public synchronized void setIgnoring(View ignoring) {
@@ -961,23 +976,26 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
     }
 
-    @Override
-    public synchronized void connectTo(Identity peer) {
-        Connection con = connections.get(peer);
-        if (con == null) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Connection requested to: %s on: %s ignored as there is no heartbeat connection found",
-                                        peer, identity));
-            }
-        }
-        if (con instanceof HeartbeatConnection) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Converting connection: " + con);
-            }
-            convertToMessageConnection((HeartbeatConnection) con);
-        } else {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Connection already established: " + con);
+    private Heartbeat prepareHeartbeat(long timenow) {
+        /**
+         * prepare the heartbeat with the latest information
+         */
+        heartbeat.setMsgLinks(msgLinks);
+        heartbeat.setTime(timenow);
+        heartbeat.setView(connectionView);
+        heartbeat.setViewNumber(viewNumber);
+        heartbeat.setCandidate(leaderMgr.getLeader());
+        return heartbeat;
+    }
+
+    private void reconnect() {
+        for (int node : connectionView) {
+            if (node < identity.id) {
+                Connection con = connections.get(new Identity(identity.magic,
+                                                              node, 0));
+                if (con == null || con instanceof HeartbeatConnection) {
+                    connect(node);
+                }
             }
         }
     }
