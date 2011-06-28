@@ -61,9 +61,10 @@ abstract public class PartitionTest extends TestCase {
     }
 
     public static class Node extends NodeData {
+        static final Logger   log = Logger.getLogger(Node.class.getCanonicalName());
+        
         int            cardinality;
         CountDownLatch latch;
-        final Logger   log = Logger.getLogger(Node.class.getCanonicalName());
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);

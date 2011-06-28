@@ -109,6 +109,7 @@ public class SystemView {
                 seeds.add(seed);
             }
         }
+        log.info(format("System view initialized for: %s, seeds: %s", localAddress, seeds));
     }
 
     /**

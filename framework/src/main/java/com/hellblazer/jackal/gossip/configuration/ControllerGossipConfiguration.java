@@ -58,7 +58,7 @@ import com.hellblazer.jackal.gossip.udp.UdpCommunications;
 @Configuration
 public class ControllerGossipConfiguration {
 
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws Exception {
         new AnnotationConfigApplicationContext(
                                                ControllerGossipConfiguration.class);
     }

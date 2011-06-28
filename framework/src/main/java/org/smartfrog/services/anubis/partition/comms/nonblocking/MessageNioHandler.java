@@ -684,8 +684,10 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * There must be a valid connection (heartbeat connection)
          */
         if (!connectionSet.getView().contains(hbmsg.getSender())) {
-            log.severe(format("%s did not have incoming connection in the connection set",
-                              me));
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(format("%s did not have incoming connection for %s in the connection set",
+                                 me, hbmsg.getSender()));
+            }
             shutdown();
             return;
         }
@@ -738,9 +740,9 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          * do log its occurance.
          */
         if (!hbmsg.getMsgLinks().contains(me.id)) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.warning(format("%s incoming connection from %s when neither end wants the connection",
-                                   me, con.getSender()));
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("%s incoming connection from %s when neither end wants the connection",
+                                  me, con.getSender()));
                 // next two lines removed to allow this case
                 // shutdown();
                 // return;

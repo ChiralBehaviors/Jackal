@@ -179,7 +179,10 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          */
         connections.put(identity, self);
         connectionView.add(identity);
-        this.alwaysReconnect = alwaysReconnect;
+        this.alwaysReconnect = true;
+
+        log.info(String.format("Connection set: %s started on: %s", identity,
+                               connectionServer.getAddress()));
     }
 
     /**
@@ -311,13 +314,16 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                 log.finer("Initiating connection to: " + id + " on: "
                           + identity.id);
             }
-            getConnectionServer().initiateConnection(identity, mcon, heartbeat);
+            getConnectionServer().initiateConnection(identity,
+                                                     mcon,
+                                                     prepareHeartbeat(heartbeat.getTime()));
         } else {
             if (log.isLoggable(Level.FINER)) {
                 log.finer(String.format("Waiting for callback from: %s on: %s",
                                         id, identity));
             }
-            heartbeatComms.requestConnect(heartbeat, node);
+            heartbeatComms.requestConnect(prepareHeartbeat(heartbeat.getTime()),
+                                          node);
         }
 
         /**
@@ -328,24 +334,8 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     @Override
-    public synchronized void connectTo(Identity peer) {
-        Connection con = connections.get(peer);
-        if (con == null) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Connection requested to: %s on: %s ignored as there is no heartbeat connection found",
-                                        peer, identity));
-            }
-        }
-        if (con instanceof HeartbeatConnection) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Converting connection: " + con);
-            }
-            convertToMessageConnection((HeartbeatConnection) con);
-        } else {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Connection already established: " + con);
-            }
-        }
+    public void connectTo(Identity peer) {
+        connect(peer.id);
     }
 
     /**
@@ -398,7 +388,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                 mcon.setIgnoring(true);
             }
 
-            getConnectionServer().initiateConnection(identity, mcon, heartbeat);
+            getConnectionServer().initiateConnection(identity,
+                                                     mcon,
+                                                     prepareHeartbeat(heartbeat.getTime()));
         }
     }
 
@@ -458,7 +450,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
      * @return - the heartbeat
      */
     public Heartbeat getHeartbeat() {
-        return heartbeat;
+        return prepareHeartbeat(heartbeat.getTime());
     }
 
     public long getInterval() {
@@ -601,7 +593,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             Candidate can = leaderProtocolFactory.createCandidate(hb);
             HeartbeatProtocol hbp = heartbeatProtocolFactory.createProtocol(hb,
                                                                             this,
-                                                                            heartbeat);
+                                                                            prepareHeartbeat(heartbeat.getTime()));
             con = new HeartbeatConnection(identity, this, hbp, can);
             if (log.isLoggable(Level.FINEST)) {
                 log.finest(String.format("Adding heartbeat connection: %s at: %s ",

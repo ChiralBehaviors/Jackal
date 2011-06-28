@@ -37,7 +37,20 @@
 				<configuration>
 					<forkMode>always</forkMode>
 				</configuration>
-			</plugin>
+			</plugin> 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.1</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                        	<mainClass>org.smartfrog.services.anubis.partition.test.controller.gui.PartitionManager</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin> 
 		</plugins>
 	</build>
 </project>

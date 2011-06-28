@@ -134,7 +134,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                        log.log(Level.WARNING, "Uncaught exception", e);
                     }
                 });
                 return daemon;
@@ -152,7 +152,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                        log.log(Level.WARNING, "Uncaught exception", e);
                     }
                 });
                 return daemon;
