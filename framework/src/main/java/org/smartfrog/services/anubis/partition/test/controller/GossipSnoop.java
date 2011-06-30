@@ -93,6 +93,7 @@ public class GossipSnoop {
             public void run() {
                 try {
                     update();
+                    underlying.sendHeartbeat(state);
                 } catch (Throwable e) {
                     log.log(Level.WARNING, "Problem updating", e);
                 }

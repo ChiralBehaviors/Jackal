@@ -122,11 +122,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         interval = gossipInterval;
         intervalUnit = unit;
         fdFactory = failureDetectorFactory;
-        scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+        scheduler = Executors.newScheduledThreadPool(2, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
+                int count = 0;
                 Thread daemon = new Thread(r,
-                                           "Anubis: Gossip heartbeat servicing thread");
+                                           "Anubis: Gossip heartbeat servicing thread "
+                                                   + count++);
                 daemon.setDaemon(true);
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
@@ -223,7 +225,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             gossipWithTheDead(digests);
             gossipWithSeeds(digests, member);
         }
-        checkStatus();
     }
 
     /**
@@ -315,6 +316,12 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
                                                                         view.getLocalAddress());
         localState.updateState(heartbeatState);
+        scheduler.execute(new Runnable() {
+            @Override
+            public void run() {
+                checkStatus();
+            }
+        });
     }
 
     @Override
