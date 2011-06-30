@@ -109,7 +109,8 @@ public class SystemView {
                 seeds.add(seed);
             }
         }
-        log.info(format("System view initialized for: %s, seeds: %s", localAddress, seeds));
+        log.info(format("System view initialized for: %s, seeds: %s",
+                        localAddress, seeds));
     }
 
     /**
@@ -219,13 +220,16 @@ public class SystemView {
             return null;
         }
 
-        if (live.size() == 0) {
-            return getRandomMember(seeds);
-        }
-        if (entropy.nextDouble() <= (seeds.size() / (double) (live.size() + unreachable.size()))) {
-            return getRandomMember(seeds);
-        }
-        return null;
+        InetSocketAddress seed = null;
+        do {
+            if (live.size() == 0) {
+                seed = getRandomMember(seeds);
+            }
+            if (entropy.nextDouble() <= (seeds.size() / (double) (live.size() + unreachable.size()))) {
+                seed = getRandomMember(seeds);
+            }
+        } while (localAddress == seed);
+        return seed;
     }
 
     /**

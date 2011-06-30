@@ -163,11 +163,6 @@ public class MulticastComms extends Thread {
         sock.close();
     }
 
-    @Override
-    public void start() {
-        super.start();
-    }
-
     private DatagramPacket bytesToPacket(byte[] bytes, InetAddress address,
                                          int port) {
         return new DatagramPacket(bytes, bytes.length, address, port);

@@ -32,10 +32,10 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
  * 
  */
 public class GraphicNodeData extends NodeData {
-    private NodeButton     button;
-    private ColorAllocator colorAllocator;
-    private Color          partitionColor = Color.lightGray;
-    private NodeFrame      window;
+    private final NodeButton     button;
+    private final ColorAllocator colorAllocator;
+    private Color                partitionColor = Color.lightGray;
+    private NodeFrame            window;
 
     public GraphicNodeData(Heartbeat hb, ColorAllocator colorAllocator,
                            Controller controller) {
@@ -78,11 +78,13 @@ public class GraphicNodeData extends NodeData {
             window.update(partition, view, leader, ignoring, heartbeatInterval,
                           timeout, stats, threadsInfo);
         }
-        button.setBackground(partitionColor);
-        if (partition.isStable()) {
-            button.setForeground(Color.black);
-        } else {
-            button.setForeground(Color.yellow);
+        if (button != null) {
+            button.setBackground(partitionColor);
+            if (partition.isStable()) {
+                button.setForeground(Color.black);
+            } else {
+                button.setForeground(Color.yellow);
+            }
         }
     }
 

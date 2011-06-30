@@ -87,7 +87,7 @@ public class ControllerGossipConfiguration {
 
     @Bean
     public FailureDetectorFactory failureDetectorFactory() {
-        return phiAccrualFailureDetectorFactory();
+        return adaptiveAccrualFailureDetectorFactory();
     }
 
     @Bean
@@ -132,14 +132,14 @@ public class ControllerGossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
+        return new AdaptiveFailureDetectorFactory(0.90, 1000, 0.5,
                                                   heartbeatInterval()
                                                           * heartbeatTimeout(),
-                                                  200, 1.0);
+                                                  20, 100);
     }
 
     protected Controller constructController() throws UnknownHostException {
-        return new Controller(timer(), 1000, 300000, partitionIdentity(),
+        return new Controller(timer(), 1000, 30000, partitionIdentity(),
                               heartbeatTimeout(), heartbeatInterval());
     }
 
@@ -168,8 +168,8 @@ public class ControllerGossipConfiguration {
     }
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(3.5, 1000, heartbeatInterval(), 1,
-                                             1, false);
+        return new PhiFailureDetectorFactory(3.5, 1000, 2 * heartbeatInterval(), 3,
+                                             100, false);
     }
 
     protected FailureDetectorFactory timedFailureDetectorFactory() {

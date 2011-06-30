@@ -99,7 +99,7 @@ public class GossipConfiguration {
 
     @Bean
     public FailureDetectorFactory failureDetectorFactory() {
-        return phiAccrualFailureDetectorFactory();
+        return adaptiveAccrualFailureDetectorFactory();
     }
 
     @Bean
@@ -164,10 +164,10 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.75,
+        return new AdaptiveFailureDetectorFactory(0.90, 1000, 0.5,
                                                   heartbeatInterval()
                                                           * heartbeatTimeout(),
-                                                  200, 1.0);
+                                                  20, 100);
     }
 
     protected boolean alwaysReconnect() {
@@ -234,8 +234,8 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(12, 1000, heartbeatInterval(), 30,
-                                             1, false);
+        return new PhiFailureDetectorFactory(3.5, 1000, 2 * heartbeatInterval(), 3,
+                                             100, false);
     }
 
     protected int quarantineDelay() {

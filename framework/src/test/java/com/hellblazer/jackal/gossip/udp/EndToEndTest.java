@@ -17,7 +17,6 @@
  */
 package com.hellblazer.jackal.gossip.udp;
 
-import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -63,9 +62,7 @@ public class EndToEndTest extends TestCase {
         List<Gossip> members = new ArrayList<Gossip>();
         Collection<InetSocketAddress> seedHosts = new ArrayList<InetSocketAddress>();
         for (int i = 0; i < membership; i++) {
-            members.add(createCommunications(receivers[i], new Identity(666, i,
-                                                                        1),
-                                             seedHosts));
+            members.add(createCommunications(receivers[i], seedHosts));
             if (i == 0) { // always add first member
                 seedHosts.add(members.get(0).getLocalAddress());
             } else if (seedHosts.size() < maxSeeds) {
@@ -77,8 +74,23 @@ public class EndToEndTest extends TestCase {
         }
         System.out.println("Using " + seedHosts.size() + " seed hosts");
         try {
+            int id = 0;
             for (Gossip member : members) {
-                member.start();
+                Identity localIdentity = new Identity(666, id++, 1);
+                HeartbeatState heartbeat = new HeartbeatState(
+                                                              new Identity(666,
+                                                                           0, 0),
+                                                              false,
+                                                              member.getLocalAddress(),
+                                                              new NodeIdSet(),
+                                                              true,
+                                                              localIdentity,
+                                                              null, false,
+                                                              null,
+                                                              new NodeIdSet(),
+                                                              0, 0);
+                heartbeat.setTime(0);
+                member.start(heartbeat);
             }
             for (int i = 0; i < membership; i++) {
                 receivers[i].await(60, TimeUnit.SECONDS);
@@ -127,9 +139,7 @@ public class EndToEndTest extends TestCase {
     }
 
     protected Gossip createCommunications(ConnectionManager receiver,
-                                          Identity localIdentity,
-                                          Collection<InetSocketAddress> seedHosts)
-                                                                                  throws IOException {
+                                          Collection<InetSocketAddress> seedHosts) {
         UdpCommunications communications = new UdpCommunications(
                                                                  new InetSocketAddress(
                                                                                        0),
@@ -163,16 +173,6 @@ public class EndToEndTest extends TestCase {
         Gossip gossip = new Gossip(view, new Random(), communications, 1,
                                    TimeUnit.SECONDS, fdFactory);
         gossip.create(receiver);
-        HeartbeatState heartbeat = new HeartbeatState(
-                                                      new Identity(666, 0, 0),
-                                                      false,
-                                                      communications.getLocalAddress(),
-                                                      new NodeIdSet(), true,
-                                                      localIdentity, null,
-                                                      false, null,
-                                                      new NodeIdSet(), 0, 0);
-        heartbeat.setTime(0);
-        gossip.sendHeartbeat(heartbeat);
         return gossip;
     }
 

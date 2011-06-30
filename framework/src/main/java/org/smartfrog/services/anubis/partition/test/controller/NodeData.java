@@ -38,21 +38,22 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public class NodeData {
-    protected TestConnection    connection        = null;
-    protected Controller        controller        = null;
-    protected long              heartbeatInterval = 0;
-    protected View              ignoring          = new BitView();
-    protected long              lastHB            = 0;
-    protected long              lastReceive       = 0;
-    protected int               leader            = -1;
-    private static final Logger log               = Logger.getLogger(NodeData.class.getCanonicalName());
-    protected Identity          nodeId            = null;
-    protected View              partition         = new BitView();
-    protected StatsMsg          stats             = null;
-    protected ThreadsMsg        threadsInfo       = null;
-    protected long              threadsInfoExpire = 0;
-    protected long              timeout           = 0;
-    protected View              view              = null;
+    private static final Logger       log               = Logger.getLogger(NodeData.class.getCanonicalName());
+    
+    protected volatile TestConnection connection;
+    protected final Controller        controller;
+    protected volatile long           heartbeatInterval = 0;
+    protected volatile View           ignoring          = new BitView();
+    protected volatile long           lastHB            = 0;
+    protected volatile long           lastReceive       = 0;
+    protected volatile int            leader            = -1;
+    protected final Identity          nodeId;
+    protected volatile View           partition         = new BitView();
+    protected volatile StatsMsg       stats             = null;
+    protected volatile ThreadsMsg     threadsInfo       = null;
+    protected volatile long           threadsInfoExpire = 0;
+    protected volatile long           timeout           = 0;
+    protected volatile View           view              = null;
 
     public NodeData(Heartbeat hb, Controller controller) {
         this.controller = controller;
@@ -64,6 +65,7 @@ public class NodeData {
     }
 
     public void deliverObject(Object obj) {
+        lastReceive = System.currentTimeMillis();
         if (obj instanceof PartitionMsg) {
             PartitionMsg msg = (PartitionMsg) obj;
             partitionNotification(msg.partition, msg.leader);
@@ -136,9 +138,9 @@ public class NodeData {
                 view = hb.getView();
                 update();
             }
-            //System.out.println("Heartbeat from Node" + nodeId.id + " stamped " + lastHB);
+            // System.out.println("Heartbeat from Node" + nodeId.id + " stamped " + lastHB);
         } else {
-            //System.out.println("Heartbeat from Node" + nodeId.id + " stamped " + hb.getTime() + " <==== This is out of order!!!!");
+            // System.out.println("Heartbeat from Node" + nodeId.id + " stamped " + hb.getTime() + " <==== This is out of order!!!!");
         }
         if (connection == null) {
             connectIfAvailable(hb.getTestInterface());
@@ -203,6 +205,27 @@ public class NodeData {
         return "NodeData [id=" + nodeId + "]";
     }
 
+    private void connectIfAvailable(InetSocketAddress address) {
+
+        if (address == null) {
+            return;
+        }
+
+        connection = new TestConnection(address, this, nodeId, controller);
+        if (connection.connected()) {
+            connection.sendObject(new SetTimingMsg(
+                                                   controller.getHeartbeatInterval(),
+                                                   controller.getHeartbeatTimeout()));
+            connection.start();
+        } else {
+            connection = null;
+        }
+    }
+
+    private View partOrIgnoring(View partition, View ignoring) {
+        return new BitView().copyView(partition).merge(ignoring);
+    }
+
     protected void ignoring(IgnoringMsg ignoringMsg) {
         ignoring = ignoringMsg.ignoring;
         update();
@@ -245,27 +268,6 @@ public class NodeData {
         if (threadsInfoExpire < System.currentTimeMillis()) {
             threadsInfo = null;
         }
-    }
-
-    private void connectIfAvailable(InetSocketAddress address) {
-
-        if (address == null) {
-            return;
-        }
-
-        connection = new TestConnection(address, this, nodeId, controller);
-        if (connection.connected()) {
-            connection.sendObject(new SetTimingMsg(
-                                                   controller.getHeartbeatInterval(),
-                                                   controller.getHeartbeatTimeout()));
-            connection.start();
-        } else {
-            connection = null;
-        }
-    }
-
-    private View partOrIgnoring(View partition, View ignoring) {
-        return new BitView().copyView(partition).merge(ignoring);
     }
 
 }

@@ -28,7 +28,7 @@ public interface HeartbeatCommsIntf extends CommsTestIntf {
 
     void requestConnect(Heartbeat heartbeat, Identity node);
 
-    void start();
+    void start(Heartbeat initialHeartbeat);
 
     void terminate();
 }

@@ -3,9 +3,11 @@ package org.smartfrog.services.anubis.partition.test.controller.gui;
 import java.io.FileInputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -22,7 +24,7 @@ public class PartitionManager extends ControllerGossipConfiguration {
     static final String                          PROP_FILE_NAME = "load.properties";
 
     private static Collection<InetSocketAddress> seedHosts      = new ArrayList<InetSocketAddress>();
-    private static InetSocketAddress             endpoint;
+    private static InetAddress                   contactAddress;
 
     @Override
     protected Collection<InetSocketAddress> seedHosts()
@@ -31,13 +33,13 @@ public class PartitionManager extends ControllerGossipConfiguration {
     }
 
     @Override
-    protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
-        return endpoint;
+    public InetAddress contactHost() throws UnknownHostException {
+        return contactAddress;
     }
 
     @Override
     protected Controller constructController() throws UnknownHostException {
-        return new GraphicController(timer(), 1000, 300000,
+        return new GraphicController(timer(), 1000, 30000,
                                      partitionIdentity(), heartbeatTimeout(),
                                      heartbeatInterval());
     }
@@ -47,7 +49,25 @@ public class PartitionManager extends ControllerGossipConfiguration {
         Properties props = new Properties();
         props.load(fis);
 
-        endpoint = new InetSocketAddress(InetAddress.getLocalHost(), 0);
+        for (Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements();) {
+            for (Enumeration<InetAddress> addresses = ifaces.nextElement().getInetAddresses(); addresses.hasMoreElements();) {
+                InetAddress address = addresses.nextElement();
+                if (address.isAnyLocalAddress() || address.isLinkLocalAddress()
+                    || address.isLoopbackAddress()) {
+                    continue;
+                }
+                contactAddress = address;
+                break;
+            }
+            if (contactAddress != null) {
+                break;
+            }
+        }
+        if (contactAddress == null) {
+            System.out.println("Could not find a non local address for this machine");
+            System.exit(1);
+        }
+
         for (Object k : props.keySet()) {
             String key = (String) k;
             if (key.startsWith(SEED)) {
@@ -58,7 +78,7 @@ public class PartitionManager extends ControllerGossipConfiguration {
         @SuppressWarnings("unused")
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
                                                                                         PartitionManager.class);
-        while(true) {
+        while (true) {
             Thread.sleep(30000);
         }
     }

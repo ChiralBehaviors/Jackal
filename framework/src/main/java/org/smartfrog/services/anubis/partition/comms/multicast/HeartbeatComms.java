@@ -37,8 +37,7 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurityExcepti
 
 public class HeartbeatComms extends MulticastComms implements
         HeartbeatCommsIntf {
-    private static final Logger         log      = Logger.getLogger(HeartbeatComms.class.getCanonicalName())
-    ;
+    private static final Logger         log      = Logger.getLogger(HeartbeatComms.class.getCanonicalName());
     private final HeartbeatReceiver     connectionSet;
     /**
      * for testing purposes
@@ -106,6 +105,11 @@ public class HeartbeatComms extends MulticastComms implements
         return test != null && test.contains(id);
     }
 
+    @Override
+    public void requestConnect(Heartbeat heartbeat, Identity node) {
+        sendHeartbeat(heartbeat);
+    }
+
     /**
      * Send a heartbeat message. Logs a failure at the error level.
      * 
@@ -122,11 +126,6 @@ public class HeartbeatComms extends MulticastComms implements
         }
     }
 
-    @Override
-    public void requestConnect(Heartbeat heartbeat, Identity node) {
-        sendHeartbeat(heartbeat);
-    }
-
     /**
      * determine which nodes to ignore if any. This will be called from the
      * connection set - ignoring is used in a critical section in
@@ -138,6 +137,11 @@ public class HeartbeatComms extends MulticastComms implements
     @Override
     public void setIgnoring(View ignoringUpdate) {
         ignoring.set(ignoringUpdate.isEmpty() ? null : ignoringUpdate);
+    }
+
+    @Override
+    public void start(Heartbeat initialHeartbeat) {
+        super.start();
     }
 
     /**

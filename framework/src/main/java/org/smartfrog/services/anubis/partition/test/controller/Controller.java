@@ -37,8 +37,8 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import com.hellblazer.jackal.annotations.Deployed;
 
 public class Controller implements ConnectionManager {
-    private long                            checkPeriod;
-    private long                            expirePeriod;
+    private final long                      checkPeriod;
+    private final long                      expirePeriod;
     private BitView                         globalView = new BitView();
     protected long                          heartbeatInterval;
     protected long                          heartbeatTimeout;
@@ -75,6 +75,10 @@ public class Controller implements ConnectionManager {
         while (iter.hasNext()) {
             NodeData nodeData = iter.next();
             if (nodeData.olderThan(expireTime)) {
+                System.out.println(String.format("Removing node: %s, timeNow: %s expireTime: %s, lastReceive: %s",
+                                                 nodeData.nodeId, timeNow,
+                                                 expireTime,
+                                                 nodeData.lastReceive));
                 iter.remove();
                 globalView.remove(nodeData.getIdentity());
                 nodeData.removeNode();
@@ -164,13 +168,14 @@ public class Controller implements ConnectionManager {
     }
 
     public void removeNode(NodeData nodeData) {
+        nodes.remove(nodeData.getIdentity());
     }
 
     public synchronized void setTiming(long interval, long timeout) {
 
         /** set local timers **/
-        checkPeriod = interval;
-        expirePeriod = interval * timeout;
+        // checkPeriod = interval;
+        // expirePeriod = interval * timeout;
         if (task != null) {
             task.cancel();
         }

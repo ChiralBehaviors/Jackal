@@ -44,9 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
@@ -315,17 +312,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     @Override
     public void sendHeartbeat(Heartbeat heartbeat) {
         assert heartbeat.getSender().id >= 0;
-        boolean initial = false;
-        if (localState.getState() == null) {
-            initial = true;
-        }
         HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
                                                                         view.getLocalAddress());
         localState.updateState(heartbeatState);
-        if (initial) {
-            endpoints.put(view.getLocalAddress(), localState);
-        }
-        isDiscoveryOnly = heartbeatState.isDiscoveryOnly();
     }
 
     @Override
@@ -362,9 +351,13 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
-    @PostConstruct
-    public void start() {
+    public void start(Heartbeat initialHeartbeat) {
         if (running.compareAndSet(false, true)) {
+            HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(initialHeartbeat,
+                                                                            view.getLocalAddress());
+            localState.updateState(heartbeatState);
+            endpoints.put(view.getLocalAddress(), localState);
+            isDiscoveryOnly = heartbeatState.isDiscoveryOnly();
             communications.start();
             gossipTask = scheduler.scheduleWithFixedDelay(gossipTask(),
                                                           interval, interval,
@@ -373,7 +366,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
-    @PreDestroy
     public void terminate() {
         if (running.compareAndSet(true, false)) {
             communications.terminate();
@@ -435,9 +427,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 }
                 continue;
             }
-            if (endpoint.equals(view.getLocalAddress())) {
-                continue;
-            }
             if (view.isQuarantined(endpoint)) {
                 if (log.isLoggable(Level.FINEST)) {
                     log.finest(format("Ignoring gossip for %s because it is a quarantined endpoint",
@@ -445,16 +434,16 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 }
                 continue;
             }
-            Endpoint localState = endpoints.get(endpoint);
-            if (localState != null) {
-                if (remoteState.getTime() > localState.getTime()) {
-                    long oldTime = localState.getTime();
-                    localState.record(remoteState);
-                    notifyUpdate(localState.getState());
+            Endpoint local = endpoints.get(endpoint);
+            if (local != null) {
+                if (local != localState
+                    && remoteState.getTime() > local.getTime()) {
+                    long oldTime = local.getTime();
+                    local.record(remoteState);
+                    notifyUpdate(local.getState());
                     if (log.isLoggable(Level.FINEST)) {
                         log.finest(format("Updating heartbeat state time stamp to %s from %s for %s",
-                                          localState.getTime(), oldTime,
-                                          endpoint));
+                                          local.getTime(), oldTime, endpoint));
                     }
                 }
             } else {
@@ -575,7 +564,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 if (remoteTime == localTime) {
                     continue;
                 }
-                if (remoteTime > localTime) {
+                if (state != localState && remoteTime > localTime) {
                     deltaDigests.add(new Digest(digest.getAddress(), localTime));
                 } else if (remoteTime < localTime) {
                     if (!isDiscoveryOnly) {

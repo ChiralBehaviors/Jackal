@@ -68,6 +68,7 @@ public class GossipSnoop {
     @PostConstruct
     public void start() {
         if (updateTask == null) {
+            underlying.start(state);
             updateTask = scheduler.schedule(updateTask(), updateInterval, unit);
         }
     }

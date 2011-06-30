@@ -504,4 +504,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
     }
 
+    @Override
+    public void start(Heartbeat initialHeartbeat) {
+        start();
+    }
+
 }

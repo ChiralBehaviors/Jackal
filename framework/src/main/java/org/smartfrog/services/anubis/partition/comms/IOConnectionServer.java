@@ -32,7 +32,7 @@ public interface IOConnectionServer {
     public void initiateConnection(Identity id, MessageConnection con,
                                    Heartbeat hb);
 
-    public void start();
+    public void start(Heartbeat initialHeartbeat);
 
     public void terminate();
 }

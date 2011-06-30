@@ -166,7 +166,7 @@ public class UdpCommunications implements GossipCommunications {
     private final DatagramSocket  socket;
 
     public UdpCommunications(InetSocketAddress endpoint,
-                             ExecutorService msgDispatcher) throws IOException {
+                             ExecutorService msgDispatcher) {
         this(endpoint, msgDispatcher, DEFAULT_RECEIVE_BUFFER_MULTIPLIER,
              DEFAULT_SEND_BUFFER_MULTIPLIER);
     }
@@ -174,13 +174,27 @@ public class UdpCommunications implements GossipCommunications {
     public UdpCommunications(InetSocketAddress endpoint,
                              ExecutorService msgDispatcher,
                              int receiveBufferMultiplier,
-                             int sendBufferMultiplier) throws IOException {
+                             int sendBufferMultiplier) {
         dispatcher = msgDispatcher;
-        socket = new DatagramSocket(endpoint.getPort(), endpoint.getAddress());
-        socket.setReceiveBufferSize(MAX_SEG_SIZE * receiveBufferMultiplier);
-        socket.setReuseAddress(true);
-        socket.setSendBufferSize(MAX_SEG_SIZE * sendBufferMultiplier);
-        socket.setSendBufferSize(RECEIVE_TIME_OUT);
+        try {
+            socket = new DatagramSocket(endpoint.getPort(),
+                                        endpoint.getAddress());
+        } catch (SocketException e) {
+            log.severe(format("Unable to bind to: %s", endpoint));
+            throw new IllegalStateException(format("Unable to bind to: %s",
+                                                   endpoint), e);
+        }
+        try {
+            socket.setReceiveBufferSize(MAX_SEG_SIZE * receiveBufferMultiplier);
+            socket.setReuseAddress(true);
+            socket.setSendBufferSize(MAX_SEG_SIZE * sendBufferMultiplier);
+            socket.setSendBufferSize(RECEIVE_TIME_OUT);
+        } catch (SocketException e) {
+            log.severe(format("Unable to configure endpoint: %s", socket));
+            throw new IllegalStateException(
+                                            format("Unable to configure endpoint: %s",
+                                                   socket), e);
+        }
     }
 
     @Override
@@ -346,11 +360,11 @@ public class UdpCommunications implements GossipCommunications {
             case CONNECT_TO: {
                 handleConnectTo(buffer);
                 break;
-            } 
+            }
             default: {
                 if (log.isLoggable(Level.INFO)) {
                     log.info(format("invalid message type: %s from: %s",
-                                      msgType, this));
+                                    msgType, this));
                 }
             }
         }

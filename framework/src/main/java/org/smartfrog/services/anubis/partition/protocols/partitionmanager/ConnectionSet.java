@@ -193,7 +193,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     public void checkStability(long timenow) {
         if (!stablizing) {
             if (log.isLoggable(Level.FINER)) {
-                log.finer("Stablilizing @ " + timenow);
+                log.finer("Unstable @ " + timenow);
             }
             return;
         }
@@ -746,8 +746,8 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
 
         connectionView.setTimeStamp(identity.epoch);
         intervalExec.start();
-        connectionServer.start();
-        heartbeatComms.start();
+        connectionServer.start(heartbeat);
+        heartbeatComms.start(heartbeat);
     }
 
     @PreDestroy
