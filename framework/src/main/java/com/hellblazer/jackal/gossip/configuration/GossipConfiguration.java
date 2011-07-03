@@ -104,7 +104,8 @@ public class GossipConfiguration {
 
     @Bean
     public Gossip gossip() throws IOException {
-        return new Gossip(systemView(), new SecureRandom(), communications(),
+        return new Gossip(systemView(), new SecureRandom(),
+                          (int) heartbeatInterval(), communications(),
                           gossipInterval(), gossipIntervalTimeUnit(),
                           failureDetectorFactory());
     }
@@ -234,8 +235,9 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {
-        return new PhiFailureDetectorFactory(3.5, 1000, 2 * heartbeatInterval(), 3,
-                                             100, false);
+        return new PhiFailureDetectorFactory(3.5, 1000,
+                                             2 * heartbeatInterval(), 3, 100,
+                                             false);
     }
 
     protected int quarantineDelay() {

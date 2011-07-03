@@ -41,7 +41,7 @@ public class GossipTest extends TestCase {
         Digest digest3a = new Digest(new InetSocketAddress("google.com", 3), -1);
         Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), -1);
 
-        Gossip gossip = new Gossip(view, random, communications, 4,
+        Gossip gossip = new Gossip(view, random, 3, communications, 4,
                                    TimeUnit.DAYS, fdFactory);
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
@@ -96,7 +96,7 @@ public class GossipTest extends TestCase {
                                                    address4);
         state4.setTime(4);
 
-        Gossip gossip = new Gossip(view, random, communications, 4,
+        Gossip gossip = new Gossip(view, random, 3, communications, 4,
                                    TimeUnit.DAYS, fdFactory);
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
@@ -146,7 +146,7 @@ public class GossipTest extends TestCase {
                                                    new Identity(666, 4, 4),
                                                    address4);
 
-        Gossip gossip = new Gossip(view, random, communications, 4,
+        Gossip gossip = new Gossip(view, random, 3, communications, 4,
                                    TimeUnit.DAYS, fdFactory);
         gossip.create(receiver);
 
@@ -216,7 +216,7 @@ public class GossipTest extends TestCase {
 
         when(ep4.getTime()).thenReturn(5L);
 
-        Gossip gossip = new Gossip(view, random, communications, 4,
+        Gossip gossip = new Gossip(view, random, 3, communications, 4,
                                    TimeUnit.DAYS, fdFactory) {
 
             @Override

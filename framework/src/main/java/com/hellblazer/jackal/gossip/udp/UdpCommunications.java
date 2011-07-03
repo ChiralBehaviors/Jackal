@@ -258,12 +258,7 @@ public class UdpCommunications implements GossipCommunications {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Gossip digests from %s are : %s", this, digests));
         }
-        dispatcher.execute(new Runnable() {
-            @Override
-            public void run() {
-                gossip.gossip(digests, new GossipHandler(target));
-            }
-        });
+        gossip.gossip(digests, new GossipHandler(target));
     }
 
     private void handleReply(final InetSocketAddress target, ByteBuffer msg) {
@@ -286,13 +281,7 @@ public class UdpCommunications implements GossipCommunications {
             }
             digests.add(digest);
         }
-        dispatcher.execute(new Runnable() {
-            @Override
-            public void run() {
-                gossip.reply(digests, EMPTY_HEATBEAT_LIST,
-                             new GossipHandler(target));
-            }
-        });
+        gossip.reply(digests, EMPTY_HEATBEAT_LIST, new GossipHandler(target));
     }
 
     private void handleUpdate(ByteBuffer msg) {
@@ -310,12 +299,7 @@ public class UdpCommunications implements GossipCommunications {
         if (log.isLoggable(Level.FINEST)) {
             log.finest(format("Heartbeat state from %s is : %s", this, state));
         }
-        dispatcher.execute(new Runnable() {
-            @Override
-            public void run() {
-                gossip.update(asList(state));
-            }
-        });
+        gossip.update(asList(state));
     }
 
     private String prettyPrint(SocketAddress sender, byte[] bytes) {
@@ -420,33 +404,41 @@ public class UdpCommunications implements GossipCommunications {
      *            - the buffer to use to receive the datagram
      * @throws IOException
      */
-    private void service(DatagramPacket packet) throws IOException {
+    private void service(final DatagramPacket packet) throws IOException {
         socket.receive(packet);
-        ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(prettyPrint(packet.getSocketAddress(), buffer.array()));
-        } else if (log.isLoggable(Level.FINE)) {
-            log.fine("Received packet from: " + packet.getSocketAddress());
-        }
-        int magic = buffer.getInt();
-        if (MAGIC_NUMBER == magic) {
-            try {
-                processInbound((InetSocketAddress) packet.getSocketAddress(),
-                               buffer);
-            } catch (BufferOverflowException e) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.warning(format("Invalid message: %s",
-                                       prettyPrint(packet.getSocketAddress(),
-                                                   buffer.array())));
+
+        dispatcher.execute(new Runnable() {
+            @Override
+            public void run() {
+                ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
+                buffer.order(ByteOrder.BIG_ENDIAN);
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(prettyPrint(packet.getSocketAddress(),
+                                           buffer.array()));
+                } else if (log.isLoggable(Level.FINE)) {
+                    log.fine("Received packet from: "
+                             + packet.getSocketAddress());
+                }
+                int magic = buffer.getInt();
+                if (MAGIC_NUMBER == magic) {
+                    try {
+                        processInbound((InetSocketAddress) packet.getSocketAddress(),
+                                       buffer);
+                    } catch (BufferOverflowException e) {
+                        if (log.isLoggable(Level.WARNING)) {
+                            log.warning(format("Invalid message: %s",
+                                               prettyPrint(packet.getSocketAddress(),
+                                                           buffer.array())));
+                        }
+                    }
+                } else {
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest(format("Msg with invalid MAGIC header [%s] discarded",
+                                          magic));
+                    }
                 }
             }
-        } else {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("Msg with invalid MAGIC header [%s] discarded",
-                                  magic));
-            }
-        }
+        });
     }
 
     /**
@@ -458,12 +450,10 @@ public class UdpCommunications implements GossipCommunications {
         return new Runnable() {
             @Override
             public void run() {
-                byte[] inBytes = new byte[MAX_SEG_SIZE];
-                DatagramPacket packet = new DatagramPacket(inBytes,
-                                                           inBytes.length);
                 while (running.get()) {
                     try {
-                        service(packet);
+                        service(new DatagramPacket(new byte[MAX_SEG_SIZE],
+                                                   MAX_SEG_SIZE));
                     } catch (SocketException e) {
                         if ("Socket closed".equals(e.getMessage())) {
                             if (log.isLoggable(Level.FINE)) {

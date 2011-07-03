@@ -170,7 +170,7 @@ public class EndToEndTest extends TestCase {
                                                                          1,
                                                                          1.0,
                                                                          true);
-        Gossip gossip = new Gossip(view, new Random(), communications, 1,
+        Gossip gossip = new Gossip(view, new Random(), 3, communications, 1,
                                    TimeUnit.SECONDS, fdFactory);
         gossip.create(receiver);
         return gossip;
