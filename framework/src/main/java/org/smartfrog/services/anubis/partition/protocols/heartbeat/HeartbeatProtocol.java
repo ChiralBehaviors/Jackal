@@ -27,6 +27,8 @@ public interface HeartbeatProtocol extends HeartbeatReceiver, Timed, Sender,
         View {
     public boolean isNotTimely(long timenow, long timebound);
 
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound);
+
     public boolean isQuiesced(long timenow, long quiesce);
 
     public boolean measuresClockSkew();

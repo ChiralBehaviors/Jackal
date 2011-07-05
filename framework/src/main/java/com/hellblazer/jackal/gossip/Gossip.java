@@ -272,15 +272,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         return isIgnoring(endpoint.getState().getSender());
     }
 
-    public boolean record(long t, InetSocketAddress address) {
-        Endpoint endpoint = endpoints.get(address);
-        if (endpoint != null && !isIgnoring(endpoint.getState().getSender())) {
-            endpoint.record(t);
-            return true;
-        }
-        return false;
-    }
-
     /**
      * The second message in the gossip protocol. This message is sent in reply
      * to the initial gossip message sent by this node. The response is a list

@@ -170,4 +170,9 @@ public class SelfConnection extends BitView implements Connection,
     public int hashCode() {
         return me.hashCode();
     }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return isNotTimely(timenow, timebound);
+    }
 }

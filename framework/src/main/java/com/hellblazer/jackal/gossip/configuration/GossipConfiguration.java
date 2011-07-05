@@ -69,7 +69,7 @@ public class GossipConfiguration {
     @Bean
     public GossipCommunications communications() throws IOException {
         return new UdpCommunications(gossipEndpoint(),
-                                     Executors.newFixedThreadPool(3));
+                                     Executors.newFixedThreadPool(3), 20, 4);
     }
 
     @Bean
@@ -165,10 +165,10 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.90, 1000, 0.5,
+        return new AdaptiveFailureDetectorFactory(0.90, 1000, 0.45,
                                                   heartbeatInterval()
                                                           * heartbeatTimeout(),
-                                                  20, 100);
+                                                  3, 100);
     }
 
     protected boolean alwaysReconnect() {

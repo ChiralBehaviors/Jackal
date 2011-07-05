@@ -17,9 +17,11 @@
  */
 package com.hellblazer.jackal.gossip.fd;
 
+import java.util.logging.Logger;
+
 import com.hellblazer.jackal.gossip.FailureDetector;
+import com.hellblazer.jackal.util.MultiWindow;
 import com.hellblazer.jackal.util.SkipList;
-import com.hellblazer.jackal.util.Window;
 
 /**
  * An adaptive accural failure detector based on the paper:
@@ -29,18 +31,21 @@ import com.hellblazer.jackal.util.Window;
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
  * 
  */
-public class AdaptiveFailureDetector extends Window implements
+public class AdaptiveFailureDetector extends MultiWindow implements
         FailureDetector {
-    private double         last   = -1.0;
-    private final double   minInterval;
-    private final double   scale;
-    private final SkipList sorted = new SkipList();
-    private final double   threshold;
+    private static final Logger log         = Logger.getLogger(AdaptiveFailureDetector.class.getCanonicalName());
+
+    private double              last        = -1.0;
+    private final double        minInterval;
+    private final double        scale;
+    private final SkipList      sorted      = new SkipList();
+    private final double        threshold;
+    private double              sumOfDelays = 0.0;
 
     public AdaptiveFailureDetector(double convictionThreshold, int windowSize,
                                    double scale, long expectedSampleInterval,
                                    int initialSamples, double minimumInterval) {
-        super(windowSize);
+        super(windowSize, 2);
         threshold = convictionThreshold;
         minInterval = minimumInterval;
         this.scale = scale;
@@ -48,32 +53,40 @@ public class AdaptiveFailureDetector extends Window implements
         long now = System.currentTimeMillis();
         last = now - initialSamples * expectedSampleInterval;
         for (int i = 0; i < initialSamples; i++) {
-            record((long) (last + expectedSampleInterval));
+            record((long) (last + expectedSampleInterval), 0L);
         }
         assert last == now;
     }
 
     @Override
-    public void record(long now) {
+    public synchronized void record(long timeStamp, long delay) {
         if (last >= 0.0) {
-            double sample = now - last;
+            double sample = timeStamp - last;
             if (sample < minInterval) {
                 return;
             }
             sorted.add(sample);
+            sumOfDelays += delay;
             if (count == samples.length) {
-                sorted.remove(removeFirst());
+                double[] removed = removeFirst();
+                sorted.remove(removed[0]);
+                sumOfDelays -= removed[1];
             }
-            addLast(sample);
+            addLast(sample, delay);
         }
-        last = now;
+        last = timeStamp + (sumOfDelays / count);
     }
 
     @Override
-    public boolean shouldConvict(long now) {
+    public synchronized boolean shouldConvict(long now) {
         double delta = (now - last) * scale;
         double countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
         boolean convict = countLessThanEqualTo / count >= threshold;
+        if (convict) {
+            log.info(String.format("delta: %s, <= count: %s, count: %s, conviction: %s",
+                                   delta, countLessThanEqualTo, count,
+                                   super.toString()));
+        }
         return convict;
     }
 }

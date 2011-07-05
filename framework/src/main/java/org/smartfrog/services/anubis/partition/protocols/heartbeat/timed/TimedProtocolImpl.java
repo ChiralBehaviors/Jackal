@@ -220,4 +220,9 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
     public int hashCode() {
         return super.hashCode();
     }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return isNotTimely( timenow,  timebound);
+    }
 }

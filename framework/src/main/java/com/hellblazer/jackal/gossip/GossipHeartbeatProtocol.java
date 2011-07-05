@@ -166,7 +166,7 @@ public class GossipHeartbeatProtocol extends BitView implements
 
     @Override
     public void setTime(long t) {
-        gossip.record(t, address);
+        // gossip.record(t, address);
         time = t;
     }
 
@@ -176,12 +176,17 @@ public class GossipHeartbeatProtocol extends BitView implements
     }
 
     @Override
-    public int hashCode() { 
+    public int hashCode() {
         return address.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
         return super.equals(obj);
+    }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return timenow - time > timebound || time - timenow > timebound;
     }
 }

@@ -29,6 +29,7 @@ public class Load extends GossipConfiguration {
     private static Collection<InetSocketAddress> seedHosts      = new ArrayList<InetSocketAddress>();
     private static InetSocketAddress             gossipEndpoint;
     private static InetSocketAddress             contactEndpoint;
+    private static int                           id;
 
     @Override
     protected Collection<InetSocketAddress> seedHosts()
@@ -46,10 +47,24 @@ public class Load extends GossipConfiguration {
         return contactEndpoint;
     }
 
+    @Override
+    protected int node() {
+        if (id == -1) {
+            return super.node();
+        }
+        return id;
+    }
+
     public static void main(String[] argv) throws Exception {
         FileInputStream fis = new FileInputStream(PROP_FILE_NAME);
         Properties props = new Properties();
         props.load(fis);
+        String idString = props.getProperty("id");
+        if (idString != null) {
+            id = Integer.parseInt(idString);
+        } else {
+            id = -1;
+        }
         gossipEndpoint = null;
         InetSocketAddress localAddress = from(props.getProperty(ENDPOINT));
         for (Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements();) {
@@ -60,7 +75,7 @@ public class Load extends GossipConfiguration {
                     continue;
                 }
                 gossipEndpoint = new InetSocketAddress(address,
-                                                 localAddress.getPort());
+                                                       localAddress.getPort());
                 break;
             }
             if (gossipEndpoint != null) {
@@ -73,9 +88,9 @@ public class Load extends GossipConfiguration {
             System.exit(1);
         }
         System.out.println("My gossip endpoint: " + gossipEndpoint);
-        
+
         contactEndpoint = new InetSocketAddress(gossipEndpoint.getAddress(), 0);
-        
+
         for (Object k : props.keySet()) {
             String key = (String) k;
             if (key.startsWith(SEED)) {

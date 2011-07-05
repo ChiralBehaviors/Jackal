@@ -62,7 +62,7 @@ public class PhiAccrualFailureDetector implements FailureDetector {
         long now = System.currentTimeMillis();
         last = now - initialSamples * expectedSampleInterval;
         for (int i = 0; i < initialSamples; i++) {
-            record((long) (last + expectedSampleInterval));
+            record((long) (last + expectedSampleInterval), 0L);
         }
         assert last == now;
     }
@@ -71,7 +71,7 @@ public class PhiAccrualFailureDetector implements FailureDetector {
      * @see com.hellblazer.jackal.gossip.FailureDetector#record(long)
      */
     @Override
-    public void record(long now) {
+    public void record(long now, long delay) {
         final ReentrantLock myLock = stateLock;
         try {
             myLock.lockInterruptibly();

@@ -41,19 +41,19 @@ public class PhiAccrualFailureDetectorTest extends TestCase {
 
         long now = System.currentTimeMillis();
 
-        detector.record(now);
+        detector.record(now, 0L);
         now += inc;
 
-        detector.record(now);
+        detector.record(now, 0L);
         now += inc;
 
-        detector.record(now);
+        detector.record(now, 0L);
         now += inc;
 
-        detector.record(now);
+        detector.record(now, 0L);
         now += inc;
 
-        detector.record(now);
+        detector.record(now, 0L);
 
         now += inc;
 

@@ -41,7 +41,7 @@ public class TimedFailureDetector implements FailureDetector {
     }
 
     @Override
-    public void record(long now) {
+    public void record(long now, long delay) {
         last = now;
     }
 

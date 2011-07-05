@@ -447,4 +447,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         }
     }
 
+    @Override
+    public boolean isNotTimely(long timenow, long timebound) { 
+        return super.isNotTimelyMsgConnection(timenow, timebound);
+    }
+
 }

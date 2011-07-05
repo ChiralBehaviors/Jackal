@@ -38,7 +38,12 @@ public interface FailureDetector {
 
     /**
      * Record the arrival time of a heartbeat.
+     * 
+     * @param now
+     *            - the timestamp of the heartbeat
+     * @param delay
+     *            - the local delay perceived in receiving the heartbeat
      */
-    public abstract void record(long now);
+    public abstract void record(long now, long delay);
 
 }

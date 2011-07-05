@@ -88,12 +88,8 @@ public class Endpoint {
     public void record(HeartbeatState newHbState) {
         if (heartbeat != newHbState) {
             heartbeat = newHbState;
-            fd.record(heartbeat.getTime());
+            fd.record(heartbeat.getTime(), System.currentTimeMillis());
         }
-    }
-
-    public void record(long now) {
-        fd.record(now);
     }
 
     public void setCommunications(GossipMessages communications) {

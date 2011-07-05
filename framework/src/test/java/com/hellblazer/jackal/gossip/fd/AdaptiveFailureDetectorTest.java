@@ -27,7 +27,7 @@ public class AdaptiveFailureDetectorTest extends TestCase {
         for (int i = 0; i < 950; i++) {
             now += average;
             now += (variance / 2) - random.nextInt(variance);
-            detector.record(now);
+            detector.record(now, 0L);
         }
 
         assertEquals(false, detector.shouldConvict(now + variance));

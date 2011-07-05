@@ -273,4 +273,9 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
     public boolean winsAgainst(Candidate c) {
         return candidate.winsAgainst(c);
     }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return heartbeatProtocol.isNotTimely(timenow, timebound);
+    }
 }
