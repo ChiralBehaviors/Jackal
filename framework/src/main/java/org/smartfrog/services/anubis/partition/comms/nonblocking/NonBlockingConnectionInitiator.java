@@ -30,10 +30,10 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class NonBlockingConnectionInitiator {
 
-    private MessageConnection connection = null;
-    private HeartbeatMsg heartbeat = null;
-    private static final Logger log = Logger.getLogger(NonBlockingConnectionInitiator.class.getCanonicalName());
-    private WireSecurity wireSecurity = null;
+    private MessageConnection   connection   = null;
+    private HeartbeatMsg        heartbeat    = null;
+    private static final Logger log          = Logger.getLogger(NonBlockingConnectionInitiator.class.getCanonicalName());
+    private WireSecurity        wireSecurity = null;
 
     public NonBlockingConnectionInitiator(MessageConnection con,
                                           HeartbeatMsg hb, WireSecurity sec) {
@@ -66,6 +66,8 @@ public class NonBlockingConnectionInitiator {
         if (connection.assignImpl(impl)) {
             impl.start();
         } else {
+            log.info(String.format("Impl already assigned for outbound connection: %s",
+                                   connection));
             impl.terminate();
         }
     }

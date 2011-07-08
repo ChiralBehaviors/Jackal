@@ -25,6 +25,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -39,9 +41,11 @@ import org.smartfrog.services.anubis.partition.test.msg.TimingMsg;
 import org.smartfrog.services.anubis.partition.test.stats.StatsManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 
 public class TestMgr {
-
+    private static final Logger       log           = Logger.getLogger(TestMgr.class.getCanonicalName());
     private static final long         STATSRATE     = 5;
     private InetSocketAddress         connectionAddress;
     private final Set<TestConnection> connections   = new CopyOnWriteArraySet<TestConnection>();
@@ -51,7 +55,7 @@ public class TestMgr {
     private volatile long             lastStats     = 0;
     private PartitionManager          partitionManager;
     private final StatsManager        statistics    = new StatsManager();
-    private volatile long             statsInterval = STATSRATE * 1000;                         // adjusts with heartbeat
+    private volatile long             statsInterval = STATSRATE * 1000;                                  // adjusts with heartbeat
     // timing
     private boolean                   testable      = true;
 
@@ -226,6 +230,20 @@ public class TestMgr {
     public void updateTiming(TestConnection tc) {
         tc.sendObject(new TimingMsg(connectionSet.getInterval(),
                                     connectionSet.getTimeout()));
+    }
+
+    public void updateHeartbeat(Heartbeat hb) {
+        HeartbeatMsg heartbeatMsg = HeartbeatMsg.toHeartbeatMsg(hb);
+        byte[] wire;
+        try {
+            wire = heartbeatMsg.toWire();
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Unable to deserialize heartbeat", e);
+            return;
+        }
+        for (TestConnection tc : connections) {
+            tc.send(wire);
+        }
     }
 
 }

@@ -96,13 +96,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             }
 
             if (connectionImpl != null) {
-                if (log.isLoggable(Level.SEVERE)) {
-                    Exception e = new Exception();
-                    e.fillInStackTrace();
-                    log.log(Level.SEVERE,
-                            me
-                                    + " attempt to assign a new implementation when one exists",
-                            e);
+                if (log.isLoggable(Level.INFO)) {
+                    log.log(Level.INFO,
+                            String.format("Attempt to assign a new implementation when one exists for %s",
+                                          this));
                 }
                 return false;
             }
@@ -265,7 +262,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             Exception e = new Exception();
             e.fillInStackTrace();
             log.log(Level.SEVERE,
-                    me + " sendBytes(WireMsg) called with null parameter ", e);
+                    String.format("SendBytes(WireMsg) called with null parameter on: %s",
+                                  this), e);
             return;
         }
 
@@ -419,8 +417,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                 closingImpl.send(connectionSet.getHeartbeat().toClose());
             } catch (Exception ex) {
                 log.log(Level.SEVERE,
-                        me + "failed to marshall close message - not sent to "
-                                + getSender(), ex);
+                        String.format("%s failed to marshall close message - not sent to %s",
+                                      me, getSender()), ex);
             }
         }
     }
@@ -448,7 +446,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     }
 
     @Override
-    public boolean isNotTimely(long timenow, long timebound) { 
+    public boolean isNotTimely(long timenow, long timebound) {
         return super.isNotTimelyMsgConnection(timenow, timebound);
     }
 

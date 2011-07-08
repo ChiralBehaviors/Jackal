@@ -40,7 +40,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -92,10 +91,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private final AtomicReference<View>                      ignoring        = new AtomicReference<View>();
     private final AtomicBoolean                              running         = new AtomicBoolean();
     private final FailureDetectorFactory                     fdFactory;
-    private volatile boolean                                 isDiscoveryOnly = false;                                               // TODO fix this ugly hack
-    private final int                                        checkInterval;
-    private final AtomicInteger                              heartbeatCount  = new AtomicInteger(
-                                                                                                 0);
+    private volatile boolean                                 isDiscoveryOnly = false;             
 
     /**
      * 
@@ -105,9 +101,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the system management view of the member state
      * @param random
      *            - a source of entropy
-     * @param statusCheckInterval
-     *            - the period, in heartbeats, to check the status of other
-     *            members
      * @param communicationsService
      *            - the service which creates outbound connections to other
      *            members
@@ -119,7 +112,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the factory producing instances of the failure detector
      */
     public Gossip(SystemView systemView, Random random,
-                  int statusCheckInterval,
                   GossipCommunications communicationsService,
                   int gossipInterval, TimeUnit unit,
                   FailureDetectorFactory failureDetectorFactory) {
@@ -130,7 +122,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         interval = gossipInterval;
         intervalUnit = unit;
         fdFactory = failureDetectorFactory;
-        checkInterval = statusCheckInterval;
         scheduler = Executors.newScheduledThreadPool(2, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
@@ -234,6 +225,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             gossipWithTheDead(digests);
             gossipWithSeeds(digests, member);
         }
+        checkStatus();
     }
 
     /**
@@ -316,14 +308,6 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
                                                                         view.getLocalAddress());
         localState.updateState(heartbeatState);
-        if (heartbeatCount.incrementAndGet() % checkInterval == 0) {
-            scheduler.execute(new Runnable() {
-                @Override
-                public void run() {
-                    checkStatus();
-                }
-            });
-        }
     }
 
     @Override

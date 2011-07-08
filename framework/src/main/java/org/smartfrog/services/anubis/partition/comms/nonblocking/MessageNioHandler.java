@@ -703,12 +703,11 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         if (con instanceof MessageConnection) {
             if (((MessageConnection) con).assignImpl(this)) {
                 messageConnection = (MessageConnection) con;
-                // commented out by ed@hplb since this is not a thread anymore
-                // setName("Anubis: node " + con.getSender().id +
-                // " Connection Comms");
                 messageConnection.deliver(bytes);
             } else {
-                log.severe(format("%s failed to assign incoming connection", me));
+                log.severe(format("Failed to assign existing msg connection impl: %s",
+                                  con));
+                silent();
                 shutdown();
             }
             return;
@@ -719,7 +718,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
          */
         if (!(con instanceof HeartbeatConnection)) {
             log.severe(format("%s ?!? incoming connection is in connection set, but not heartbeat or message type",
-                              me));
+                              this));
             shutdown();
             return;
         }
@@ -743,9 +742,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             if (log.isLoggable(Level.FINEST)) {
                 log.finest(format("%s incoming connection from %s when neither end wants the connection",
                                   me, con.getSender()));
-                // next two lines removed to allow this case
-                // shutdown();
-                // return;
             }
         }
 
@@ -763,7 +759,12 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         messageConnection = new MessageConnection(me, connectionSet,
                                                   hbcon.getProtocol(),
                                                   hbcon.getCandidate());
-        messageConnection.assignImpl(this);
+        if (!messageConnection.assignImpl(this)) {
+            log.severe(format("Failed to assign incoming connection on heartbeat: %s",
+                              messageConnection));
+            silent();
+            shutdown();
+        }
         messageConnection.deliver(bytes);
 
         /**
@@ -789,9 +790,6 @@ public class MessageNioHandler implements SendingListener, IOConnection,
             shutdown();
             return;
         }
-        // commented out by ed@hplb since this is nto a thread anymore
-        // setName("Anubis: node " + messageConnection.getSender().id +
-        // " Connection Comms");
     }
 
     private void resetReadingVars() {

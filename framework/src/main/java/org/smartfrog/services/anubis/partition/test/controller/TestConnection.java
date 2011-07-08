@@ -26,6 +26,8 @@ import java.util.logging.Logger;
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionComms;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.Wire;
+import org.smartfrog.services.anubis.partition.wire.WireMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 
 public class TestConnection extends ConnectionComms {
@@ -55,10 +57,24 @@ public class TestConnection extends ConnectionComms {
      */
     @Override
     public void deliver(byte[] bytes) {
+        WireMsg wire;
+        try {
+            wire = Wire.fromWire(bytes);
+        } catch (Exception ex) {
+            if (log.isLoggable(Level.WARNING)) {
+                log.log(Level.WARNING, "unable to deserialize message", ex);
+            }
+            return;
+        }
+        
+        if (wire instanceof Heartbeat) {
+            controller.receiveHeartbeat((Heartbeat) wire);
+            return;
+        }
 
         SerializedMsg msg = null;
         try {
-            msg = (SerializedMsg) Wire.fromWire(bytes);
+            msg = (SerializedMsg) wire;
             Object obj = msg.getObject();
 
             controller.deliverObject(obj, nodeData);

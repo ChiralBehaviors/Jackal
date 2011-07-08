@@ -17,8 +17,6 @@
  */
 package com.hellblazer.jackal.gossip.fd;
 
-import java.util.logging.Logger;
-
 import com.hellblazer.jackal.gossip.FailureDetector;
 import com.hellblazer.jackal.util.MultiWindow;
 import com.hellblazer.jackal.util.SkipList;
@@ -33,7 +31,6 @@ import com.hellblazer.jackal.util.SkipList;
  */
 public class AdaptiveFailureDetector extends MultiWindow implements
         FailureDetector {
-    private static final Logger log         = Logger.getLogger(AdaptiveFailureDetector.class.getCanonicalName());
 
     private double              last        = -1.0;
     private final double        minInterval;
@@ -82,11 +79,6 @@ public class AdaptiveFailureDetector extends MultiWindow implements
         double delta = (now - last) * scale;
         double countLessThanEqualTo = sorted.countLessThanEqualTo(delta);
         boolean convict = countLessThanEqualTo / count >= threshold;
-        if (convict) {
-            log.info(String.format("delta: %s, <= count: %s, count: %s, conviction: %s",
-                                   delta, countLessThanEqualTo, count,
-                                   super.toString()));
-        }
         return convict;
     }
 }

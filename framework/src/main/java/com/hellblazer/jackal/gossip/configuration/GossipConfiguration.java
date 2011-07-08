@@ -54,6 +54,7 @@ import com.hellblazer.jackal.gossip.GossipHeartbeatProtocolFactory;
 import com.hellblazer.jackal.gossip.SystemView;
 import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
+import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
 
@@ -99,13 +100,12 @@ public class GossipConfiguration {
 
     @Bean
     public FailureDetectorFactory failureDetectorFactory() {
-        return adaptiveAccrualFailureDetectorFactory();
+        return simpleTimeoutFailureDetectorFactory();
     }
 
     @Bean
     public Gossip gossip() throws IOException {
-        return new Gossip(systemView(), new SecureRandom(),
-                          (int) heartbeatInterval(), communications(),
+        return new Gossip(systemView(), new SecureRandom(), communications(),
                           gossipInterval(), gossipIntervalTimeUnit(),
                           failureDetectorFactory());
     }
@@ -169,6 +169,12 @@ public class GossipConfiguration {
                                                   heartbeatInterval()
                                                           * heartbeatTimeout(),
                                                   3, 100);
+    }
+
+    protected FailureDetectorFactory simpleTimeoutFailureDetectorFactory() {
+        return new SimpleTimeoutFailureDetectorFactory(heartbeatTimeout()
+                                                       * heartbeatInterval()
+                                                       * 3);
     }
 
     protected boolean alwaysReconnect() {

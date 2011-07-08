@@ -108,13 +108,6 @@ public class TestConnection extends ConnectionComms implements
         }
     }
 
-    @Override
-    public void send(byte[] bytes) {
-        log.log(Level.SEVERE,
-                "Should not call send(byte[] bytes) in TestConnection",
-                new Exception());
-    }
-
     public void sendObject(Object obj) {
         try {
             SerializedMsg msg = new SerializedMsg(obj);

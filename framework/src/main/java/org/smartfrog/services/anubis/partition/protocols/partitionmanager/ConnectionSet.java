@@ -118,15 +118,15 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private volatile long                   stability           = 0;
     private volatile boolean                stablizing          = false;
     private volatile boolean                terminated          = false;
-
-    /**
-     * Link to test manager
-     */
-    private volatile boolean                testable            = false;
     private volatile long                   timeout             = 0;
     private volatile long                   viewNumber          = 0;
 
     private final boolean                   alwaysReconnect;
+
+    /**
+     * Link to test manager
+     */
+    private volatile TestMgr                testMgr;
 
     public ConnectionSet(InetSocketAddress connectionAddress,
                          Identity identity,
@@ -505,7 +505,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     public synchronized boolean isIgnoring(Identity id) {
-        return testable && ignoring.contains(id);
+        return testMgr != null && ignoring.contains(id);
     }
 
     /**
@@ -627,7 +627,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     public void registerTestManager(TestMgr tm) {
         heartbeat.setTestInterface(tm.getAddress());
         intervalExec.registerTestMgr(tm);
-        testable = true;
+        testMgr = tm;
     }
 
     /**
@@ -705,10 +705,14 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             removeConnection(con);
         }
         msgConDelayedDelete.clear();
+
+        if (testMgr != null) {
+            testMgr.updateHeartbeat(heartbeat);
+        }
     }
 
     public synchronized void setIgnoring(View ignoring) {
-        if (!testable) {
+        if (testMgr == null) {
             return;
         }
         if (ignoring == null) {
