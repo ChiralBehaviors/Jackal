@@ -92,7 +92,7 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
             /**
              * Extract piggy-backed messaging information to see if this
              * connection should be converted to a messaging connection
-             */
+             */ 
             if (hb.getMsgLinks().contains(me.id)) {
                 if (log.isLoggable(Level.FINER)) {
                     log.finer(String.format("converting heart beat connection to message connection: %s",
@@ -118,6 +118,11 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
     @Override
     public String toString() {
         return "HeartbeatConnection [from: " + me + " to:" + getId() + "]";
+    }
+
+    @Override
+    public boolean isSelf() {
+        return false;
     }
 
 }

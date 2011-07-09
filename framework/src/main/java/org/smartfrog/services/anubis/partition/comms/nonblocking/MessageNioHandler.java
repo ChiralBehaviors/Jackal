@@ -83,7 +83,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     private ByteBuffer                     rxHeader            = null;
     private boolean                        rxHeaderAlreadyRead = false;
     private ByteBuffer                     rxObject            = null;
-    private RxQueue                        rxQueue             = null;
+    private RxQueue<RxJob>                 rxQueue             = null;
     private SocketChannel                  sc                  = null;
     private Selector                       selector            = null;
     private long                           sendCount           = INITIAL_MSG_ORDER;
@@ -107,7 +107,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
     public MessageNioHandler(Selector selector, SocketChannel sc,
                              Vector<SelectionKey> deadKeys,
                              Vector<SelectionKey> writePendingKeys,
-                             RxQueue rxQueue, WireSecurity sec) {
+                             RxQueue<RxJob> rxQueue, WireSecurity sec) {
         if (log.isLoggable(Level.FINER)) {
             log.finer("MNH: Constructing a new MessageNioHandler");
         }
@@ -230,7 +230,7 @@ public class MessageNioHandler implements SendingListener, IOConnection,
         return mci;
     }
 
-    public RxQueue getRxQueue() {
+    public RxQueue<RxJob> getRxQueue() {
         return rxQueue;
     }
 

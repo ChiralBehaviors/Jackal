@@ -24,12 +24,12 @@ import java.util.logging.Logger;
 
 public class ConnectWorker extends Thread {
     private static final Logger log = Logger.getLogger(ConnectWorker.class.getCanonicalName());
-    private RxQueue rxQueue = null;
+    private RxQueue<MessageNioHandler> rxQueue = null;
 
     /**
      * worker thread
      */
-    public ConnectWorker(RxQueue rxQueue) {
+    public ConnectWorker(RxQueue<MessageNioHandler> rxQueue) {
         this.rxQueue = rxQueue;
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
@@ -49,7 +49,7 @@ public class ConnectWorker extends Thread {
 
         while (rxQueue.isOpen()) {
             try {
-                mnh = (MessageNioHandler) rxQueue.next();
+                mnh = rxQueue.next();
 
                 if (mnh != null) {
                     // got an object from the queue - do what needs to be done

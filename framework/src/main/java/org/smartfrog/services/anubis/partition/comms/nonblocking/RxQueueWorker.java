@@ -23,14 +23,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RxQueueWorker extends Thread {
-    private static final Logger log = Logger.getLogger(RxQueue.class.getCanonicalName());
-    private RxQueue rxQueue = null;
+    private static final Logger log     = Logger.getLogger(RxQueue.class.getCanonicalName());
+    private RxQueue<RxJob>      rxQueue = null;
 
     /**
      * worker thread taking rx objects off the queue and delivering that object
      * to anubis code
      */
-    public RxQueueWorker(RxQueue rxQueue) {
+    public RxQueueWorker(RxQueue<RxJob> rxQueue) {
         this.rxQueue = rxQueue;
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
@@ -47,7 +47,7 @@ public class RxQueueWorker extends Thread {
 
         while (rxQueue.isOpen()) {
             try {
-                rxJob = (RxJob) rxQueue.next();
+                rxJob = rxQueue.next();
 
                 if (rxJob != null) {
                     // got an object from the queue - deliver the object within to the appropriate mnh

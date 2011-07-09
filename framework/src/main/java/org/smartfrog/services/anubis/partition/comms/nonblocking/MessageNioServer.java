@@ -46,7 +46,7 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 public class MessageNioServer extends Thread implements IOConnectionServer {
     private InetSocketAddress                           connAdd            = null;
     private ConnectionSet                               connectionSet      = null;
-    private RxQueue                                     connectQueue       = null;
+    private RxQueue<MessageNioHandler>                  connectQueue       = null;
     private Vector<SelectionKey>                        deadKeys           = null;
 
     private Identity                                    me                 = null;
@@ -54,7 +54,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
     private Hashtable<SocketChannel, MessageNioHandler> pendingNewChannels = null;
     private final int                                   RX_WORKERS         = 4;
-    private RxQueue[]                                   rxQueue            = null;
+    private RxQueue<RxJob>[]                            rxQueue            = null;
     private int                                         rxQueueCounter     = 0;
     private Selector                                    selector           = null;
     private ServerSocketChannel                         server             = null;
@@ -72,6 +72,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
      * RX deserialized jobs and deliver them to the anubis layers. By default
      * there is only 1 decoupling thread.
      */
+    @SuppressWarnings("unchecked")
     public MessageNioServer(InetSocketAddress address, Identity id,
                             ConnectionSet cs, WireSecurity sec) {
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
@@ -121,7 +122,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         RxQueueWorker[] queueWorker = new RxQueueWorker[workerNumber];
         rxQueue = new RxQueue[workerNumber];
         for (int i = 0; i < workerNumber; ++i) {
-            rxQueue[i] = new RxQueue();
+            rxQueue[i] = new RxQueue<RxJob>();
             queueWorker[i] = new RxQueueWorker(rxQueue[i]);
             queueWorker[i].setName("Anubis: Nio RxQueueWorker #" + i
                                    + " (node " + me.id + ")");
@@ -132,7 +133,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
 
         // create a a thread to finish the connection of pending connections
         // new queue, RxQueue turns out to be a generic queue not specific to rxJobs...
-        connectQueue = new RxQueue();
+        connectQueue = new RxQueue<MessageNioHandler>();
         ConnectWorker connectWorker = new ConnectWorker(connectQueue);
         connectWorker.setName("Anubis: Nio Connection Assign (node " + me.id
                               + ")");
@@ -252,8 +253,8 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         }
     }
 
-    private RxQueue assignRxQueue() {
-        RxQueue retQueue = rxQueue[rxQueueCounter];
+    private RxQueue<RxJob> assignRxQueue() {
+        RxQueue<RxJob> retQueue = rxQueue[rxQueueCounter];
         ++rxQueueCounter;
         if (rxQueueCounter == RX_WORKERS) {
             rxQueueCounter = 0;

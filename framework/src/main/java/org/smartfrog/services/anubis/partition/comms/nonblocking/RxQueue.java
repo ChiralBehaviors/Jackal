@@ -19,20 +19,22 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.nonblocking;
 
-import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RxQueue {
+public class RxQueue<E> {
 
-    private boolean open;
-    private Vector<Object> thisQueue = null;
+    private final AtomicBoolean    open;
+    private final BlockingQueue<E> thisQueue;
 
     /**
      * Queue where received serialized objects are put on. Worker threads empty
      * that queue and deliver the object to anubis
      */
     public RxQueue() {
-        thisQueue = new Vector<Object>(10);
-        open = true;
+        thisQueue = new LinkedBlockingQueue<E>();
+        open = new AtomicBoolean(true);
     }
 
     /**
@@ -42,10 +44,9 @@ public class RxQueue {
      * @param objectToAdd
      *            rx object
      */
-    public synchronized void add(Object objectToAdd) {
-        if (open) {
+    public void add(E objectToAdd) {
+        if (open.get()) {
             thisQueue.add(objectToAdd);
-            notifyAll();
         }
     }
 
@@ -54,7 +55,7 @@ public class RxQueue {
      * 
      * @return boolean value, true if queue is empty, false otherwise
      */
-    public synchronized boolean isEmpty() {
+    public boolean isEmpty() {
         return thisQueue.isEmpty();
     }
 
@@ -63,8 +64,8 @@ public class RxQueue {
      * 
      * @return true iff the queue is open
      */
-    public synchronized boolean isOpen() {
-        return open;
+    public boolean isOpen() {
+        return open.get();
     }
 
     /**
@@ -72,16 +73,12 @@ public class RxQueue {
      * 
      * @return the next item or null if the queue is closed.
      */
-    public synchronized Object next() {
-        while (open) {
-            if (thisQueue.isEmpty()) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    // do nothing
-                }
-            } else {
-                return thisQueue.remove(0);
+    public E next() {
+        if (open.get()) {
+            try {
+                return thisQueue.take();
+            } catch (InterruptedException e) {
+                throw new IllegalStateException("Interrupted", e);
             }
         }
         return null;
@@ -90,10 +87,9 @@ public class RxQueue {
     /**
      * shutdown the queue
      */
-    public synchronized void shutdown() {
-        open = false;
+    public void shutdown() {
+        open.set(false);
         thisQueue.clear();
-        notifyAll();
     }
 
 }

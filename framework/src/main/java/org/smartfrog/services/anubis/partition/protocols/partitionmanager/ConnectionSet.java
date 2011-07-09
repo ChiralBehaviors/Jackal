@@ -607,6 +607,13 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             log.finest(String.format("Heart beat for existing connection: %s at: %s ",
                                      hb.getSender(), identity));
         }
+        if (con.isSelf()) {
+            if (!hb.getSenderAddress().equals(heartbeat.getSenderAddress())) {
+                log.severe(String.format("Detected another member with same node identity as this node: %s.  Terminating this member"));
+                terminate();
+                return false;
+            }
+        }
         return con.receiveHeartbeat(hb);
     }
 
@@ -775,7 +782,18 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
      * @return - true if this end initiates the connection, false otherwise
      */
     public boolean thisEndInitiatesConnectionsTo(Identity target) {
-        return identity.id < target.id;
+        return thisEndInitiatesConnectionsTo(target.id);
+    }
+
+    /**
+     * indicates which end initiates a connection to a given node
+     * 
+     * @param target
+     *            - the other end of the intended connection
+     * @return - true if this end initiates the connection, false otherwise
+     */
+    private boolean thisEndInitiatesConnectionsTo(int target) {
+        return identity.id < target;
     }
 
     @Override
@@ -986,7 +1004,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
 
     private void reconnect() {
         for (int node : connectionView) {
-            if (node < identity.id) {
+            if (thisEndInitiatesConnectionsTo(node)) {
                 Connection con = connections.get(new Identity(identity.magic,
                                                               node, 0));
                 if (con == null || con instanceof HeartbeatConnection) {

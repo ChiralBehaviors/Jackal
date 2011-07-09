@@ -175,4 +175,9 @@ public class SelfConnection extends BitView implements Connection,
     public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
         return isNotTimely(timenow, timebound);
     }
+
+    @Override
+    public boolean isSelf() { 
+        return true;
+    }
 }
