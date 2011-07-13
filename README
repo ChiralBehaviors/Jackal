@@ -1,0 +1,42 @@
+Jackal is licensed under LGPL V2.2.
+
+Jackal is a heavy modification of the original Anubis distributed tuplespace, found in HP's Smartfrog project.  The original project Wiki is here: http://www.smartfrog.org/wiki/display/sf/Anubis.
+
+This project is built with Maven, and will build with Maven version 2.2.  Jackal is composed of 5 modules:
+
+	- framework
+		base Anubis framework
+	- console
+		Graphic GUI for the partition manager
+	- satellite
+		Running Anubis in a separate satellite JVM
+	- slp
+		A Service Location Protocol implemented on Anubis
+	- loadtest
+		A simple load testing application for Anubis
+
+Jackal is a significant branch from Anubis and provides the following value add:
+
+- Divorced from Smartfrog
+
+Anubis is tightly woven with the Smartfrog system and is quite hard to separate out and get working as a stand alone system.  Jackal is a standalone system.
+
+- Configured with javax.annotations
+
+Smartfrog has its own mechanism for configuring the services that run within the framework.  It's a surprisingly sophisticated and powerful model, but it's not really lightweight.  Jackal converted the original mechanism into a POJO model which is easily configured with any IOC framework that understands the javax.annotations.  The current code base uses Spring for this, and has several example Java @Configurations that can be reused or used as examples.
+
+- Updated to Java 5
+
+A massive amount of work went into updating Anubis to use generics, and most importantly the java.util.concurrent package.  There's still some cruft in there, but things have been updated to the modern world and the system is a lot more stable and clean because of it.
+
+- UDP based Gossip Heartbeat and Discovery
+
+The original Anubis provided only multicast based discovery and heartbeat.  Multicast has serious issues in deployments that run on multiple switches.  In response to this, a UDP based Gossip system was created.  This system, while not completely zero configuration like multicast is, is very lightweight, efficient and works across any network configuration.  This mechanism is not currently well documented from the deployment requirements perspective, but this will change soon.  In the meantime you can look at the unit testing for gossip and hopefully figure things out from there.  The loadtest project is also currently configured to use UDP gossip, and so looking at that project should help you figure this out.
+
+- Testing, Testing, Testing
+
+Anubis doesn't have very much in the way of testing and Jackal does a lot to remedy that.  Unit testing purists will surely sniff at the fact that Jackal isn't properly unit tested, but so what.  There's a decent sweet of tests for the code, and the UDP gossip is reasonably complete from a unit test perspective.  There's several end to end functional tests which have greatly aided the debugging of the existing Anubis functionality and the new functionality added in Jackal.
+
+- Bug Fixes
+
+Jackal provides some substantial bug fixes to Anubis.  Many of these were odd edge cases, but some were nasty concurrency bugs.  As always, testing continues and any new bugs will be squashed.
