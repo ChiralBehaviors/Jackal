@@ -71,4 +71,14 @@ public interface GossipCommunications {
      * Tereminate the communications service
      */
     void terminate();
+
+    /**
+     * Send the heartbeat state to the two members
+     * 
+     * @param state
+     * @param inetSocketAddress
+     * @param inetSocketAddress2
+     */
+    void send(HeartbeatState state, InetSocketAddress inetSocketAddress,
+              InetSocketAddress inetSocketAddress2);
 }

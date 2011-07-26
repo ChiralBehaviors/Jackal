@@ -233,25 +233,6 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
     }
 
-    /**
-     * Over-ride the receiveHeartbeat() method. Message connections ignore
-     * heartbeats received out of band (i.e. delivered from the multicast
-     * heartbeat). Only heartbeats received in-band on their own connection
-     * counts.
-     * 
-     * @param hb
-     *            - the heartbeat
-     * @return - always false (not valid)
-     */
-    @Override
-    public boolean receiveHeartbeat(Heartbeat hb) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Non message connection heartbeat rejected from: %s at: %s",
-                                     hb.getSender(), me));
-        }
-        return false;
-    }
-
     public void sendMsg(Heartbeat heartbeat) {
         sendMsg((TimedMsg) HeartbeatMsg.toHeartbeatMsg(heartbeat));
     }

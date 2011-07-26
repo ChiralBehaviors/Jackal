@@ -49,6 +49,11 @@ public class Digest {
         time = msg.getLong();
     }
 
+    public Digest(HeartbeatState state) {
+        address = state.getHeartbeatAddress();
+        time = state.getTime();
+    }
+
     public Digest(InetSocketAddress socketAddress, Endpoint ep) {
         address = socketAddress;
         time = ep.getTime();

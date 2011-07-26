@@ -95,7 +95,7 @@ public class ControllerGossipConfiguration {
     public Gossip gossip() throws IOException {
         return new Gossip(systemView(), new SecureRandom(), communications(),
                           gossipInterval(), gossipIntervalTimeUnit(),
-                          failureDetectorFactory());
+                          failureDetectorFactory(), true, partitionIdentity());
     }
 
     public long heartbeatInterval() {

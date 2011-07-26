@@ -61,8 +61,7 @@ public class Endpoint {
     }
 
     public String getMemberString() {
-        return "[" + heartbeat.getSender() + " : "
-               + heartbeat.getHeartbeatAddress() + "]";
+        return heartbeat.getMemberString();
     }
 
     public HeartbeatState getState() {

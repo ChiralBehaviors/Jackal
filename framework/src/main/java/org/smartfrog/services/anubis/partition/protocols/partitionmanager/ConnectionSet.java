@@ -700,9 +700,11 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         /**
          * send the heartbeat on message connections.
          */
+        /**
         for (MessageConnection mcon : msgConnections) {
             mcon.sendMsg(heartbeat);
         }
+        */
 
         /**
          * Do delayed removeConnection() calls

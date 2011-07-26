@@ -395,6 +395,44 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         return subOk;
     }
 
+    /**
+     * Answer the left and right neighbors of the id, modeling the receiver as a
+     * sorted ring
+     * 
+     * @param id
+     * @return the left and right neighbor ids, or null if the receiver does not
+     *         contain the id
+     */
+    public int[] neighborsOf(int id) {
+        if (!contains(id)) {
+            return null;
+        }
+        int[] neighbors = new int[] { -1, -1 };
+        int first = -1;
+        int previous = -1;
+        for (int i = 0; i < size(); i++) {
+            if (contains(i)) {
+                if (first == -1) {
+                    first = i;
+                }
+                if (i == id) {
+                    neighbors[0] = previous;
+                } else if (id == previous) {
+                    neighbors[1] = i;
+                }
+                previous = i;
+            }
+        }
+        //handle boundary conditions
+        if (neighbors[0] == -1) {
+            neighbors[0] = previous;
+        }
+        if (neighbors[1] == -1) {
+            neighbors[1] = first;
+        }
+        return neighbors;
+    }
+
     @Override
     public String toString() {
         StringBuffer stBuf = new StringBuffer();

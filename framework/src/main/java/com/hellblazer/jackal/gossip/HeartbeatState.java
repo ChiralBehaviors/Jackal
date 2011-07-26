@@ -171,6 +171,10 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         heartbeatAddress = hbAddress;
     }
 
+    public String getMemberString() {
+        return "[" + getSender() + " : " + getHeartbeatAddress() + "]";
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -435,5 +439,9 @@ public class HeartbeatState implements Heartbeat, Cloneable {
 
     private synchronized void invalidateCache() {
         binaryCache = null;
+    }
+
+    public NodeIdSet getMembers() {
+        return view;
     }
 }

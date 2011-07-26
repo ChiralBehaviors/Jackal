@@ -62,7 +62,7 @@ public class EndToEndTest extends TestCase {
         List<Gossip> members = new ArrayList<Gossip>();
         Collection<InetSocketAddress> seedHosts = new ArrayList<InetSocketAddress>();
         for (int i = 0; i < membership; i++) {
-            members.add(createCommunications(receivers[i], seedHosts));
+            members.add(createCommunications(receivers[i], seedHosts, i));
             if (i == 0) { // always add first member
                 seedHosts.add(members.get(0).getLocalAddress());
             } else if (seedHosts.size() < maxSeeds) {
@@ -139,7 +139,8 @@ public class EndToEndTest extends TestCase {
     }
 
     protected Gossip createCommunications(ConnectionManager receiver,
-                                          Collection<InetSocketAddress> seedHosts) {
+                                          Collection<InetSocketAddress> seedHosts,
+                                          int i) {
         UdpCommunications communications = new UdpCommunications(
                                                                  new InetSocketAddress(
                                                                                        0),
@@ -171,7 +172,8 @@ public class EndToEndTest extends TestCase {
                                                                          1.0,
                                                                          true);
         Gossip gossip = new Gossip(view, new Random(), communications, 1,
-                                   TimeUnit.SECONDS, fdFactory);
+                                   TimeUnit.SECONDS, fdFactory, false,
+                                   new Identity(0, i, 0));
         gossip.create(receiver);
         return gossip;
     }

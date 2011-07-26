@@ -235,6 +235,24 @@ public class UdpCommunications implements GossipCommunications {
         }
     }
 
+    @Override
+    public void send(HeartbeatState state, InetSocketAddress left,
+                     InetSocketAddress right) {
+        ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.clear();
+        buffer.position(4);
+        buffer.put(UPDATE);
+        state.writeTo(buffer);
+        buffer.flip();
+        if (!gossip.isIgnoring(left)) {
+            send(buffer, left);
+        }
+        if (!gossip.isIgnoring(right)) {
+            send(buffer, right);
+        }
+    }
+
     private void handleGossip(final InetSocketAddress target, ByteBuffer msg) {
         int count = msg.getInt();
         if (log.isLoggable(Level.FINER)) {

@@ -97,7 +97,7 @@ public class BasicConfiguration {
     }
 
     protected boolean alwaysReconnect() {
-        return true;
+        return false;
     }
 
     protected InetSocketAddress contactAddress() throws UnknownHostException {

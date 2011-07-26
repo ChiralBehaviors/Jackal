@@ -107,7 +107,7 @@ public class GossipConfiguration {
     public Gossip gossip() throws IOException {
         return new Gossip(systemView(), new SecureRandom(), communications(),
                           gossipInterval(), gossipIntervalTimeUnit(),
-                          failureDetectorFactory());
+                          failureDetectorFactory(), false, partitionIdentity());
     }
 
     @Bean
@@ -178,7 +178,7 @@ public class GossipConfiguration {
     }
 
     protected boolean alwaysReconnect() {
-        return true;
+        return false;
     }
 
     protected InetSocketAddress contactAddress() throws UnknownHostException {
