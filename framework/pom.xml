@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<parent>
 		<artifactId>anubis.app</artifactId>
@@ -11,6 +12,19 @@
 	<artifactId>anubis</artifactId>
 	<name>Anubis</name>
 	<description>The Anubis distributed state monitoring and failure detection service</description>
+	<url>https://github.com/Hellblazer/Jackal</url>
+
+	<licenses>
+		<license>
+			<name>GNU Leser General Public License, version 2.1</name>
+			<url>http://www.gnu.org/licenses/lgpl-2.1.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>https://github.com/Hellblazer/Jackal.git</url>
+	</scm>
 
 	<dependencies>
 		<dependency>
@@ -37,12 +51,12 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.8</version>
 				<configuration>
-                    <systemPropertyVariables>
-                        <java.util.logging.config.file>logging.properties</java.util.logging.config.file>
-                    </systemPropertyVariables> 
-                    <argLine>-ea</argLine>
-                    <argLine>-D=</argLine>
-                    <argLine>-Xmx512m</argLine>
+					<systemPropertyVariables>
+						<java.util.logging.config.file>logging.properties</java.util.logging.config.file>
+					</systemPropertyVariables>
+					<argLine>-ea</argLine>
+					<argLine>-D=</argLine>
+					<argLine>-Xmx512m</argLine>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<parent>
 		<artifactId>anubis.app</artifactId>
@@ -11,6 +12,20 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Service Location Protocol</name>
 	<description>Anubis based SLP</description>
+	<url>https://github.com/Hellblazer/Jackal</url>
+
+	<licenses>
+		<license>
+			<name>GNU Leser General Public License, version 2.1</name>
+			<url>http://www.gnu.org/licenses/lgpl-2.1.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>https://github.com/Hellblazer/Jackal.git</url>
+	</scm>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.hellblazer.anubis</groupId>
@@ -39,29 +54,29 @@
 		</dependency>
 	</dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.8</version>
-                <configuration>
-                    <systemPropertyVariables>
-                        <java.util.logging.config.file>logging.properties</java.util.logging.config.file>
-                    </systemPropertyVariables> 
-                    <argLine>-ea</argLine>
-                    <argLine>-D=</argLine>
-                    <argLine>-Xmx512m</argLine>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.8</version>
+				<configuration>
+					<systemPropertyVariables>
+						<java.util.logging.config.file>logging.properties</java.util.logging.config.file>
+					</systemPropertyVariables>
+					<argLine>-ea</argLine>
+					<argLine>-D=</argLine>
+					<argLine>-Xmx512m</argLine>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

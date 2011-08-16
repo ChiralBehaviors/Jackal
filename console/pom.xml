@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<parent>
 		<artifactId>anubis.app</artifactId>
@@ -11,6 +12,20 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>PM Console UI</name>
 	<description>Graphic UI console for the Partition Manager</description>
+	<url>https://github.com/Hellblazer/Jackal</url>
+
+	<licenses>
+		<license>
+			<name>GNU Leser General Public License, version 2.1</name>
+			<url>http://www.gnu.org/licenses/lgpl-2.1.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>https://github.com/Hellblazer/Jackal.git</url>
+	</scm>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.hellblazer.anubis</groupId>
@@ -37,20 +52,20 @@
 				<configuration>
 					<forkMode>always</forkMode>
 				</configuration>
-			</plugin> 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.3.1</version>
-                <configuration>
-                    <archive>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.3.1</version>
+				<configuration>
+					<archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
                         	<mainClass>org.smartfrog.services.anubis.partition.test.controller.gui.PartitionManager</mainClass>
                         </manifest>
                     </archive>
-                </configuration>
-            </plugin> 
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>
