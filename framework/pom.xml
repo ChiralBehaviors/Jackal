@@ -53,9 +53,9 @@
 				<configuration>
 					<systemPropertyVariables>
 						<java.util.logging.config.file>logging.properties</java.util.logging.config.file>
+						<java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
 					</systemPropertyVariables>
 					<argLine>-ea</argLine>
-					<argLine>-Djava.net.preferIPv4Stack=true</argLine>
 					<argLine>-Xmx512m</argLine>
 				</configuration>
 			</plugin>
