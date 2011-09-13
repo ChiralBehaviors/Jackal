@@ -73,7 +73,7 @@
 						<java.util.logging.config.file>logging.properties</java.util.logging.config.file>
 					</systemPropertyVariables>
 					<argLine>-ea</argLine>
-					<argLine>-D=</argLine>
+					<argLine>-Djava.net.preferIPv4Stack=true</argLine>
 					<argLine>-Xmx512m</argLine>
 				</configuration>
 			</plugin>
