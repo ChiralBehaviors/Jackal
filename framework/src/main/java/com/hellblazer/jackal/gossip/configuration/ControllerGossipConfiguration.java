@@ -155,7 +155,7 @@ public class ControllerGossipConfiguration {
     }
 
     protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
-        return new InetSocketAddress(contactHost(), 0);
+        return new InetSocketAddress(0);
     }
 
     protected int gossipInterval() {
