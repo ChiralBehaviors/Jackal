@@ -20,7 +20,6 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -65,10 +64,10 @@ public class ConnectionServer extends Thread {
      * returned for the given host name (should be this host), using the given
      * port. Initially the default connection factory is assumed.
      */
-    public ConnectionServer(String threadName, InetAddress addr, int port)
+    public ConnectionServer(String threadName, InetSocketAddress endpoint)
                                                                           throws IOException {
         super(threadName);
-        constructServer(addr, port);
+        constructServer(endpoint);
     }
 
     /**
@@ -171,7 +170,7 @@ public class ConnectionServer extends Thread {
      * port. Initially the default connection factory is assumed.
      */
 
-    private void constructServer(InetAddress inetAddress, int port)
+    private void constructServer(InetSocketAddress endpoint)
                                                                    throws IOException {
 
         connectionFactory = new DefaultConnectionFactory();
@@ -179,12 +178,12 @@ public class ConnectionServer extends Thread {
         try {
 
             if (log.isLoggable(Level.FINE)) {
-                log.fine("Binding blocking connection server to port: " + port);
+                log.fine("Binding blocking connection server to port: " + endpoint.getPort());
             }
 
             listenSocket = ServerSocketChannel.open();
             listenSocket.configureBlocking(true);
-            listenSocket.socket().bind(new InetSocketAddress(inetAddress, port));
+            listenSocket.socket().bind(endpoint);
 
         } catch (IOException ioex) {
             log.log(Level.SEVERE, "Failed to create server socket: ", ioex);
@@ -205,6 +204,6 @@ public class ConnectionServer extends Thread {
      * port. Initially the default connection factory is assumed.
      */
     private void constructServer(String hostName, int port) throws IOException {
-        constructServer(InetAddress.getByName(hostName), port);
+        constructServer(new InetSocketAddress(hostName, port));
     }
 }

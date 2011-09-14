@@ -20,7 +20,6 @@ package com.hellblazer.jackal.gossip.configuration;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
@@ -82,10 +81,6 @@ public class GossipConfiguration {
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
                                  heartbeatTimeout(), false, alwaysReconnect());
-    }
-
-    public InetAddress contactHost() throws UnknownHostException {
-        return InetAddress.getLocalHost();
     }
 
     @Bean
@@ -150,8 +145,7 @@ public class GossipConfiguration {
 
     @Bean
     public TestMgr testMgr() throws Exception {
-        TestMgr mgr = new TestMgr(contactHost().getCanonicalHostName(),
-                                  contactPort(), partition(), node());
+        TestMgr mgr = new TestMgr(contactAddress(), partition(), node());
         mgr.setConnectionAddress(contactAddress());
         mgr.setConnectionSet(connectionSet());
         mgr.setIdentity(partitionIdentity());
@@ -171,18 +165,12 @@ public class GossipConfiguration {
                                                   3, 100);
     }
 
-    protected FailureDetectorFactory simpleTimeoutFailureDetectorFactory() {
-        return new SimpleTimeoutFailureDetectorFactory(heartbeatTimeout()
-                                                       * heartbeatInterval()
-                                                       * 3);
-    }
-
     protected boolean alwaysReconnect() {
         return false;
     }
 
     protected InetSocketAddress contactAddress() throws UnknownHostException {
-        return new InetSocketAddress(contactHost(), contactPort());
+        return new InetSocketAddress(contactPort());
     }
 
     protected int contactPort() {
@@ -198,7 +186,7 @@ public class GossipConfiguration {
     }
 
     protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
-        return new InetSocketAddress(contactHost(), 0);
+        return new InetSocketAddress(0);
     }
 
     protected int gossipInterval() {
@@ -253,6 +241,12 @@ public class GossipConfiguration {
     protected Collection<InetSocketAddress> seedHosts()
                                                        throws UnknownHostException {
         return asList(gossipEndpoint());
+    }
+
+    protected FailureDetectorFactory simpleTimeoutFailureDetectorFactory() {
+        return new SimpleTimeoutFailureDetectorFactory(heartbeatTimeout()
+                                                       * heartbeatInterval()
+                                                       * 3);
     }
 
     protected FailureDetectorFactory timedFailureDetectorFactory() {

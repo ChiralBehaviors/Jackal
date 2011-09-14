@@ -59,12 +59,12 @@ public class TestMgr {
     // timing
     private boolean                   testable      = true;
 
-    public TestMgr(String host, int port, PartitionManager partitionManager,
+    public TestMgr(InetSocketAddress endpoint, PartitionManager partitionManager,
                    int id) throws IOException, Exception {
         this.partitionManager = partitionManager;
         String threadName = "Anubis: Partition Manager Test Node (node " + id
                             + ") - connection server";
-        connectionServer = new TestServer(this, host, port, threadName);
+        connectionServer = new TestServer(this, endpoint, threadName);
     }
 
     public void closing(TestConnection connection) {
@@ -162,8 +162,7 @@ public class TestMgr {
                             + identity.id + ") - connection server";
         connectionServer = new TestServer(
                                           this,
-                                          connectionAddress.getAddress().getHostName(),
-                                          connectionAddress.getPort(),
+                                          connectionAddress,
                                           threadName);
 
         if (!testable) {

@@ -20,7 +20,6 @@ package com.hellblazer.jackal.gossip.configuration;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
@@ -68,10 +67,6 @@ public class ControllerGossipConfiguration {
     public GossipCommunications communications() throws IOException {
         return new UdpCommunications(gossipEndpoint(),
                                      Executors.newFixedThreadPool(3), 20, 4);
-    }
-
-    public InetAddress contactHost() throws UnknownHostException {
-        return InetAddress.getLocalHost();
     }
 
     @Bean

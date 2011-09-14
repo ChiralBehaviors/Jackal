@@ -41,10 +41,6 @@ public class BasicConfiguration {
                                  heartbeatTimeout(), false, alwaysReconnect());
     }
 
-    public InetAddress contactHost() throws UnknownHostException {
-        return InetAddress.getLocalHost();
-    }
-
     @Bean
     public DeployedPostProcessor deployedPostProcessor() {
         return new DeployedPostProcessor();
@@ -82,8 +78,7 @@ public class BasicConfiguration {
 
     @Bean
     public TestMgr testMgr() throws Exception {
-        TestMgr mgr = new TestMgr(contactHost().getCanonicalHostName(),
-                                  contactPort(), partition(), node());
+        TestMgr mgr = new TestMgr(contactAddress(), partition(), node());
         mgr.setConnectionAddress(contactAddress());
         mgr.setConnectionSet(connectionSet());
         mgr.setIdentity(partitionIdentity());
@@ -101,7 +96,7 @@ public class BasicConfiguration {
     }
 
     protected InetSocketAddress contactAddress() throws UnknownHostException {
-        return new InetSocketAddress(contactHost(), contactPort());
+        return new InetSocketAddress(contactPort());
     }
 
     protected int contactPort() {

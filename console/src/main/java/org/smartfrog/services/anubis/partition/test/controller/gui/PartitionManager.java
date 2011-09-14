@@ -33,11 +33,6 @@ public class PartitionManager extends ControllerGossipConfiguration {
     }
 
     @Override
-    public InetAddress contactHost() throws UnknownHostException {
-        return contactAddress;
-    }
-
-    @Override
     protected Controller constructController() throws UnknownHostException {
         return new GraphicController(timer(), 1000, 30000,
                                      partitionIdentity(), heartbeatTimeout(),

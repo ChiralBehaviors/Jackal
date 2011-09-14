@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.test.node;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 import org.smartfrog.services.anubis.basiccomms.connectiontransport.ConnectionFactory;
@@ -29,9 +30,9 @@ public class TestServer extends ConnectionServer implements ConnectionFactory {
 
     private TestMgr testManager;
 
-    public TestServer(TestMgr testManager, String host, int port,
+    public TestServer(TestMgr testManager, InetSocketAddress endpoint,
                       String threadName) throws IOException {
-        super(threadName, host, port);
+        super(threadName, endpoint);
         this.testManager = testManager;
         setConnectionFactory(this);
     }
