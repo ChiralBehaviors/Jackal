@@ -2,6 +2,7 @@ package com.hellblazer.satellite;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -76,6 +77,7 @@ public class TestLaunch extends TestCase {
     @Override
     protected void setUp() throws Exception {
         launch = new Launch();
+        launch.setJavaArgs(Arrays.asList("-Djava.net.preferIPv4Stack=true"));
         launch.setPeriod(3000);
         launch.setTimeout(6000);
     }

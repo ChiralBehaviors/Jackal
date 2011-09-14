@@ -44,21 +44,22 @@ public class Launch {
         }
     }
 
-    private static Logger log = Logger.getLogger(Launch.class.getCanonicalName());
-    private long launchTimeout = 30L;
-    private TimeUnit launchTimeoutUnit = TimeUnit.SECONDS;
-    SPLocatorImpl locator;
-    private String configPackage;
-    private Process satellite;
-    RMIClientSocketFactory clientFactory = new LocalHostSocketFactory();
-    RMIServerSocketFactory serverFactory = new LocalHostSocketFactory();
-    CyclicBarrier barrier;
-    long period;
-    long timeout;
-    private Thread ioPump;
-    private Thread terminationThread;
+    private static Logger  log               = Logger.getLogger(Launch.class.getCanonicalName());
+    private long           launchTimeout     = 30L;
+    private TimeUnit       launchTimeoutUnit = TimeUnit.SECONDS;
+    SPLocatorImpl          locator;
+    private String         configPackage;
+    private List<String>   javaArgs          = new ArrayList<String>();
+    private Process        satellite;
+    RMIClientSocketFactory clientFactory     = new LocalHostSocketFactory();
+    RMIServerSocketFactory serverFactory     = new LocalHostSocketFactory();
+    CyclicBarrier          barrier;
+    long                   period;
+    long                   timeout;
+    private Thread         ioPump;
+    private Thread         terminationThread;
 
-    Registry localRegistry;
+    Registry               localRegistry;
 
     public AnubisLocator getLocator() throws Exception {
         localRegistry = LocateRegistry.createRegistry(1099);
@@ -89,6 +90,12 @@ public class Launch {
 
     public void setConfigPackage(String configPackage) {
         this.configPackage = configPackage;
+    }
+    
+    public void setJavaArgs(List<String> args) {
+        for (String arg: args) {
+            javaArgs.add(arg);
+        }
     }
 
     public void setPeriod(long period) {
@@ -153,6 +160,7 @@ public class Launch {
     private void launchSatellite(String name) throws IOException {
         List<String> command = new ArrayList<String>();
         command.add(getJavaExecutable());
+        command.addAll(javaArgs);
         command.add("-cp");
         command.add(System.getProperty("java.class.path"));
         command.add(Bootstrap.class.getCanonicalName());
