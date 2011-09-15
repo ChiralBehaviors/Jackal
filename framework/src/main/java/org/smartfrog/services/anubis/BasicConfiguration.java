@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
+import com.hellblazer.jackal.util.SocketOptions;
 
 @Configuration
 public class BasicConfiguration {
@@ -149,11 +150,13 @@ public class BasicConfiguration {
         return 3L;
     }
 
+    protected SocketOptions socketOptions() {
+        return new SocketOptions();
+    }
+
     protected IOConnectionServerFactory ioConnectionServerFactory()
                                                                    throws Exception {
-        MessageNioServerFactory factory = new MessageNioServerFactory();
-        factory.setWireSecurity(wireSecurity());
-        return factory;
+        return new MessageNioServerFactory(wireSecurity(), socketOptions());
     }
 
     protected LeaderProtocolFactory leaderProtocolFactory() {

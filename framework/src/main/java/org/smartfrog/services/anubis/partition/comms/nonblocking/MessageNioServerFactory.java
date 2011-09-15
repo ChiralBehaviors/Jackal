@@ -28,25 +28,24 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Connec
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
+import com.hellblazer.jackal.util.SocketOptions;
+
 public class MessageNioServerFactory implements IOConnectionServerFactory {
 
-    private WireSecurity wireSecurity = null;
+    private final WireSecurity  wireSecurity;
+    private final SocketOptions socketOptions;
 
-    public MessageNioServerFactory() throws Exception {
+    public MessageNioServerFactory(WireSecurity wireSecurity,
+                                   SocketOptions socketOptions) {
         super();
+        this.wireSecurity = wireSecurity;
+        this.socketOptions = socketOptions;
     }
 
     @Override
     public IOConnectionServer create(InetSocketAddress address, Identity id,
                                      ConnectionSet cs) throws IOException {
-        return new MessageNioServer(address, id, cs, wireSecurity);
-    }
-
-    public WireSecurity getWireSecurity() {
-        return wireSecurity;
-    }
-
-    public void setWireSecurity(WireSecurity wireSecurity) {
-        this.wireSecurity = wireSecurity;
+        return new MessageNioServer(address, id, cs, wireSecurity,
+                                    socketOptions);
     }
 }

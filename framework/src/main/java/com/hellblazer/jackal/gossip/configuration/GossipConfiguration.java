@@ -56,6 +56,7 @@ import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
+import com.hellblazer.jackal.util.SocketOptions;
 
 /**
  * Basic gossip based discovery/replication Anubis configuration.
@@ -209,11 +210,13 @@ public class GossipConfiguration {
         return 3L;
     }
 
+    protected SocketOptions socketOptions() {
+        return new SocketOptions();
+    }
+
     protected IOConnectionServerFactory ioConnectionServerFactory()
                                                                    throws Exception {
-        MessageNioServerFactory factory = new MessageNioServerFactory();
-        factory.setWireSecurity(wireSecurity());
-        return factory;
+        return new MessageNioServerFactory(wireSecurity(), socketOptions());
     }
 
     protected LeaderProtocolFactory leaderProtocolFactory() {

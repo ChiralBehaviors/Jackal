@@ -43,6 +43,8 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
+import com.hellblazer.jackal.util.SocketOptions;
+
 public class MessageNioServer extends Thread implements IOConnectionServer {
     private InetSocketAddress                           connAdd            = null;
     private ConnectionSet                               connectionSet      = null;
@@ -61,6 +63,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
     private static final Logger                         syncLog            = Logger.getLogger(MessageNioServer.class.getCanonicalName());
     private Logger                                      asyncLog           = syncLog;                                                    // need to wrap with async log wrapper
     private WireSecurity                                wireSecurity       = null;
+    private SocketOptions                               socketOptions;
 
     private Vector<SelectionKey>                        writePendingKeys   = null;
 
@@ -71,10 +74,14 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
      * managing channels. A pre-defined number of worker threads deal with those
      * RX deserialized jobs and deliver them to the anubis layers. By default
      * there is only 1 decoupling thread.
+     * 
+     * @param socketOptions
      */
     @SuppressWarnings("unchecked")
     public MessageNioServer(InetSocketAddress address, Identity id,
-                            ConnectionSet cs, WireSecurity sec) {
+                            ConnectionSet cs, WireSecurity sec,
+                            SocketOptions socketOptions) {
+        this.socketOptions = socketOptions;
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
@@ -94,8 +101,8 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         try {
             server = ServerSocketChannel.open();
             server.configureBlocking(false);
-            server.socket().bind(new InetSocketAddress(address.getAddress(),
-                                                       address.getPort()));
+            socketOptions.configure(server.socket());
+            server.socket().bind(address, socketOptions.getBacklog());
             connAdd = new InetSocketAddress(server.socket().getInetAddress(),
                                             server.socket().getLocalPort());
             if (asyncLog.isLoggable(Level.FINER)) {
@@ -214,6 +221,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
         MessageNioHandler mnh = null;
         try {
             SocketChannel sendingChannel = SocketChannel.open();
+            socketOptions.configure(sendingChannel.socket());
             sendingChannel.configureBlocking(false);
             mnh = new MessageNioHandler(selector, sendingChannel, deadKeys,
                                         writePendingKeys, assignRxQueue(),
@@ -333,7 +341,7 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                     }
                     try {
                         SocketChannel clientChannel = server.accept();
-                        clientChannel.socket().setTcpNoDelay(true);
+                        socketOptions.configure(clientChannel.socket());
                         clientChannel.configureBlocking(false);
                         MessageNioHandler conHandler = new MessageNioHandler(
                                                                              selector,
@@ -400,29 +408,44 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
                                     & ~SelectionKey.OP_CONNECT);
                     SocketChannel clientChannel = (SocketChannel) key.channel();
                     MessageNioHandler mnh = (MessageNioHandler) key.attachment();
+                    boolean connected = false;
                     if (clientChannel.isConnectionPending()) {
                         try {
                             clientChannel.finishConnect();
+                            connected = true;
                         } catch (IOException ioe) {
                             if (asyncLog.isLoggable(Level.WARNING)) {
-                                asyncLog.log(Level.WARNING, "", ioe);
+                                asyncLog.log(Level.WARNING,
+                                             String.format("Cannot finish connect for: %s",
+                                                           clientChannel), ioe);
+                            }
+                            try {
+                                clientChannel.close();
+                            } catch (IOException e) {
+                                asyncLog.log(Level.FINEST,
+                                             String.format("Cannot close: %s",
+                                                           clientChannel), ioe);
                             }
                         }
                     }
-                    // merge both calls?
-                    if (asyncLog.isLoggable(Level.FINER)) {
-                        asyncLog.finer("MNS: setting mnh to right booleans in connectable switch test");
-                    }
-                    mnh.readyForWriting();
-                    mnh.setConnected(true);
-                    // do here what was being done in MessageConnectionInitiator before - send to a decoupling queue...
-                    connectQueue.add(mnh);
-                    try {
-                        clientChannel.register(selector, SelectionKey.OP_READ,
-                                               mnh);
-                    } catch (Exception ex) {
-                        if (asyncLog.isLoggable(Level.WARNING)) {
-                            asyncLog.log(Level.WARNING, "", ex);
+                    if (connected) {
+                        // merge both calls?
+                        if (asyncLog.isLoggable(Level.FINER)) {
+                            asyncLog.finer("MNS: setting mnh to right booleans in connectable switch test");
+                        }
+                        mnh.readyForWriting();
+                        mnh.setConnected(true);
+                        // do here what was being done in MessageConnectionInitiator before - send to a decoupling queue...
+                        connectQueue.add(mnh);
+                        try {
+                            clientChannel.register(selector,
+                                                   SelectionKey.OP_READ, mnh);
+                        } catch (Exception ex) {
+                            if (asyncLog.isLoggable(Level.WARNING)) {
+                                asyncLog.log(Level.WARNING,
+                                             String.format("Cannot register read for: %s",
+                                                           clientChannel), ex);
+                            }
                         }
                     }
                 }
