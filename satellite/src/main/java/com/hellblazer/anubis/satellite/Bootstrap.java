@@ -14,7 +14,7 @@ public class Bootstrap {
 
         System.out.println("Satellite Launch Configuration Package: " + argv[0]);
         System.out.println("Satellite Launch Handshake Name: " + argv[1]);
-        Handshake handshake = (Handshake) Naming.lookup("//localhost:1099/"
+        Handshake handshake = (Handshake) Naming.lookup("//127.0.0.1:1099/"
                                                         + argv[1]);
 
         ApplicationContext context = new AnnotationConfigApplicationContext(

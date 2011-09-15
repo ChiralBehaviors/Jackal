@@ -51,6 +51,7 @@
 				<version>2.8</version>
 				<configuration>
 					<systemPropertyVariables>
+						<!--java.rmi.server.hostname>127.0.0.1</java.rmi.server.hostname-->
 						<java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
 					</systemPropertyVariables>
 					<argLine>-ea</argLine>
