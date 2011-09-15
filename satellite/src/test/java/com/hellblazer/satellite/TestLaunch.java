@@ -53,7 +53,7 @@ public class TestLaunch extends TestCase {
     static class Node extends AnubisListener {
         CountDownLatch latch;
 
-        List<Object> stateValues = new ArrayList<Object>();
+        List<Object>   stateValues = new ArrayList<Object>();
 
         public Node(String n, CountDownLatch latch) {
             super(n);
@@ -77,7 +77,8 @@ public class TestLaunch extends TestCase {
     @Override
     protected void setUp() throws Exception {
         launch = new Launch();
-        launch.setJavaArgs(Arrays.asList("-Djava.net.preferIPv4Stack=true"));
+        launch.setJavaArgs(Arrays.asList("-Djava.net.preferIPv4Stack=true",
+                                         "-Djava.rmi.server.hostname=127.0.0.1"));
         launch.setPeriod(3000);
         launch.setTimeout(6000);
     }
