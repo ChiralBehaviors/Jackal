@@ -151,7 +151,10 @@ public class BasicConfiguration {
     }
 
     protected SocketOptions socketOptions() {
-        return new SocketOptions();
+        SocketOptions socketOptions = new SocketOptions();
+        socketOptions.setBacklog(100);
+        socketOptions.setTimeout(120 * 1000);
+        return socketOptions;
     }
 
     protected IOConnectionServerFactory ioConnectionServerFactory()
