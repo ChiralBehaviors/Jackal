@@ -80,7 +80,7 @@ public class TestLaunch extends TestCase {
         launch.setJavaArgs(Arrays.asList("-Djava.net.preferIPv4Stack=true",
                                          "-Djava.rmi.server.hostname=127.0.0.1"));
         launch.setPeriod(3000);
-        launch.setTimeout(6000);
+        launch.setTimeout(60000);
     }
 
     @Override

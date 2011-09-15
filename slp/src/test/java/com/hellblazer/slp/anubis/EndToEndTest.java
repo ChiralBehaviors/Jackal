@@ -153,7 +153,7 @@ abstract public class EndToEndTest extends TestCase {
     static class Node extends NodeData {
         int            cardinality;
         CountDownLatch latch;
-        final Logger   log = Logger.getLogger(Node.class.getCanonicalName());
+        final static Logger   log = Logger.getLogger(Node.class.getCanonicalName());
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);

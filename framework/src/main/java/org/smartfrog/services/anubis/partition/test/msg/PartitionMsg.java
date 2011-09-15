@@ -24,12 +24,9 @@ import java.io.Serializable;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class PartitionMsg implements Serializable {
-    /**
-     * 
-     */
     private static final long serialVersionUID = 1L;
-    public int leader;
-    public View partition;
+    public final int leader;
+    public final View partition;
 
     public PartitionMsg(View partition, int leader) {
         this.partition = partition;
