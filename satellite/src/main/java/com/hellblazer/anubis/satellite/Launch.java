@@ -91,11 +91,16 @@ public class Launch {
     public void setConfigPackage(String configPackage) {
         this.configPackage = configPackage;
     }
-    
+
     public void setJavaArgs(List<String> args) {
-        for (String arg: args) {
+        for (String arg : args) {
             javaArgs.add(arg);
         }
+    }
+
+    public void setLaunchTimeout(long launchTimeout, TimeUnit unit) {
+        this.launchTimeout = launchTimeout;
+        this.launchTimeoutUnit = unit;
     }
 
     public void setPeriod(long period) {
@@ -113,35 +118,6 @@ public class Launch {
         }
         terminateSatellite();
         Runtime.getRuntime().removeShutdownHook(terminationThread);
-    }
-
-    protected void terminateSatellite() {
-        if (satellite != null) {
-            try {
-                satellite.getErrorStream().close();
-            } catch (IOException e) {
-                // ignore
-            }
-            try {
-                satellite.getInputStream().close();
-            } catch (IOException e) {
-                // ignore
-            }
-            try {
-                satellite.getOutputStream().close();
-            } catch (IOException e) {
-                // ignore
-            }
-            satellite.destroy();
-            try {
-                satellite.waitFor();
-            } catch (InterruptedException e) {
-                return;
-            } finally {
-                Thread.interrupted();
-            }
-            satellite = null;
-        }
     }
 
     private String getJavaExecutable() {
@@ -193,5 +169,34 @@ public class Launch {
             }
         }, "Anubis: Satellite process IO pump");
         ioPump.start();
+    }
+
+    protected void terminateSatellite() {
+        if (satellite != null) {
+            try {
+                satellite.getErrorStream().close();
+            } catch (IOException e) {
+                // ignore
+            }
+            try {
+                satellite.getInputStream().close();
+            } catch (IOException e) {
+                // ignore
+            }
+            try {
+                satellite.getOutputStream().close();
+            } catch (IOException e) {
+                // ignore
+            }
+            satellite.destroy();
+            try {
+                satellite.waitFor();
+            } catch (InterruptedException e) {
+                return;
+            } finally {
+                Thread.interrupted();
+            }
+            satellite = null;
+        }
     }
 }
