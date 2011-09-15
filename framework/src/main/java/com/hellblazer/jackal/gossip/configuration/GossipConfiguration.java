@@ -171,7 +171,7 @@ public class GossipConfiguration {
     }
 
     protected InetSocketAddress contactAddress() throws UnknownHostException {
-        return new InetSocketAddress(contactPort());
+        return new InetSocketAddress("127.0.0.1", contactPort());
     }
 
     protected int contactPort() {
@@ -187,7 +187,7 @@ public class GossipConfiguration {
     }
 
     protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
-        return new InetSocketAddress(0);
+        return new InetSocketAddress("127.0.0.1", 0);
     }
 
     protected int gossipInterval() {

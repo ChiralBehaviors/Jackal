@@ -97,7 +97,7 @@ public class BasicConfiguration {
     }
 
     protected InetSocketAddress contactAddress() throws UnknownHostException {
-        return new InetSocketAddress(contactPort());
+        return new InetSocketAddress("127.0.0.1", contactPort());
     }
 
     protected int contactPort() {

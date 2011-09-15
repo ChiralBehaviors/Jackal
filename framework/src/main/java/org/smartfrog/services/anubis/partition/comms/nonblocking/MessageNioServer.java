@@ -103,12 +103,9 @@ public class MessageNioServer extends Thread implements IOConnectionServer {
             server.configureBlocking(false);
             socketOptions.configure(server.socket());
             server.socket().bind(address, socketOptions.getBacklog());
-            connAdd = new InetSocketAddress(server.socket().getInetAddress(),
-                                            server.socket().getLocalPort());
-            if (asyncLog.isLoggable(Level.FINER)) {
-                asyncLog.finer("MNS: server bound to: "
-                               + connAdd.getAddress().getHostName() + " - "
-                               + connAdd.getPort());
+            connAdd = (InetSocketAddress) server.socket().getLocalSocketAddress();
+            if (asyncLog.isLoggable(Level.INFO)) {
+                asyncLog.info("MNS: server bound to: " + connAdd);
             }
             selector = Selector.open();
             server.register(selector, SelectionKey.OP_ACCEPT);

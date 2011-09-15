@@ -59,11 +59,11 @@ public class UdpSmokeTest extends SmokeTest {
         }
 
         InetSocketAddress seedContact() throws UnknownHostException {
-            return new InetSocketAddress(testPort);
+            return new InetSocketAddress("127.0.0.1", testPort);
         }
 
         InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress(testPort + 2);
+            return new InetSocketAddress("127.0.0.1", testPort + 2);
         }
 
         @Override

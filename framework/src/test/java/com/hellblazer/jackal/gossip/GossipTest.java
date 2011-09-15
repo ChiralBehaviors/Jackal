@@ -29,7 +29,7 @@ public class GossipTest extends TestCase {
         FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        InetSocketAddress localAddress = new InetSocketAddress(0);
+        InetSocketAddress localAddress = new InetSocketAddress("127.0.0.1", 0);
         when(view.getLocalAddress()).thenReturn(localAddress);
 
         Digest digest1 = new Digest(new InetSocketAddress("google.com", 1), 3);
@@ -61,13 +61,13 @@ public class GossipTest extends TestCase {
         FailureDetector fd = mock(FailureDetector.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        InetSocketAddress localAddress = new InetSocketAddress(0);
+        InetSocketAddress localAddress = new InetSocketAddress("127.0.0.1", 0);
         when(view.getLocalAddress()).thenReturn(localAddress);
 
-        InetSocketAddress address1 = new InetSocketAddress(1);
-        InetSocketAddress address2 = new InetSocketAddress(2);
-        InetSocketAddress address3 = new InetSocketAddress(3);
-        InetSocketAddress address4 = new InetSocketAddress(4);
+        InetSocketAddress address1 = new InetSocketAddress("127.0.0.1", 1);
+        InetSocketAddress address2 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress address3 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress address4 = new InetSocketAddress("127.0.0.1", 4);
 
         Digest digest1 = new Digest(address1, 2);
         Digest digest2 = new Digest(address2, 1);
@@ -126,14 +126,14 @@ public class GossipTest extends TestCase {
         FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        InetSocketAddress localAddress = new InetSocketAddress(0);
+        InetSocketAddress localAddress = new InetSocketAddress("127.0.0.1", 0);
         when(view.getLocalAddress()).thenReturn(localAddress);
         when(communications.getLocalAddress()).thenReturn(localAddress);
 
-        InetSocketAddress address1 = new InetSocketAddress(1);
-        InetSocketAddress address2 = new InetSocketAddress(2);
-        InetSocketAddress address3 = new InetSocketAddress(3);
-        InetSocketAddress address4 = new InetSocketAddress(4);
+        InetSocketAddress address1 = new InetSocketAddress("127.0.0.1", 1);
+        InetSocketAddress address2 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress address3 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress address4 = new InetSocketAddress("127.0.0.1", 4);
 
         HeartbeatState state1 = new HeartbeatState(null,
                                                    new Identity(666, 1, 0),
@@ -175,7 +175,7 @@ public class GossipTest extends TestCase {
         FailureDetectorFactory fdFactory = mock(FailureDetectorFactory.class);
         SystemView view = mock(SystemView.class);
         Random random = mock(Random.class);
-        InetSocketAddress localAddress = new InetSocketAddress(0);
+        InetSocketAddress localAddress = new InetSocketAddress("127.0.0.1", 0);
         when(view.getLocalAddress()).thenReturn(localAddress);
         when(communications.getLocalAddress()).thenReturn(localAddress);
 
@@ -184,10 +184,10 @@ public class GossipTest extends TestCase {
         Endpoint ep3 = mock(Endpoint.class);
         Endpoint ep4 = mock(Endpoint.class);
 
-        InetSocketAddress address1 = new InetSocketAddress(1);
-        InetSocketAddress address2 = new InetSocketAddress(2);
-        InetSocketAddress address3 = new InetSocketAddress(3);
-        InetSocketAddress address4 = new InetSocketAddress(4);
+        InetSocketAddress address1 = new InetSocketAddress("127.0.0.1", 1);
+        InetSocketAddress address2 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress address3 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress address4 = new InetSocketAddress("127.0.0.1", 4);
 
         HeartbeatState state1 = new HeartbeatState(null,
                                                    new Identity(666, 1, 0),

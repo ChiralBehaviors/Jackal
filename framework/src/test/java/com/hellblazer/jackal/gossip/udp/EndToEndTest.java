@@ -142,7 +142,7 @@ public class EndToEndTest extends TestCase {
                                           Collection<InetSocketAddress> seedHosts,
                                           int i) {
         UdpCommunications communications = new UdpCommunications(
-                                                                 new InetSocketAddress(
+                                                                 new InetSocketAddress("127.0.0.1", 
                                                                                        0),
                                                                  Executors.newFixedThreadPool(3,
                                                                                               new ThreadFactory() {

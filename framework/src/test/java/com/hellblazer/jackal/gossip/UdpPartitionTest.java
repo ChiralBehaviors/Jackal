@@ -72,11 +72,11 @@ public class UdpPartitionTest extends PartitionTest {
         }
 
         InetSocketAddress seedContact1() throws UnknownHostException {
-            return new InetSocketAddress(testPort1);
+            return new InetSocketAddress("127.0.0.1", testPort1);
         }
 
         InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress(testPort2);
+            return new InetSocketAddress("127.0.0.1", testPort2);
         }
 
     }
@@ -271,11 +271,11 @@ public class UdpPartitionTest extends PartitionTest {
         }
 
         InetSocketAddress seedContact1() throws UnknownHostException {
-            return new InetSocketAddress(testPort1);
+            return new InetSocketAddress("127.0.0.1", testPort1);
         }
 
         InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress(testPort2);
+            return new InetSocketAddress("127.0.0.1", testPort2);
         }
     }
 

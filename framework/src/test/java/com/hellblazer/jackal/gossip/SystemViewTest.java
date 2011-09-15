@@ -41,23 +41,23 @@ public class SystemViewTest extends TestCase {
         Random random = mock(Random.class);
         when(random.nextInt(4)).thenReturn(2);
 
-        InetSocketAddress local = new InetSocketAddress(1);
+        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
 
-        InetSocketAddress seed1 = new InetSocketAddress(2);
-        InetSocketAddress seed2 = new InetSocketAddress(3);
-        InetSocketAddress seed3 = new InetSocketAddress(4);
-        InetSocketAddress seed4 = new InetSocketAddress(5);
+        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
+        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
 
-        InetSocketAddress live1 = new InetSocketAddress(10);
-        InetSocketAddress live2 = new InetSocketAddress(11);
-        InetSocketAddress live3 = new InetSocketAddress(12);
-        InetSocketAddress live4 = new InetSocketAddress(20);
-        InetSocketAddress live5 = new InetSocketAddress(21);
-        InetSocketAddress unreachable1 = new InetSocketAddress(13);
-        InetSocketAddress unreachable2 = new InetSocketAddress(14);
-        InetSocketAddress unreachable3 = new InetSocketAddress(15);
-        InetSocketAddress unreachable4 = new InetSocketAddress(16);
-        InetSocketAddress unreachable5 = new InetSocketAddress(17);
+        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
+        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
+        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
+        InetSocketAddress live4 = new InetSocketAddress("127.0.0.1", 20);
+        InetSocketAddress live5 = new InetSocketAddress("127.0.0.1", 21);
+        InetSocketAddress unreachable1 = new InetSocketAddress("127.0.0.1", 13);
+        InetSocketAddress unreachable2 = new InetSocketAddress("127.0.0.1", 14);
+        InetSocketAddress unreachable3 = new InetSocketAddress("127.0.0.1", 15);
+        InetSocketAddress unreachable4 = new InetSocketAddress("127.0.0.1", 16);
+        InetSocketAddress unreachable5 = new InetSocketAddress("127.0.0.1", 17);
 
         Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
                                                                 seed3, seed4);
@@ -97,16 +97,16 @@ public class SystemViewTest extends TestCase {
         Random random = mock(Random.class);
         when(random.nextInt(3)).thenReturn(2);
 
-        InetSocketAddress local = new InetSocketAddress(1);
+        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
 
-        InetSocketAddress seed1 = new InetSocketAddress(2);
-        InetSocketAddress seed2 = new InetSocketAddress(3);
-        InetSocketAddress seed3 = new InetSocketAddress(4);
-        InetSocketAddress seed4 = new InetSocketAddress(5);
+        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
+        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
 
-        InetSocketAddress live1 = new InetSocketAddress(10);
-        InetSocketAddress live2 = new InetSocketAddress(11);
-        InetSocketAddress live3 = new InetSocketAddress(12);
+        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
+        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
+        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
 
         Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
                                                                 seed3, seed4);
@@ -125,26 +125,26 @@ public class SystemViewTest extends TestCase {
     public void testUnreachableMembers() throws Exception {
         Random random = mock(Random.class);
 
-        InetSocketAddress local = new InetSocketAddress(1);
+        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
 
-        InetSocketAddress seed1 = new InetSocketAddress(2);
-        InetSocketAddress seed2 = new InetSocketAddress(3);
-        InetSocketAddress seed3 = new InetSocketAddress(4);
-        InetSocketAddress seed4 = new InetSocketAddress(5);
+        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
+        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
 
-        InetSocketAddress live1 = new InetSocketAddress(10);
-        InetSocketAddress live2 = new InetSocketAddress(11);
-        InetSocketAddress live3 = new InetSocketAddress(12);
-        InetSocketAddress live4 = new InetSocketAddress(20);
-        InetSocketAddress live5 = new InetSocketAddress(21);
-        InetSocketAddress live6 = new InetSocketAddress(22);
-        InetSocketAddress live7 = new InetSocketAddress(23);
-        InetSocketAddress live8 = new InetSocketAddress(24);
+        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
+        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
+        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
+        InetSocketAddress live4 = new InetSocketAddress("127.0.0.1", 20);
+        InetSocketAddress live5 = new InetSocketAddress("127.0.0.1", 21);
+        InetSocketAddress live6 = new InetSocketAddress("127.0.0.1", 22);
+        InetSocketAddress live7 = new InetSocketAddress("127.0.0.1", 23);
+        InetSocketAddress live8 = new InetSocketAddress("127.0.0.1", 24);
 
-        InetSocketAddress unreachable1 = new InetSocketAddress(13);
-        InetSocketAddress unreachable2 = new InetSocketAddress(14);
-        InetSocketAddress unreachable3 = new InetSocketAddress(15);
-        InetSocketAddress unreachable4 = new InetSocketAddress(16);
+        InetSocketAddress unreachable1 = new InetSocketAddress("127.0.0.1", 13);
+        InetSocketAddress unreachable2 = new InetSocketAddress("127.0.0.1", 14);
+        InetSocketAddress unreachable3 = new InetSocketAddress("127.0.0.1", 15);
+        InetSocketAddress unreachable4 = new InetSocketAddress("127.0.0.1", 16);
 
         Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
                                                                 seed3, seed4);
@@ -181,21 +181,21 @@ public class SystemViewTest extends TestCase {
     public void testQuarantined() throws Exception {
         Random random = mock(Random.class);
 
-        InetSocketAddress local = new InetSocketAddress(1);
+        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
 
-        InetSocketAddress seed1 = new InetSocketAddress(2);
-        InetSocketAddress seed2 = new InetSocketAddress(3);
-        InetSocketAddress seed3 = new InetSocketAddress(4);
-        InetSocketAddress seed4 = new InetSocketAddress(5);
+        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
+        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
 
-        InetSocketAddress live1 = new InetSocketAddress(10);
-        InetSocketAddress live2 = new InetSocketAddress(11);
-        InetSocketAddress live3 = new InetSocketAddress(12);
-        InetSocketAddress live4 = new InetSocketAddress(20);
-        InetSocketAddress live5 = new InetSocketAddress(21);
-        InetSocketAddress live6 = new InetSocketAddress(22);
-        InetSocketAddress live7 = new InetSocketAddress(23);
-        InetSocketAddress live8 = new InetSocketAddress(24);
+        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
+        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
+        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
+        InetSocketAddress live4 = new InetSocketAddress("127.0.0.1", 20);
+        InetSocketAddress live5 = new InetSocketAddress("127.0.0.1", 21);
+        InetSocketAddress live6 = new InetSocketAddress("127.0.0.1", 22);
+        InetSocketAddress live7 = new InetSocketAddress("127.0.0.1", 23);
+        InetSocketAddress live8 = new InetSocketAddress("127.0.0.1", 24);
 
         Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
                                                                 seed3, seed4);
