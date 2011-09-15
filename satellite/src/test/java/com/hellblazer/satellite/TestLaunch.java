@@ -131,6 +131,7 @@ public class TestLaunch extends TestCase {
         });
 
         startBarrier.await(30, TimeUnit.SECONDS);
+        assertFalse(startBarrier.isBroken());
 
         provider0.setValue("zero");
         provider1.setValue("one");
