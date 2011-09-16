@@ -186,6 +186,17 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         return equalOk;
     }
 
+    public int first() {
+        for (int i = 0; i < storage.length; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                if ((storage[i] >> j & 1) > 0) {
+                    return i * 8 + j;
+                }
+            }
+        }
+        return 0;
+    }
+
     /**
      * flip bit at index i (if present remove it, if absent add it)
      * 
@@ -265,6 +276,63 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         return cardinality() == 0;
     }
 
+    public int last() {
+        for (int i = storage.length - 1; i >= 0; --i) {
+            for (int j = 7; j >= 0; --j) {
+                if ((storage[i] >> j & 1) > 0) {
+                    return i * 8 + j;
+                }
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Answer the left neighbor of the id, modeling the receiver as a sorted
+     * ring
+     * 
+     * @param id
+     * @return the left neighbor id, or -1 if the receiver does not contain the
+     *         id or the id is the only member of the set
+     */
+    public int leftNeighborOf(int id) {
+        if (id >= size()) {
+            // not a member of the set
+            return -1;
+        }
+        final int byteNbr = id / 8;
+        final byte pos = (byte) (id % 8);
+        final byte homeByte = storage[byteNbr];
+        if ((byte) (homeByte & 1 << pos) == 0) {
+            // not a member of the set
+            return -1;
+        }
+
+        int neighbor = -1;
+
+        // See if the left neighbor is in the home byte
+        for (int i = pos - 1; i >= 0; i--) {
+            if ((homeByte & 1 << i) != 0) {
+                neighbor = byteNbr * 8 + i;
+                break;
+            }
+        }
+        // scan through the previous bytes
+        for (int i = byteNbr - 1; neighbor == -1 && i >= 0; i--) {
+            for (int j = 7; j >= 0; j--) {
+                if ((storage[i] >> j & 1) > 0) {
+                    neighbor = i * 8 + j;
+                    break;
+                }
+            }
+        }
+        if (neighbor == -1) {
+            // wrap around
+            neighbor = last();
+        }
+        return neighbor;
+    }
+
     /**
      * modify this bitset by adding all the bits that are in s (logically
      * bitwise: this = this OR s) return true if any modification, otherwise
@@ -292,6 +360,74 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
             }
         }
         return mergeOk;
+    }
+
+    /**
+     * Answer the left and right neighbors of the id, modeling the receiver as a
+     * sorted ring
+     * 
+     * @param id
+     * @return the left and right neighbor ids, or null if the receiver does not
+     *         contain the id
+     */
+    public int[] neighborsOf(int id) {
+        if (id >= size()) {
+            // not a member of the set
+            return null;
+        }
+        final int byteNbr = id / 8;
+        final byte pos = (byte) (id % 8);
+        final byte homeByte = storage[byteNbr];
+        if ((byte) (homeByte & 1 << pos) == 0) {
+            // not a member of the set
+            return null;
+        }
+
+        int[] neighbors = new int[] { -1, -1 };
+
+        // See if the right neighbor is in the home byte
+        for (int i = pos + 1; i < 8; i++) {
+            if ((homeByte & 1 << i) != 0) {
+                neighbors[1] = byteNbr * 8 + i;
+                break;
+            }
+        }
+
+        // scan through the remaining bytes
+        for (int i = byteNbr + 1; neighbors[1] == -1 && i < storage.length; i++) {
+            for (int j = 0; j < 8; j++) {
+                if ((storage[i] >> j & 1) > 0) {
+                    neighbors[1] = i * 8 + j;
+                    break;
+                }
+            }
+        }
+        if (neighbors[1] == -1) {
+            // wrap around
+            neighbors[1] = first();
+        }
+
+        // See if the left neighbor is in the home byte
+        for (int i = pos - 1; i >= 0; i--) {
+            if ((homeByte & 1 << i) != 0) {
+                neighbors[0] = byteNbr * 8 + i;
+                break;
+            }
+        }
+        // scan through the previous bytes
+        for (int i = byteNbr - 1; neighbors[0] == -1 && i >= 0; i--) {
+            for (int j = 7; j >= 0; j--) {
+                if ((storage[i] >> j & 1) > 0) {
+                    neighbors[0] = i * 8 + j;
+                    break;
+                }
+            }
+        }
+        if (neighbors[0] == -1) {
+            // wrap around
+            neighbors[0] = last();
+        }
+        return neighbors;
     }
 
     /**
@@ -393,87 +529,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
         return subOk;
     }
 
-    /**
-     * Answer the left and right neighbors of the id, modeling the receiver as a
-     * sorted ring
-     * 
-     * @param id
-     * @return the left and right neighbor ids, or null if the receiver does not
-     *         contain the id
-     */
-    public int[] neighborsOf(int id) {
-        if (id >= size()) {
-            // not a member of the set
-            return null;
-        }
-        final int byteNbr = id / 8;
-        final byte pos = (byte) (id % 8);
-        final byte homeByte = storage[byteNbr];
-        if ((byte) (homeByte & 1 << pos) == 0) {
-            // not a member of the set
-            return null;
-        }
-
-        int[] neighbors = new int[] { -1, -1 };
-
-        // See if the right neighbor is in the home byte
-        for (int i = pos + 1; i < 8; i++) {
-            if ((homeByte & 1 << i) != 0) {
-                neighbors[1] = byteNbr * 8 + i;
-                break;
-            }
-        }
-
-        // scan through the remaining bytes
-        for (int i = byteNbr + 1; neighbors[1] == -1 && i < storage.length; i++) {
-            for (int j = 0; j < 8; j++) {
-                if ((storage[i] >> j & 1) > 0) {
-                    neighbors[1] = i * 8 + j;
-                    break;
-                }
-            }
-        }
-        if (neighbors[1] == -1) {
-            // wrap around
-            neighbors[1] = first();
-        }
-
-        // See if the left neighbor is in the home byte
-
-        // See if the right neighbor is in the home byte
-        for (int i = pos - 1; i >= 0; i--) {
-            if ((homeByte & 1 << i) != 0) {
-                neighbors[0] = byteNbr * 8 + i;
-                break;
-            }
-        }
-        // scan through the previous bytes
-        for (int i = byteNbr - 1; neighbors[0] == -1 && i >= 0; i--) {
-            for (int j = 7; j >= 0; j--) {
-                if ((storage[i] >> j & 1) > 0) {
-                    neighbors[0] = i * 8 + j;
-                    break;
-                }
-            }
-        }
-        if (neighbors[0] == -1) {
-            // wrap around
-            neighbors[0] = last();
-        }
-        return neighbors;
-    }
-
-    public int last() {
-        for (int i = storage.length - 1; i >= 0; --i) {
-            for (int j = 7; j >= 0; --j) {
-                if ((storage[i] >> j & 1) > 0) {
-                    return i * 8 + j;
-                }
-            }
-        }
-        return 0;
-    }
-
     @Override
     public String toString() {
         StringBuffer stBuf = new StringBuffer();
@@ -542,17 +597,6 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
             }
         }
         return retBa;
-    }
-
-    public int first() {
-        for (int i = 0; i < storage.length; ++i) {
-            for (int j = 0; j < 8; ++j) {
-                if ((storage[i] >> j & 1) > 0) {
-                    return i * 8 + j;
-                }
-            }
-        }
-        return 0;
     }
 
 }
