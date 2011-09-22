@@ -146,12 +146,7 @@ public class GossipConfiguration {
 
     @Bean
     public TestMgr testMgr() throws Exception {
-        TestMgr mgr = new TestMgr(contactAddress(), partition(), node());
-        mgr.setConnectionAddress(contactAddress());
-        mgr.setConnectionSet(connectionSet());
-        mgr.setIdentity(partitionIdentity());
-        mgr.setTestable(getTestable());
-        return mgr;
+        return new TestMgr(contactAddress(), partition(), node(), connectionSet(), getTestable());
     }
 
     @Bean

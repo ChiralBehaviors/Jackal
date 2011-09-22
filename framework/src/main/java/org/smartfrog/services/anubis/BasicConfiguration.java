@@ -22,6 +22,7 @@ import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,6 +31,10 @@ import com.hellblazer.jackal.util.SocketOptions;
 
 @Configuration
 public class BasicConfiguration {
+
+    public static void main(String[] argv) {
+        new AnnotationConfigApplicationContext(BasicConfiguration.class);
+    }
 
     @Bean
     public ConnectionSet connectionSet() throws Exception {
@@ -79,12 +84,8 @@ public class BasicConfiguration {
 
     @Bean
     public TestMgr testMgr() throws Exception {
-        TestMgr mgr = new TestMgr(contactAddress(), partition(), node());
-        mgr.setConnectionAddress(contactAddress());
-        mgr.setConnectionSet(connectionSet());
-        mgr.setIdentity(partitionIdentity());
-        mgr.setTestable(getTestable());
-        return mgr;
+        return new TestMgr(contactAddress(), partition(), node(),
+                           connectionSet(), getTestable());
     }
 
     @Bean

@@ -39,7 +39,6 @@ import org.smartfrog.services.anubis.partition.test.msg.PartitionMsg;
 import org.smartfrog.services.anubis.partition.test.msg.ThreadsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.TimingMsg;
 import org.smartfrog.services.anubis.partition.test.stats.StatsManager;
-import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
@@ -47,11 +46,9 @@ import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 public class TestMgr {
     private static final Logger       log           = Logger.getLogger(TestMgr.class.getCanonicalName());
     private static final long         STATSRATE     = 5;
-    private InetSocketAddress         connectionAddress;
     private final Set<TestConnection> connections   = new CopyOnWriteArraySet<TestConnection>();
     private TestServer                connectionServer;
     private ConnectionSet             connectionSet = null;
-    private Identity                  identity;
     private volatile long             lastStats     = 0;
     private PartitionManager          partitionManager;
     private final StatsManager        statistics    = new StatsManager();
@@ -59,12 +56,17 @@ public class TestMgr {
     // timing
     private boolean                   testable      = true;
 
-    public TestMgr(InetSocketAddress endpoint, PartitionManager partitionManager,
-                   int id) throws IOException, Exception {
+    public TestMgr(InetSocketAddress endpoint,
+                   PartitionManager partitionManager, int id,
+                   ConnectionSet connectionSet, boolean testable)
+                                                                 throws IOException,
+                                                                 Exception {
         this.partitionManager = partitionManager;
         String threadName = "Anubis: Partition Manager Test Node (node " + id
                             + ") - connection server";
         connectionServer = new TestServer(this, endpoint, threadName);
+        this.connectionSet = connectionSet;
+        this.testable = testable;
     }
 
     public void closing(TestConnection connection) {
@@ -74,22 +76,6 @@ public class TestMgr {
 
     public InetSocketAddress getAddress() {
         return connectionServer.getAddress();
-    }
-
-    public InetSocketAddress getConnectionAddress() {
-        return connectionAddress;
-    }
-
-    public ConnectionSet getConnectionSet() {
-        return connectionSet;
-    }
-
-    public Identity getIdentity() {
-        return identity;
-    }
-
-    public PartitionManager getPartitionManager() {
-        return partitionManager;
     }
 
     public boolean isTestable() {
@@ -115,18 +101,6 @@ public class TestMgr {
         updateStats(time);
     }
 
-    public void setConnectionAddress(InetSocketAddress connectionAddress) {
-        this.connectionAddress = connectionAddress;
-    }
-
-    public void setConnectionSet(ConnectionSet connectionSet) {
-        this.connectionSet = connectionSet;
-    }
-
-    public void setIdentity(Identity identity) {
-        this.identity = identity;
-    }
-
     /**
      * set the nodes to ignore
      * 
@@ -135,14 +109,6 @@ public class TestMgr {
     public void setIgnoring(View ignoring) {
         connectionSet.setIgnoring(ignoring);
         updateIgnoring(ignoring);
-    }
-
-    public void setPartitionManager(PartitionManager partitionManager) {
-        this.partitionManager = partitionManager;
-    }
-
-    public void setTestable(boolean testable) {
-        this.testable = testable;
     }
 
     public void setTiming(long interval, long timeout) {
@@ -157,13 +123,6 @@ public class TestMgr {
         if (!testable) {
             return;
         }
-
-        String threadName = "Anubis: Partition Manager Test Node (node "
-                            + identity.id + ") - connection server";
-        connectionServer = new TestServer(
-                                          this,
-                                          connectionAddress,
-                                          threadName);
 
         if (!testable) {
             terminate();
@@ -181,6 +140,20 @@ public class TestMgr {
             while (iter.hasNext()) {
                 iter.next().shutdown();
             }
+        }
+    }
+
+    public void updateHeartbeat(Heartbeat hb) {
+        HeartbeatMsg heartbeatMsg = HeartbeatMsg.toHeartbeatMsg(hb);
+        byte[] wire;
+        try {
+            wire = heartbeatMsg.toWire();
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Unable to deserialize heartbeat", e);
+            return;
+        }
+        for (TestConnection tc : connections) {
+            tc.send(wire);
         }
     }
 
@@ -229,20 +202,6 @@ public class TestMgr {
     public void updateTiming(TestConnection tc) {
         tc.sendObject(new TimingMsg(connectionSet.getInterval(),
                                     connectionSet.getTimeout()));
-    }
-
-    public void updateHeartbeat(Heartbeat hb) {
-        HeartbeatMsg heartbeatMsg = HeartbeatMsg.toHeartbeatMsg(hb);
-        byte[] wire;
-        try {
-            wire = heartbeatMsg.toWire();
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Unable to deserialize heartbeat", e);
-            return;
-        }
-        for (TestConnection tc : connections) {
-            tc.send(wire);
-        }
     }
 
 }

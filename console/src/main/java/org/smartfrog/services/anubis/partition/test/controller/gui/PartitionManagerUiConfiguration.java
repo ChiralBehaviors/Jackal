@@ -21,7 +21,10 @@ import java.net.UnknownHostException;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 
 @Configuration
 public class PartitionManagerUiConfiguration extends ControllerConfiguration {
@@ -36,6 +39,11 @@ public class PartitionManagerUiConfiguration extends ControllerConfiguration {
         return new GraphicController(timer(), 1000, 300000,
                                      partitionIdentity(), heartbeatTimeout(),
                                      heartbeatInterval());
+    }
+
+    @Bean
+    public DeployedPostProcessor deployedPostProcessor() {
+        return new DeployedPostProcessor();
     }
 
 }
