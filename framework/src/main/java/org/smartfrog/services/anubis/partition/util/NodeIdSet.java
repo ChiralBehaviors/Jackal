@@ -308,29 +308,22 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
             return -1;
         }
 
-        int neighbor = -1;
-
         // See if the left neighbor is in the home byte
         for (int i = pos - 1; i >= 0; i--) {
             if ((homeByte & 1 << i) != 0) {
-                neighbor = byteNbr * 8 + i;
-                break;
+                return byteNbr * 8 + i;
             }
         }
         // scan through the previous bytes
-        for (int i = byteNbr - 1; neighbor == -1 && i >= 0; i--) {
+        for (int i = byteNbr - 1; i >= 0; i--) {
             for (int j = 7; j >= 0; j--) {
                 if ((storage[i] >> j & 1) > 0) {
-                    neighbor = i * 8 + j;
-                    break;
+                    return i * 8 + j;
                 }
             }
         }
-        if (neighbor == -1) {
-            // wrap around
-            neighbor = last();
-        }
-        return neighbor;
+        // wrap around
+        return last();
     }
 
     /**
@@ -492,6 +485,46 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
             }
         }
         return rcOk;
+    }
+
+    /**
+     * Answer the right neighbor of the id, modeling the receiver as a sorted
+     * ring
+     * 
+     * @param id
+     * @return the right neighbor id, or -1 if the receiver does not contain the
+     *         id
+     */
+    public int rightNeighborOf(int id) {
+        if (id >= size()) {
+            // not a member of the set
+            return -1;
+        }
+        final int byteNbr = id / 8;
+        final byte pos = (byte) (id % 8);
+        final byte homeByte = storage[byteNbr];
+        if ((byte) (homeByte & 1 << pos) == 0) {
+            // not a member of the set
+            return -1;
+        }
+
+        // See if the right neighbor is in the home byte
+        for (int i = pos + 1; i < 8; i++) {
+            if ((homeByte & 1 << i) != 0) {
+                return byteNbr * 8 + i;
+            }
+        }
+
+        // scan through the remaining bytes
+        for (int i = byteNbr + 1; i < storage.length; i++) {
+            for (int j = 0; j < 8; j++) {
+                if ((storage[i] >> j & 1) > 0) {
+                    return i * 8 + j;
+                }
+            }
+        }
+        // wrap around
+        return first();
     }
 
     /**
