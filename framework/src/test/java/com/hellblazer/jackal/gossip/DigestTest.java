@@ -34,7 +34,7 @@ import com.hellblazer.jackal.gossip.Digest.DigestComparator;
  */
 public class DigestTest extends TestCase {
     public void testBasic() throws Exception {
-        InetSocketAddress address = new InetSocketAddress("google.com", 80);
+        InetSocketAddress address = new InetSocketAddress("localhost", 80);
         Digest s = new Digest(address, 667);
         assertEquals(667, s.getTime());
         assertEquals(address, s.getAddress());

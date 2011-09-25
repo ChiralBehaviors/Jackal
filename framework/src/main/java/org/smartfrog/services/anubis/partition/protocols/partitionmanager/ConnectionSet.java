@@ -210,6 +210,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             stablizing = false;
             intervalExec.clearStability();
             partitionProtocol.stableView();
+            dropBrokenConnections();
             if (alwaysReconnect) {
                 reconnect();
             }
@@ -219,6 +220,17 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * drive the partition manager's notifictions.
          */
         partitionProtocol.notifyChanges();
+    }
+
+    /**
+     * Drop connections to nodes that are not in the view - they will be broken.
+     */
+    private void dropBrokenConnections() {
+        for (MessageConnection connection : msgConnections) {
+            if (!connectionView.contains(connection.getId())) {
+                connection.disconnect();
+            }
+        }
     }
 
     /**
@@ -609,7 +621,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
         if (con.isSelf()) {
             if (!hb.getSenderAddress().equals(heartbeat.getSenderAddress())) {
-                log.severe(String.format("Detected another member with same node identity as this node: %s.  Terminating this member"));
+                log.severe(String.format("Detected another member with same node identity as this node: %s.  Terminating this member", identity));
                 terminate();
                 return false;
             }
@@ -701,10 +713,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * send the heartbeat on message connections.
          */
         /**
-        for (MessageConnection mcon : msgConnections) {
-            mcon.sendMsg(heartbeat);
-        }
-        */
+         * for (MessageConnection mcon : msgConnections) {
+         * mcon.sendMsg(heartbeat); }
+         */
 
         /**
          * Do delayed removeConnection() calls

@@ -314,12 +314,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         localState.set(heartbeatState);
         ring.update(heartbeatState.getMembers(), endpoints.values());
         if (!isDiscoveryOnly) {
-            dispatcher.execute(new Runnable() {
-                @Override
-                public void run() {
-                    ring.send(heartbeatState);
-                }
-            });
+            ring.send(heartbeatState);
         }
     }
 
@@ -701,12 +696,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 receiver.receiveHeartbeat(state);
             }
         });
-        dispatcher.execute(new Runnable() {
-            @Override
-            public void run() {
-                ring.send(state);
-            }
-        });
+        ring.send(state);
     }
 
     protected List<Digest> randomDigests() {

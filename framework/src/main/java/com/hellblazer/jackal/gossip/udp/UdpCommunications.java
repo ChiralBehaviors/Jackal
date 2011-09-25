@@ -236,8 +236,7 @@ public class UdpCommunications implements GossipCommunications {
     }
 
     @Override
-    public void send(HeartbeatState state, InetSocketAddress left,
-                     InetSocketAddress right) {
+    public void send(HeartbeatState state, InetSocketAddress left) {
         ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.clear();
@@ -247,9 +246,6 @@ public class UdpCommunications implements GossipCommunications {
         buffer.flip();
         if (!gossip.isIgnoring(left)) {
             send(buffer, left);
-        }
-        if (!gossip.isIgnoring(right)) {
-            send(buffer, right);
         }
     }
 

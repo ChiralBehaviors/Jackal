@@ -77,8 +77,6 @@ public interface GossipCommunications {
      * 
      * @param state
      * @param inetSocketAddress
-     * @param inetSocketAddress2
      */
-    void send(HeartbeatState state, InetSocketAddress inetSocketAddress,
-              InetSocketAddress inetSocketAddress2);
+    void send(HeartbeatState state, InetSocketAddress inetSocketAddress);
 }
