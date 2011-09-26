@@ -621,7 +621,8 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
         if (con.isSelf()) {
             if (!hb.getSenderAddress().equals(heartbeat.getSenderAddress())) {
-                log.severe(String.format("Detected another member with same node identity as this node: %s.  Terminating this member", identity));
+                log.severe(String.format("Detected another member with same node identity as this node: %s.  Terminating this member",
+                                         identity));
                 terminate();
                 return false;
             }
@@ -712,10 +713,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         /**
          * send the heartbeat on message connections.
          */
-        /**
-         * for (MessageConnection mcon : msgConnections) {
-         * mcon.sendMsg(heartbeat); }
-         */
+        for (MessageConnection mcon : msgConnections) {
+            mcon.sendMsg(heartbeat);
+        }
 
         /**
          * Do delayed removeConnection() calls
