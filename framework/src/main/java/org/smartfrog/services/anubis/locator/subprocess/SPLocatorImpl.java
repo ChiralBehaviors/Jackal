@@ -66,24 +66,22 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         }
     }
 
-    private static final long                 serialVersionUID = 1L;
-
-    private static final Logger               log              = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
-    private boolean                           isDeployed       = false;
-    private boolean                           isRegistered     = false;
-    private Object                            adapterMonitor   = new Object();
+    private static final Logger               log            = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
+    private boolean                           isDeployed     = false;
+    private boolean                           isRegistered   = false;
+    private Object                            adapterMonitor = new Object();
     private SPLocatorAdapter                  adapter;
-    private Set<AnubisProvider>               providers        = new HashSet<AnubisProvider>();
-    private Map<AnubisListener, SPListener>   listeners        = new HashMap<AnubisListener, SPListener>();
-    private Map<AnubisStability, SPStability> stabilities      = new HashMap<AnubisStability, SPStability>();
+    private Set<AnubisProvider>               providers      = new HashSet<AnubisProvider>();
+    private Map<AnubisListener, SPListener>   listeners      = new HashMap<AnubisListener, SPListener>();
+    private Map<AnubisStability, SPStability> stabilities    = new HashMap<AnubisStability, SPStability>();
     private Liveness                          liveness;
     private LivenessChecker                   livenessChecker;
     private Pinger                            pinger;
     private ScheduledExecutorService          timers;
     private long                              maxTransDelay;
-    private Logger                            syncLog          = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
-    private Logger                            asyncLog         = syncLog;                                                 // TO Do: wrap with Async...
-    private volatile boolean                  terminated       = false;
+    private Logger                            syncLog        = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
+    private Logger                            asyncLog       = syncLog;                                                 // TO Do: wrap with Async...
+    private volatile boolean                  terminated     = false;
     private long                              period;
     private long                              timeout;
 

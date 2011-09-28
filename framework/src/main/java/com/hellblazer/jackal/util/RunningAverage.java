@@ -2,7 +2,6 @@ package com.hellblazer.jackal.util;
 
 public class RunningAverage extends Window implements SampledWindow {
     private double sum          = 0.0D;
-    private double sumOfSquares = 0.0D;
 
     public RunningAverage(int windowSize) {
         super(windowSize);
@@ -11,11 +10,9 @@ public class RunningAverage extends Window implements SampledWindow {
     @Override
     public void sample(double sample) {
         sum += sample;
-        sumOfSquares += sample * sample;
         if (count == samples.length) {
             double first = removeFirst();
             sum -= first;
-            sumOfSquares -= first * first;
         }
         addLast(sample);
     }

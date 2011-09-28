@@ -183,7 +183,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
 
         log.info(String.format("Connection set: %s started on: %s", identity,
                                connectionServer.getAddress()));
-        partitionProtocol.start();
     }
 
     /**
@@ -770,6 +769,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
 
         connectionView.setTimeStamp(identity.epoch);
+        partitionProtocol.start();
         intervalExec.start();
         connectionServer.start(heartbeat);
         heartbeatComms.start(heartbeat);
