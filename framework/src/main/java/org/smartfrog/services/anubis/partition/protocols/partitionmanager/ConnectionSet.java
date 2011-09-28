@@ -183,6 +183,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
 
         log.info(String.format("Connection set: %s started on: %s", identity,
                                connectionServer.getAddress()));
+        partitionProtocol.start();
     }
 
     /**

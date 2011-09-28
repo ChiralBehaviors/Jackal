@@ -21,7 +21,6 @@ package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
 import java.net.InetAddress;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.partition.PartitionManager;
@@ -129,8 +128,7 @@ public class PartitionProtocol {
         view.copyView(connectionSet.getView());
         leader = connectionSet.electLeader(view);
     }
-
-    @PostConstruct
+ 
     public void start() {
         view.add(identity);
         view.stablize();
