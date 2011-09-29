@@ -47,7 +47,6 @@ public final class SkipList {
     private int                 size      = 0;
 
     private Node[]              update    = new Node[MAX_LEVEL];
-    private int                 modCount  = 0;
 
     public SkipList() {
         for (int i = 0; i < MAX_LEVEL; i++) {
@@ -93,7 +92,6 @@ public final class SkipList {
         }
         x.prev = update[0];
         x.next().prev = x;
-        modCount++;
         size++;
         return true;
     }
@@ -166,7 +164,6 @@ public final class SkipList {
         while (head.next[level - 1] == head && level > 1) {
             level--;
         }
-        modCount++;
         size--;
     }
 
