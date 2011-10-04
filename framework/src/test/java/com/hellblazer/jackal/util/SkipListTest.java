@@ -17,7 +17,8 @@
  */
 package com.hellblazer.jackal.util;
 
-import com.hellblazer.jackal.util.SkipList;
+import java.util.Arrays;
+import java.util.Random;
 
 import junit.framework.TestCase;
 
@@ -45,13 +46,37 @@ public class SkipListTest extends TestCase {
 
         assertFalse(list.contains(Integer.valueOf(5)));
     }
-    
+
     public void testCounting() {
         SkipList list = new SkipList();
         for (int i = 0; i < 10; i++) {
             list.add(i);
         }
-        
+
         assertEquals(6, list.countLessThanEqualTo(5.0));
+    }
+
+    public void testLargeRandom() {
+        Random r = new Random(666);
+        SkipList list = new SkipList();
+        int count = 10000;
+        double[] original = new double[count];
+        double[] sorted = new double[count];
+        for (int i = 0; i < count; i++) {
+            double data = r.nextLong();
+            sorted[i] = data;
+            original[i] = data;
+            list.add(data);
+        }
+        Arrays.sort(sorted);
+        assertEquals(count, list.size());
+        int i = 0;
+        for (double d : sorted) {
+            assertEquals(d, list.get(i++));
+        }
+        for (i = 0; i < count; i++) {
+            assertTrue(list.remove(original[i]));
+            assertEquals(count - (i + 1), list.size());
+        }
     }
 }

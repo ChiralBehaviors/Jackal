@@ -37,16 +37,15 @@ public final class SkipList {
         }
     }
 
-    private static final int    MAX_LEVEL = 32;
-    private static final double P         = .5;
+    private static final int MAX_LEVEL = 32;
+    private Node             head      = new Node(Double.NaN, MAX_LEVEL);
+    private int[]            index     = new int[MAX_LEVEL];
+    private int              level     = 1;
+    private Random           random    = new Random();
 
-    private Node                head      = new Node(Double.NaN, MAX_LEVEL);
-    private int[]               index     = new int[MAX_LEVEL];
-    private int                 level     = 1;
-    private Random              random    = new Random();
-    private int                 size      = 0;
+    private int              size      = 0;
 
-    private Node[]              update    = new Node[MAX_LEVEL];
+    private Node[]           update    = new Node[MAX_LEVEL];
 
     public SkipList() {
         for (int i = 0; i < MAX_LEVEL; i++) {
@@ -100,31 +99,6 @@ public final class SkipList {
         return search(o) != null;
     }
 
-    public double get(int index) {
-        assert index < size;
-        return search(index).element;
-    }
-
-    public boolean remove(double o) {
-        Node curr = head;
-        for (int i = level - 1; i >= 0; i--) {
-            while (curr.next[i] != head && curr.next[i].element < o) {
-                curr = curr.next[i];
-            }
-            update[i] = curr;
-        }
-        curr = curr.next();
-        if (curr == head || curr.element != o) {
-            return false;
-        }
-        delete(curr, update);
-        return true;
-    }
-
-    public int size() {
-        return size;
-    }
-
     /**
      * count the number of elements that are <= the supplied value
      * 
@@ -151,6 +125,31 @@ public final class SkipList {
         return count;
     }
 
+    public double get(int index) {
+        assert index < size;
+        return search(index).element;
+    }
+
+    public boolean remove(double o) {
+        Node curr = head;
+        for (int i = level - 1; i >= 0; i--) {
+            while (curr.next[i] != head && curr.next[i].element < o) {
+                curr = curr.next[i];
+            }
+            update[i] = curr;
+        }
+        curr = curr.next();
+        if (curr == head || curr.element != o) {
+            return false;
+        }
+        delete(curr, update);
+        return true;
+    }
+
+    public int size() {
+        return size;
+    }
+
     private void delete(final Node node, final Node[] update) {
         for (int i = 0; i < level; i++) {
             if (update[i].next[i] == node) {
@@ -168,11 +167,7 @@ public final class SkipList {
     }
 
     private int randomLevel() {
-        int randomLevel = 1;
-        while (randomLevel < MAX_LEVEL - 1 && random.nextDouble() < P) {
-            randomLevel++;
-        }
-        return randomLevel;
+        return Math.max(1, (int) ((MAX_LEVEL - 1) * random.nextDouble()));
     }
 
     private Node search(final double element) {
