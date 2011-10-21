@@ -167,7 +167,8 @@ public class BasicConfiguration {
         return new LeaderProtocolFactory();
     }
 
-    protected int node() {
+    @Bean
+    public int node() {
         try {
             return Identity.getProcessUniqueId();
         } catch (UnknownHostException e) {
