@@ -85,6 +85,14 @@ public class PartitionManager implements Partition {
         notificationSet.remove(pn);
     }
 
+    /* (non-Javadoc)
+     * @see org.smartfrog.services.anubis.partition.Partition#destabilize()
+     */
+    @Override
+    public void destabilize() {
+        partitionProtocol.destabilize();
+    }
+
     @Override
     public int getId() {
         return identity.id;
@@ -117,7 +125,7 @@ public class PartitionManager implements Partition {
                        + ", view = " + view);
         }
 
-        if (log.isLoggable(Level.FINEST)) { 
+        if (log.isLoggable(Level.FINEST)) {
             log.log(Level.FINEST,
                     String.format("%s notified: %s", identity, view));
         }

@@ -35,4 +35,9 @@ public interface Partition {
     public Status getStatus();
 
     public void register(PartitionNotification pn);
+
+    /**
+     * Force the partition to destabilize
+     */
+    public void destabilize();
 }

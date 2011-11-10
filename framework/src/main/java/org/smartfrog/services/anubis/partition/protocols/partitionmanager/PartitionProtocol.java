@@ -140,5 +140,12 @@ public class PartitionProtocol {
     public void terminate() {
         terminated = true;
     }
+    
+    /**
+     * Force the destabilization of the partition.
+     */
+    public void destabilize() {
+        connectionSet.destabilize();
+    }
 
 }

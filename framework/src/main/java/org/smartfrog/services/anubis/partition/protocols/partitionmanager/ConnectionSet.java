@@ -150,22 +150,16 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                                                  connectionServer.getAddress(),
                                                  isPreferredLeaderNode);
 
-        /**
-         * Heartbeat and leader protocols
-         */
+        // Heartbeat and leader protocols 
         leaderMgr = leaderProtocolFactory.createMgr(connections, self);
 
         stability = heartbeatInterval + timeout;
         quiesce = heartbeatInterval + stability;
 
-        /**
-         * Protocol timing driver thread
-         */
+        // Protocol timing driver thread 
         intervalExec = new IntervalExec(identity, this, heartbeatInterval);
 
-        /**
-         * Heartbeat message initialisation
-         */
+        // Heartbeat message initialisation 
         heartbeat = heartbeatProtocolFactory.createMsg(identity,
                                                        connectionServer.getAddress());
         heartbeat.setMsgLinks(msgLinks);
@@ -220,17 +214,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * drive the partition manager's notifictions.
          */
         partitionProtocol.notifyChanges();
-    }
-
-    /**
-     * Drop connections to nodes that are not in the view - they will be broken.
-     */
-    private void dropBrokenConnections() {
-        for (MessageConnection connection : msgConnections) {
-            if (!connectionView.contains(connection.getId())) {
-                connection.disconnect();
-            }
-        }
     }
 
     /**
@@ -799,17 +782,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         return thisEndInitiatesConnectionsTo(target.id);
     }
 
-    /**
-     * indicates which end initiates a connection to a given node
-     * 
-     * @param target
-     *            - the other end of the intended connection
-     * @return - true if this end initiates the connection, false otherwise
-     */
-    private boolean thisEndInitiatesConnectionsTo(int target) {
-        return identity.id < target;
-    }
-
     @Override
     public String toString() {
         StringBuffer str = new StringBuffer();
@@ -893,49 +865,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     /**
-     * scans through the connections and checks to see if any have expired or
-     * are ready to be cleaned up. If expired they are terminated (entering a
-     * quiescence period), if to be cleaned up they are removed.
-     */
-    synchronized void checkTimeouts(long timenow) {
-
-        Iterator<Entry<Identity, Connection>> iter = connections.entrySet().iterator();
-        while (iter.hasNext()) {
-            Connection con = iter.next().getValue();
-
-            /**
-             * Only bother if the connection has missed its deadline
-             */
-            if (con.isNotTimely(timenow, timeout)) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Terminating untimely connection: %s",
-                                             con));
-                }
-
-                /**
-                 * If the connection is in the connection set then terminate it.
-                 */
-                if (connectionView.contains(con.getSender())) {
-                    con.terminate();
-                    removeConnection(con);
-                }
-
-                /**
-                 * check for clean up - don't clean up until the quiescence
-                 * period has expired. This is how new connections are prevented
-                 * during quiescence.
-                 */
-                if (con.isQuiesced(timenow, quiesce)) {
-                    iter.remove();
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(String.format("Removed connection %s", con));
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Add a new connection to the set. This will have been created by the
      * transport.
      * 
@@ -987,6 +916,17 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     /**
+     * Drop connections to nodes that are not in the view - they will be broken.
+     */
+    private void dropBrokenConnections() {
+        for (MessageConnection connection : msgConnections) {
+            if (!connectionView.contains(connection.getId())) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    /**
      * returns true if the time stamp given as a parameter is better than the
      * one currently held by this view (connectionSet).
      * 
@@ -1023,6 +963,72 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                                                               node, 0));
                 if (con == null || con instanceof HeartbeatConnection) {
                     connect(node);
+                }
+            }
+        }
+    }
+
+    /**
+     * indicates which end initiates a connection to a given node
+     * 
+     * @param target
+     *            - the other end of the intended connection
+     * @return - true if this end initiates the connection, false otherwise
+     */
+    private boolean thisEndInitiatesConnectionsTo(int target) {
+        return identity.id < target;
+    }
+
+    /**
+     * Force the partition to destabilize
+     */
+    protected synchronized void destabilize() {
+        if (connectionView.isStable()) {
+            changeInViews = true;
+            connectionView.destablize();
+            stablizing = false;
+            intervalExec.clearStability();
+        }
+    }
+
+    /**
+     * scans through the connections and checks to see if any have expired or
+     * are ready to be cleaned up. If expired they are terminated (entering a
+     * quiescence period), if to be cleaned up they are removed.
+     */
+    synchronized void checkTimeouts(long timenow) {
+
+        Iterator<Entry<Identity, Connection>> iter = connections.entrySet().iterator();
+        while (iter.hasNext()) {
+            Connection con = iter.next().getValue();
+
+            /**
+             * Only bother if the connection has missed its deadline
+             */
+            if (con.isNotTimely(timenow, timeout)) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Terminating untimely connection: %s",
+                                             con));
+                }
+
+                /**
+                 * If the connection is in the connection set then terminate it.
+                 */
+                if (connectionView.contains(con.getSender())) {
+                    con.terminate();
+                    removeConnection(con);
+                }
+
+                /**
+                 * check for clean up - don't clean up until the quiescence
+                 * period has expired. This is how new connections are prevented
+                 * during quiescence.
+                 */
+                if (con.isQuiesced(timenow, quiesce)) {
+                    iter.remove();
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(String.format("Removed connection %s", con));
+                    }
                 }
             }
         }
