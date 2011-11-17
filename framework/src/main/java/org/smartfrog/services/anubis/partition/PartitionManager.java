@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
@@ -214,16 +215,26 @@ public class PartitionManager implements Partition {
                                            final View view, final int leader) {
         long timein = System.currentTimeMillis();
         long timeout = 0;
-        ScheduledFuture<?> task = timer.schedule(new Runnable() {
+        ScheduledFuture<?> task;
+        try {
+            task = timer.schedule(new Runnable() {
 
-            @Override
-            public void run() {
-                log.severe("User API Upcall took >200ms in "
-                           + "partitionNotification(view, leader) where view="
-                           + view + ", leader=" + leader);
+                @Override
+                public void run() {
+                    log.severe("User API Upcall took >200ms in "
+                               + "partitionNotification(view, leader) where view="
+                               + view + ", leader=" + leader);
+                }
+
+            }, 200, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST,
+                        "rejecting patition notification as we're shutting down",
+                        e);
             }
-
-        }, 200, TimeUnit.MILLISECONDS);
+            return;
+        }
 
         try {
             pn.partitionNotification(view, leader);
