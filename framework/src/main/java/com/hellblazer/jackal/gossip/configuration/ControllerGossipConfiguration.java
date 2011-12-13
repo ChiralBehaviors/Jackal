@@ -154,11 +154,11 @@ public class ControllerGossipConfiguration {
     }
 
     protected int gossipInterval() {
-        return 1;
+        return 500;
     }
 
     protected TimeUnit gossipIntervalTimeUnit() {
-        return TimeUnit.SECONDS;
+        return TimeUnit.MILLISECONDS;
     }
 
     protected int magic() {

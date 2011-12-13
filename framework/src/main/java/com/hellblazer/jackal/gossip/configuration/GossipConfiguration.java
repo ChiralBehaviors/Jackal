@@ -186,11 +186,11 @@ public class GossipConfiguration {
     }
 
     protected int gossipInterval() {
-        return 1;
+        return 500;
     }
 
     protected TimeUnit gossipIntervalTimeUnit() {
-        return TimeUnit.SECONDS;
+        return TimeUnit.MILLISECONDS;
     }
 
     protected HeartbeatCommsFactory heartbeatCommsFactory() throws IOException {
