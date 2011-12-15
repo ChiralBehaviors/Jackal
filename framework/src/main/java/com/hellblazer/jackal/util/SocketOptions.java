@@ -25,15 +25,15 @@ import java.net.Socket;
  * 
  */
 public class SocketOptions {
-    private int     backlog             = 0;
-    private int     bandwidth           = -1;
-    private int     connect_time        = -1;
+    private int     backlog             = 10;
+    private int     bandwidth           = 0;
+    private int     connect_time        = 1;
     private boolean keep_alive          = true;
-    private int     latency             = -1;
+    private int     latency             = 1;
     private int     linger              = -1;
     private boolean no_delay            = true;
     private int     receive_buffer_size = -1;
-    private boolean reuse_address       = false;
+    private boolean reuse_address       = true;
     private int     send_buffer_size    = -1;
     private int     timeout             = -1;
     private int     traffic_class       = -1;
