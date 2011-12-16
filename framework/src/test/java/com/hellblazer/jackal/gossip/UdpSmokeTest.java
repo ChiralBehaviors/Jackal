@@ -144,6 +144,6 @@ public class UdpSmokeTest extends SmokeTest {
     @Override
     protected Class<?>[] getConfigurations() {
         return new Class[] { testA.class, testB.class, testC.class,
-                testD.class, testE.class, testF.class, testG.class };
+                        testD.class, testE.class, testF.class, testG.class };
     }
 }

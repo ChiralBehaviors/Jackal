@@ -28,7 +28,7 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Connec
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
-import com.hellblazer.jackal.util.SocketOptions;
+import com.hellblazer.pinkie.SocketOptions;
 
 public class MessageNioServerFactory implements IOConnectionServerFactory {
 

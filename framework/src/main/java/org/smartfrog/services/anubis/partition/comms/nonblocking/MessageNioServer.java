@@ -43,7 +43,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
-import com.hellblazer.jackal.util.SocketOptions;
+import com.hellblazer.pinkie.SocketOptions;
 
 public class MessageNioServer extends Thread implements IOConnectionServer {
     private InetSocketAddress                           connAdd            = null;

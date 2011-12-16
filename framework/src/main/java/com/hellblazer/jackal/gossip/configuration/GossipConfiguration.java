@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +33,6 @@ import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
-import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
@@ -56,7 +56,8 @@ import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
-import com.hellblazer.jackal.util.SocketOptions;
+import com.hellblazer.partition.comms.ConnectionServerFactory;
+import com.hellblazer.pinkie.SocketOptions;
 
 /**
  * Basic gossip based discovery/replication Anubis configuration.
@@ -146,7 +147,8 @@ public class GossipConfiguration {
 
     @Bean
     public TestMgr testMgr() throws Exception {
-        return new TestMgr(contactAddress(), partition(), node(), connectionSet(), getTestable());
+        return new TestMgr(contactAddress(), partition(), node(),
+                           connectionSet(), getTestable());
     }
 
     @Bean
@@ -155,9 +157,12 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.90, 1000, 0.45,
+        return new AdaptiveFailureDetectorFactory(
+                                                  0.90,
+                                                  1000,
+                                                  0.45,
                                                   heartbeatInterval()
-                                                          * heartbeatTimeout(),
+                                                                  * heartbeatTimeout(),
                                                   3, 100);
     }
 
@@ -214,7 +219,12 @@ public class GossipConfiguration {
 
     protected IOConnectionServerFactory ioConnectionServerFactory()
                                                                    throws Exception {
-        return new MessageNioServerFactory(wireSecurity(), socketOptions());
+        return new ConnectionServerFactory(wireSecurity(), socketOptions(),
+                                           communicationsExecutor());
+    }
+
+    protected Executor communicationsExecutor() {
+        return Executors.newFixedThreadPool(4);
     }
 
     protected LeaderProtocolFactory leaderProtocolFactory() {

@@ -3,6 +3,8 @@ package org.smartfrog.services.anubis;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
@@ -11,7 +13,6 @@ import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
-import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
@@ -27,7 +28,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
-import com.hellblazer.jackal.util.SocketOptions;
+import com.hellblazer.partition.comms.ConnectionServerFactory;
+import com.hellblazer.pinkie.SocketOptions;
 
 @Configuration
 public class BasicConfiguration {
@@ -160,7 +162,12 @@ public class BasicConfiguration {
 
     protected IOConnectionServerFactory ioConnectionServerFactory()
                                                                    throws Exception {
-        return new MessageNioServerFactory(wireSecurity(), socketOptions());
+        return new ConnectionServerFactory(wireSecurity(), socketOptions(),
+                                           communicationsExecutor());
+    }
+
+    protected Executor communicationsExecutor() {
+        return Executors.newFixedThreadPool(4);
     }
 
     protected LeaderProtocolFactory leaderProtocolFactory() {

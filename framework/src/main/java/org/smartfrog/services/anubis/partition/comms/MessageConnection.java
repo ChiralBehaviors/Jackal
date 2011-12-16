@@ -35,7 +35,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.MessageMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 
 public class MessageConnection extends HeartbeatProtocolAdapter implements
-        Connection, HeartbeatProtocol, Candidate {
+                Connection, HeartbeatProtocol, Candidate {
 
     private static final Logger        log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
 
@@ -115,13 +115,13 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             while (!msgQ.isEmpty()) {
                 connectionImpl.send(msgQ.removeFirst());
             }
+        }
 
-            if (disconnectPending) {
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(String.format("Disconnecting: %s", this));
-                }
-                connectionSet.disconnect(getSender());
+        if (disconnectPending) {
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Disconnecting: %s", this));
             }
+            connectionSet.disconnect(getSender());
         }
 
         return true;
@@ -210,16 +210,19 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * tell the connectionSet to disconnect yet.
      */
     public void disconnect() {
+        boolean disco = false;
         synchronized (msgQ) {
             disconnectPending = true;
-
             if (msgQ.isEmpty()) {
-                connectionSet.disconnect(getSender());
+                disco = true;
             }
             if (log.isLoggable(Level.FINEST)) {
                 log.log(Level.FINEST, String.format("%s disconnecting from %s",
                                                     me, getSender()));
             }
+        }
+        if (disco) {
+            connectionSet.disconnect(getSender());
         }
     }
 
@@ -290,31 +293,31 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                 msgQ.addLast(msg);
                 return;
             }
-
-            /**
-             * If the connection has been terminated then just return. In time
-             * the User will be notified that the connection, and therefore the
-             * remote node, has terminated.
-             */
-            if (!connectionImpl.connected()) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Message dropped due to closed connection: %s",
-                                             this));
-                }
-                return;
-            }
-
-            /**
-             * If the connectionImpl exists and it is connected then just send
-             * on it.
-             */
-            if (!(msg instanceof Heartbeat)) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Sending msg on: %s", this));
-                }
-            }
-            connectionImpl.send(msg);
         }
+
+        /**
+         * If the connection has been terminated then just return. In time the
+         * User will be notified that the connection, and therefore the remote
+         * node, has terminated.
+         */
+        if (!connectionImpl.connected()) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("Message dropped due to closed connection: %s",
+                                         this));
+            }
+            return;
+        }
+
+        /**
+         * If the connectionImpl exists and it is connected then just send on
+         * it.
+         */
+        if (!(msg instanceof Heartbeat)) {
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("Sending msg on: %s", this));
+            }
+        }
+        connectionImpl.send(msg);
     }
 
     /**
