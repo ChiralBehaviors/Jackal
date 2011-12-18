@@ -20,11 +20,14 @@ package com.hellblazer.jackal.gossip.configuration;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.smartfrog.services.anubis.locator.AnubisLocator;
@@ -56,6 +59,7 @@ import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
+import com.hellblazer.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
 
 /**
@@ -77,7 +81,7 @@ public class GossipConfiguration {
     public ConnectionSet connectionSet() throws Exception {
         return new ConnectionSet(contactAddress(), partitionIdentity(),
                                  heartbeatCommsFactory(),
-                                 ioConnectionServerFactory(),
+                                 connectionServerFactory(),
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
@@ -146,7 +150,8 @@ public class GossipConfiguration {
 
     @Bean
     public TestMgr testMgr() throws Exception {
-        return new TestMgr(contactAddress(), partition(), node(), connectionSet(), getTestable());
+        return new TestMgr(contactAddress(), partition(), node(),
+                           connectionSet(), getTestable());
     }
 
     @Bean
@@ -208,13 +213,39 @@ public class GossipConfiguration {
     protected SocketOptions socketOptions() {
         SocketOptions socketOptions = new SocketOptions();
         socketOptions.setBacklog(100);
-        socketOptions.setTimeout(120 * 1000);
+        socketOptions.setTimeout(1 * 1000);
         return socketOptions;
     }
 
-    protected IOConnectionServerFactory ioConnectionServerFactory()
-                                                                   throws Exception {
+    protected IOConnectionServerFactory messageNioServerFactory()
+                                                                 throws Exception {
         return new MessageNioServerFactory(wireSecurity(), socketOptions());
+    }
+
+    protected IOConnectionServerFactory connectionServerFactory()
+                                                                 throws Exception {
+        return new ConnectionServerFactory(wireSecurity(), socketOptions(),
+                                           commExecutor());
+    }
+
+    protected Executor commExecutor() {
+        return Executors.newFixedThreadPool(4, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable target) {
+                Thread t = new Thread(target, String.format("I/O exec for %s",
+                                                            node()));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+                    @Override
+                    public void uncaughtException(Thread arg0, Throwable arg1) {
+                        arg1.printStackTrace();
+                    }
+                });
+                t.setPriority(Thread.MAX_PRIORITY);
+                return t;
+            }
+        });
     }
 
     protected LeaderProtocolFactory leaderProtocolFactory() {

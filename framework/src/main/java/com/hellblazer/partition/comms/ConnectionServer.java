@@ -51,8 +51,7 @@ public class ConnectionServer implements IOConnectionServer {
 
         @Override
         public CommunicationsHandler createCommunicationsHandler(SocketChannel channel) {
-            return new MessageHandler(dispatcher, wireSecurity, me,
-                                      connectionSet);
+            return new MessageHandler(wireSecurity, me, connectionSet);
         }
 
     }
@@ -108,7 +107,8 @@ public class ConnectionServer implements IOConnectionServer {
                                                  new ConnectionInitiator(
                                                                          con,
                                                                          HeartbeatMsg.toHeartbeatMsg(hb),
-                                                                         wireSecurity)));
+                                                                         wireSecurity,
+                                                                         dispatcher)));
         } catch (ClosedByInterruptException e) {
             if (log.isLoggable(Level.INFO)) {
                 log.log(Level.INFO, "Connection closed", e);

@@ -760,14 +760,12 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
 
     @PreDestroy
     public void terminate() {
-        synchronized (this) {
-            terminated = true;
-            intervalExec.terminate();
-            connectionServer.terminate();
-            heartbeatComms.terminate();
-            for (Connection con : connections.values()) {
-                con.terminate();
-            }
+        terminated = true;
+        intervalExec.terminate();
+        connectionServer.terminate();
+        heartbeatComms.terminate();
+        for (Connection con : connections.values()) {
+            con.terminate();
         }
     }
 

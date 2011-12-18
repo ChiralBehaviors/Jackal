@@ -23,12 +23,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,7 +57,7 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  * 
  */
 public class MessageHandler implements IOConnection, CommunicationsHandler,
-                WireSizes {
+        WireSizes {
     private static enum State {
         BODY, ERROR, HEADER, INITIAL;
     };
@@ -71,42 +72,41 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         return baos.toString();
     }
 
-    private boolean                       announceTerm = true;
-    private ConnectionInitiator           ci;
-    private final Semaphore               completion   = new Semaphore(1);
-    private final ConnectionSet           connectionSet;
-    private volatile SocketChannelHandler handler;
-    private boolean                       ignoring     = false;
-    private final Identity                me;
-    private volatile MessageConnection    messageConnection;
-    private final AtomicBoolean           open         = new AtomicBoolean();
-    private ByteBuffer                    readBuffer;
-    private volatile State                readState    = State.HEADER;
-    private final AtomicLong              receiveCount = new AtomicLong(
-                                                                        INITIAL_MSG_ORDER);
-    private final ByteBuffer              rxHeader     = ByteBuffer.allocate(8);
-    private final AtomicLong              sendCount    = new AtomicLong(
-                                                                        INITIAL_MSG_ORDER - 1);
-    private final WireSecurity            wireSecurity;
-    private ByteBuffer                    writeBuffer;
-    private volatile State                writeState   = State.INITIAL;
-    private final ByteBuffer              wxHeader     = ByteBuffer.allocate(8);
-    private final Executor                dispatcher;
+    private boolean                            announceTerm      = true;
+    private ConnectionInitiator                initiator;
+    private final Semaphore                    completion        = new Semaphore(
+                                                                                 0);
+    private final ConnectionSet                connectionSet;
+    private volatile SocketChannelHandler      handler;
+    private boolean                            ignoring          = false;
+    private final Identity                     me;
+    private AtomicReference<MessageConnection> messageConnection = new AtomicReference<MessageConnection>();
+    private final AtomicBoolean                open              = new AtomicBoolean();
+    private ByteBuffer                         readBuffer;
+    private volatile State                     readState         = State.HEADER;
+    private final AtomicLong                   receiveCount      = new AtomicLong(
+                                                                                  INITIAL_MSG_ORDER);
+    private final ByteBuffer                   rxHeader          = ByteBuffer.allocate(8);
+    private final AtomicLong                   sendCount         = new AtomicLong(
+                                                                                  INITIAL_MSG_ORDER - 1);
+    private final WireSecurity                 wireSecurity;
+    private ByteBuffer                         writeBuffer;
+    private volatile State                     writeState        = State.INITIAL;
+    private final ByteBuffer                   wxHeader          = ByteBuffer.allocate(8);
 
-    public MessageHandler(Executor dispatcher, WireSecurity wireSecurity,
-                          Identity id, ConnectionSet cs) {
+    public MessageHandler(WireSecurity wireSecurity, Identity id,
+                          ConnectionSet cs) {
         this.wireSecurity = wireSecurity;
         me = id;
         connectionSet = cs;
-        this.dispatcher = dispatcher;
     }
 
     public MessageHandler(Executor dispatcher, WireSecurity wireSecurity,
                           Identity id, ConnectionSet cs, MessageConnection con,
                           ConnectionInitiator ci) {
-        this(dispatcher, wireSecurity, id, cs);
-        messageConnection = con;
-        this.ci = ci;
+        this(wireSecurity, id, cs);
+        messageConnection.set(con);
+        this.initiator = ci;
     }
 
     @Override
@@ -120,18 +120,13 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     @Override
-    public void closing() { 
+    public void closing() {
         if (log.isLoggable(Level.FINER)) {
             log.finer("closing is being called");
         }
         completion.release(100);
-        if (announceTerm && messageConnection != null) {
-            dispatcher.execute(new Runnable() {
-                @Override
-                public void run() {
-                    messageConnection.closing();
-                }
-            });
+        if (announceTerm && messageConnection.get() != null) {
+            messageConnection.get().closing();
         }
     }
 
@@ -142,12 +137,15 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         }
         this.handler = handler;
         open.set(true);
-        dispatcher.execute(new Runnable() {
-            @Override
-            public void run() {
-                ci.handshake(MessageHandler.this);
-            }
-        });
+        initiator.handshake(MessageHandler.this);
+    }
+
+    void handshakeComplete() {
+        initiator = null;
+        selectForRead();
+    }
+
+    void selectForRead() {
         handler.selectForRead();
     }
 
@@ -208,16 +206,11 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
          * handle the message. We do not increment the order for the initial
          * heartbeat message opening a new connection.
          */
-        if (messageConnection == null) {
-            dispatcher.execute(new Runnable() {
-                @Override
-                public void run() {
-                    initialMsg(tm);
-                }
-            });
+        if (messageConnection.get() == null) {
+            initialMsg(tm);
         } else {
             receiveCount.incrementAndGet();
-            messageConnection.deliver(tm);
+            messageConnection.get().deliver(tm);
         }
     }
 
@@ -286,7 +279,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     @Override
-    public void send(TimedMsg tm) {
+    public synchronized void send(TimedMsg tm) {
         /*
         if (!(tm instanceof Heartbeat)) {
             System.out.println("Sending " + tm + " on " + messageConnection);
@@ -315,6 +308,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     public void shutdown() {
+        completion.release(100);
         handler.close();
     }
 
@@ -413,8 +407,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
          */
         if (con instanceof MessageConnection) {
             if (((MessageConnection) con).assignImpl(this)) {
-                messageConnection = (MessageConnection) con;
-                messageConnection.deliver(bytes);
+                messageConnection.set((MessageConnection) con);
+                messageConnection.get().deliver(bytes);
             } else {
                 log.severe(format("Failed to assign existing msg connection impl: %s",
                                   con));
@@ -467,16 +461,16 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
          * we created the message connection, so we know it does not yet have an
          * impl. Hence we can assume it will succeed in assigning the impl.
          */
-        messageConnection = new MessageConnection(me, connectionSet,
-                                                  hbcon.getProtocol(),
-                                                  hbcon.getCandidate());
-        if (!messageConnection.assignImpl(this)) {
+        messageConnection.set(new MessageConnection(me, connectionSet,
+                                                    hbcon.getProtocol(),
+                                                    hbcon.getCandidate()));
+        if (!messageConnection.get().assignImpl(this)) {
             log.severe(format("Failed to assign incoming connection on heartbeat: %s",
                               messageConnection));
             silent();
             shutdown();
         }
-        messageConnection.deliver(bytes);
+        messageConnection.get().deliver(bytes);
 
         /**
          * if the call to connectionSet.useNewMessageConnection() then a
@@ -493,10 +487,10 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
          * "if it can happen it will happen") then this thread should rightly
          * comit suicide in disgust!!!!
          */
-        if (!connectionSet.useNewMessageConnection(messageConnection)) {
+        if (!connectionSet.useNewMessageConnection(messageConnection.get())) {
             if (log.isLoggable(Level.INFO)) {
                 log.info(format("%s Concurrent creation of message connections from %s",
-                                me, messageConnection.getSender()));
+                                me, messageConnection.get().getSender()));
             }
             shutdown();
             return;
@@ -510,7 +504,10 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
 
     private boolean read(ByteBuffer buffer) {
         try {
-            handler.getChannel().read(buffer);
+            if (handler.getChannel().read(buffer) < 0) {
+                shutdown();
+                return false;
+            }
         } catch (IOException ioe) {
             if (log.isLoggable(Level.FINE)) {
                 log.log(Level.FINE, "Failed to read socket channel", ioe);
@@ -532,8 +529,11 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
 
     private boolean write(ByteBuffer buffer) {
         try {
-            handler.getChannel().write(buffer);
-        } catch (AsynchronousCloseException e) {
+            if (handler.getChannel().write(buffer) < 0) {
+                handler.close();
+                return false;
+            }
+        } catch (ClosedChannelException e) {
             if (log.isLoggable(Level.FINER)) {
                 log.log(Level.FINER,
                         "shutting down handler due to other side closing", e);
@@ -556,11 +556,6 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         if (log.isLoggable(Level.FINER)) {
             log.finer("sendObject being called");
         }
-        try {
-            completion.acquire();
-        } catch (InterruptedException e) {
-            return;
-        }
         wxHeader.clear();
         wxHeader.putInt(0, MAGIC_NUMBER);
         wxHeader.putInt(4, bytes.length);
@@ -568,5 +563,17 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         writeBuffer = ByteBuffer.wrap(bytes);
         writeState = State.HEADER;
         handler.selectForWrite();
+        try {
+            completion.acquire();
+        } catch (InterruptedException e) {
+            return;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Message connection %s",
+                             messageConnection == null ? "inbound, unestablished"
+                                                      : messageConnection);
     }
 }

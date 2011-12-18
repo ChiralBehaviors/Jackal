@@ -17,6 +17,7 @@
  */
 package com.hellblazer.partition.comms;
 
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,42 +34,48 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
  */
 public class ConnectionInitiator {
 
-    private static final Logger log          = Logger.getLogger(ConnectionInitiator.class.getCanonicalName());
+    private static final Logger     log = Logger.getLogger(ConnectionInitiator.class.getCanonicalName());
 
-    private MessageConnection   connection   = null;
-    private HeartbeatMsg        heartbeat    = null;
-    private WireSecurity        wireSecurity = null;
+    private final MessageConnection connection;
+    private final HeartbeatMsg      heartbeat;
+    private final WireSecurity      wireSecurity;
+    private final Executor          dispatcher;
 
     public ConnectionInitiator(MessageConnection con, HeartbeatMsg hb,
-                               WireSecurity sec) {
+                               WireSecurity sec, Executor dispatcher) {
         connection = con;
         heartbeat = hb;
         wireSecurity = sec;
+        this.dispatcher = dispatcher;
     }
 
-    public void handshake(MessageHandler impl) {
-        if (impl.connected()) {
-            try {
-                heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
-                impl.sendObject(wireSecurity.toWireForm(heartbeat));
-            } catch (WireFormException e) {
-                log.log(Level.SEVERE, "failed to marshall timed message: "
-                                      + heartbeat, e);
-                return;
+    public void handshake(final MessageHandler impl) {
+        dispatcher.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
+                    impl.sendObject(wireSecurity.toWireForm(heartbeat));
+                } catch (WireFormException e) {
+                    log.log(Level.SEVERE, "failed to marshall timed message: "
+                                          + heartbeat, e);
+                    impl.terminate();
+                    return;
+                }
+                /**
+                 * If the implementation is successfully assigned then start its
+                 * thread - otherwise call terminate() to shutdown the
+                 * connection. The impl will not be accepted if the heartbeat
+                 * protocol has terminated the connection during the time it
+                 * took to establish it.
+                 */
+                if (!connection.assignImpl(impl)) {
+                    log.info(String.format("Impl already assigned for outbound connection: %s",
+                                           connection));
+                    impl.terminate();
+                }
+                impl.handshakeComplete();
             }
-        } else {
-            log.severe("can't send first heartbeat!!!");
-        }
-        /**
-         * If the implementation is successfully assigned then start its thread
-         * - otherwise call terminate() to shutdown the connection. The impl
-         * will not be accepted if the heartbeat protocol has terminated the
-         * connection during the time it took to establish it.
-         */
-        if (!connection.assignImpl(impl)) {
-            log.info(String.format("Impl already assigned for outbound connection: %s",
-                                   connection));
-            impl.terminate();
-        }
+        });
     }
 }

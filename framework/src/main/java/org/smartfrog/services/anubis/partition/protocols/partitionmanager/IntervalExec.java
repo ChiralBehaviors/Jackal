@@ -195,10 +195,7 @@ public class IntervalExec extends Thread {
      * and ending the current wait period.
      */
     public void terminate() {
-        synchronized (connectionSet) {
-            running = false;
-            connectionSet.notify();
-        }
+        running = false;
     }
 
     private void checkSleepDelays(long timenow, long stabilityTime,

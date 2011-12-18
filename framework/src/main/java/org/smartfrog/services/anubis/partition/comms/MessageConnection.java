@@ -134,9 +134,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      */
     public void closing() {
         super.terminate();
+        terminated = true;
         connectionSet.removeConnection(this);
         msgQ.clear();
-        terminated = true;
     }
 
     /**
