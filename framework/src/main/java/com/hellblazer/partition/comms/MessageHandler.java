@@ -31,6 +31,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,7 +59,7 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  * 
  */
 public class MessageHandler implements IOConnection, CommunicationsHandler,
-        WireSizes {
+                WireSizes {
     private static enum State {
         BODY, ERROR, HEADER, INITIAL;
     };
@@ -93,20 +94,21 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     private volatile ByteBuffer                currentWrite;
     private volatile State                     writeState        = State.INITIAL;
     private final ByteBuffer                   wxHeader          = ByteBuffer.allocate(8);
-
-    public MessageHandler(WireSecurity wireSecurity, Identity id,
-                          ConnectionSet cs) {
-        this.wireSecurity = wireSecurity;
-        me = id;
-        connectionSet = cs;
-    }
+    private final ReentrantLock                writeLock         = new ReentrantLock();
 
     public MessageHandler(Executor dispatcher, WireSecurity wireSecurity,
                           Identity id, ConnectionSet cs, MessageConnection con,
                           ConnectionInitiator ci) {
         this(wireSecurity, id, cs);
         messageConnection.set(con);
-        this.initiator = ci;
+        initiator = ci;
+    }
+
+    public MessageHandler(WireSecurity wireSecurity, Identity id,
+                          ConnectionSet cs) {
+        this.wireSecurity = wireSecurity;
+        me = id;
+        connectionSet = cs;
     }
 
     @Override
@@ -138,15 +140,6 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         this.handler = handler;
         open.set(true);
         initiator.handshake(MessageHandler.this);
-    }
-
-    void handshakeComplete() {
-        initiator = null;
-        selectForRead();
-    }
-
-    void selectForRead() {
-        handler.selectForRead();
     }
 
     @Override
@@ -329,49 +322,67 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     @Override
-    public synchronized void writeReady() {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("Socket write ready " + messageConnection);
+    public String toString() {
+        return String.format("Message connection %s",
+                             messageConnection == null ? "inbound, unestablished"
+                                                      : messageConnection);
+    }
+
+    @Override
+    public void writeReady() {
+        ReentrantLock myLock = writeLock;
+        if (!myLock.tryLock()) {
+            return;
         }
-        switch (writeState) {
-            case INITIAL: {
-                currentWrite = writes.pollFirst();
-                if (currentWrite == null) {
-                    return;
-                }
-                wxHeader.clear();
-                wxHeader.putInt(0, MAGIC_NUMBER);
-                wxHeader.putInt(4, currentWrite.remaining());
-                writeState = State.HEADER;
+        try {
+            if (log.isLoggable(Level.FINER)) {
+                log.finer("Socket write ready " + messageConnection);
             }
-            case HEADER: {
-                if (!write(wxHeader)) {
-                    return;
+            switch (writeState) {
+                case INITIAL: {
+                    currentWrite = writes.pollFirst();
+                    if (currentWrite == null) {
+                        return;
+                    }
+                    wxHeader.clear();
+                    wxHeader.putInt(0, MAGIC_NUMBER);
+                    wxHeader.putInt(4, currentWrite.remaining());
+                    writeState = State.HEADER;
                 }
-                if (wxHeader.hasRemaining()) {
+                case HEADER: {
+                    if (!write(wxHeader)) {
+                        return;
+                    }
+                    if (wxHeader.hasRemaining()) {
+                        break;
+                    }
+                    writeState = State.BODY;
+                    // fallthrough to body intentional
+                }
+                case BODY: {
+                    if (!write(currentWrite)) {
+                        return;
+                    }
+                    if (!currentWrite.hasRemaining()) {
+                        writeState = State.INITIAL;
+                        if (writes.isEmpty()) {
+                            return;
+                        }
+                    }
                     break;
                 }
-                writeState = State.BODY;
-                // fallthrough to body intentional
-            }
-            case BODY: {
-                if (!write(currentWrite)) {
+                case ERROR: {
                     return;
                 }
-                if (!currentWrite.hasRemaining()) {
-                    writeState = State.INITIAL;
+                default: {
+                    throw new IllegalStateException("Illegal write state: "
+                                                    + writeState);
                 }
-                break;
             }
-            case ERROR: {
-                return;
-            }
-            default: {
-                throw new IllegalStateException("Illegal write state: "
-                                                + writeState);
-            }
+            handler.selectForWrite();
+        } finally {
+            myLock.unlock();
         }
-        handler.selectForWrite();
     }
 
     private void initialMsg(TimedMsg tm) {
@@ -566,14 +577,15 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         if (log.isLoggable(Level.FINER)) {
             log.finer("sendObject being called");
         }
+        boolean select = writes.isEmpty();
         writes.add(ByteBuffer.wrap(bytes));
-        handler.selectForWrite();
+        if (select) {
+            handler.selectForWrite();
+        }
     }
 
-    @Override
-    public String toString() {
-        return String.format("Message connection %s",
-                             messageConnection == null ? "inbound, unestablished"
-                                                      : messageConnection);
+    void handshakeComplete() {
+        initiator = null;
+        handler.selectForRead();
     }
 }

@@ -45,7 +45,7 @@ public class BasicConfiguration {
     public ConnectionSet connectionSet() throws Exception {
         return new ConnectionSet(contactAddress(), partitionIdentity(),
                                  heartbeatCommsFactory(),
-                                 connectionServerFactory(),
+                                 messageNioServerFactory(),
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
