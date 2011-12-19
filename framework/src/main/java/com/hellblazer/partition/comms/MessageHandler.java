@@ -388,7 +388,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         /**
          * There must be a valid connection (heartbeat connection)
          */
-        if (!connectionSet.getView().contains(hbmsg.getSender())) {
+        if (!connectionSet.contains(hbmsg.getSender())) {
             if (log.isLoggable(Level.INFO)) {
                 log.info(format("%s did not have incoming connection for %s in the connection set",
                                 me, hbmsg.getSender()));

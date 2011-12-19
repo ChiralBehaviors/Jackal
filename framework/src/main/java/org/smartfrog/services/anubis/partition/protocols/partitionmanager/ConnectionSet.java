@@ -762,11 +762,11 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     public void terminate() {
         terminated = true;
         intervalExec.terminate();
-        connectionServer.terminate();
-        heartbeatComms.terminate();
         for (Connection con : connections.values()) {
             con.terminate();
         }
+        connectionServer.terminate();
+        heartbeatComms.terminate();
     }
 
     /**
@@ -1030,5 +1030,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                 }
             }
         }
+    }
+
+    public synchronized boolean contains(Identity sender) {
+        return getView().contains(sender);
     }
 }

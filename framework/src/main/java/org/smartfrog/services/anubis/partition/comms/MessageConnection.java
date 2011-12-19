@@ -35,18 +35,192 @@ import org.smartfrog.services.anubis.partition.wire.msg.MessageMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 
 public class MessageConnection extends HeartbeatProtocolAdapter implements
-                Connection, HeartbeatProtocol, Candidate {
+        Connection, HeartbeatProtocol, Candidate {
 
-    private static final Logger        log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
+    private static class Closed implements SendBehavior {
 
-    private volatile IOConnection      closingImpl       = null;
-    private volatile IOConnection      connectionImpl    = null;
-    private final ConnectionSet        connectionSet;
-    private volatile boolean           disconnectPending = false;
-    private volatile boolean           ignoring          = false;
-    private final Identity             me;
-    private final LinkedList<TimedMsg> msgQ              = new LinkedList<TimedMsg>();
-    private volatile boolean           terminated        = false;
+        @Override
+        public boolean assignImpl(IOConnection impl) {
+            return false;
+        }
+
+        @Override
+        public SendBehavior connect() {
+            return this;
+        }
+
+        @Override
+        public void disconnect() {
+        }
+
+        @Override
+        public boolean hasPending() {
+            return false;
+        }
+
+        @Override
+        public void send(TimedMsg msg) {
+        }
+
+        @Override
+        public void setIgnoring(boolean ignoring) {
+        }
+
+        @Override
+        public void terminate() {
+        }
+    }
+
+    private class Established implements SendBehavior {
+
+        @Override
+        public boolean assignImpl(IOConnection impl) {
+            if (log.isLoggable(Level.INFO)) {
+                log.log(Level.INFO,
+                        String.format("Attempt to assign a new implementation when one exists for %s",
+                                      this));
+            }
+            return false;
+        }
+
+        @Override
+        public SendBehavior connect() {
+            return this;
+        }
+
+        @Override
+        public void disconnect() {
+            connectionSet.disconnect(getSender());
+        }
+
+        @Override
+        public boolean hasPending() {
+            return false;
+        }
+
+        @Override
+        public void send(TimedMsg msg) {
+            /**
+             * If the connection has been terminated then just return. In time
+             * the User will be notified that the connection, and therefore the
+             * remote node, has terminated.
+             */
+            if (!connectionImpl.connected()) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Message dropped due to closed connection: %s",
+                                             this));
+                }
+                return;
+            }
+
+            if (!(msg instanceof Heartbeat)) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Sending msg on: %s", this));
+                }
+            }
+            connectionImpl.send(msg);
+        }
+
+        @Override
+        public void setIgnoring(boolean ignoring) {
+            connectionImpl.setIgnoring(ignoring);
+        }
+
+        @Override
+        public void terminate() {
+            connectionImpl.terminate();
+        }
+
+    }
+
+    private class Pending implements SendBehavior {
+        private volatile Established       established;
+        private final LinkedList<TimedMsg> msgQ = new LinkedList<TimedMsg>();
+
+        @Override
+        public boolean assignImpl(IOConnection impl) {
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Assigning impl: %s", this));
+            }
+            connectionImpl = impl;
+            connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
+            return true;
+        }
+
+        @Override
+        public synchronized SendBehavior connect() {
+            established = new Established();
+            for (TimedMsg msg : msgQ) {
+                connectionImpl.send(msg);
+            }
+            return established;
+        }
+
+        @Override
+        public void disconnect() {
+            if (msgQ.isEmpty()) {
+                connectionSet.disconnect(getSender());
+            }
+        }
+
+        @Override
+        public boolean hasPending() {
+            return !msgQ.isEmpty();
+        }
+
+        @Override
+        public void send(TimedMsg msg) {
+            if (established == null) {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest(String.format("Queueing msg on: %s", this));
+                }
+                msgQ.addLast(msg);
+            } else {
+                established.send(msg);
+            }
+        }
+
+        @Override
+        public void setIgnoring(boolean ignoring) {
+            // can't do anything
+        }
+
+        @Override
+        public void terminate() {
+        }
+    }
+
+    private interface SendBehavior {
+
+        boolean assignImpl(IOConnection impl);
+
+        SendBehavior connect();
+
+        void disconnect();
+
+        boolean hasPending();
+
+        void send(TimedMsg msg);
+
+        void setIgnoring(boolean ignoring);
+
+        void terminate();
+
+    }
+
+    private static final Logger   log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
+    private volatile IOConnection closingImpl       = null;
+    private volatile IOConnection connectionImpl    = null;
+    private final ConnectionSet   connectionSet;
+    private volatile boolean      disconnectPending = false;
+
+    private boolean               ignoring          = false;
+
+    private final Identity        me;
+
+    private volatile SendBehavior send              = new Pending();
+
+    private volatile boolean      terminated        = false;
 
     /**
      * Constructor used to create a MessageConnection when the implementation is
@@ -86,36 +260,18 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      */
     public boolean assignImpl(IOConnection impl) {
 
-        synchronized (msgQ) {
-            if (terminated) {
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(String.format("Not assigning impl as connection is terminated: %s",
-                                            this));
-                }
-                return false;
-            }
-
-            if (connectionImpl != null) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.log(Level.INFO,
-                            String.format("Attempt to assign a new implementation when one exists for %s",
-                                          this));
-                }
-                return false;
-            }
-
-            connectionImpl = impl;
-            connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
-
+        if (terminated) {
             if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Assigning impl: %s, msg queue size: %s",
-                                        this, msgQ.size()));
+                log.finer(String.format("Not assigning impl as connection is terminated: %s",
+                                        this));
             }
-
-            while (!msgQ.isEmpty()) {
-                connectionImpl.send(msgQ.removeFirst());
-            }
+            return false;
         }
+        if (!send.assignImpl(impl)) {
+            return false;
+        }
+
+        send = send.connect();
 
         if (disconnectPending) {
             if (log.isLoggable(Level.FINER)) {
@@ -136,7 +292,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         super.terminate();
         terminated = true;
         connectionSet.removeConnection(this);
-        msgQ.clear();
+        send = new Closed();
     }
 
     /**
@@ -210,20 +366,12 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * tell the connectionSet to disconnect yet.
      */
     public void disconnect() {
-        boolean disco = false;
-        synchronized (msgQ) {
-            disconnectPending = true;
-            if (msgQ.isEmpty()) {
-                disco = true;
-            }
-            if (log.isLoggable(Level.FINEST)) {
-                log.log(Level.FINEST, String.format("%s disconnecting from %s",
-                                                    me, getSender()));
-            }
+        disconnectPending = true;
+        if (log.isLoggable(Level.FINEST)) {
+            log.log(Level.FINEST,
+                    String.format("%s disconnecting from %s", me, getSender()));
         }
-        if (disco) {
-            connectionSet.disconnect(getSender());
-        }
+        send.disconnect();
     }
 
     @Override
@@ -279,45 +427,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                                   this), e);
             return;
         }
+        send.send(msg);
 
-        synchronized (msgQ) {
-            /**
-             * If the connection has not been constructed, buffer the message.
-             * FIX ME: This is a hack for the moment there is no flow control to
-             * deal with too many messages!
-             */
-            if (connectionImpl == null) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Queueing msg on: %s", this));
-                }
-                msgQ.addLast(msg);
-                return;
-            }
-        }
-
-        /**
-         * If the connection has been terminated then just return. In time the
-         * User will be notified that the connection, and therefore the remote
-         * node, has terminated.
-         */
-        if (!connectionImpl.connected()) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Message dropped due to closed connection: %s",
-                                         this));
-            }
-            return;
-        }
-
-        /**
-         * If the connectionImpl exists and it is connected then just send on
-         * it.
-         */
-        if (!(msg instanceof Heartbeat)) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Sending msg on: %s", this));
-            }
-        }
-        connectionImpl.send(msg);
     }
 
     /**
@@ -341,12 +452,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * @param ignoring
      */
     public void setIgnoring(boolean ignoring) {
-        synchronized (msgQ) {
-            this.ignoring = ignoring;
-            if (connectionImpl != null) {
-                connectionImpl.setIgnoring(ignoring);
-            }
-        }
+        this.ignoring = ignoring;
+        send.setIgnoring(ignoring);
     }
 
     /**
@@ -357,11 +464,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     @Override
     public void terminate() {
         super.terminate();
-        if (connectionImpl != null) {
-            connectionImpl.terminate();
-        }
-        msgQ.clear();
         terminated = true;
+        send.terminate();
     }
 
     @Override
@@ -386,7 +490,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                  * back - reinitiate the connection by re-creating the
                  * implementation.
                  */
-                if (!msgQ.isEmpty() || msg.getMsgLinks().contains(me.id)
+                if (send.hasPending() || msg.getMsgLinks().contains(me.id)
                     || connectionSet.wantsMsgLinkTo(getSender())) {
 
                     // System.out.println(me + " connection closed but re-opening ");
@@ -421,10 +525,11 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
          */
         else if (!msg.getMsgLinks().contains(me.id)
                  && !connectionSet.wantsMsgLinkTo(getSender())
-                 && msgQ.isEmpty()) {
+                 && !send.hasPending()) {
             // System.out.println(me + " entering close on connection to " +  getSender() );
             closingImpl = connectionImpl;
             closingImpl.silent();
+            send = new Closed();
             connectionImpl = null;
             try {
                 closingImpl.send(connectionSet.getHeartbeat().toClose());
@@ -450,6 +555,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             // System.out.println(me + " received CloseMsg - closing connection to " +  getSender() );
             sendMsg(connectionSet.getHeartbeat().toClose());
             connectionImpl.silent();
+            send = new Closed();
             connectionImpl = null;
             if (!connectionSet.wantsMsgLinkTo(getSender())) {
                 // System.out.println(me + " converting back to heartbeat connection");
@@ -457,5 +563,4 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             }
         }
     }
-
 }
