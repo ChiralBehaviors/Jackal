@@ -134,11 +134,11 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     }
 
     private class Pending implements SendBehavior {
-        private volatile Established       established;
+        private Established                established;
         private final LinkedList<TimedMsg> msgQ = new LinkedList<TimedMsg>();
 
         @Override
-        public boolean assignImpl(IOConnection impl) {
+        public synchronized boolean assignImpl(IOConnection impl) {
             if (log.isLoggable(Level.FINER)) {
                 log.finer(String.format("Assigning impl: %s", this));
             }
@@ -157,19 +157,19 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         }
 
         @Override
-        public void disconnect() {
+        public synchronized void disconnect() {
             if (msgQ.isEmpty()) {
                 connectionSet.disconnect(getSender());
             }
         }
 
         @Override
-        public boolean hasPending() {
+        public synchronized boolean hasPending() {
             return !msgQ.isEmpty();
         }
 
         @Override
-        public void send(TimedMsg msg) {
+        public synchronized void send(TimedMsg msg) {
             if (established == null) {
                 if (log.isLoggable(Level.FINEST)) {
                     log.finest(String.format("Queueing msg on: %s", this));

@@ -25,8 +25,9 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -74,8 +75,6 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
 
     private boolean                            announceTerm      = true;
     private ConnectionInitiator                initiator;
-    private final Semaphore                    completion        = new Semaphore(
-                                                                                 0);
     private final ConnectionSet                connectionSet;
     private volatile SocketChannelHandler      handler;
     private boolean                            ignoring          = false;
@@ -90,7 +89,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     private final AtomicLong                   sendCount         = new AtomicLong(
                                                                                   INITIAL_MSG_ORDER - 1);
     private final WireSecurity                 wireSecurity;
-    private ByteBuffer                         writeBuffer;
+    private final BlockingDeque<ByteBuffer>    writes            = new LinkedBlockingDeque<ByteBuffer>();
+    private volatile ByteBuffer                currentWrite;
     private volatile State                     writeState        = State.INITIAL;
     private final ByteBuffer                   wxHeader          = ByteBuffer.allocate(8);
 
@@ -124,7 +124,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         if (log.isLoggable(Level.FINER)) {
             log.finer("closing is being called");
         }
-        completion.release(100);
+        writes.clear();
         if (announceTerm && messageConnection.get() != null) {
             messageConnection.get().closing();
         }
@@ -308,7 +308,6 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     public void shutdown() {
-        completion.release(100);
         handler.close();
     }
 
@@ -330,11 +329,21 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     @Override
-    public void writeReady() {
+    public synchronized void writeReady() {
         if (log.isLoggable(Level.FINER)) {
             log.finer("Socket write ready " + messageConnection);
         }
         switch (writeState) {
+            case INITIAL: {
+                currentWrite = writes.pollFirst();
+                if (currentWrite == null) {
+                    return;
+                }
+                wxHeader.clear();
+                wxHeader.putInt(0, MAGIC_NUMBER);
+                wxHeader.putInt(4, currentWrite.remaining());
+                writeState = State.HEADER;
+            }
             case HEADER: {
                 if (!write(wxHeader)) {
                     return;
@@ -346,15 +355,16 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
                 // fallthrough to body intentional
             }
             case BODY: {
-                if (!write(writeBuffer)) {
+                if (!write(currentWrite)) {
                     return;
                 }
-                if (!writeBuffer.hasRemaining()) {
-                    writeBuffer = null;
-                    completion.release();
-                    return;
+                if (!currentWrite.hasRemaining()) {
+                    writeState = State.INITIAL;
                 }
                 break;
+            }
+            case ERROR: {
+                return;
             }
             default: {
                 throw new IllegalStateException("Illegal write state: "
@@ -556,18 +566,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         if (log.isLoggable(Level.FINER)) {
             log.finer("sendObject being called");
         }
-        wxHeader.clear();
-        wxHeader.putInt(0, MAGIC_NUMBER);
-        wxHeader.putInt(4, bytes.length);
-        wxHeader.clear();
-        writeBuffer = ByteBuffer.wrap(bytes);
-        writeState = State.HEADER;
+        writes.add(ByteBuffer.wrap(bytes));
         handler.selectForWrite();
-        try {
-            completion.acquire();
-        } catch (InterruptedException e) {
-            return;
-        }
     }
 
     @Override
