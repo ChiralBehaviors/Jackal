@@ -35,12 +35,13 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 public class ConnectionServerFactory implements IOConnectionServerFactory {
+    private final Executor      executor;
     private final SocketOptions socketOptions;
     private final WireSecurity  wireSecurity;
-    private final Executor      executor;
 
     public ConnectionServerFactory(WireSecurity wireSecurity,
-                                   SocketOptions socketOptions, Executor executor) {
+                                   SocketOptions socketOptions,
+                                   Executor executor) {
         this.socketOptions = socketOptions;
         this.wireSecurity = wireSecurity;
         this.executor = executor;

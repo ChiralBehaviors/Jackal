@@ -17,7 +17,6 @@
  */
 package com.hellblazer.partition.comms;
 
-import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,43 +38,35 @@ public class ConnectionInitiator {
     private final MessageConnection connection;
     private final HeartbeatMsg      heartbeat;
     private final WireSecurity      wireSecurity;
-    private final Executor          dispatcher;
 
     public ConnectionInitiator(MessageConnection con, HeartbeatMsg hb,
-                               WireSecurity sec, Executor dispatcher) {
+                               WireSecurity sec) {
         connection = con;
         heartbeat = hb;
         wireSecurity = sec;
-        this.dispatcher = dispatcher;
     }
 
     public void handshake(final MessageHandler impl) {
-        dispatcher.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
-                    impl.sendObject(wireSecurity.toWireForm(heartbeat));
-                } catch (WireFormException e) {
-                    log.log(Level.SEVERE, "failed to marshall timed message: "
-                                          + heartbeat, e);
-                    impl.terminate();
-                    return;
-                }
-                /**
-                 * If the implementation is successfully assigned then start its
-                 * thread - otherwise call terminate() to shutdown the
-                 * connection. The impl will not be accepted if the heartbeat
-                 * protocol has terminated the connection during the time it
-                 * took to establish it.
-                 */
-                if (!connection.assignImpl(impl)) {
-                    log.info(String.format("Impl already assigned for outbound connection: %s",
-                                           connection));
-                    impl.terminate();
-                }
-                impl.handshakeComplete();
-            }
-        });
+        try {
+            heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
+            impl.sendObject(wireSecurity.toWireForm(heartbeat));
+        } catch (WireFormException e) {
+            log.log(Level.SEVERE, "failed to marshall timed message: "
+                                  + heartbeat, e);
+            impl.terminate();
+            return;
+        }
+        /**
+         * If the implementation is successfully assigned then start its thread
+         * - otherwise call terminate() to shutdown the connection. The impl
+         * will not be accepted if the heartbeat protocol has terminated the
+         * connection during the time it took to establish it.
+         */
+        if (!connection.assignImpl(impl)) {
+            log.info(String.format("Impl already assigned for outbound connection: %s",
+                                   connection));
+            impl.terminate();
+        }
+        impl.handshakeComplete();
     }
 }

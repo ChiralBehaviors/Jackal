@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,7 +60,7 @@ import com.hellblazer.pinkie.SocketChannelHandler;
 public class MessageHandler implements IOConnection, CommunicationsHandler,
                 WireSizes {
     private static enum State {
-        BODY, ERROR, HEADER, INITIAL, CLOSED;
+        BODY, CLOSED, ERROR, HEADER, INITIAL;
     };
 
     private static final Logger log = Logger.getLogger(MessageHandler.class.getCanonicalName());
@@ -75,10 +74,11 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     private boolean                            announceTerm      = true;
-    private ConnectionInitiator                initiator;
     private final ConnectionSet                connectionSet;
+    private volatile ByteBuffer                currentWrite;
     private volatile SocketChannelHandler      handler;
     private boolean                            ignoring          = false;
+    private ConnectionInitiator                initiator;
     private final Identity                     me;
     private AtomicReference<MessageConnection> messageConnection = new AtomicReference<MessageConnection>();
     private final AtomicBoolean                open              = new AtomicBoolean();
@@ -90,19 +90,10 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     private final AtomicLong                   sendCount         = new AtomicLong(
                                                                                   INITIAL_MSG_ORDER - 1);
     private final WireSecurity                 wireSecurity;
+    private final ReentrantLock                writeLock         = new ReentrantLock();
     private final BlockingDeque<ByteBuffer>    writes            = new LinkedBlockingDeque<ByteBuffer>();
-    private volatile ByteBuffer                currentWrite;
     private volatile State                     writeState        = State.INITIAL;
     private final ByteBuffer                   wxHeader          = ByteBuffer.allocate(8);
-    private final ReentrantLock                writeLock         = new ReentrantLock();
-
-    public MessageHandler(Executor dispatcher, WireSecurity wireSecurity,
-                          Identity id, ConnectionSet cs, MessageConnection con,
-                          ConnectionInitiator ci) {
-        this(wireSecurity, id, cs);
-        messageConnection.set(con);
-        initiator = ci;
-    }
 
     public MessageHandler(WireSecurity wireSecurity, Identity id,
                           ConnectionSet cs) {
@@ -111,10 +102,18 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         connectionSet = cs;
     }
 
+    public MessageHandler(WireSecurity wireSecurity, Identity id,
+                          ConnectionSet cs, MessageConnection con,
+                          ConnectionInitiator ci) {
+        this(wireSecurity, id, cs);
+        messageConnection.set(con);
+        initiator = ci;
+    }
+
     @Override
     public void accept(SocketChannelHandler handler) {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("Socket accepted");
+            log.finer(String.format("Socket accepted [%s]", me));
         }
         this.handler = handler;
         open.set(true);
@@ -126,7 +125,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         writes.clear();
         writeState = readState = State.CLOSED;
         if (log.isLoggable(Level.FINER)) {
-            log.finer("closing is being called");
+            log.finer(String.format("closing is being called [%s]",
+                                    messageConnection));
         }
         if (announceTerm && messageConnection.get() != null) {
             messageConnection.get().closing();
@@ -136,7 +136,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     @Override
     public void connect(SocketChannelHandler handler) {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("Socket connected");
+            log.finer(String.format("Socket connected [%s]", me));
         }
         this.handler = handler;
         open.set(true);
@@ -149,8 +149,9 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     }
 
     public void deliverObject(ByteBuffer fullRxBuffer) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("deliverObject is being called");
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("deliverObject is being called [%s]",
+                                     messageConnection));
         }
 
         if (ignoring) {
@@ -162,7 +163,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
 
             byte[] bytes = fullRxBuffer.array();
             if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("Delivering bytes: \n%s", toHex(bytes)));
+                log.finest(format("Delivering bytes [%s]: \n%s",
+                                  messageConnection, toHex(bytes)));
             }
             msg = wireSecurity.fromWireForm(bytes);
 
@@ -204,17 +206,23 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
             initialMsg(tm);
         } else {
             receiveCount.incrementAndGet();
+            if (!(tm instanceof Heartbeat)) {
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(format("delivering %s [%s]", tm,
+                                     messageConnection));
+                }
+            }
             messageConnection.get().deliver(tm);
         }
     }
 
     @Override
     public void readReady() {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("Socket read ready " + me);
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest("Socket read ready " + me);
         }
         switch (readState) {
-            case CLOSED: 
+            case CLOSED:
                 return;
             case HEADER: {
                 if (!read(rxHeader)) {
@@ -225,17 +233,17 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
                 }
                 rxHeader.clear();
                 int readMagic = rxHeader.getInt();
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer("Read magic number: " + readMagic);
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("Read magic number: " + readMagic);
                 }
                 if (readMagic == MAGIC_NUMBER) {
-                    if (log.isLoggable(Level.FINER)) {
-                        log.finer("RxHeader magic-number fits");
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest("RxHeader magic-number fits");
                     }
                     // get the object size and create a new buffer for it
                     int objectSize = rxHeader.getInt();
-                    if (log.isLoggable(Level.FINER)) {
-                        log.finer("read objectSize: " + objectSize);
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest("read objectSize: " + objectSize);
                     }
                     readBuffer = ByteBuffer.wrap(new byte[objectSize]);
                     readState = State.BODY;
@@ -298,7 +306,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     @Override
     public void setIgnoring(boolean ignoring) {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("setIgnoring is being called");
+            log.finer(format("setIgnoring is being called [%s]",
+                             messageConnection));
         }
         this.ignoring = ignoring;
     }
@@ -310,7 +319,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     @Override
     public void silent() {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("silent is being called");
+            log.finer(format("silent is being called [%s]", messageConnection));
         }
         announceTerm = false;
     }
@@ -318,7 +327,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     @Override
     public void terminate() {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("terminate is being called");
+            log.finer(format("terminate is being called [%s]",
+                             messageConnection));
         }
         announceTerm = false;
         shutdown();
@@ -338,11 +348,11 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
             return;
         }
         try {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Socket write ready " + messageConnection);
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("Socket write ready [%s]", messageConnection));
             }
             switch (writeState) {
-                case CLOSED: 
+                case CLOSED:
                     return;
                 case INITIAL: {
                     currentWrite = writes.pollFirst();
@@ -393,7 +403,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     private void initialMsg(TimedMsg tm) {
 
         if (log.isLoggable(Level.FINER)) {
-            log.finer("initialMsg is being called");
+            log.finer(format("initialMsg is being called [%s]",
+                             messageConnection));
         }
 
         Object obj = tm;
@@ -537,7 +548,9 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
             }
         } catch (IOException ioe) {
             if (log.isLoggable(Level.FINE)) {
-                log.log(Level.FINE, "Failed to read socket channel", ioe);
+                log.log(Level.FINE,
+                        format("Failed to read socket channel [%s]",
+                               messageConnection), ioe);
             }
             readState = State.ERROR;
             shutdown();
@@ -564,7 +577,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         } catch (ClosedChannelException e) {
             if (log.isLoggable(Level.FINER)) {
                 log.log(Level.FINER,
-                        "shutting down handler due to other side closing", e);
+                        format("shutting down handler due to other side closing [%s]",
+                               messageConnection), e);
             }
             writeState = State.ERROR;
             shutdown();
@@ -582,13 +596,10 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
 
     protected synchronized void sendObject(byte[] bytes) {
         if (log.isLoggable(Level.FINER)) {
-            log.finer("sendObject being called");
+            log.finer(format("sendObject being called [%s]", messageConnection));
         }
-        boolean select = writes.isEmpty();
         writes.add(ByteBuffer.wrap(bytes));
-        if (select) {
-            handler.selectForWrite();
-        }
+        handler.selectForWrite();
     }
 
     void handshakeComplete() {

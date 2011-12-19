@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,8 +44,6 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 public class ConnectionServer implements IOConnectionServer {
-    private final static Logger log = Logger.getLogger(ConnectionServer.class.getCanonicalName());
-
     private class HandlerFactory implements CommunicationsHandlerFactory {
 
         @Override
@@ -56,11 +53,12 @@ public class ConnectionServer implements IOConnectionServer {
 
     }
 
+    private final static Logger              log = Logger.getLogger(ConnectionServer.class.getCanonicalName());
+
     private final ConnectionSet              connectionSet;
     private final ServerSocketChannelHandler handler;
     private final Identity                   me;
     private final WireSecurity               wireSecurity;
-    private final Executor                   dispatcher;
 
     public ConnectionServer(Executor commsExec,
                             InetSocketAddress endpointAddress,
@@ -69,14 +67,13 @@ public class ConnectionServer implements IOConnectionServer {
                             WireSecurity wireSecurity) throws IOException {
         this.connectionSet = connectionSet;
         this.wireSecurity = wireSecurity;
-        this.me = id;
+        me = id;
         handler = new ServerSocketChannelHandler(
                                                  String.format("Connection server for %s",
                                                                id),
                                                  socketOptions,
                                                  endpointAddress, commsExec,
                                                  new HandlerFactory());
-        dispatcher = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -99,7 +96,6 @@ public class ConnectionServer implements IOConnectionServer {
         try {
             handler.connectTo(conAd,
                               new MessageHandler(
-                                                 dispatcher,
                                                  wireSecurity,
                                                  me,
                                                  connectionSet,
@@ -107,8 +103,7 @@ public class ConnectionServer implements IOConnectionServer {
                                                  new ConnectionInitiator(
                                                                          con,
                                                                          HeartbeatMsg.toHeartbeatMsg(hb),
-                                                                         wireSecurity,
-                                                                         dispatcher)));
+                                                                         wireSecurity)));
         } catch (ClosedByInterruptException e) {
             if (log.isLoggable(Level.INFO)) {
                 log.log(Level.INFO, "Connection closed", e);

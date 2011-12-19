@@ -138,7 +138,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         private final LinkedList<TimedMsg> msgQ = new LinkedList<TimedMsg>();
 
         @Override
-        public synchronized boolean assignImpl(IOConnection impl) {
+        public boolean assignImpl(IOConnection impl) {
             if (log.isLoggable(Level.FINER)) {
                 log.finer(String.format("Assigning impl: %s", this));
             }
@@ -157,14 +157,14 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         }
 
         @Override
-        public synchronized void disconnect() {
+        public void disconnect() {
             if (msgQ.isEmpty()) {
                 connectionSet.disconnect(getSender());
             }
         }
 
         @Override
-        public synchronized boolean hasPending() {
+        public boolean hasPending() {
             return !msgQ.isEmpty();
         }
 
