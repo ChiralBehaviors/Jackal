@@ -61,7 +61,7 @@ import com.hellblazer.pinkie.SocketChannelHandler;
 public class MessageHandler implements IOConnection, CommunicationsHandler,
                 WireSizes {
     private static enum State {
-        BODY, ERROR, HEADER, INITIAL;
+        BODY, ERROR, HEADER, INITIAL, CLOSED;
     };
 
     private static final Logger log = Logger.getLogger(MessageHandler.class.getCanonicalName());
@@ -123,10 +123,11 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
 
     @Override
     public void closing() {
+        writes.clear();
+        writeState = readState = State.CLOSED;
         if (log.isLoggable(Level.FINER)) {
             log.finer("closing is being called");
         }
-        writes.clear();
         if (announceTerm && messageConnection.get() != null) {
             messageConnection.get().closing();
         }
@@ -213,6 +214,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
             log.finer("Socket read ready " + me);
         }
         switch (readState) {
+            case CLOSED: 
+                return;
             case HEADER: {
                 if (!read(rxHeader)) {
                     return;
@@ -339,6 +342,8 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
                 log.finer("Socket write ready " + messageConnection);
             }
             switch (writeState) {
+                case CLOSED: 
+                    return;
                 case INITIAL: {
                     currentWrite = writes.pollFirst();
                     if (currentWrite == null) {
@@ -526,6 +531,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     private boolean read(ByteBuffer buffer) {
         try {
             if (handler.getChannel().read(buffer) < 0) {
+                writeState = readState = State.CLOSED;
                 shutdown();
                 return false;
             }
@@ -551,6 +557,7 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
     private boolean write(ByteBuffer buffer) {
         try {
             if (handler.getChannel().write(buffer) < 0) {
+                writeState = readState = State.CLOSED;
                 handler.close();
                 return false;
             }

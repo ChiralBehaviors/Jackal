@@ -81,7 +81,7 @@ public class GossipConfiguration {
     public ConnectionSet connectionSet() throws Exception {
         return new ConnectionSet(contactAddress(), partitionIdentity(),
                                  heartbeatCommsFactory(),
-                                 messageNioServerFactory(),
+                                 connectionServerFactory(),
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),

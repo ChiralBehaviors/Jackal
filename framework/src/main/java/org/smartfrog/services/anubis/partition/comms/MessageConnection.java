@@ -289,10 +289,10 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      * method.
      */
     public void closing() {
+        send = new Closed();
         super.terminate();
         terminated = true;
         connectionSet.removeConnection(this);
-        send = new Closed();
     }
 
     /**
