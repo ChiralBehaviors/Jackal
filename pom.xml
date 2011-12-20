@@ -7,6 +7,7 @@
 	<packaging>pom</packaging>
 	<name>Umbrella project for Anubis related tech</name>
 	<description>Umbrella project for Anubis related tech</description>
+	
 	<modules>
 		<module>framework</module>
         <module>console</module>
@@ -49,7 +50,13 @@
 		</dependency>
 	</dependencies>
 
-	<repositories>
+	<repositories> 
+    	<repository>
+    		<id>Ouroboros-CI</id>
+    		<name>Ouroboros Jenkins Maven Repo</name>
+    		<url>http://107.20.139.173:8080/plugin/repository/everything/</url>
+    	</repository> 
+    	
 		<repository>
 			<id>com.springsource.repository.bundles.release</id>
 			<name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>

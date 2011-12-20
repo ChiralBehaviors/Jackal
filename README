@@ -2,7 +2,9 @@ Jackal is licensed under LGPL V2.2.
 
 Jackal is a heavy modification of the original Anubis distributed tuplespace, found in HP's Smartfrog project.  The original project Wiki is here: http://www.smartfrog.org/wiki/display/sf/Anubis.
 
-This project is built with Maven, and will build with Maven version 2.2.  Jackal is composed of 5 modules:
+This project is built with Maven, and will build with Maven version 2.2.  Jackal now depends on the Pinke project: https://github.com/Hellblazer/Pinkie.
+
+Jackal is composed of 5 modules:
 
 	- framework
 		base Anubis framework
@@ -33,9 +35,17 @@ A massive amount of work went into updating Anubis to use generics, and most imp
 
 The original Anubis provided only multicast based discovery and heartbeat.  Multicast has serious issues in deployments that run on multiple switches.  In response to this, a UDP based Gossip system was created.  This system, while not completely zero configuration like multicast is, is very lightweight, efficient and works across any network configuration.  This mechanism is not currently well documented from the deployment requirements perspective, but this will change soon.  In the meantime you can look at the unit testing for gossip and hopefully figure things out from there.  The loadtest project is also currently configured to use UDP gossip, and so looking at that project should help you figure this out.
 
+- Modern Non Blocking I/O
+
+The original Anubis non blocking communications had a number of serialization points and did not scale very well.  I have replaced this implementation with Pinkie, my minimalistic NIO communications handler.  In the process of refactoring this, I also removed a number of race conditions and deadlocks in the MessageConnection establishment logic.
+
+In addition to using non blocking i/o in the point to point communications, I also completely redesigned the partition manager framework to use non blocking i/o with Pinkie.  This allows the partition manager to scale to accomidate a large number of nodes under test, and eliminates some serious blocking in Anubis' interval executive.  Under heavy load testing with even moderate numbers of nodes, this would cause Anubis' interval exec to oversleep - sometimes by double digits of seconds!  Changing this to use non blocking i/o is a huge win. 
+
 - Testing, Testing, Testing
 
 Anubis doesn't have very much in the way of testing and Jackal does a lot to remedy that.  Unit testing purists will surely sniff at the fact that Jackal isn't properly unit tested, but so what.  There's a decent sweet of tests for the code, and the UDP gossip is reasonably complete from a unit test perspective.  There's several end to end functional tests which have greatly aided the debugging of the existing Anubis functionality and the new functionality added in Jackal.
+
+I have also refactored and redesigned the partition manager in Anubis.  The partition manager was originally a GUI based system for monitoring and controlling the partitons.  My refactoring and redesign uses this functionality to provide sophisticated monitoring and control for distributed testing scenarios.  As you can well imagine, it's not easy to test distributed systems, and with this tool, it's now straight forward to create very sophisticated distributed tests in Anubis.
 
 - Bug Fixes
 
