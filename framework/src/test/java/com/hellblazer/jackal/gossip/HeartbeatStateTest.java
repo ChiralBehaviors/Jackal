@@ -65,7 +65,7 @@ public class HeartbeatStateTest extends TestCase {
         assertSame(msgLinks, state.getMsgLinks());
         assertSame(sender, state.getSender());
         assertSame(senderAddress, state.getSenderAddress());
-        assertSame(testInterface, state.getTestInterface());
+        assertSame(testInterface, state.getControllerInterface());
         assertSame(heartbeatAddress, state.getHeartbeatAddress());
         assertEquals(preferred, state.isPreferred());
         assertTrue(state.getMsgLinks().contains(candidate.id));
@@ -90,7 +90,7 @@ public class HeartbeatStateTest extends TestCase {
         assertEquals(msgLinks, dState.getMsgLinks());
         assertEquals(sender, dState.getSender());
         assertEquals(senderAddress, dState.getSenderAddress());
-        assertEquals(testInterface, dState.getTestInterface());
+        assertEquals(testInterface, dState.getControllerInterface());
         assertEquals(preferred, dState.isPreferred());
         assertEquals(heartbeatAddress, state.getHeartbeatAddress());
         assertTrue(dState.getMsgLinks().contains(candidate.id));

@@ -81,7 +81,7 @@ public class HeartbeatState implements Heartbeat, Cloneable {
     private Identity                   sender;
     private InetSocketAddress          senderAddress;
     private volatile boolean           stable        = false;
-    private volatile InetSocketAddress testInterface;
+    private volatile InetSocketAddress controllInterface;
     private volatile long              time          = -1;
     private NodeIdSet                  view;
     private volatile long              viewNumber    = 0;
@@ -104,7 +104,7 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         sender = new Identity(msg);
         senderAddress = HeartbeatState.readInetAddress(msg);
         stable = msg.get() > 0 ? true : false;
-        testInterface = HeartbeatState.readInetAddress(msg);
+        controllInterface = HeartbeatState.readInetAddress(msg);
         view = new NodeIdSet(msg);
         viewNumber = msg.getLong();
         viewTimeStamp = msg.getLong();
@@ -136,7 +136,7 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         this.sender = sender;
         this.senderAddress = senderAddress;
         this.stable = stable;
-        this.testInterface = testInterface;
+        this.controllInterface = testInterface;
         this.view = view;
         this.viewNumber = viewNumber;
         viewTimeStamp = viewTimestamp;
@@ -231,11 +231,11 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         if (stable != other.stable) {
             return false;
         }
-        if (testInterface == null) {
-            if (other.testInterface != null) {
+        if (controllInterface == null) {
+            if (other.controllInterface != null) {
                 return false;
             }
-        } else if (!testInterface.equals(other.testInterface)) {
+        } else if (!controllInterface.equals(other.controllInterface)) {
             return false;
         }
         if (view == null) {
@@ -283,8 +283,8 @@ public class HeartbeatState implements Heartbeat, Cloneable {
     }
 
     @Override
-    public InetSocketAddress getTestInterface() {
-        return testInterface;
+    public InetSocketAddress getControllerInterface() {
+        return controllInterface;
     }
 
     @Override
@@ -318,7 +318,7 @@ public class HeartbeatState implements Heartbeat, Cloneable {
                  + (senderAddress == null ? 0 : senderAddress.hashCode());
         result = prime * result + (stable ? 1231 : 1237);
         result = prime * result
-                 + (testInterface == null ? 0 : testInterface.hashCode());
+                 + (controllInterface == null ? 0 : controllInterface.hashCode());
         result = prime * result + (view == null ? 0 : view.hashCode());
         result = prime * result + (int) (viewNumber ^ viewNumber >>> 32);
         result = prime * result + (int) (viewTimeStamp ^ viewTimeStamp >>> 32);
@@ -353,8 +353,8 @@ public class HeartbeatState implements Heartbeat, Cloneable {
     }
 
     @Override
-    public void setTestInterface(InetSocketAddress address) {
-        testInterface = address;
+    public void setController(InetSocketAddress address) {
+        controllInterface = address;
         invalidateCache();
     }
 
@@ -431,7 +431,7 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         } else {
             msg.put((byte) 0);
         }
-        HeartbeatState.writeInetAddress(testInterface, msg);
+        HeartbeatState.writeInetAddress(controllInterface, msg);
         view.writeTo(msg);
         msg.putLong(viewNumber);
         msg.putLong(viewTimeStamp);

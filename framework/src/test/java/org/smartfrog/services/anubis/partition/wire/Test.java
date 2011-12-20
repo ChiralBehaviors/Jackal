@@ -65,7 +65,7 @@ public class Test extends TestCase {
             HeartbeatMsg outMsg = new HeartbeatMsg(outId, outAddress);
             outMsg.setCandidate(outId);
             outMsg.setMsgLinks(outMsgLinks);
-            outMsg.setTestInterface(outTestIF);
+            outMsg.setController(outTestIF);
             outMsg.setView(new BitView(true, outView, 162534));
             outMsg.setViewNumber(23);
             outMsg.setTime(9876);
@@ -90,7 +90,7 @@ public class Test extends TestCase {
                 inMsg.getCandidate();
                 inMsg.getMsgLinks();
                 inMsg.getView();
-                inMsg.getTestInterface();
+                inMsg.getControllerInterface();
                 inMsg.getSenderAddress();
             }
             end = System.currentTimeMillis();
@@ -141,7 +141,7 @@ public class Test extends TestCase {
             PingHeartbeatMsg outMsg = new PingHeartbeatMsg(outId, outAddress);
             outMsg.setCandidate(outId);
             outMsg.setMsgLinks(outMsgLinks);
-            outMsg.setTestInterface(outTestIF);
+            outMsg.setController(outTestIF);
             outMsg.setView(new BitView(true, outView, 162534));
             outMsg.setViewNumber(23);
             outMsg.setTime(9876);
@@ -161,7 +161,7 @@ public class Test extends TestCase {
                                + inMsg);
             inMsg.getView();
             System.out.println("Heartbeat Test message with view is: " + inMsg);
-            inMsg.getTestInterface();
+            inMsg.getControllerInterface();
             System.out.println("Heartbeat Test message with getTestInterface is: "
                                + inMsg);
             inMsg.getSenderAddress();

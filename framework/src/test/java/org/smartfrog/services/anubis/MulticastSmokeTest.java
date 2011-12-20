@@ -10,7 +10,7 @@ public class MulticastSmokeTest extends SmokeTest {
     static class noTestCfg extends BasicConfiguration {
 
         @Override
-        public boolean getTestable() {
+        public boolean isControllable() {
             return false;
         }
 

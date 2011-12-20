@@ -65,9 +65,11 @@ public class UdpEndToEndTest extends EndToEndTest {
         }
 
         @Override
-        protected Controller constructController() throws UnknownHostException {
+        protected Controller constructController() throws IOException {
             return new MyController(timer(), 1000, 300000, partitionIdentity(),
-                                    heartbeatTimeout(), heartbeatInterval());
+                                    heartbeatTimeout(), heartbeatInterval(),
+                                    socketOptions(), dispatchExecutor(),
+                                    wireSecurity());
         }
 
         @Override
@@ -234,8 +236,8 @@ public class UdpEndToEndTest extends EndToEndTest {
     @Override
     protected Class<?>[] getConfigs() {
         return new Class<?>[] { node0.class, node1.class, node2.class,
-                node3.class, node4.class, node5.class, node6.class,
-                node7.class, node8.class, node9.class };
+                        node3.class, node4.class, node5.class, node6.class,
+                        node7.class, node8.class, node9.class };
     }
 
     @Override

@@ -19,6 +19,7 @@ package com.hellblazer.slp.anubis;
 import static com.hellblazer.slp.ServiceScope.SERVICE_TYPE;
 import static com.hellblazer.slp.anubis.AnubisScope.MEMBER_IDENTITY;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -40,11 +42,13 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import com.hellblazer.pinkie.SocketOptions;
 import com.hellblazer.slp.InvalidSyntaxException;
 import com.hellblazer.slp.ServiceEvent;
 import com.hellblazer.slp.ServiceEvent.EventType;
@@ -135,9 +139,13 @@ abstract public class EndToEndTest extends TestCase {
 
         public MyController(Timer timer, long checkPeriod, long expirePeriod,
                             Identity partitionIdentity, long heartbeatTimeout,
-                            long heartbeatInterval) {
+                            long heartbeatInterval,
+                            SocketOptions socketOptions,
+                            Executor dispatchExecutor, WireSecurity wireSecurity)
+                                                                                 throws IOException {
             super(timer, checkPeriod, expirePeriod, partitionIdentity,
-                  heartbeatTimeout, heartbeatInterval);
+                  heartbeatTimeout, heartbeatInterval, socketOptions,
+                  dispatchExecutor, wireSecurity);
         }
 
         @Override
@@ -151,9 +159,9 @@ abstract public class EndToEndTest extends TestCase {
     }
 
     static class Node extends NodeData {
-        int            cardinality;
-        CountDownLatch latch;
-        final static Logger   log = Logger.getLogger(Node.class.getCanonicalName());
+        int                 cardinality;
+        CountDownLatch      latch;
+        final static Logger log = Logger.getLogger(Node.class.getCanonicalName());
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -267,9 +275,9 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             assertEquals("listener <"
-                                 + listener.member
-                                 + "> has received an invalid number of notifications: "
-                                 + listener.events, listeners.size(),
+                                         + listener.member
+                                         + "> has received an invalid number of notifications: "
+                                         + listener.events, listeners.size(),
                          listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
@@ -325,9 +333,9 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             assertEquals("listener <"
-                                 + listener.member
-                                 + "> has received more notifications than expected: "
-                                 + listener.events, A.cardinality(),
+                                         + listener.member
+                                         + "> has received more notifications than expected: "
+                                         + listener.events, A.cardinality(),
                          listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
@@ -404,9 +412,9 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             assertEquals("listener <"
-                                 + listener.member
-                                 + "> has received an invalid number of notifications :"
-                                 + listener.events, listeners.size(),
+                                         + listener.member
+                                         + "> has received an invalid number of notifications :"
+                                         + listener.events, listeners.size(),
                          listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
@@ -454,10 +462,10 @@ abstract public class EndToEndTest extends TestCase {
         for (Listener listener : listeners) {
             if (A.contains(listener.member)) {
                 assertEquals("listener <"
-                                     + listener.member
-                                     + "> has received more notifications than expected :"
-                                     + listener.events, A.cardinality(),
-                             listener.events.size());
+                                             + listener.member
+                                             + "> has received more notifications than expected :"
+                                             + listener.events,
+                             A.cardinality(), listener.events.size());
                 HashSet<Integer> sent = new HashSet<Integer>();
                 for (ServiceEvent event : listener.events) {
                     assertEquals(EventType.REGISTERED, event.getType());

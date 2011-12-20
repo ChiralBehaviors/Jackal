@@ -19,18 +19,10 @@ package com.hellblazer.partition.comms;
 
 import static java.lang.String.format;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.NotYetConnectedException;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,15 +33,12 @@ import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatConnecti
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
-import org.smartfrog.services.anubis.partition.wire.WireSizes;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurityException;
 
-import com.hellblazer.jackal.util.HexDump;
-import com.hellblazer.pinkie.CommunicationsHandler;
 import com.hellblazer.pinkie.SocketChannelHandler;
 
 /**
@@ -57,47 +46,29 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  * @author hhildebrand
  * 
  */
-public class MessageHandler implements IOConnection, CommunicationsHandler,
-                WireSizes {
-    private static enum State {
+public class MessageHandler extends AbstractMessageHandler implements
+                IOConnection {
+    static enum State {
         BODY, CLOSED, ERROR, HEADER, INITIAL;
     };
 
-    private static final Logger log = Logger.getLogger(MessageHandler.class.getCanonicalName());
+    static final Logger                log               = Logger.getLogger(MessageHandler.class.getCanonicalName());
 
-    private static String toHex(byte[] data) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 4);
-        PrintStream stream = new PrintStream(baos);
-        HexDump.hexdump(stream, data, 0, data.length);
-        stream.close();
-        return baos.toString();
-    }
-
-    private boolean                            announceTerm      = true;
-    private final ConnectionSet                connectionSet;
-    private volatile ByteBuffer                currentWrite;
-    private volatile SocketChannelHandler      handler;
-    private boolean                            ignoring          = false;
-    private ConnectionInitiator                initiator;
-    private final Identity                     me;
-    private AtomicReference<MessageConnection> messageConnection = new AtomicReference<MessageConnection>();
-    private final AtomicBoolean                open              = new AtomicBoolean();
-    private ByteBuffer                         readBuffer;
-    private volatile State                     readState         = State.HEADER;
-    private final AtomicLong                   receiveCount      = new AtomicLong(
-                                                                                  INITIAL_MSG_ORDER);
-    private final ByteBuffer                   rxHeader          = ByteBuffer.allocate(8);
-    private final AtomicLong                   sendCount         = new AtomicLong(
-                                                                                  INITIAL_MSG_ORDER - 1);
-    private final WireSecurity                 wireSecurity;
-    private final ReentrantLock                writeLock         = new ReentrantLock();
-    private final BlockingDeque<ByteBuffer>    writes            = new LinkedBlockingDeque<ByteBuffer>();
-    private volatile State                     writeState        = State.INITIAL;
-    private final ByteBuffer                   wxHeader          = ByteBuffer.allocate(8);
+    private boolean                    announceTerm      = true;
+    private final ConnectionSet        connectionSet;
+    private boolean                    ignoring          = false;
+    private ConnectionInitiator        initiator;
+    final Identity                     me;
+    AtomicReference<MessageConnection> messageConnection = new AtomicReference<MessageConnection>();
+    private final AtomicBoolean        open              = new AtomicBoolean();
+    private final AtomicLong           receiveCount      = new AtomicLong(
+                                                                          INITIAL_MSG_ORDER);
+    private final AtomicLong           sendCount         = new AtomicLong(
+                                                                          INITIAL_MSG_ORDER - 1);
 
     public MessageHandler(WireSecurity wireSecurity, Identity id,
                           ConnectionSet cs) {
-        this.wireSecurity = wireSecurity;
+        super(wireSecurity);
         me = id;
         connectionSet = cs;
     }
@@ -148,135 +119,6 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         return open.get();
     }
 
-    public void deliverObject(ByteBuffer fullRxBuffer) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("deliverObject is being called [%s]",
-                                     messageConnection));
-        }
-
-        if (ignoring) {
-            return;
-        }
-
-        WireMsg msg = null;
-        try {
-
-            byte[] bytes = fullRxBuffer.array();
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("Delivering bytes [%s]: \n%s",
-                                  messageConnection, toHex(bytes)));
-            }
-            msg = wireSecurity.fromWireForm(bytes);
-
-        } catch (WireSecurityException ex) {
-            log.log(Level.SEVERE,
-                    format("%s non blocking connection transport encountered security violation unmarshalling message - ignoring the message ",
-                           me), ex);
-            return;
-
-        } catch (Exception ex) {
-            log.log(Level.SEVERE,
-                    format("%s connection transport unable to unmarshall message ",
-                           me), ex);
-            shutdown();
-            return;
-        }
-
-        if (!(msg instanceof TimedMsg)) {
-            log.severe(format("%s connection transport received non timed message ",
-                              me));
-            shutdown();
-            return;
-        }
-
-        final TimedMsg tm = (TimedMsg) msg;
-
-        if (tm.getOrder() != receiveCount.get()) {
-            log.severe(format("%s connection transport has delivered a message out of order - shutting down.  Expected: %s, received: %s",
-                              me, receiveCount, tm.getOrder()));
-            shutdown();
-            return;
-        }
-
-        /**
-         * handle the message. We do not increment the order for the initial
-         * heartbeat message opening a new connection.
-         */
-        if (messageConnection.get() == null) {
-            initialMsg(tm);
-        } else {
-            receiveCount.incrementAndGet();
-            if (!(tm instanceof Heartbeat)) {
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(format("delivering %s [%s]", tm,
-                                     messageConnection));
-                }
-            }
-            messageConnection.get().deliver(tm);
-        }
-    }
-
-    @Override
-    public void readReady() {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Socket read ready " + me);
-        }
-        switch (readState) {
-            case CLOSED:
-                return;
-            case HEADER: {
-                if (!read(rxHeader)) {
-                    return;
-                }
-                if (rxHeader.hasRemaining()) {
-                    break;
-                }
-                rxHeader.clear();
-                int readMagic = rxHeader.getInt();
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("Read magic number: " + readMagic);
-                }
-                if (readMagic == MAGIC_NUMBER) {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest("RxHeader magic-number fits");
-                    }
-                    // get the object size and create a new buffer for it
-                    int objectSize = rxHeader.getInt();
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest("read objectSize: " + objectSize);
-                    }
-                    readBuffer = ByteBuffer.wrap(new byte[objectSize]);
-                    readState = State.BODY;
-                } else {
-                    log.severe(me + ": %  CANNOT FIND MAGIC_NUMBER:  "
-                               + readMagic + " instead");
-                    readState = State.ERROR;
-                    shutdown();
-                    return;
-                }
-                // Fall through to BODY state intended.
-            }
-            case BODY: {
-                if (!read(readBuffer)) {
-                    return;
-                }
-                if (!readBuffer.hasRemaining()) {
-                    rxHeader.clear();
-                    deliverObject(readBuffer);
-                    readBuffer = null;
-                    readState = State.HEADER;
-                }
-                break;
-            }
-            default: {
-                throw new IllegalStateException("Illegal read state "
-                                                + readState);
-            }
-        }
-
-        handler.selectForRead();
-    }
-
     @Override
     public void send(Heartbeat heartbeat) {
         send((TimedMsg) HeartbeatMsg.toHeartbeatMsg(heartbeat));
@@ -312,10 +154,6 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         this.ignoring = ignoring;
     }
 
-    public void shutdown() {
-        handler.close();
-    }
-
     @Override
     public void silent() {
         if (log.isLoggable(Level.FINER)) {
@@ -339,65 +177,6 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         return String.format("Message connection %s",
                              messageConnection == null ? "inbound, unestablished"
                                                       : messageConnection);
-    }
-
-    @Override
-    public void writeReady() {
-        ReentrantLock myLock = writeLock;
-        if (!myLock.tryLock()) {
-            return;
-        }
-        try {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("Socket write ready [%s]", messageConnection));
-            }
-            switch (writeState) {
-                case CLOSED:
-                    return;
-                case INITIAL: {
-                    currentWrite = writes.pollFirst();
-                    if (currentWrite == null) {
-                        return;
-                    }
-                    wxHeader.clear();
-                    wxHeader.putInt(0, MAGIC_NUMBER);
-                    wxHeader.putInt(4, currentWrite.remaining());
-                    writeState = State.HEADER;
-                }
-                case HEADER: {
-                    if (!write(wxHeader)) {
-                        return;
-                    }
-                    if (wxHeader.hasRemaining()) {
-                        break;
-                    }
-                    writeState = State.BODY;
-                    // fallthrough to body intentional
-                }
-                case BODY: {
-                    if (!write(currentWrite)) {
-                        return;
-                    }
-                    if (!currentWrite.hasRemaining()) {
-                        writeState = State.INITIAL;
-                        if (writes.isEmpty()) {
-                            return;
-                        }
-                    }
-                    break;
-                }
-                case ERROR: {
-                    return;
-                }
-                default: {
-                    throw new IllegalStateException("Illegal write state: "
-                                                    + writeState);
-                }
-            }
-            handler.selectForWrite();
-        } finally {
-            myLock.unlock();
-        }
     }
 
     private void initialMsg(TimedMsg tm) {
@@ -534,72 +313,89 @@ public class MessageHandler implements IOConnection, CommunicationsHandler,
         }
     }
 
-    private boolean isClose(IOException ioe) {
-        return "Broken pipe".equals(ioe.getMessage())
-               || "Connection reset by peer".equals(ioe.getMessage());
-    }
+    @Override
+    protected void deliverObject(ByteBuffer fullRxBuffer) {
+        if (log.isLoggable(Level.FINEST)) {
+            log.finest(String.format("deliverObject is being called [%s]",
+                                     messageConnection));
+        }
 
-    private boolean read(ByteBuffer buffer) {
+        if (ignoring) {
+            return;
+        }
+
+        WireMsg msg = null;
         try {
-            if (handler.getChannel().read(buffer) < 0) {
-                writeState = readState = State.CLOSED;
-                shutdown();
-                return false;
-            }
-        } catch (IOException ioe) {
-            if (log.isLoggable(Level.FINE)) {
-                log.log(Level.FINE,
-                        format("Failed to read socket channel [%s]",
-                               messageConnection), ioe);
-            }
-            readState = State.ERROR;
-            shutdown();
-            return false;
-        } catch (NotYetConnectedException nycex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
-                        "Attempt to read a socket channel before it is connected",
-                        nycex);
-            }
-            readState = State.ERROR;
-            return false;
-        }
-        return true;
-    }
 
-    private boolean write(ByteBuffer buffer) {
+            byte[] bytes = fullRxBuffer.array();
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(format("Delivering bytes [%s]: \n%s",
+                                  messageConnection, toHex(bytes)));
+            }
+            msg = wireSecurity.fromWireForm(bytes);
+
+        } catch (WireSecurityException ex) {
+            log.log(Level.SEVERE,
+                    format("%s non blocking connection transport encountered security violation unmarshalling message - ignoring the message ",
+                           me), ex);
+            return;
+
+        } catch (Exception ex) {
+            log.log(Level.SEVERE,
+                    format("%s connection transport unable to unmarshall message ",
+                           me), ex);
+            shutdown();
+            return;
+        }
+
+        if (!(msg instanceof TimedMsg)) {
+            log.severe(format("%s connection transport received non timed message ",
+                              me));
+            shutdown();
+            return;
+        }
+
+        final TimedMsg tm = (TimedMsg) msg;
+
+        if (tm.getOrder() != receiveCount.get()) {
+            log.severe(format("%s connection transport has delivered a message out of order - shutting down.  Expected: %s, received: %s",
+                              me, receiveCount, tm.getOrder()));
+            shutdown();
+            return;
+        }
+
         try {
-            if (handler.getChannel().write(buffer) < 0) {
-                writeState = readState = State.CLOSED;
-                handler.close();
-                return false;
+            /**
+             * handle the message. We do not increment the order for the initial
+             * heartbeat message opening a new connection.
+             */
+            if (messageConnection.get() == null) {
+                initialMsg(tm);
+            } else {
+                receiveCount.incrementAndGet();
+                if (!(tm instanceof Heartbeat)) {
+                    if (log.isLoggable(Level.FINER)) {
+                        log.finer(format("delivering %s [%s]", tm,
+                                         messageConnection));
+                    }
+                }
+                messageConnection.get().deliver(tm);
             }
-        } catch (ClosedChannelException e) {
-            if (log.isLoggable(Level.FINER)) {
-                log.log(Level.FINER,
-                        format("shutting down handler due to other side closing [%s]",
-                               messageConnection), e);
+        } catch (Throwable e) {
+            if (log.isLoggable(Level.INFO)) {
+                log.log(Level.INFO, "Error delivering message", e);
+
             }
-            writeState = State.ERROR;
-            shutdown();
-            return false;
-        } catch (IOException ioe) {
-            if (log.isLoggable(Level.WARNING) && !isClose(ioe)) {
-                log.log(Level.WARNING, "shutting down handler", ioe);
-            }
-            writeState = State.ERROR;
-            shutdown();
-            return false;
+            error();
         }
-        return true;
     }
 
-    protected synchronized void sendObject(byte[] bytes) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(format("sendObject being called [%s]", messageConnection));
-        }
-        writes.add(ByteBuffer.wrap(bytes));
-        handler.selectForWrite();
+    /* (non-Javadoc)
+     * @see com.hellblazer.partition.comms.AbstractMessageHandler#getLog()
+     */
+    @Override
+    protected Logger getLog() {
+        return log;
     }
 
     void handshakeComplete() {

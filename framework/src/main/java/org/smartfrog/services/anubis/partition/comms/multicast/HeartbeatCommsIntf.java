@@ -19,11 +19,12 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
-import org.smartfrog.services.anubis.partition.test.node.CommsTestIntf;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-public interface HeartbeatCommsIntf extends CommsTestIntf {
+import com.hellblazer.jackal.partition.test.node.CommsController;
+
+public interface HeartbeatCommsIntf extends CommsController {
     void sendHeartbeat(Heartbeat msg);
 
     void requestConnect(Heartbeat heartbeat, Identity node);

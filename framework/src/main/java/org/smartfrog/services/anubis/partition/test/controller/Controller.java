@@ -26,15 +26,20 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 import com.hellblazer.jackal.annotations.Deployed;
+import com.hellblazer.pinkie.ChannelHandler;
+import com.hellblazer.pinkie.SocketOptions;
 
 public class Controller implements ConnectionManager {
     private final long                      checkPeriod;
@@ -46,16 +51,23 @@ public class Controller implements ConnectionManager {
     protected final Map<Identity, NodeData> nodes      = new ConcurrentHashMap<Identity, NodeData>();
     private TimerTask                       task;
     private final Timer                     timer;
+    final ChannelHandler                    handler;
+    final WireSecurity                      wireSecurity;
 
     public Controller(Timer timer, long checkPeriod, long expirePeriod,
                       Identity partitionIdentity, long heartbeatTimeout,
-                      long heartbeatInterval) {
+                      long heartbeatInterval, SocketOptions socketOptions,
+                      Executor dispatchExec, WireSecurity wireSecurity)
+                                                                       throws IOException {
         this.timer = timer;
         this.checkPeriod = checkPeriod;
         this.expirePeriod = expirePeriod;
-        this.identity = partitionIdentity;
+        identity = partitionIdentity;
         this.heartbeatTimeout = heartbeatTimeout;
         this.heartbeatInterval = heartbeatInterval;
+        handler = new ChannelHandler("Partition Controller", socketOptions,
+                                     dispatchExec);
+        this.wireSecurity = wireSecurity;
     }
 
     public synchronized void asymPartition(BitView partition) {
@@ -104,20 +116,8 @@ public class Controller implements ConnectionManager {
     }
 
     @Override
-    public boolean receiveHeartbeat(Heartbeat hb) {
-        NodeData nodeData = nodes.get(hb.getSender());
-        if (nodeData != null) {
-            nodeData.heartbeat(hb);
-            return false;
-        }
-        nodeData = createNode(hb);
-        addNode(hb, nodeData);
-        return false;
-    }
-
-    protected synchronized void addNode(Heartbeat hb, NodeData nodeData) {
-        nodes.put(hb.getSender(), nodeData);
-        globalView.add(hb.getSender());
+    public void connectTo(Identity peer) {
+        throw new UnsupportedOperationException();
     }
 
     public synchronized void deliverObject(Object obj, NodeData node) {
@@ -167,6 +167,18 @@ public class Controller implements ConnectionManager {
         return builder.toString();
     }
 
+    @Override
+    public boolean receiveHeartbeat(Heartbeat hb) {
+        NodeData nodeData = nodes.get(hb.getSender());
+        if (nodeData != null) {
+            nodeData.heartbeat(hb);
+            return false;
+        }
+        nodeData = createNode(hb);
+        addNode(hb, nodeData);
+        return false;
+    }
+
     public void removeNode(NodeData nodeData) {
         nodes.remove(nodeData.getIdentity());
     }
@@ -188,6 +200,11 @@ public class Controller implements ConnectionManager {
         }
     }
 
+    @PostConstruct
+    public void start() {
+        handler.start();
+    }
+
     public synchronized void symPartition(BitView partition) {
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
@@ -196,7 +213,8 @@ public class Controller implements ConnectionManager {
     }
 
     @PreDestroy
-    public synchronized void terminate() {
+    public void terminate() {
+        handler.terminate();
         if (task != null) {
             task.cancel();
         }
@@ -205,7 +223,6 @@ public class Controller implements ConnectionManager {
 
     private synchronized TimerTask getTask() {
         task = new TimerTask() {
-
             @Override
             public void run() {
                 checkNodes();
@@ -214,14 +231,14 @@ public class Controller implements ConnectionManager {
         return task;
     }
 
+    protected synchronized void addNode(Heartbeat hb, NodeData nodeData) {
+        nodes.put(hb.getSender(), nodeData);
+        globalView.add(hb.getSender());
+    }
+
     protected NodeData createNode(Heartbeat hb) {
         NodeData nodeData;
         nodeData = new NodeData(hb, this);
         return nodeData;
-    }
-
-    @Override
-    public void connectTo(Identity peer) {
-        throw new UnsupportedOperationException();
     }
 }

@@ -97,7 +97,7 @@ public class MulticastComms extends Thread {
      * 
      * @return a string representing the status of this thread
      */
-    public String getThreadStatusString() {
+    public String getStatusString() {
         StringBuffer buffer = new StringBuffer();
         buffer.append(super.getName()).append(" ............................ ").setLength(30);
         buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");

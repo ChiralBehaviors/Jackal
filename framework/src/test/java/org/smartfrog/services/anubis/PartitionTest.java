@@ -16,10 +16,12 @@
  */
 package org.smartfrog.services.anubis;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -31,7 +33,10 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+import com.hellblazer.pinkie.SocketOptions;
 
 /**
  * 
@@ -45,9 +50,13 @@ abstract public class PartitionTest extends TestCase {
 
         public MyController(Timer timer, long checkPeriod, long expirePeriod,
                             Identity partitionIdentity, long heartbeatTimeout,
-                            long heartbeatInterval) {
+                            long heartbeatInterval,
+                            SocketOptions socketOptions,
+                            Executor dispatchExecutor, WireSecurity wireSecurity)
+                                                                                 throws IOException {
             super(timer, checkPeriod, expirePeriod, partitionIdentity,
-                  heartbeatTimeout, heartbeatInterval);
+                  heartbeatTimeout, heartbeatInterval, socketOptions,
+                  dispatchExecutor, wireSecurity);
         }
 
         @Override
@@ -61,10 +70,10 @@ abstract public class PartitionTest extends TestCase {
     }
 
     public static class Node extends NodeData {
-        static final Logger   log = Logger.getLogger(Node.class.getCanonicalName());
-        
-        int            cardinality;
-        CountDownLatch latch;
+        static final Logger log = Logger.getLogger(Node.class.getCanonicalName());
+
+        int                 cardinality;
+        CountDownLatch      latch;
 
         public Node(Heartbeat hb, Controller controller) {
             super(hb, controller);
@@ -123,11 +132,11 @@ abstract public class PartitionTest extends TestCase {
         latchA.await(60, TimeUnit.SECONDS);
         log.info("Awaiting stability of minor partition B");
         latchB.await(60, TimeUnit.SECONDS);
- 
+
         for (Node member : partitionA) {
             assertEquals(A, member.getPartition());
         }
- 
+
         for (Node member : partitionB) {
             assertEquals(B, member.getPartition());
         }
@@ -236,7 +245,8 @@ abstract public class PartitionTest extends TestCase {
             for (AnnotationConfigApplicationContext context : memberContexts) {
                 Node member = (Node) controller.getNode(context.getBean(Identity.class));
                 assertNotNull("Can't find node: "
-                                      + context.getBean(Identity.class), member);
+                                              + context.getBean(Identity.class),
+                              member);
                 partition.add(member);
             }
         } finally {

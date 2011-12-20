@@ -47,13 +47,14 @@ import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProt
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderMgr;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
-import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+
+import com.hellblazer.jackal.partition.test.node.Controller;
 
 /**
  * Anubis Detection Service.
@@ -80,20 +81,10 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
     private final IOConnectionServer        connectionServer;
     private final BitView                   connectionView      = new BitView();
-    /**
-     * Status - keep running heartbeat
-     */
     private final Heartbeat                 heartbeat;
     private final HeartbeatCommsIntf        heartbeatComms;
-
-    /**
-     * Timing information
-     */
     private volatile long                   heartbeatInterval   = 0;
     private final HeartbeatProtocolFactory  heartbeatProtocolFactory;
-    /**
-     * local identification
-     */
     private final Identity                  identity;
     private volatile View                   ignoring            = new BitView();
     private final IntervalExec              intervalExec;
@@ -101,32 +92,17 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private final LeaderProtocolFactory     leaderProtocolFactory;
     private final Set<Connection>           msgConDelayedDelete = new HashSet<Connection>();
     private final Set<MessageConnection>    msgConnections      = new HashSet<MessageConnection>();
-
-    /**
-     * Connection information
-     */
     private final NodeIdSet                 msgLinks            = new NodeIdSet();
-    /**
-     * references to components
-     */
     private final PartitionProtocol         partitionProtocol;
     private volatile long                   quiesce             = 0;
-    /**
-     * synchronization of sendHeartbeat() with removeConnection().
-     */
     private volatile boolean                sendingHeartbeats   = false;
     private volatile long                   stability           = 0;
     private volatile boolean                stablizing          = false;
     private volatile boolean                terminated          = false;
     private volatile long                   timeout             = 0;
     private volatile long                   viewNumber          = 0;
-
     private final boolean                   alwaysReconnect;
-
-    /**
-     * Link to test manager
-     */
-    private volatile TestMgr                testMgr;
+    private volatile Controller             controller;
 
     public ConnectionSet(InetSocketAddress connectionAddress,
                          Identity identity,
@@ -486,7 +462,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     public String getThreadStatusString() {
         StringBuilder builder = new StringBuilder();
         builder.append(intervalExec.getThreadStatusString()).append("\n");
-        builder.append(heartbeatComms.getThreadStatusString()).append("\n");
+        builder.append(heartbeatComms.getStatusString()).append("\n");
         builder.append(connectionServer.getThreadStatusString()).append("\n");
         return builder.toString();
     }
@@ -500,7 +476,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     public synchronized boolean isIgnoring(Identity id) {
-        return testMgr != null && ignoring.contains(id);
+        return controller != null && ignoring.contains(id);
     }
 
     /**
@@ -627,10 +603,10 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
     }
 
-    public void registerTestManager(TestMgr tm) {
-        heartbeat.setTestInterface(tm.getAddress());
-        intervalExec.registerTestMgr(tm);
-        testMgr = tm;
+    public void registerController(Controller controller) {
+        heartbeat.setController(controller.getAddress());
+        intervalExec.registerController(controller);
+        this.controller = controller;
     }
 
     /**
@@ -709,13 +685,13 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
         msgConDelayedDelete.clear();
 
-        if (testMgr != null) {
-            testMgr.updateHeartbeat(heartbeat);
+        if (controller != null) {
+            controller.updateHeartbeat(heartbeat);
         }
     }
 
     public synchronized void setIgnoring(View ignoring) {
-        if (testMgr == null) {
+        if (controller == null) {
             return;
         }
         if (ignoring == null) {

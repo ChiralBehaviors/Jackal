@@ -19,7 +19,9 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.test.controller;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,25 +37,32 @@ import org.smartfrog.services.anubis.partition.test.msg.TimingMsg;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
+import org.smartfrog.services.anubis.partition.wire.Wire;
+import org.smartfrog.services.anubis.partition.wire.WireMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
+
+import com.hellblazer.partition.comms.AbstractMessageHandler;
+import com.hellblazer.pinkie.SocketChannelHandler;
 
 public class NodeData {
-    private static final Logger       log               = Logger.getLogger(NodeData.class.getCanonicalName());
-    
-    protected volatile TestConnection connection;
-    protected final Controller        controller;
-    protected volatile long           heartbeatInterval = 0;
-    protected volatile View           ignoring          = new BitView();
-    protected volatile long           lastHB            = 0;
-    protected volatile long           lastReceive       = 0;
-    protected volatile int            leader            = -1;
-    protected final Identity          nodeId;
-    protected volatile View           partition         = new BitView();
-    protected volatile StatsMsg       stats             = null;
-    protected volatile ThreadsMsg     threadsInfo       = null;
-    protected volatile long           threadsInfoExpire = 0;
-    protected volatile long           timeout           = 0;
-    protected volatile View           view              = null;
+    private static final Logger   log               = Logger.getLogger(NodeData.class.getCanonicalName());
+
+    protected volatile Connection connection;
+    protected final Controller    controller;
+    protected volatile long       heartbeatInterval = 0;
+    protected volatile View       ignoring          = new BitView();
+    protected volatile long       lastHB            = 0;
+    protected volatile long       lastReceive       = 0;
+    protected volatile int        leader            = -1;
+    protected final Identity      nodeId;
+    protected volatile View       partition         = new BitView();
+    protected volatile StatsMsg   stats             = null;
+    protected volatile ThreadsMsg threadsInfo       = null;
+    protected volatile long       threadsInfoExpire = 0;
+    protected volatile long       timeout           = 0;
+    protected volatile View       view              = null;
 
     public NodeData(Heartbeat hb, Controller controller) {
         this.controller = controller;
@@ -61,7 +70,7 @@ public class NodeData {
         lastHB = hb.getTime();
         view = hb.getView();
         nodeId = hb.getSender();
-        connectIfAvailable(hb.getTestInterface());
+        connectIfAvailable(hb.getControllerInterface());
     }
 
     public void deliverObject(Object obj) {
@@ -143,7 +152,7 @@ public class NodeData {
             // System.out.println("Heartbeat from Node" + nodeId.id + " stamped " + hb.getTime() + " <==== This is out of order!!!!");
         }
         if (connection == null) {
-            connectIfAvailable(hb.getTestInterface());
+            connectIfAvailable(hb.getControllerInterface());
         }
     }
 
@@ -152,7 +161,7 @@ public class NodeData {
     }
 
     public void removeNode() {
-        if (connection != null && connection.connected()) {
+        if (connection != null) {
             connection.shutdown();
         }
         controller.removeNode(this);
@@ -211,15 +220,15 @@ public class NodeData {
             return;
         }
 
-        connection = new TestConnection(address, this, nodeId, controller);
-        if (connection.connected()) {
-            connection.sendObject(new SetTimingMsg(
-                                                   controller.getHeartbeatInterval(),
-                                                   controller.getHeartbeatTimeout()));
-            connection.start();
-        } else {
+        connection = new Connection(controller.wireSecurity);
+        try {
+            controller.handler.connectTo(address, connection);
+        } catch (IOException e) {
             connection = null;
+            log.log(Level.SEVERE,
+                    String.format("Cannot connect to node: %s", nodeId), e);
         }
+
     }
 
     private View partOrIgnoring(View partition, View ignoring) {
@@ -267,6 +276,78 @@ public class NodeData {
     protected void update() {
         if (threadsInfoExpire < System.currentTimeMillis()) {
             threadsInfo = null;
+        }
+    }
+
+    private class Connection extends AbstractMessageHandler {
+
+        public Connection(WireSecurity wireSecurity) {
+            super(wireSecurity);
+        }
+
+        @Override
+        public void closing() {
+            controller.disconnectNode(NodeData.this);
+        }
+
+        @Override
+        public void accept(SocketChannelHandler handler) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void connect(SocketChannelHandler handler) {
+            this.handler = handler;
+            this.handler.selectForRead();
+            connection.sendObject(new SetTimingMsg(
+                                                   controller.getHeartbeatInterval(),
+                                                   controller.getHeartbeatTimeout()));
+        }
+
+        @Override
+        protected void deliverObject(ByteBuffer readBuffer) {
+            WireMsg wire;
+            try {
+                wire = Wire.fromWire(readBuffer.array());
+            } catch (Exception ex) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING, "unable to deserialize message", ex);
+                }
+                return;
+            }
+
+            if (wire instanceof Heartbeat) {
+                controller.receiveHeartbeat((Heartbeat) wire);
+                return;
+            }
+
+            SerializedMsg msg = null;
+            try {
+                msg = (SerializedMsg) wire;
+                Object obj = msg.getObject();
+
+                controller.deliverObject(obj, NodeData.this);
+            } catch (Exception ex) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING, "", ex);
+                }
+            }
+        }
+
+        @Override
+        protected Logger getLog() {
+            return log;
+        }
+
+        public void sendObject(Object obj) {
+            SerializedMsg msg = new SerializedMsg(obj);
+            try {
+                super.sendObject(msg.toWire());
+            } catch (Exception ex) {
+                if (log.isLoggable(Level.WARNING)) {
+                    log.log(Level.WARNING, "", ex);
+                }
+            }
         }
     }
 

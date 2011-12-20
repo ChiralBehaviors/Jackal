@@ -23,8 +23,9 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Identity;
+
+import com.hellblazer.jackal.partition.test.node.Controller;
 
 public class IntervalExec extends Thread {
 
@@ -39,8 +40,7 @@ public class IntervalExec extends Thread {
     private volatile boolean    running       = false;
     private volatile long       stabilityTime = 0;
     private boolean             stabilizing   = false;
-    private boolean             testable      = false;
-    private volatile TestMgr    testManager   = null;
+    private volatile Controller controller    = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
         super("Anubis: Interval Executive (node " + id.id + ")");
@@ -76,9 +76,8 @@ public class IntervalExec extends Thread {
         return buffer.toString();
     }
 
-    public void registerTestMgr(TestMgr testManager) {
-        this.testManager = testManager;
-        testable = true;
+    public void registerController(Controller controller) {
+        this.controller = controller;
     }
 
     /**
@@ -114,11 +113,11 @@ public class IntervalExec extends Thread {
                     if (timenow >= heartbeatTime) {
 
                         /**
-                         * If testing then produce delay info
+                         * If controlled then produce delay info
                          */
-                        if (testable) {
-                            testManager.schedulingInfo(timenow, timenow
-                                                                - heartbeatTime);
+                        if (controller != null) {
+                            controller.schedulingInfo(timenow, timenow
+                                                               - heartbeatTime);
                         }
 
                         /**
@@ -154,11 +153,11 @@ public class IntervalExec extends Thread {
                     if (stabilizing && timenow >= stabilityTime) {
 
                         /**
-                         * If testing then produce delay info
+                         * If controlled then produce delay info
                          */
-                        if (testable) {
-                            testManager.schedulingInfo(timenow, timenow
-                                                                - stabilityTime);
+                        if (controller != null) {
+                            controller.schedulingInfo(timenow, timenow
+                                                               - stabilityTime);
                         }
 
                         connectionSet.checkStability(timenow);

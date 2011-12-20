@@ -31,7 +31,7 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
-    static final public int   MAX_BIT_SIZE            = 256;                                       // allows 2000 servers
+    static final public int   MAX_BIT_SIZE            = 256; // allows 2000 servers
     static final private int  msgLinksSz              = MAX_BIT_SIZE + intSz;
 
     static final private int  heartbeatInitialIdx     = TIMED_MSG_WIRE_SIZE;
@@ -58,8 +58,8 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     static final private int  viewIdx                 = stableIdx + stableSz;
     static final private int  viewSz                  = MAX_BIT_SIZE + intSz;
     static final private int  testInterfaceSz         = AddressMarshalling.connectionAddressWireSz;
-    static final private int  testInterfaceIdx        = viewIdx + viewSz;
-    public static final int   HEARTBEAT_MSG_WIRE_SIZE = testInterfaceIdx
+    static final private int  controllerInterfaceIdx        = viewIdx + viewSz;
+    public static final int   HEARTBEAT_MSG_WIRE_SIZE = controllerInterfaceIdx
                                                         + testInterfaceSz;
     public static final int   HEARTBEAT_MSG_WIRE_TYPE = 300;
 
@@ -74,8 +74,8 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     private boolean           preferred               = false;
     private boolean           stable                  = true;
 
-    private InetSocketAddress testInterface           = null;
-    private boolean           testInterfaceUnmarshalled;
+    private InetSocketAddress controllerInterface           = null;
+    private boolean           controllerInterfaceUnmarshalled;
 
     private NodeIdSet         view                    = null;
     private long              viewNumber              = -1;
@@ -120,7 +120,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         candidateUnmarshalled = true;
         viewUnmarshalled = true;
         msgLinksUnmarshalled = true;
-        testInterfaceUnmarshalled = true;
+        controllerInterfaceUnmarshalled = true;
     }
 
     protected HeartbeatMsg() {
@@ -163,11 +163,11 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         return HEARTBEAT_MSG_WIRE_SIZE;
     }
 
-    public InetSocketAddress getTestInterface() {
-        if (!testInterfaceUnmarshalled) {
-            testInterfaceFromWire();
+    public InetSocketAddress getControllerInterface() {
+        if (!controllerInterfaceUnmarshalled) {
+            controllerInterfaceFromWire();
         }
-        return testInterface;
+        return controllerInterface;
     }
 
     /**
@@ -203,12 +203,12 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     /**
-     * testInterface get and set
+     * controllerInterface get and set
      * 
      * @param address
      */
-    public void setTestInterface(InetSocketAddress address) {
-        testInterface = address;
+    public void setController(InetSocketAddress address) {
+        controllerInterface = address;
     }
 
     @Override
@@ -241,7 +241,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         str += (msgLinksUnmarshalled ? "links=" + msgLinks : "LINKS_MARSHALLED")
                + ", ";
         str += (viewUnmarshalled ? "view=" + view : "VIEW_MARSHALLED") + ", ";
-        str += testInterfaceUnmarshalled ? "testIF=" + testInterface
+        str += controllerInterfaceUnmarshalled ? "testIF=" + controllerInterface
                                         : "TEST_IF_MARSHALLED";
         str += "]";
         return str;
@@ -257,10 +257,10 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
     }
 
-    private void testInterfaceFromWire() {
-        testInterfaceUnmarshalled = true;
-        testInterface = AddressMarshalling.readWireForm(wireForm,
-                                                        testInterfaceIdx);
+    private void controllerInterfaceFromWire() {
+        controllerInterfaceUnmarshalled = true;
+        controllerInterface = AddressMarshalling.readWireForm(wireForm,
+                                                        controllerInterfaceIdx);
     }
 
     private void viewFromWire() {
@@ -304,7 +304,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         candidateUnmarshalled = false;
         msgLinksUnmarshalled = false;
         viewUnmarshalled = false;
-        testInterfaceUnmarshalled = false;
+        controllerInterfaceUnmarshalled = false;
     }
 
     /**
@@ -342,11 +342,11 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         /**
          * Test interface (if there is one)
          */
-        if (testInterface == null) {
-            AddressMarshalling.writeNullWireForm(wireForm, testInterfaceIdx);
+        if (controllerInterface == null) {
+            AddressMarshalling.writeNullWireForm(wireForm, controllerInterfaceIdx);
         } else {
-            AddressMarshalling.writeWireForm(testInterface, wireForm,
-                                             testInterfaceIdx);
+            AddressMarshalling.writeWireForm(controllerInterface, wireForm,
+                                             controllerInterfaceIdx);
         }
     }
 

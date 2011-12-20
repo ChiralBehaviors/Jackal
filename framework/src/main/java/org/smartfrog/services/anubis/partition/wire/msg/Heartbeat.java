@@ -34,7 +34,7 @@ public interface Heartbeat extends Sender, Timed, NumberedView {
 
     NodeIdSet getMsgLinks();
 
-    InetSocketAddress getTestInterface();
+    InetSocketAddress getControllerInterface();
 
     boolean isPreferred();
 
@@ -44,5 +44,5 @@ public interface Heartbeat extends Sender, Timed, NumberedView {
 
     void setMsgLinks(NodeIdSet ml);
 
-    void setTestInterface(InetSocketAddress address);
+    void setController(InetSocketAddress address);
 }

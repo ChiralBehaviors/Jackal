@@ -4,15 +4,20 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Timer;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
+import com.hellblazer.pinkie.SocketOptions;
 
 @Configuration
 public class ControllerConfiguration {
@@ -22,7 +27,7 @@ public class ControllerConfiguration {
     }
 
     @Bean
-    public Controller controller() throws UnknownHostException {
+    public Controller controller() throws IOException {
         Controller controller = constructController();
         return controller;
     }
@@ -79,8 +84,24 @@ public class ControllerConfiguration {
         return new Timer("Partition timer", true);
     }
 
-    protected Controller constructController() throws UnknownHostException {
-        return new Controller(timer(), 1000, 300000, partitionIdentity(), heartbeatTimeout(), heartbeatInterval());
+    protected Controller constructController() throws IOException {
+        return new Controller(timer(), 1000, 300000, partitionIdentity(),
+                              heartbeatTimeout(), heartbeatInterval(),
+                              socketOptions(), dispatchExecutor(),
+                              wireSecurity());
+    }
+
+    @Bean
+    public WireSecurity wireSecurity() {
+        return new NoSecurityImpl();
+    }
+
+    protected SocketOptions socketOptions() {
+        return new SocketOptions();
+    }
+
+    protected Executor dispatchExecutor() {
+        return Executors.newCachedThreadPool();
     }
 
     protected Epoch epoch() {

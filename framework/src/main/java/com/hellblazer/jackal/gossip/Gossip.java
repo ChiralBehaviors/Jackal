@@ -207,7 +207,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     @Override
-    public String getThreadStatusString() {
+    public String getStatusString() {
         return "Anubis: Gossip heartbeat/discovery, running: " + running.get();
     }
 

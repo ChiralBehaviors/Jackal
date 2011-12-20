@@ -16,7 +16,7 @@
  */
 package org.smartfrog.services.anubis.partition.test.controller.gui;
 
-import java.net.UnknownHostException;
+import java.io.IOException;
 
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
@@ -29,16 +29,17 @@ import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 @Configuration
 public class PartitionManagerUiConfiguration extends ControllerConfiguration {
 
-    public static void main(String[] argv) { 
+    public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(
                                                PartitionManagerUiConfiguration.class);
     }
 
     @Override
-    protected Controller constructController() throws UnknownHostException {
+    protected Controller constructController() throws IOException {
         return new GraphicController(timer(), 1000, 300000,
                                      partitionIdentity(), heartbeatTimeout(),
-                                     heartbeatInterval());
+                                     heartbeatInterval(), socketOptions(),
+                                     dispatchExecutor(), wireSecurity());
     }
 
     @Bean

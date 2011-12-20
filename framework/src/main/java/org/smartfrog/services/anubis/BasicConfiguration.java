@@ -20,7 +20,6 @@ import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedPr
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
-import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
@@ -30,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.annotations.DeployedPostProcessor;
+import com.hellblazer.jackal.partition.test.node.Controller;
 import com.hellblazer.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
 
@@ -87,9 +87,18 @@ public class BasicConfiguration {
     }
 
     @Bean
-    public TestMgr testMgr() throws Exception {
-        return new TestMgr(contactAddress(), partition(), node(),
-                           connectionSet(), getTestable());
+    public Controller controller() throws Exception {
+        if (isControllable()) {
+            return new Controller(contactAddress(), partition(), node(),
+                                  connectionSet(), socketOptions(),
+                                  wireSecurity(), testMgrExecutor());
+        } else {
+            return null;
+        }
+    }
+
+    protected Executor testMgrExecutor() {
+        return Executors.newCachedThreadPool();
     }
 
     @Bean
@@ -113,7 +122,7 @@ public class BasicConfiguration {
         return 12345;
     }
 
-    protected boolean getTestable() {
+    protected boolean isControllable() {
         return true;
     }
 

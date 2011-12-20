@@ -25,6 +25,7 @@ import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Timer;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +34,8 @@ import org.smartfrog.services.anubis.partition.test.controller.GossipSnoop;
 import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
+import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,6 +51,7 @@ import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
+import com.hellblazer.pinkie.SocketOptions;
 
 /**
  * Gossip based configuration for the partition manager testing.
@@ -128,9 +132,12 @@ public class ControllerGossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.45,
+        return new AdaptiveFailureDetectorFactory(
+                                                  0.99,
+                                                  1000,
+                                                  0.45,
                                                   heartbeatInterval()
-                                                          * heartbeatTimeout(),
+                                                                  * heartbeatTimeout(),
                                                   3, 100);
     }
 
@@ -140,9 +147,24 @@ public class ControllerGossipConfiguration {
                                                        * 3);
     }
 
-    protected Controller constructController() throws UnknownHostException {
-        return new Controller(timer(), 1000, 30000, partitionIdentity(),
-                              heartbeatTimeout(), heartbeatInterval());
+    protected Controller constructController() throws IOException {
+        return new Controller(timer(), 1000, 300000, partitionIdentity(),
+                              heartbeatTimeout(), heartbeatInterval(),
+                              socketOptions(), dispatchExecutor(),
+                              wireSecurity());
+    }
+
+    @Bean
+    public WireSecurity wireSecurity() {
+        return new NoSecurityImpl();
+    }
+
+    protected SocketOptions socketOptions() {
+        return new SocketOptions();
+    }
+
+    protected Executor dispatchExecutor() {
+        return Executors.newCachedThreadPool();
     }
 
     protected Epoch epoch() {

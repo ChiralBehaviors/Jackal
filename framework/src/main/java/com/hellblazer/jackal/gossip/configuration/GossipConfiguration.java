@@ -39,7 +39,6 @@ import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProt
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
-import org.smartfrog.services.anubis.partition.test.node.TestMgr;
 import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
@@ -58,6 +57,7 @@ import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
+import com.hellblazer.jackal.partition.test.node.Controller;
 import com.hellblazer.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
 
@@ -148,9 +148,18 @@ public class GossipConfiguration {
     }
 
     @Bean
-    public TestMgr testMgr() throws Exception {
-        return new TestMgr(contactAddress(), partition(), node(),
-                           connectionSet(), getTestable());
+    public Controller controller() throws Exception {
+        if (getTestable()) {
+            return new Controller(contactAddress(), partition(), node(),
+                                  connectionSet(), socketOptions(),
+                                  wireSecurity(), testMgrExecutor());
+        } else {
+            return null;
+        }
+    }
+
+    protected Executor testMgrExecutor() {
+        return Executors.newCachedThreadPool();
     }
 
     @Bean
@@ -159,9 +168,12 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(0.90, 1000, 0.45,
+        return new AdaptiveFailureDetectorFactory(
+                                                  0.90,
+                                                  1000,
+                                                  0.45,
                                                   heartbeatInterval()
-                                                          * heartbeatTimeout(),
+                                                                  * heartbeatTimeout(),
                                                   3, 100);
     }
 

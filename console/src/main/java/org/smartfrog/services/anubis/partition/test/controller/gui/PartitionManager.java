@@ -1,6 +1,7 @@
 package org.smartfrog.services.anubis.partition.test.controller.gui;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -33,10 +34,11 @@ public class PartitionManager extends ControllerGossipConfiguration {
     }
 
     @Override
-    protected Controller constructController() throws UnknownHostException {
-        return new GraphicController(timer(), 1000, 30000,
-                                     partitionIdentity(), heartbeatTimeout(),
-                                     heartbeatInterval());
+    protected Controller constructController() throws IOException {
+        return new GraphicController(timer(), 1000, 30000, partitionIdentity(),
+                                     heartbeatTimeout(), heartbeatInterval(),
+                                     socketOptions(), dispatchExecutor(),
+                                     wireSecurity());
     }
 
     public static void main(String[] argv) throws Exception {
