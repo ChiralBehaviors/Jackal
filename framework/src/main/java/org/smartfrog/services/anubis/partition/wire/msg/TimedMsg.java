@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.smartfrog.services.anubis.basiccomms.connectiontransport.AddressMarshalling;
 import org.smartfrog.services.anubis.partition.protocols.Sender;
 import org.smartfrog.services.anubis.partition.protocols.Timed;
 import org.smartfrog.services.anubis.partition.util.Identity;

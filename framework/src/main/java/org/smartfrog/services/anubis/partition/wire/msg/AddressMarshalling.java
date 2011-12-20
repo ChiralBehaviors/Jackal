@@ -1,4 +1,4 @@
-package org.smartfrog.services.anubis.basiccomms.connectiontransport;
+package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
