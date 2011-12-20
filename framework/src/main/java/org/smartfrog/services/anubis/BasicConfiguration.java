@@ -15,7 +15,6 @@ import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
-import org.smartfrog.services.anubis.partition.comms.nonblocking.MessageNioServerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
@@ -161,11 +160,6 @@ public class BasicConfiguration {
         socketOptions.setBacklog(100);
         socketOptions.setTimeout(1 * 1000);
         return socketOptions;
-    }
-
-    protected IOConnectionServerFactory messageNioServerFactory()
-                                                                 throws Exception {
-        return new MessageNioServerFactory(wireSecurity(), socketOptions());
     }
 
     protected IOConnectionServerFactory connectionServerFactory()
