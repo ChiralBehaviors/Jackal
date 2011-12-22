@@ -208,9 +208,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * required id then return null to indicate failure.
          */
         if (!connectionView.contains(id)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("No valid connection for id: " + id + " on: "
-                          + identity.id);
+            if (log.isLoggable(Level.SEVERE)) {
+                log.severe(String.format("No valid connection for id: %s on: %s, view: %s ",
+                                         id, identity.id, connectionView));
             }
             return null;
         }
@@ -471,7 +471,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         return timeout / heartbeatInterval;
     }
 
-    public View getView() {
+    public synchronized View getView() {
         return connectionView;
     }
 
@@ -630,6 +630,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
 
         if (log.isLoggable(Level.FINEST)) {
+            Exception e = new Exception("Remove trace");
             log.log(Level.FINEST,
                     String.format("Removing connection: %s from: %s",
                                   con.getSender(), identity));
@@ -738,10 +739,10 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     public void terminate() {
         terminated = true;
         intervalExec.terminate();
+        connectionServer.terminate();
         for (Connection con : connections.values()) {
             con.terminate();
         }
-        connectionServer.terminate();
         heartbeatComms.terminate();
     }
 
@@ -980,9 +981,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
              * Only bother if the connection has missed its deadline
              */
             if (con.isNotTimely(timenow, timeout)) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Terminating untimely connection: %s",
-                                             con));
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(String.format("Terminating untimely connection: %s",
+                                           con));
                 }
 
                 /**

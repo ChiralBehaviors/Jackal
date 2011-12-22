@@ -56,9 +56,9 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     private boolean                    announceTerm      = true;
     private final ConnectionSet        connectionSet;
-    private boolean                    ignoring          = false;
+    private volatile boolean           ignoring          = false;
     private ConnectionInitiator        initiator;
-    final Identity                     me;
+    protected final Identity           me;
     AtomicReference<MessageConnection> messageConnection = new AtomicReference<MessageConnection>();
     private final AtomicBoolean        open              = new AtomicBoolean();
     private final AtomicLong           receiveCount      = new AtomicLong(
@@ -164,9 +164,10 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     public void terminate() {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(format("terminate is being called [%s]",
-                             messageConnection));
+        if (log.isLoggable(Level.FINEST)) {
+            log.log(Level.FINEST,
+                    format("terminate is being called [%s]", messageConnection),
+                    new Exception());
         }
         announceTerm = false;
         shutdown();
