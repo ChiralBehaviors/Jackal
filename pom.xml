@@ -92,6 +92,8 @@
 						<java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
 					</systemPropertyVariables>
 					<argLine>-ea</argLine>
+					<argLine>-XX:ReservedCodeCacheSize=128m</argLine>
+					<argLine>-Xms512m</argLine>
 					<argLine>-Xmx512m</argLine>
 				</configuration>
 			</plugin>

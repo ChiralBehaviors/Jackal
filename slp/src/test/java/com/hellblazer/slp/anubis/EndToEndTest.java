@@ -226,7 +226,7 @@ abstract public class EndToEndTest extends TestCase {
         }
     }
 
-    public void testSymmetricPartition() throws Exception {
+    public void teztSymmetricPartition() throws Exception {
         int minorPartitionSize = configs.length / 2;
         BitView A = new BitView();
         BitView B = new BitView();
@@ -363,7 +363,7 @@ abstract public class EndToEndTest extends TestCase {
                    latch.await(60, TimeUnit.SECONDS));
     }
 
-    public void testAsymmetricPartition() throws Exception {
+    public void teztAsymmetricPartition() throws Exception {
         int minorPartitionSize = configs.length / 2;
         BitView A = new BitView();
         BitView B = new BitView();
