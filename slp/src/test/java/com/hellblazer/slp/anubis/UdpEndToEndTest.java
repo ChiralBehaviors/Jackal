@@ -249,4 +249,11 @@ public class UdpEndToEndTest extends EndToEndTest {
     protected Logger getLogger() {
         return Logger.getLogger(UdpEndToEndTest.class.getCanonicalName());
     }
+
+    @Override
+    protected void setUp() throws Exception {
+        testPort1++;
+        testPort2++;
+        super.setUp();
+    }
 }

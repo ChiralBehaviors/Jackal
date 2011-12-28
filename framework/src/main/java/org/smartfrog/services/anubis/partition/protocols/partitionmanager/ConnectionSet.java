@@ -630,7 +630,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
 
         if (log.isLoggable(Level.FINEST)) {
-            Exception e = new Exception("Remove trace");
             log.log(Level.FINEST,
                     String.format("Removing connection: %s from: %s",
                                   con.getSender(), identity));

@@ -231,6 +231,10 @@ public class UdpCommunications implements GossipCommunications {
     @Override
     public void terminate() {
         if (running.compareAndSet(true, false)) {
+            if (log.isLoggable(Level.INFO)) {
+                log.info(String.format("Terminating UDP Communications on %s",
+                                       socket.getLocalSocketAddress()));
+            }
             socket.close();
         }
     }
@@ -464,6 +468,10 @@ public class UdpCommunications implements GossipCommunications {
         return new Runnable() {
             @Override
             public void run() {
+                if (log.isLoggable(Level.INFO)) {
+                    log.info(String.format("UDP Gossip communications started on %s",
+                                           socket.getLocalSocketAddress()));
+                }
                 while (running.get()) {
                     try {
                         service(new DatagramPacket(new byte[MAX_SEG_SIZE],

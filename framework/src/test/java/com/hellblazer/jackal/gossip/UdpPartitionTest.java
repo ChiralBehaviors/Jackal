@@ -311,4 +311,11 @@ public class UdpPartitionTest extends PartitionTest {
     protected Logger getLogger() {
         return Logger.getLogger(getClass().getCanonicalName());
     }
+
+    @Override
+    protected void setUp() throws Exception {
+        testPort1++;
+        testPort2++;
+        super.setUp();
+    }
 }
