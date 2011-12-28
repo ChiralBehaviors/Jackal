@@ -73,7 +73,7 @@ public class PartitionProtocol {
      */
     public MessageConnection connect(int id) {
         return connectionSet.connect(id);
-    } 
+    }
 
     public InetAddress getNodeAddress(int id) {
         return connectionSet.getNodeAddress(id);
@@ -128,7 +128,7 @@ public class PartitionProtocol {
         view.copyView(connectionSet.getView());
         leader = connectionSet.electLeader(view);
     }
- 
+
     public void start() {
         view.add(identity);
         view.stablize();
@@ -140,7 +140,7 @@ public class PartitionProtocol {
     public void terminate() {
         terminated = true;
     }
-    
+
     /**
      * Force the destabilization of the partition.
      */
@@ -148,4 +148,12 @@ public class PartitionProtocol {
         connectionSet.destabilize();
     }
 
+    /**
+     * Answer the identity of the leader
+     * 
+     * @return
+     */
+    public Identity getLeader() {
+        return leader;
+    }
 }

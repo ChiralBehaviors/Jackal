@@ -7,9 +7,7 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.hellblazer.anubis</groupId>
 	<artifactId>slp</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<name>Service Location Protocol</name>
 	<description>Anubis based SLP</description>
 	<url>https://github.com/Hellblazer/Jackal</url>

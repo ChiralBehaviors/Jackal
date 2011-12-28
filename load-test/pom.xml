@@ -7,9 +7,7 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.hellblazer.anubis</groupId>
 	<artifactId>load-test</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<name>Load Test</name>
 	<description>Load Testing for Anubis</description>
 	<url>https://github.com/Hellblazer/Jackal</url>
