@@ -36,7 +36,6 @@ public class IntervalExec extends Thread {
     private volatile long       interval      = 0;
     private long                lastCheckTime = 0;
     private final Identity      me;
-    private final Random        random;
     private volatile boolean    running       = false;
     private volatile long       stabilityTime = 0;
     private boolean             stabilizing   = false;
@@ -48,7 +47,6 @@ public class IntervalExec extends Thread {
         connectionSet = cs;
         interval = i;
         setPriority(MAX_PRIORITY);
-        random = new Random(System.currentTimeMillis() + 100 * me.id);
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
@@ -88,7 +86,7 @@ public class IntervalExec extends Thread {
         running = true;
 
         long timenow = System.currentTimeMillis();
-        heartbeatTime = timenow + random.nextInt((int) interval);
+        heartbeatTime = timenow + interval; // random.nextInt((int) interval);
         lastCheckTime = timenow;
         synchronized (connectionSet) {
             while (running) {
@@ -173,7 +171,7 @@ public class IntervalExec extends Thread {
     public void setInterval(long interval) {
         this.interval = interval;
         heartbeatTime = System.currentTimeMillis()
-                        + random.nextInt((int) interval);
+                        + interval; // random.nextInt((int) interval);
         interrupt();
     }
 

@@ -23,7 +23,6 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -69,7 +68,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
     private final Map<Integer, MessageConnection> links             = new HashMap<Integer, MessageConnection>();
     private final long                            maxTransDelay;
     private final Partition                       partition;
-    private final Random                          random;
     private final AtomicBoolean                   stable            = new AtomicBoolean();
     private final ScheduledExecutorService        timers;
 
@@ -81,7 +79,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
         maxTransDelay = heartbeatTimeout * heartbeatInterval;
         global = new GlobalRegisterImpl(identity, this);
         local = new LocalRegisterImpl(identity, this);
-        random = new Random(System.currentTimeMillis() + 1966 * me.longValue());
         timers = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
             @Override
@@ -175,39 +172,25 @@ public class Locator implements PartitionNotification, AnubisLocator {
     }
 
     /**
-     * This is a temporary fix for a deadlock bug. The implementation of links
-     * maintenance (calls to send(), clearConnections() and
-     * dropBrokenConnections()) is brain dead in that it can cause a deadlock
-     * because upcoming notifications from the partitionManager may deadlock
-     * with downward send() invocations from the registers. Making
-     * partitionNotification() asynchronous by queueing the requests will avoid
-     * the deadlock. Later the implementation of request servicing and link
-     * maintenance should be examined.
+     * PartitionNotification interface
      * 
      * @param view
      * @param leader
      */
     @Override
     public void partitionNotification(final View view, final int leader) {
-        partitionNotificationImpl(view, leader);
-    }
-
-    /**
-     * PartitionNotification interface
-     */
-    public void partitionNotificationImpl(View view, int leader) {
         if (log.isLoggable(Level.FINER)) {
             log.finer(String.format("Partition view: %s, leader: %s, on member %s",
                                     view, leader, me));
         }
-
+        
         /**
          * Keep record of the current stability and which node is leader. The
          * leader holds the active global register.
          */
         stable.set(view.isStable());
         this.leader = Integer.valueOf(leader);
-
+        
         /**
          * The view will only be the same or larger when a stable report is
          * received. If it was stable already it may have jumped to a larger
@@ -219,25 +202,16 @@ public class Locator implements PartitionNotification, AnubisLocator {
          * ....if the global has changed we need to start using the new one.
          */
         if (view.isStable()) {
-
+        
             /**
              * No point in putting jitter in at the global because it doesn't
              * send messages at stability.
              */
             global.stable(leader);
-
-            /**
-             * Introduce jitter to prevent the nodes all hitting the leader at
-             * the same time. This should really have a max delay proportional
-             * to the heartbeat interval.
-             */
-            try {
-                wait(random.nextInt(1000));
-            } catch (Exception ex) {
-            }
+        
             local.stable(leader, view.getTimeStamp());
         }
-
+        
         /**
          * If a view is unstable it may be the same size as previously (in the
          * case that a node has been added) or it may be smaller (in the case

@@ -77,10 +77,12 @@ import com.hellblazer.jackal.partition.test.node.Controller;
 public class ConnectionSet implements ViewListener, ConnectionManager {
     private static final Logger             log                 = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
 
+    private final boolean                   alwaysReconnect;
     private volatile boolean                changeInViews       = false;
     private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
     private final IOConnectionServer        connectionServer;
     private final BitView                   connectionView      = new BitView();
+    private volatile Controller             controller;
     private final Heartbeat                 heartbeat;
     private final HeartbeatCommsIntf        heartbeatComms;
     private volatile long                   heartbeatInterval   = 0;
@@ -101,8 +103,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private volatile boolean                terminated          = false;
     private volatile long                   timeout             = 0;
     private volatile long                   viewNumber          = 0;
-    private final boolean                   alwaysReconnect;
-    private volatile Controller             controller;
 
     public ConnectionSet(InetSocketAddress connectionAddress,
                          Identity identity,
@@ -156,6 +156,20 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     /**
+     * Add a new connection to the set. This will have been created by the
+     * transport.
+     * 
+     * @param con
+     */
+    private void addConnection(Connection con) {
+        connections.put(con.getSender(), con);
+        connectionView.add(con.getSender());
+        changeInViews = true;
+        intervalExec.clearStability();
+        viewNumber++;
+    }
+
+    /**
      * dummy for now - check for completion of stability period.
      * 
      * @param timenow
@@ -190,6 +204,49 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * drive the partition manager's notifictions.
          */
         partitionProtocol.notifyChanges();
+    }
+
+    /**
+     * scans through the connections and checks to see if any have expired or
+     * are ready to be cleaned up. If expired they are terminated (entering a
+     * quiescence period), if to be cleaned up they are removed.
+     */
+    synchronized void checkTimeouts(long timenow) {
+
+        Iterator<Entry<Identity, Connection>> iter = connections.entrySet().iterator();
+        while (iter.hasNext()) {
+            Connection con = iter.next().getValue();
+
+            /**
+             * Only bother if the connection has missed its deadline
+             */
+            if (con.isNotTimely(timenow, timeout)) {
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(String.format("Terminating untimely connection: %s",
+                                           con));
+                }
+
+                /**
+                 * If the connection is in the connection set then terminate it.
+                 */
+                if (connectionView.contains(con.getSender())) {
+                    con.terminate();
+                    removeConnection(con);
+                }
+
+                /**
+                 * check for clean up - don't clean up until the quiescence
+                 * period has expired. This is how new connections are prevented
+                 * during quiescence.
+                 */
+                if (con.isQuiesced(timenow, quiesce)) {
+                    iter.remove();
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(String.format("Removed connection %s", con));
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -310,6 +367,47 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     /**
+     * The set of views is consistent if all views agree with the local view
+     * (which is the connection set). This method sets the local view timestamp
+     * as a side-effect
+     * 
+     * @return
+     */
+    private boolean consistent(long timenow) {
+        connectionView.setTimeStamp(timenow + stability);
+        for (Connection con : connections.values()) {
+            /**
+             * if an active connection and it is not self then check it is
+             * consistent with self and check its stability time
+             */
+            if (connectionView.contains(con.getSender())
+                && !con.getSender().equalId(identity)) {
+                /**
+                 * if not equal the not consistent - set the time to undefined
+                 * and return false
+                 */
+                if (!con.equalsView(connectionView)) {
+                    connectionView.setTimeStamp(View.undefinedTimeStamp);
+                    return false;
+                }
+                /**
+                 * The following is an optimisation that can only be applied if
+                 * the heartbeat protocol checks for synchronised clocks.
+                 */
+                if (con.measuresClockSkew()
+                    && isBetterTimeStamp(con.getTimeStamp())) {
+                    connectionView.setTimeStamp(con.getTimeStamp());
+                }
+            }
+        }
+        return true;
+    }
+
+    public synchronized boolean contains(Identity sender) {
+        return getView().contains(sender);
+    }
+
+    /**
      * Replace a message connection with a heartbeat connection
      * 
      * @param mcon
@@ -366,6 +464,18 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     /**
+     * Force the partition to destabilize
+     */
+    protected synchronized void destabilize() {
+        if (connectionView.isStable()) {
+            changeInViews = true;
+            connectionView.destablize();
+            stablizing = false;
+            intervalExec.clearStability();
+        }
+    }
+
+    /**
      * To disconnect a message connection we set the msgLinks to indicate that
      * this end does not need it any longer.
      * 
@@ -382,6 +492,17 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             connection.terminate();
         }
         */
+    }
+
+    /**
+     * Drop connections to nodes that are not in the view - they will be broken.
+     */
+    private void dropBrokenConnections() {
+        for (MessageConnection connection : msgConnections) {
+            if (!connectionView.contains(connection.getId())) {
+                connection.disconnect();
+            }
+        }
     }
 
     /**
@@ -475,6 +596,24 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         return connectionView;
     }
 
+    /**
+     * returns true if the time stamp given as a parameter is better than the
+     * one currently held by this view (connectionSet).
+     * 
+     * The timeStamp parameter is better then the current time stamp if: 1)
+     * timeStamp is defined and the current time stamp is not 2) both are
+     * defined but timeStamp is less than the current time stamp.
+     * 
+     * Note: a time stamp is undefined if its value is View.undefinedTimeStamp
+     * 
+     * @param timeStamp
+     * @return
+     */
+    private boolean isBetterTimeStamp(long timeStamp) {
+        return timeStamp != View.undefinedTimeStamp
+               && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
+    }
+
     public synchronized boolean isIgnoring(Identity id) {
         return controller != null && ignoring.contains(id);
     }
@@ -551,6 +690,18 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
     }
 
+    private Heartbeat prepareHeartbeat(long timenow) {
+        /**
+         * prepare the heartbeat with the latest information
+         */
+        heartbeat.setMsgLinks(msgLinks);
+        heartbeat.setTime(timenow);
+        heartbeat.setView(connectionView);
+        heartbeat.setViewNumber(viewNumber);
+        heartbeat.setCandidate(leaderMgr.getLeader());
+        return heartbeat;
+    }
+
     /**
      * 
      * @param hb
@@ -599,6 +750,18 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             if (log.isLoggable(Level.FINE)) {
                 log.fine(String.format("Ignoring received object: %s from: %s on: %s as it is not in our view",
                                        obj, id, identity));
+            }
+        }
+    }
+
+    private void reconnect() {
+        for (int node : connectionView) {
+            if (thisEndInitiatesConnectionsTo(node)) {
+                Connection con = connections.get(new Identity(identity.magic,
+                                                              node, 0));
+                if (con == null || con instanceof HeartbeatConnection) {
+                    connect(node);
+                }
             }
         }
     }
@@ -756,6 +919,17 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         return thisEndInitiatesConnectionsTo(target.id);
     }
 
+    /**
+     * indicates which end initiates a connection to a given node
+     * 
+     * @param target
+     *            - the other end of the intended connection
+     * @return - true if this end initiates the connection, false otherwise
+     */
+    private boolean thisEndInitiatesConnectionsTo(int target) {
+        return identity.id < target;
+    }
+
     @Override
     public String toString() {
         StringBuffer str = new StringBuffer();
@@ -836,179 +1010,5 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
      */
     public boolean wantsMsgLinkTo(Identity id) {
         return msgLinks.contains(id.id);
-    }
-
-    /**
-     * Add a new connection to the set. This will have been created by the
-     * transport.
-     * 
-     * @param con
-     */
-    private void addConnection(Connection con) {
-        connections.put(con.getSender(), con);
-        connectionView.add(con.getSender());
-        changeInViews = true;
-        intervalExec.clearStability();
-        viewNumber++;
-    }
-
-    /**
-     * The set of views is consistent if all views agree with the local view
-     * (which is the connection set). This method sets the local view timestamp
-     * as a side-effect
-     * 
-     * @return
-     */
-    private boolean consistent(long timenow) {
-        connectionView.setTimeStamp(timenow + stability);
-        for (Connection con : connections.values()) {
-            /**
-             * if an active connection and it is not self then check it is
-             * consistent with self and check its stability time
-             */
-            if (connectionView.contains(con.getSender())
-                && !con.getSender().equalId(identity)) {
-                /**
-                 * if not equal the not consistent - set the time to undefined
-                 * and return false
-                 */
-                if (!con.equalsView(connectionView)) {
-                    connectionView.setTimeStamp(View.undefinedTimeStamp);
-                    return false;
-                }
-                /**
-                 * The following is an optimisation that can only be applied if
-                 * the heartbeat protocol checks for synchronised clocks.
-                 */
-                if (con.measuresClockSkew()
-                    && isBetterTimeStamp(con.getTimeStamp())) {
-                    connectionView.setTimeStamp(con.getTimeStamp());
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Drop connections to nodes that are not in the view - they will be broken.
-     */
-    private void dropBrokenConnections() {
-        for (MessageConnection connection : msgConnections) {
-            if (!connectionView.contains(connection.getId())) {
-                connection.disconnect();
-            }
-        }
-    }
-
-    /**
-     * returns true if the time stamp given as a parameter is better than the
-     * one currently held by this view (connectionSet).
-     * 
-     * The timeStamp parameter is better then the current time stamp if: 1)
-     * timeStamp is defined and the current time stamp is not 2) both are
-     * defined but timeStamp is less than the current time stamp.
-     * 
-     * Note: a time stamp is undefined if its value is View.undefinedTimeStamp
-     * 
-     * @param timeStamp
-     * @return
-     */
-    private boolean isBetterTimeStamp(long timeStamp) {
-        return timeStamp != View.undefinedTimeStamp
-               && (connectionView.getTimeStamp() == View.undefinedTimeStamp || timeStamp < connectionView.getTimeStamp());
-    }
-
-    private Heartbeat prepareHeartbeat(long timenow) {
-        /**
-         * prepare the heartbeat with the latest information
-         */
-        heartbeat.setMsgLinks(msgLinks);
-        heartbeat.setTime(timenow);
-        heartbeat.setView(connectionView);
-        heartbeat.setViewNumber(viewNumber);
-        heartbeat.setCandidate(leaderMgr.getLeader());
-        return heartbeat;
-    }
-
-    private void reconnect() {
-        for (int node : connectionView) {
-            if (thisEndInitiatesConnectionsTo(node)) {
-                Connection con = connections.get(new Identity(identity.magic,
-                                                              node, 0));
-                if (con == null || con instanceof HeartbeatConnection) {
-                    connect(node);
-                }
-            }
-        }
-    }
-
-    /**
-     * indicates which end initiates a connection to a given node
-     * 
-     * @param target
-     *            - the other end of the intended connection
-     * @return - true if this end initiates the connection, false otherwise
-     */
-    private boolean thisEndInitiatesConnectionsTo(int target) {
-        return identity.id < target;
-    }
-
-    /**
-     * Force the partition to destabilize
-     */
-    protected synchronized void destabilize() {
-        if (connectionView.isStable()) {
-            changeInViews = true;
-            connectionView.destablize();
-            stablizing = false;
-            intervalExec.clearStability();
-        }
-    }
-
-    /**
-     * scans through the connections and checks to see if any have expired or
-     * are ready to be cleaned up. If expired they are terminated (entering a
-     * quiescence period), if to be cleaned up they are removed.
-     */
-    synchronized void checkTimeouts(long timenow) {
-
-        Iterator<Entry<Identity, Connection>> iter = connections.entrySet().iterator();
-        while (iter.hasNext()) {
-            Connection con = iter.next().getValue();
-
-            /**
-             * Only bother if the connection has missed its deadline
-             */
-            if (con.isNotTimely(timenow, timeout)) {
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(String.format("Terminating untimely connection: %s",
-                                           con));
-                }
-
-                /**
-                 * If the connection is in the connection set then terminate it.
-                 */
-                if (connectionView.contains(con.getSender())) {
-                    con.terminate();
-                    removeConnection(con);
-                }
-
-                /**
-                 * check for clean up - don't clean up until the quiescence
-                 * period has expired. This is how new connections are prevented
-                 * during quiescence.
-                 */
-                if (con.isQuiesced(timenow, quiesce)) {
-                    iter.remove();
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(String.format("Removed connection %s", con));
-                    }
-                }
-            }
-        }
-    }
-
-    public synchronized boolean contains(Identity sender) {
-        return getView().contains(sender);
     }
 }

@@ -96,9 +96,8 @@ public class LeaderMgr {
         /**
          * reset the candidates (clear the votes)
          */
-        iter = candidates.values().iterator();
-        while (iter.hasNext()) {
-            ((Candidate) iter.next()).clearReceivedVotes();
+        for(Connection candidate: candidates.values()){
+            ((Candidate) candidate).clearReceivedVotes();
         }
 
         /**
