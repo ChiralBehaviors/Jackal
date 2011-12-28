@@ -141,6 +141,7 @@ public class Node {
                 try {
                     startLatch.countDown();
                     startLatch.await();
+                    Thread.sleep(500);
                 } catch (InterruptedException e1) {
                     return;
                 }
@@ -162,6 +163,7 @@ public class Node {
                     }
                     endLatch.countDown();
                     endLatch.await();
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     return;
                 }
