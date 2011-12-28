@@ -24,9 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -72,7 +70,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
     private final long                            maxTransDelay;
     private final Partition                       partition;
     private final Random                          random;
-    private final ExecutorService                 stabilityQueue;
     private final AtomicBoolean                   stable            = new AtomicBoolean();
     private final ScheduledExecutorService        timers;
 
@@ -98,21 +95,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
                     }
                 });
                 daemon.setDaemon(true);
-                return daemon;
-            }
-        });
-        stabilityQueue = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r, "Anubis: stability queue (node "
-                                              + me + ")");
-                daemon.setDaemon(true);
-                daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exceptiion", e);
-                    }
-                });
                 return daemon;
             }
         });
@@ -207,18 +189,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
      */
     @Override
     public void partitionNotification(final View view, final int leader) {
-        try {
-            stabilityQueue.execute(new Runnable() {
-                @Override
-                public void run() {
-                    partitionNotificationImpl(view, leader);
-                }
-            });
-        } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("rejecting partition notification due to shutdown");
-            }
-        }
+        partitionNotificationImpl(view, leader);
     }
 
     /**
@@ -367,7 +338,6 @@ public class Locator implements PartitionNotification, AnubisLocator {
         if (log.isLoggable(Level.FINE)) {
             log.fine("Terminating Locator");
         }
-        stabilityQueue.shutdownNow();
         global.terminate();
         local.terminate();
         timers.shutdownNow();

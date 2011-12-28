@@ -47,7 +47,7 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  * 
  */
 public class MessageHandler extends AbstractMessageHandler implements
-                IOConnection {
+        IOConnection {
     static enum State {
         BODY, CLOSED, ERROR, HEADER, INITIAL;
     };
@@ -365,29 +365,37 @@ public class MessageHandler extends AbstractMessageHandler implements
             return;
         }
 
-        try {
-            /**
-             * handle the message. We do not increment the order for the initial
-             * heartbeat message opening a new connection.
-             */
-            if (messageConnection.get() == null) {
+        /**
+         * handle the message. We do not increment the order for the initial
+         * heartbeat message opening a new connection.
+         */
+        if (messageConnection.get() == null) {
+            try {
                 initialMsg(tm);
-            } else {
-                receiveCount.incrementAndGet();
-                if (!(tm instanceof Heartbeat)) {
-                    if (log.isLoggable(Level.FINER)) {
-                        log.finer(format("delivering %s [%s]", tm,
-                                         messageConnection));
-                    }
-                }
-                messageConnection.get().deliver(tm);
-            }
-        } catch (Throwable e) {
-            if (log.isLoggable(Level.INFO)) {
-                log.log(Level.INFO, "Error delivering message", e);
+            } catch (Throwable e) {
+                if (log.isLoggable(Level.INFO)) {
+                    log.log(Level.INFO, "Error delivering initial message", e);
 
+                }
+                error();
             }
-            error();
+        } else {
+            receiveCount.incrementAndGet();
+            if (!(tm instanceof Heartbeat)) {
+                if (log.isLoggable(Level.FINER)) {
+                    log.finer(format("delivering %s [%s]", tm,
+                                     messageConnection));
+                }
+            }
+            try {
+                messageConnection.get().deliver(tm);
+            } catch (Throwable e) {
+                if (log.isLoggable(Level.INFO)) {
+                    log.log(Level.INFO, "Error delivering message", e);
+
+                }
+                error();
+            }
         }
     }
 

@@ -75,6 +75,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
             getLog().finest(format("Socket read ready [%s]", this));
         }
         switch (readState) {
+            case ERROR:
+                return;
             case CLOSED:
                 return;
             case HEADER: {
@@ -102,7 +104,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                     readState = State.BODY;
                 } else {
                     getLog().severe("%  CANNOT FIND MAGIC_NUMBER:  "
-                                                    + readMagic + " instead");
+                                            + readMagic + " instead");
                     readState = State.ERROR;
                     shutdown();
                     return;
@@ -131,6 +133,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     public void shutdown() {
+        writeState = readState = State.CLOSED;
         handler.close();
     }
 
@@ -145,6 +148,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                 getLog().finest(format("Socket write ready [%s]", this));
             }
             switch (writeState) {
+                case ERROR:
+                    return;
                 case CLOSED:
                     return;
                 case INITIAL: {
@@ -179,9 +184,6 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                     }
                     break;
                 }
-                case ERROR: {
-                    return;
-                }
                 default: {
                     throw new IllegalStateException("Illegal write state: "
                                                     + writeState);
@@ -211,8 +213,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                              format("Failed to read socket channel [%s]", this),
                              ioe);
             }
-            readState = State.ERROR;
-            shutdown();
+            error();
             return false;
         } catch (NotYetConnectedException nycex) {
             if (getLog().isLoggable(Level.WARNING)) {
@@ -220,7 +221,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                              "Attempt to read a socket channel before it is connected",
                              nycex);
             }
-            readState = State.ERROR;
+            error();
             return false;
         }
         return true;
@@ -258,7 +259,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     abstract protected void deliverObject(ByteBuffer readBuffer);
 
     protected void error() {
-        writeState = State.ERROR;
+        writeState = readState = State.ERROR;
         shutdown();
     }
 
