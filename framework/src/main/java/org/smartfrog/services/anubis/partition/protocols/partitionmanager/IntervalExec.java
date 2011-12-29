@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,7 +34,6 @@ public class IntervalExec extends Thread {
     private long                heartbeatTime = 0;
     private volatile long       interval      = 0;
     private long                lastCheckTime = 0;
-    private final Identity      me;
     private volatile boolean    running       = false;
     private volatile long       stabilityTime = 0;
     private boolean             stabilizing   = false;
@@ -43,7 +41,6 @@ public class IntervalExec extends Thread {
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
         super("Anubis: Interval Executive (node " + id.id + ")");
-        me = id;
         connectionSet = cs;
         interval = i;
         setPriority(MAX_PRIORITY);
@@ -170,8 +167,7 @@ public class IntervalExec extends Thread {
 
     public void setInterval(long interval) {
         this.interval = interval;
-        heartbeatTime = System.currentTimeMillis()
-                        + interval; // random.nextInt((int) interval);
+        heartbeatTime = System.currentTimeMillis() + interval; // random.nextInt((int) interval);
         interrupt();
     }
 

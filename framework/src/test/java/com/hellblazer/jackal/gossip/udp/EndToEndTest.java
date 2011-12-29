@@ -172,8 +172,7 @@ public class EndToEndTest extends TestCase {
                                                                          1.0,
                                                                          true);
         Gossip gossip = new Gossip(view, new Random(), communications, 1,
-                                   TimeUnit.SECONDS, fdFactory, false,
-                                   new Identity(0, i, 0));
+                                   TimeUnit.SECONDS, fdFactory, new Identity(0, i, 0));
         gossip.create(receiver);
         return gossip;
     }

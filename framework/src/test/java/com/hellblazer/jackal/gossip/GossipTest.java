@@ -42,8 +42,7 @@ public class GossipTest extends TestCase {
         Digest digest4a = new Digest(new InetSocketAddress("google.com", 4), -1);
 
         Gossip gossip = new Gossip(view, random, communications, 4,
-                                   TimeUnit.DAYS, fdFactory, false,
-                                   new Identity(0, 0, 0));
+                                   TimeUnit.DAYS, fdFactory, new Identity(0, 0, 0));
 
         gossip.examine(asList(digest1, digest2, digest3, digest4),
                        gossipHandler);
@@ -98,8 +97,7 @@ public class GossipTest extends TestCase {
         state4.setTime(4);
 
         Gossip gossip = new Gossip(view, random, communications, 4,
-                                   TimeUnit.DAYS, fdFactory, false,
-                                   new Identity(0, 0, 0));
+                                   TimeUnit.DAYS, fdFactory, new Identity(0, 0, 0));
 
         Field ep = Gossip.class.getDeclaredField("endpoints");
         ep.setAccessible(true);
@@ -149,8 +147,7 @@ public class GossipTest extends TestCase {
                                                    address4);
 
         Gossip gossip = new Gossip(view, random, communications, 4,
-                                   TimeUnit.DAYS, fdFactory, false,
-                                   new Identity(0, 0, 0));
+                                   TimeUnit.DAYS, fdFactory, new Identity(0, 0, 0));
         gossip.create(receiver);
 
         gossip.apply(asList(state1, state2, state3, state4));
@@ -220,8 +217,7 @@ public class GossipTest extends TestCase {
         when(ep4.getTime()).thenReturn(5L);
 
         Gossip gossip = new Gossip(view, random, communications, 4,
-                                   TimeUnit.DAYS, fdFactory, false,
-                                   new Identity(0, 0, 0)) {
+                                   TimeUnit.DAYS, fdFactory, new Identity(0, 0, 0)) {
 
             @Override
             protected void notifyUpdate(HeartbeatState state) {
