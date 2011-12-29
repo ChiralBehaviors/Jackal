@@ -16,8 +16,6 @@
  */
 package org.smartfrog.services.anubis;
 
-import org.smartfrog.services.anubis.locator.AnubisValue;
-
 /**
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
@@ -25,17 +23,14 @@ import org.smartfrog.services.anubis.locator.AnubisValue;
  */
 public class ValueHistory {
     public final Action action;
-
-    public final String instance;
-    public final String name;
-    public final long time;
+    public final int    sender;
+    public final long   time;
     public final Object value;
 
-    public ValueHistory(AnubisValue av, Action action) {
-        name = av.getName();
-        time = av.getTime();
-        instance = av.getInstance();
-        value = av.getValue();
+    public ValueHistory(int sender, Object value, long time, Action action) {
+        this.sender = sender;
+        this.time = time;
+        this.value = value;
         this.action = action;
     }
 }

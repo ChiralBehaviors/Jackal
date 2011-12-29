@@ -22,6 +22,8 @@ package org.smartfrog.services.anubis.partition.util;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
@@ -33,7 +35,8 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
  * individual nodes and the entire set of nodes.
  */
 
-public class NodeIdSet implements Serializable, Cloneable, WireSizes {
+public class NodeIdSet implements Serializable, Cloneable, WireSizes,
+        Iterable<Integer> {
 
     private static final int  DEFAULT_SIZE     = 33;
     private static final long serialVersionUID = 1L;
@@ -274,6 +277,46 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes {
      */
     public boolean isEmpty() {
         return cardinality() == 0;
+    }
+
+    @Override
+    public Iterator<Integer> iterator() {
+        int i = 0;
+        for (i = 0; i < size(); i++) {
+            if (contains(i)) {
+                break;
+            }
+        }
+        final int startPos = i;
+        return new Iterator<Integer>() {
+            int index = startPos;
+
+            @Override
+            public boolean hasNext() {
+                return contains(index);
+            }
+
+            @Override
+            public Integer next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                int value = index;
+                int i = index + 1;
+                for (; i < size(); i++) {
+                    if (contains(i)) {
+                        break;
+                    }
+                }
+                index = i;
+                return value;
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     public int last() {

@@ -65,9 +65,9 @@ abstract public class SmokeTest extends TestCase {
             List<SendHistory> sent = sender.getSendHistory();
             assertEquals(messageCount, sent.size());
             for (Node receiver : nodes) {
-                List<ValueHistory> received = receiver.getValueHistory(sender.getInstance());
+                List<ValueHistory> received = receiver.getValueHistory(sender.getIdentity());
                 assertNotNull("Received no history from "
-                                      + sender.getInstance(), received);
+                                      + sender.getIdentity(), received);
                 int lastCounter = -1;
                 boolean first = true;
                 List<ValueHistory> filtered = new ArrayList<ValueHistory>();
@@ -83,7 +83,7 @@ abstract public class SmokeTest extends TestCase {
                     } else {
                         int counter = (Integer) msg.value;
                         assertEquals(String.format("invalid msg received by %s : %s",
-                                                   receiver.getInstance(), msg),
+                                                   receiver.getIdentity(), msg),
                                      lastCounter + 1, counter);
                         lastCounter = counter;
                     }
@@ -113,8 +113,8 @@ abstract public class SmokeTest extends TestCase {
                  int cardinality) throws Exception {
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
                                                                                         config);
-        Node node = new Node(ctx, stateName, cardinality, launchLatch,
-                             startLatch, endLatch, maxSleep, messageCount);
+        Node node = new Node(ctx, cardinality, launchLatch, startLatch,
+                             endLatch, maxSleep, messageCount);
         return node;
     }
 }
