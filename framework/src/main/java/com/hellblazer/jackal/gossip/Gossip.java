@@ -91,6 +91,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     private final AtomicReference<View>                      ignoring   = new AtomicReference<View>();
     private final AtomicBoolean                              running    = new AtomicBoolean();
     private final FailureDetectorFactory                     fdFactory;
+    private final boolean                                    isDiscoveryOnly;
     private final Ring                                       ring;
 
     /**
@@ -108,13 +109,16 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - time unit for the gossip interval
      * @param failureDetectorFactory
      *            - the factory producing instances of the failure detector
+     * @param discoveryOnly
+     *            TODO
      * @param heartbeatReceiver
      *            - the reciever of newly acquired heartbeat state
      */
     public Gossip(SystemView systemView, Random random,
                   GossipCommunications communicationsService,
                   int gossipInterval, TimeUnit unit,
-                  FailureDetectorFactory failureDetectorFactory, Identity id) {
+                  FailureDetectorFactory failureDetectorFactory,
+                  boolean discoveryOnly, Identity id) {
         communications = communicationsService;
         communications.setGossip(this);
         entropy = random;
@@ -122,6 +126,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         interval = gossipInterval;
         intervalUnit = unit;
         fdFactory = failureDetectorFactory;
+        isDiscoveryOnly = discoveryOnly;
         ring = new Ring(id.id, communications);
         scheduler = Executors.newScheduledThreadPool(2, new ThreadFactory() {
             @Override
@@ -213,7 +218,12 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            - the mechanism to send the gossip message to a peer
      */
     public void gossip() {
-        List<Digest> digests = randomDigests();
+        List<Digest> digests;
+        if (isDiscoveryOnly) {
+            digests = Arrays.asList(new Digest(localState.get()));
+        } else {
+            digests = randomDigests();
+        }
         if (digests.size() > 0) {
             InetSocketAddress member = gossipWithTheLiving(digests);
             gossipWithTheDead(digests);
@@ -303,7 +313,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                                                                               view.getLocalAddress());
         localState.set(heartbeatState);
         ring.update(heartbeatState.getMembers(), endpoints.values());
-        ring.send(heartbeatState);
+        if (!isDiscoveryOnly) {
+            ring.send(heartbeatState);
+        }
     }
 
     @Override
@@ -568,7 +580,10 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 }
             } else {
                 if (view.getLocalAddress().equals(digest.getAddress())) {
-                    addUpdatedState(deltaState, digest.getAddress(), remoteTime);
+                    if (!isDiscoveryOnly) {
+                        addUpdatedState(deltaState, digest.getAddress(),
+                                        remoteTime);
+                    }
                 } else {
                     deltaDigests.add(new Digest(digest.getAddress(), -1));
                 }

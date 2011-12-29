@@ -106,7 +106,7 @@ public class GossipConfiguration {
     public Gossip gossip() throws IOException {
         return new Gossip(systemView(), new SecureRandom(), communications(),
                           gossipInterval(), gossipIntervalTimeUnit(),
-                          failureDetectorFactory(), partitionIdentity());
+                          failureDetectorFactory(), false, partitionIdentity());
     }
 
     @Bean
