@@ -183,9 +183,9 @@ public class UdpEndToEndTest extends EndToEndTest {
 
         @Bean
         public ServiceScope anubisScope() {
-            return new AnubisScope(stateName(), locator(),
+            return new AnubisScope(partitionIdentity(),
                                    Executors.newSingleThreadExecutor(),
-                                   uuidGenerator());
+                                   uuidGenerator(), partition());
         }
 
         @Override
@@ -236,8 +236,8 @@ public class UdpEndToEndTest extends EndToEndTest {
     @Override
     protected Class<?>[] getConfigs() {
         return new Class<?>[] { node0.class, node1.class, node2.class,
-                        node3.class, node4.class, node5.class, node6.class,
-                        node7.class, node8.class, node9.class };
+                node3.class, node4.class, node5.class, node6.class,
+                node7.class, node8.class, node9.class };
     }
 
     @Override

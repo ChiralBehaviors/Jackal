@@ -35,11 +35,12 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.smartfrog.services.anubis.locator.AnubisListener;
-import org.smartfrog.services.anubis.locator.AnubisLocator;
-import org.smartfrog.services.anubis.locator.AnubisProvider;
-import org.smartfrog.services.anubis.locator.AnubisStability;
 import org.smartfrog.services.anubis.locator.AnubisValue;
+import org.smartfrog.services.anubis.partition.Partition;
+import org.smartfrog.services.anubis.partition.PartitionNotification;
+import org.smartfrog.services.anubis.partition.comms.MessageConnection;
+import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.views.View;
 
 import com.fasterxml.uuid.NoArgGenerator;
 import com.hellblazer.slp.Filter;
@@ -71,8 +72,8 @@ import com.hellblazer.slp.ServiceURL;
  */
 public class AnubisScope implements ServiceScope {
     static class Gate {
-        private boolean isOpen;
         private int     generation;
+        private boolean isOpen;
 
         // BLOCKS-UNTIL: opened-since(generation on entry)
         public synchronized void await() throws InterruptedException {
@@ -93,30 +94,10 @@ public class AnubisScope implements ServiceScope {
         }
     }
 
-    class Listener extends AnubisListener {
-        public Listener(String n) {
-            super(n);
-        }
-
-        @Override
-        public void newValue(AnubisValue value) {
-            if (value.getValue() == null) {
-                return; // Initial value
-            }
-            // inboundMsgs.add((Message) value.getValue());
-            processInbound((Message) value.getValue());
-        }
-
-        @Override
-        public void removeValue(AnubisValue value) {
-            memberLeft(value);
-        }
-    }
-
     static class Message implements Serializable {
         private static final long serialVersionUID = 1L;
-        final MessageType         type;
         final Serializable        body;
+        final MessageType         type;
 
         Message(MessageType type, Serializable body) {
             this.type = type;
@@ -130,51 +111,66 @@ public class AnubisScope implements ServiceScope {
     }
 
     static enum MessageType {
-        REGISTER, MODIFY, UNREGISTER, SYNC;
-    }
-
-    class Stability extends AnubisStability {
-        @Override
-        public void stability(boolean isStable, long timeRef) {
-            if (isStable) {
-                sync();
-                openUpdateGate();
-            } else {
-                closeUpdateGate();
-            }
-        }
+        MODIFY, REGISTER, SYNC, UNREGISTER;
     }
 
     public static final String                                  MEMBER_IDENTITY = "anubis.member.identity";
 
     private static final Logger                                 log             = Logger.getLogger(AnubisScope.class.getCanonicalName());
-    private final AnubisLocator                                 locator;
-    private final Listener                                      stateListener;
-    private final AnubisProvider                                stateProvider;
-    private final Map<ServiceListener, Filter>                  listeners       = new ConcurrentHashMap<ServiceListener, Filter>();
     private final ExecutorService                               executor;
-    private final Map<UUID, ServiceReferenceImpl>               myServices      = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
-    private final ConcurrentHashMap<UUID, ServiceReferenceImpl> systemServices  = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
-    private final NoArgGenerator                                uuidGenerator;
     private final int                                           identity;
-    private final Gate                                          updateGate      = new Gate();
-    private final Stability                                     stability       = new Stability();
+    private final Map<ServiceListener, Filter>                  listeners       = new ConcurrentHashMap<ServiceListener, Filter>();
+    private final Map<UUID, ServiceReferenceImpl>               myServices      = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
     private final BlockingQueue<Message>                        outboundMsgs    = new LinkedBlockingQueue<Message>();
     private Thread                                              outboundProcessingThread;
+    private final Partition                                     partition;
     private final AtomicBoolean                                 run             = new AtomicBoolean(
                                                                                                     false);
+    private final ConcurrentHashMap<UUID, ServiceReferenceImpl> systemServices  = new ConcurrentHashMap<UUID, ServiceReferenceImpl>();
+    private final Gate                                          updateGate      = new Gate();
+    private final NoArgGenerator                                uuidGenerator;
+    private volatile View                                       view;
+    private final PartitionNotification                         notification;
 
-    public AnubisScope(String stateName, AnubisLocator lctr,
-                       ExecutorService execService, NoArgGenerator generator) {
-        locator = lctr;
+    public AnubisScope(Identity identity, ExecutorService execService,
+                       NoArgGenerator generator, Partition partition) {
         executor = execService;
-        identity = locator.getIdentity().id;
-        stateProvider = new AnubisProvider(stateName);
-        stateListener = new Listener(stateName);
-        locator.registerStability(stability);
-        locator.registerProvider(stateProvider);
-        locator.registerListener(stateListener);
+        this.identity = identity.id;
         uuidGenerator = generator;
+        this.partition = partition;
+        notification = new PartitionNotification() {
+            @Override
+            public void objectNotification(Object obj, int sender, long time) {
+                if (obj instanceof Message) {
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(String.format("scope %s receiving message %s from %s",
+                                               AnubisScope.this.identity, obj,
+                                               sender));
+                    }
+                    processInbound((Message) obj);
+                }
+            }
+
+            @Override
+            public void partitionNotification(View view, int leader) {
+                AnubisScope.this.view = view;
+                if (view.isStable()) {
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(String.format("stabilizing partition on scope %s",
+                                               AnubisScope.this.identity));
+                    }
+                    sync();
+                    openUpdateGate();
+                } else {
+                    if (log.isLoggable(Level.FINE)) {
+                        log.fine(String.format("destabilizing partition on scope %s",
+                                               AnubisScope.this.identity));
+                    }
+                    closeUpdateGate();
+                }
+            }
+        };
+        partition.register(notification);
     }
 
     @Override
@@ -390,7 +386,7 @@ public class AnubisScope implements ServiceScope {
     protected void processOneOutboundMessage() throws InterruptedException {
         Message state = outboundMsgs.take();
         updateGate.await();
-        stateProvider.setValue(state);
+        send(state);
     }
 
     protected void serviceChanged(final ServiceReference reference,
@@ -459,11 +455,11 @@ public class AnubisScope implements ServiceScope {
 
     @PreDestroy
     protected void stop() {
-        locator.deregisterListener(stateListener);
-        locator.deregisterProvider(stateProvider);
-        run.set(false);
-        if (outboundProcessingThread != null) {
-            outboundProcessingThread.interrupt();
+        if (run.compareAndSet(true, false)) {
+            partition.deregister(notification);
+            if (outboundProcessingThread != null) {
+                outboundProcessingThread.interrupt();
+            }
         }
     }
 
@@ -483,6 +479,21 @@ public class AnubisScope implements ServiceScope {
             outboundMsgs.put(state);
         } catch (InterruptedException e) {
             // intentionally no action
+        }
+    }
+
+    private void send(Message msg) {
+        for (int n : view.toBitSet()) {
+            if (identity == n) {
+                processInbound(msg);
+            } else {
+                MessageConnection connection = partition.connect(n);
+                if (connection == null) {
+                    System.out.println(String.format("Node %s cannot connect to: %s",
+                                                     identity, n));
+                }
+                connection.sendObject(msg);
+            }
         }
     }
 }

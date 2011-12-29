@@ -275,9 +275,9 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             assertEquals("listener <"
-                                         + listener.member
-                                         + "> has received an invalid number of notifications: "
-                                         + listener.events, listeners.size(),
+                                 + listener.member
+                                 + "> has received an invalid number of notifications: "
+                                 + listener.events, listeners.size(),
                          listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
@@ -333,9 +333,9 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             assertEquals("listener <"
-                                         + listener.member
-                                         + "> has received more notifications than expected: "
-                                         + listener.events, A.cardinality(),
+                                 + listener.member
+                                 + "> has received more notifications than expected: "
+                                 + listener.events, A.cardinality(),
                          listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
@@ -412,9 +412,9 @@ abstract public class EndToEndTest extends TestCase {
 
         for (Listener listener : listeners) {
             assertEquals("listener <"
-                                         + listener.member
-                                         + "> has received an invalid number of notifications :"
-                                         + listener.events, listeners.size(),
+                                 + listener.member
+                                 + "> has received an invalid number of notifications :"
+                                 + listener.events, listeners.size(),
                          listener.events.size());
             HashSet<Integer> sent = new HashSet<Integer>();
             for (ServiceEvent event : listener.events) {
@@ -462,10 +462,10 @@ abstract public class EndToEndTest extends TestCase {
         for (Listener listener : listeners) {
             if (A.contains(listener.member)) {
                 assertEquals("listener <"
-                                             + listener.member
-                                             + "> has received more notifications than expected :"
-                                             + listener.events,
-                             A.cardinality(), listener.events.size());
+                                     + listener.member
+                                     + "> has received more notifications than expected :"
+                                     + listener.events, A.cardinality(),
+                             listener.events.size());
                 HashSet<Integer> sent = new HashSet<Integer>();
                 for (ServiceEvent event : listener.events) {
                     assertEquals(EventType.REGISTERED, event.getType());

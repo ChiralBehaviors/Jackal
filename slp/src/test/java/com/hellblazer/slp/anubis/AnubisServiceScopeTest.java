@@ -17,7 +17,6 @@
 package com.hellblazer.slp.anubis;
 
 import static com.hellblazer.slp.ServiceScope.SERVICE_TYPE;
-import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -32,11 +31,11 @@ import junit.framework.TestCase;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.verification.Times;
-import org.smartfrog.services.anubis.locator.AnubisListener;
-import org.smartfrog.services.anubis.locator.AnubisProvider;
-import org.smartfrog.services.anubis.locator.AnubisStability;
-import org.smartfrog.services.anubis.locator.Locator;
+import org.smartfrog.services.anubis.partition.Partition;
+import org.smartfrog.services.anubis.partition.PartitionNotification;
+import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.views.BitView;
 
 import com.fasterxml.uuid.NoArgGenerator;
 import com.hellblazer.slp.ServiceEvent;
@@ -56,31 +55,31 @@ public class AnubisServiceScopeTest extends TestCase {
 
     public void testRegister() throws Exception {
         Identity id = new Identity(666, 0, 0);
-        Locator mockLocator = mock(Locator.class);
         NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
-        String stateName = "fooMeTwice";
-        when(mockLocator.getIdentity()).thenReturn(id);
-        AnubisScope scope = new AnubisScope(stateName, mockLocator,
-                                              new RunImmediate(), mockGenerator);
-        scope.openUpdateGate();
+        Partition partition = mock(Partition.class);
+        MessageConnection connection = mock(MessageConnection.class);
+        BitView view = new BitView();
+        view.add(1);
+        view.stablize();
+        when(partition.connect(1)).thenReturn(connection);
+        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
+                                            mockGenerator, partition);
         ServiceURL url = new ServiceURL("service:http://foo.bar/");
         UUID registration = UUID.randomUUID();
         when(mockGenerator.generate()).thenReturn(registration);
 
         UUID returnedRegistration = scope.register(url, null);
-        scope.processOneOutboundMessage();
 
         assertEquals(registration, returnedRegistration);
         verify(mockGenerator).generate();
-        verify(mockLocator).getIdentity();
-        verify(mockLocator).registerListener(isA(AnubisListener.class));
-        ArgumentCaptor<AnubisProvider> providerCapture = ArgumentCaptor.forClass(AnubisProvider.class);
-        verify(mockLocator).registerProvider(providerCapture.capture());
-        verify(mockLocator).registerStability(isA(AnubisStability.class));
-        verifyNoMoreInteractions(mockGenerator, mockLocator);
-        AnubisProvider provider = providerCapture.getValue();
-        assertNotNull(provider);
-        ServiceReferenceImpl ref = (ServiceReferenceImpl) ((Message) provider.getValue()).body;
+        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
+        verify(partition).register(notificationCapture.capture());
+        PartitionNotification notification = notificationCapture.getValue();
+        notification.partitionNotification(view, 0);
+        scope.processOneOutboundMessage();
+        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
+        verify(connection).sendObject(messageCapture.capture());
+        ServiceReferenceImpl ref = (ServiceReferenceImpl) messageCapture.getValue().body;
         assertNotNull(ref);
         assertEquals(url, ref.getUrl());
         assertEquals(id.id, ref.getMember());
@@ -90,27 +89,32 @@ public class AnubisServiceScopeTest extends TestCase {
 
     public void testGetServiceReference() throws Exception {
         Identity id = new Identity(666, 0, 0);
-        Locator mockLocator = mock(Locator.class);
-        NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
-        String stateName = "fooMeTwice";
 
-        when(mockLocator.getIdentity()).thenReturn(id);
-        AnubisScope scope = new AnubisScope(stateName, mockLocator,
-                                              new RunImmediate(), mockGenerator);
+        Partition partition = mock(Partition.class);
+        NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
+        MessageConnection connection = mock(MessageConnection.class);
+        BitView view = new BitView();
+        view.add(1);
+        view.stablize();
+        when(partition.connect(1)).thenReturn(connection);
+
+        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
+                                            mockGenerator, partition);
         scope.openUpdateGate();
         ServiceURL url = new ServiceURL("service:http://foo.bar/");
         UUID registration = UUID.randomUUID();
         when(mockGenerator.generate()).thenReturn(registration);
 
         scope.register(url, null);
-        scope.processOneOutboundMessage();
 
-        ArgumentCaptor<AnubisProvider> providerCapture = ArgumentCaptor.forClass(AnubisProvider.class);
-        verify(mockLocator).registerProvider(providerCapture.capture());
-        AnubisProvider provider = providerCapture.getValue();
-        assertNotNull(provider);
-        ServiceReferenceImpl ref = (ServiceReferenceImpl) ((Message) provider.getValue()).body;
-        assertNotNull(ref);
+        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
+        verify(partition).register(notificationCapture.capture());
+        PartitionNotification notification = notificationCapture.getValue();
+        notification.partitionNotification(view, 0);
+        scope.processOneOutboundMessage();
+        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
+        verify(connection).sendObject(messageCapture.capture());
+        ServiceReferenceImpl ref = (ServiceReferenceImpl) messageCapture.getValue().body;
         scope.processInbound(new Message(MessageType.REGISTER, ref));
         ServiceReference returnedReference = scope.getServiceReference("service:http");
         assertNotNull(returnedReference);
@@ -119,33 +123,30 @@ public class AnubisServiceScopeTest extends TestCase {
 
     public void testSetProperties() throws Exception {
         Identity id = new Identity(666, 0, 0);
-        Locator mockLocator = mock(Locator.class);
+        Partition partition = mock(Partition.class);
         NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
-        String stateName = "fooMeTwice";
+        MessageConnection connection = mock(MessageConnection.class);
+        BitView view = new BitView();
+        view.add(1);
+        view.stablize();
+        when(partition.connect(1)).thenReturn(connection);
 
-        when(mockLocator.getIdentity()).thenReturn(id);
-        AnubisScope scope = new AnubisScope(stateName, mockLocator,
-                                              new RunImmediate(), mockGenerator);
+        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
+                                            mockGenerator, partition);
         scope.openUpdateGate();
         ServiceURL url = new ServiceURL("service:http://foo.bar/");
         UUID registration = UUID.randomUUID();
         when(mockGenerator.generate()).thenReturn(registration);
 
         UUID returnedRegistration = scope.register(url, null);
-        scope.processOneOutboundMessage();
-
         assertEquals(registration, returnedRegistration);
-        verify(mockGenerator).generate();
-        verify(mockLocator).getIdentity();
-        verify(mockLocator).registerListener(isA(AnubisListener.class));
-        ArgumentCaptor<AnubisProvider> providerCapture = ArgumentCaptor.forClass(AnubisProvider.class);
-        verify(mockLocator).registerProvider(providerCapture.capture());
-        verify(mockLocator).registerStability(isA(AnubisStability.class));
-        verifyNoMoreInteractions(mockGenerator, mockLocator);
-        AnubisProvider provider = providerCapture.getValue();
-        assertNotNull(provider);
-        ServiceReferenceImpl ref = (ServiceReferenceImpl) ((Message) provider.getValue()).body;
-        assertNotNull(ref);
+
+        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
+        verify(partition).register(notificationCapture.capture());
+        PartitionNotification notification = notificationCapture.getValue();
+        notification.partitionNotification(view, 0);
+
+        scope.processOneOutboundMessage();
 
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put("foo", "bar");
@@ -153,8 +154,15 @@ public class AnubisServiceScopeTest extends TestCase {
 
         scope.setProperties(registration, properties);
         scope.processOneOutboundMessage();
+        scope.processOneOutboundMessage();
 
-        Map<String, Object> newProperties = ((ServiceReferenceImpl) ((Message) provider.getValue()).body).getProperties();
+        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
+        verify(connection, new Times(3)).sendObject(messageCapture.capture());
+        List<Message> messages = messageCapture.getAllValues();
+        ServiceReferenceImpl ref = (ServiceReferenceImpl) messages.get(0).body;
+        assertNotNull(ref);
+
+        Map<String, Object> newProperties = ((ServiceReference) messages.get(2).body).getProperties();
         assertEquals(4, newProperties.size());
         assertEquals("bar", newProperties.get("foo"));
         assertEquals("bozo", newProperties.get("baz"));
@@ -162,14 +170,18 @@ public class AnubisServiceScopeTest extends TestCase {
 
     public void testListener() throws Exception {
         Identity id = new Identity(666, 0, 0);
-        Locator mockLocator = mock(Locator.class);
+        Partition partition = mock(Partition.class);
         NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
-        String stateName = "fooMeTwice";
+        MessageConnection connection = mock(MessageConnection.class);
+        BitView view = new BitView();
+        view.add(1);
+        view.stablize();
+        when(partition.connect(1)).thenReturn(connection);
         ServiceListener serviceListener = mock(ServiceListener.class);
 
-        when(mockLocator.getIdentity()).thenReturn(id);
-        AnubisScope scope = new AnubisScope(stateName, mockLocator,
-                                              new RunImmediate(), mockGenerator);
+        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
+                                            mockGenerator, partition);
+
         ServiceURL url = new ServiceURL("service:http://foo.bar/");
         UUID registration1 = UUID.randomUUID();
         UUID registration2 = UUID.randomUUID();
@@ -188,19 +200,16 @@ public class AnubisServiceScopeTest extends TestCase {
                                                                    0);
         scope.processInbound(new Message(MessageType.REGISTER, reference1));
 
-        scope.addServiceListener(serviceListener,
-                                   "(serviceType=service:http)");
+        scope.addServiceListener(serviceListener, "(serviceType=service:http)");
 
         scope.processInbound(new Message(MessageType.REGISTER, reference2));
         scope.processInbound(new Message(MessageType.MODIFY, reference1));
-        scope.processInbound(new Message(MessageType.UNREGISTER,
-                                           registration1));
+        scope.processInbound(new Message(MessageType.UNREGISTER, registration1));
 
         scope.removeServiceListener(serviceListener);
 
         scope.processInbound(new Message(MessageType.MODIFY, reference2));
-        scope.processInbound(new Message(MessageType.UNREGISTER,
-                                           registration2));
+        scope.processInbound(new Message(MessageType.UNREGISTER, registration2));
 
         ArgumentCaptor<ServiceEvent> eventCaptor = ArgumentCaptor.forClass(ServiceEvent.class);
         verify(serviceListener, new Times(4)).serviceChanged(eventCaptor.capture());
@@ -219,37 +228,40 @@ public class AnubisServiceScopeTest extends TestCase {
 
     public void testUnregister() throws Exception {
         Identity id = new Identity(666, 0, 0);
-        Locator mockLocator = mock(Locator.class);
+        Partition partition = mock(Partition.class);
         NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
-        String stateName = "fooMeTwice";
-        when(mockLocator.getIdentity()).thenReturn(id);
-        AnubisScope scope = new AnubisScope(stateName, mockLocator,
-                                              new RunImmediate(), mockGenerator);
+        MessageConnection connection = mock(MessageConnection.class);
+        BitView view = new BitView();
+        view.add(1);
+        view.stablize();
+        when(partition.connect(1)).thenReturn(connection);
+        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
+                                            mockGenerator, partition);
         scope.openUpdateGate();
         ServiceURL url = new ServiceURL("service:http://foo.bar/");
         UUID registration = UUID.randomUUID();
         when(mockGenerator.generate()).thenReturn(registration);
 
         UUID returnedRegistration = scope.register(url, null);
+
+        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
+        verify(partition).register(notificationCapture.capture());
+        PartitionNotification notification = notificationCapture.getValue();
+        notification.partitionNotification(view, 0);
+
         scope.processOneOutboundMessage();
-
-        assertEquals(registration, returnedRegistration);
-        verify(mockGenerator).generate();
-        verify(mockLocator).getIdentity();
-        verify(mockLocator).registerListener(isA(AnubisListener.class));
-        ArgumentCaptor<AnubisProvider> providerCapture = ArgumentCaptor.forClass(AnubisProvider.class);
-        verify(mockLocator).registerProvider(providerCapture.capture());
-        verify(mockLocator).registerStability(isA(AnubisStability.class));
-        verifyNoMoreInteractions(mockGenerator, mockLocator);
-        AnubisProvider provider = providerCapture.getValue();
-        assertNotNull(provider);
-        ServiceReferenceImpl registered = (ServiceReferenceImpl) ((Message) provider.getValue()).body;
-        assertNotNull(registered);
-
         scope.unregister(returnedRegistration);
         scope.processOneOutboundMessage();
+        scope.processOneOutboundMessage();
 
-        UUID unregistered = (UUID) ((Message) provider.getValue()).body;
+        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
+        verify(connection, new Times(3)).sendObject(messageCapture.capture());
+        List<Message> messages = messageCapture.getAllValues();
+
+        ServiceReferenceImpl registered = (ServiceReferenceImpl) messages.get(0).body;
+        assertNotNull(registered);
+
+        UUID unregistered = (UUID) messages.get(2).body;
         assertNotNull(unregistered);
         assertEquals(registration, unregistered);
     }
