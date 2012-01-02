@@ -42,7 +42,7 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes,
     private static final long serialVersionUID = 1L;
 
     public static NodeIdSet readWireForm(ByteBuffer bytes, int idx, int len) {
-
+        assert bytes.hasRemaining() : "Empty byte buffer";
         bytes.position(idx);
         byte[] storage = new byte[bytes.getInt()];
         bytes.get(storage);

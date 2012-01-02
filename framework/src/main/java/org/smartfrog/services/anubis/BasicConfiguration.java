@@ -191,7 +191,7 @@ public class BasicConfiguration {
                         arg1.printStackTrace();
                     }
                 });
-                t.setPriority(Thread.MAX_PRIORITY);
+                // t.setPriority(Thread.MAX_PRIORITY);
                 return t;
             }
         });

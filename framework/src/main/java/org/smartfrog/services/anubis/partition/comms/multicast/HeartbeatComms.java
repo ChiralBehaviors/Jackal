@@ -68,7 +68,7 @@ public class HeartbeatComms extends MulticastComms implements
         me = id;
         connectionSet = cs;
         wireSecurity = sec;
-        setPriority(Thread.MAX_PRIORITY);
+        // setPriority(Thread.MAX_PRIORITY);
     }
 
     /**
@@ -96,7 +96,7 @@ public class HeartbeatComms extends MulticastComms implements
         me = id;
         connectionSet = cs;
         wireSecurity = sec;
-        setPriority(Thread.MAX_PRIORITY);
+        // setPriority(Thread.MAX_PRIORITY);
     }
 
     @Override

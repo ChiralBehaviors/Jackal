@@ -70,7 +70,7 @@ public class PartitionManager implements Partition {
                     }
                 });
                 daemon.setDaemon(true);
-                daemon.setPriority(Thread.MAX_PRIORITY);
+                // daemon.setPriority(Thread.MAX_PRIORITY);
                 return daemon;
             }
         });

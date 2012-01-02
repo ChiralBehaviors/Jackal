@@ -57,7 +57,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
     class Pinger extends PeriodicTimer {
         Pinger(long period) {
             super("SPLocator adapter pinger", period);
-            setPriority(MAX_PRIORITY);
+            // setPriority(MAX_PRIORITY);
         }
 
         @Override

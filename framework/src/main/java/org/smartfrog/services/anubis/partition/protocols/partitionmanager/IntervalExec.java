@@ -43,7 +43,7 @@ public class IntervalExec extends Thread {
         super("Anubis: Interval Executive (node " + id.id + ")");
         connectionSet = cs;
         interval = i;
-        setPriority(MAX_PRIORITY);
+        // setPriority(MAX_PRIORITY);
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
