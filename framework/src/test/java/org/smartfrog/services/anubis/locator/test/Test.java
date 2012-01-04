@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.locator.AnubisListener;
@@ -34,8 +35,6 @@ import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.AnubisValue;
 import org.smartfrog.services.anubis.locator.Locator;
-
-import com.hellblazer.jackal.annotations.Deployed;
 
 @SuppressWarnings("rawtypes")
 public class Test {
@@ -267,7 +266,7 @@ public class Test {
      * 
      * @throws Exception
      */
-    @Deployed
+    @PostConstruct
     public void start() {
         driver = new Driver(this, "TestDriver: " + title);
         driver.setVisible(true);

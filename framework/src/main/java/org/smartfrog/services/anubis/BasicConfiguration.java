@@ -28,7 +28,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.jackal.partition.test.node.Controller;
 import com.hellblazer.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
@@ -49,11 +48,6 @@ public class BasicConfiguration {
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
                                  heartbeatTimeout(), false, alwaysReconnect());
-    }
-
-    @Bean
-    public DeployedPostProcessor deployedPostProcessor() {
-        return new DeployedPostProcessor();
     }
 
     @Bean

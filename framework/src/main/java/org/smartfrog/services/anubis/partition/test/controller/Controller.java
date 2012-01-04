@@ -37,7 +37,6 @@ import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
-import com.hellblazer.jackal.annotations.Deployed;
 import com.hellblazer.pinkie.ChannelHandler;
 import com.hellblazer.pinkie.SocketOptions;
 
@@ -127,7 +126,6 @@ public class Controller implements ConnectionManager {
     /**
      * @throws IOException
      */
-    @Deployed
     public synchronized void deploy() throws IOException {
         timer.schedule(getTask(), checkPeriod, checkPeriod);
     }
@@ -201,8 +199,9 @@ public class Controller implements ConnectionManager {
     }
 
     @PostConstruct
-    public void start() {
+    public void start() throws IOException {
         handler.start();
+        deploy();
     }
 
     public synchronized void symPartition(BitView partition) {

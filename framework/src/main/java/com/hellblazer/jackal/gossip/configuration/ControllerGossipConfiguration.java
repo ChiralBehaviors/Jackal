@@ -40,7 +40,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.GossipCommunications;
@@ -78,11 +77,6 @@ public class ControllerGossipConfiguration {
         Controller controller = constructController();
         gossip().create(controller);
         return controller;
-    }
-
-    @Bean
-    public DeployedPostProcessor deployedPostProcessor() {
-        return new DeployedPostProcessor();
     }
 
     @Bean

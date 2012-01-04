@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
@@ -41,8 +42,6 @@ import org.smartfrog.services.anubis.partition.PartitionNotification;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
-
-import com.hellblazer.jackal.annotations.Deployed;
 
 public class Locator implements PartitionNotification, AnubisLocator {
 
@@ -97,7 +96,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
         });
     }
 
-    @Deployed
+    @PostConstruct
     public void deployed() {
         global.start();
         local.start();

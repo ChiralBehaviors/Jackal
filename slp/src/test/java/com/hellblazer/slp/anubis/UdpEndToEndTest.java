@@ -32,7 +32,6 @@ import org.springframework.context.annotation.Configuration;
 
 import com.fasterxml.uuid.NoArgGenerator;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.jackal.gossip.configuration.ControllerGossipConfiguration;
 import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
 import com.hellblazer.slp.ServiceScope;
@@ -49,11 +48,6 @@ public class UdpEndToEndTest extends EndToEndTest {
 
     @Configuration
     static class MyControllerConfig extends ControllerGossipConfiguration {
-        @Override
-        @Bean
-        public DeployedPostProcessor deployedPostProcessor() {
-            return new DeployedPostProcessor();
-        }
 
         @Override
         public int magic() {

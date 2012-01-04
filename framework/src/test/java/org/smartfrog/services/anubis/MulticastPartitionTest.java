@@ -6,20 +6,12 @@ import java.util.logging.Logger;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
 import org.smartfrog.services.anubis.partition.util.Identity;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 
 public class MulticastPartitionTest extends PartitionTest {
 
     @Configuration
     static class MyControllerConfig extends ControllerConfiguration {
-        @Override
-        @Bean
-        public DeployedPostProcessor deployedPostProcessor() {
-            return new DeployedPostProcessor();
-        }
 
         @Override
         public int heartbeatGroupTTL() {

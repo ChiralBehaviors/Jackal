@@ -14,18 +14,12 @@ import org.springframework.context.annotation.Configuration;
 
 import com.fasterxml.uuid.NoArgGenerator;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.slp.ServiceScope;
 
 public class MulticastE2ETest extends EndToEndTest {
 
     @Configuration
     static class MyControllerConfig extends ControllerConfiguration {
-        @Override
-        @Bean
-        public DeployedPostProcessor deployedPostProcessor() {
-            return new DeployedPostProcessor();
-        }
 
         @Override
         public int heartbeatGroupTTL() {

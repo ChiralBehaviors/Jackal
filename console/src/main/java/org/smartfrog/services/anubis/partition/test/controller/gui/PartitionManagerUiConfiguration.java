@@ -21,10 +21,7 @@ import java.io.IOException;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 
 @Configuration
 public class PartitionManagerUiConfiguration extends ControllerConfiguration {
@@ -40,11 +37,6 @@ public class PartitionManagerUiConfiguration extends ControllerConfiguration {
                                      partitionIdentity(), heartbeatTimeout(),
                                      heartbeatInterval(), socketOptions(),
                                      dispatchExecutor(), wireSecurity());
-    }
-
-    @Bean
-    public DeployedPostProcessor deployedPostProcessor() {
-        return new DeployedPostProcessor();
     }
 
 }

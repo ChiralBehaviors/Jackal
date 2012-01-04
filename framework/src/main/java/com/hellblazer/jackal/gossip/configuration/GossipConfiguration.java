@@ -46,7 +46,6 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.GossipCommunications;
@@ -85,11 +84,6 @@ public class GossipConfiguration {
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
                                  heartbeatTimeout(), false, alwaysReconnect());
-    }
-
-    @Bean
-    public DeployedPostProcessor deployedPostProcessor() {
-        return new DeployedPostProcessor();
     }
 
     @Bean

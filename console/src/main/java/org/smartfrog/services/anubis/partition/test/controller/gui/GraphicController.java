@@ -35,7 +35,6 @@ import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
-import com.hellblazer.jackal.annotations.Deployed;
 import com.hellblazer.pinkie.SocketOptions;
 
 /**
@@ -81,7 +80,6 @@ public class GraphicController extends Controller {
     }
 
     @Override
-    @Deployed
     public synchronized void deploy() throws IOException {
         try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -125,7 +123,8 @@ public class GraphicController extends Controller {
     }
 
     @PostConstruct
-    public synchronized void start() {
+    public synchronized void start() throws IOException {
+        super.start();
         consoleFrame.setVisible(true);
     }
 

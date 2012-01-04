@@ -24,14 +24,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.ValueData;
 import org.smartfrog.services.anubis.partition.util.Identity;
-
-import com.hellblazer.jackal.annotations.Deployed;
 
 public class SPLocatorAdapterImpl implements SPLocatorAdapter {
 
@@ -252,7 +251,7 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         stabilities.put(spStability, stability);
     }
 
-    @Deployed
+    @PostConstruct
     public synchronized void deploy() {
         livenessChecker.start();
     }

@@ -40,8 +40,6 @@ import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.AnubisStability;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
-import com.hellblazer.jackal.annotations.Deployed;
-
 public class SPLocatorImpl implements AnubisLocator, SPLocator {
     class LivenessChecker extends PeriodicTimer {
         LivenessChecker(long period) {
@@ -103,8 +101,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             }
         });
     }
-
-    @Deployed
+ 
     public void deploy() throws RemoteException {
         try {
             liveness = new Liveness(timeout);
@@ -360,6 +357,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             throw new RemoteException("Cannot register locator implementation",
                                       ex);
         }
+        deploy();
     }
 
     /**

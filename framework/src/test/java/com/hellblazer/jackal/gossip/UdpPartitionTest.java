@@ -27,10 +27,8 @@ import java.util.logging.Logger;
 import org.smartfrog.services.anubis.PartitionTest;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.util.Identity;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.jackal.gossip.configuration.ControllerGossipConfiguration;
 import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
 
@@ -43,12 +41,6 @@ public class UdpPartitionTest extends PartitionTest {
 
     @Configuration
     static class MyControllerConfig extends ControllerGossipConfiguration {
-
-        @Override
-        @Bean
-        public DeployedPostProcessor deployedPostProcessor() {
-            return new DeployedPostProcessor();
-        }
 
         @Override
         public int magic() {
@@ -295,11 +287,11 @@ public class UdpPartitionTest extends PartitionTest {
     @Override
     protected Class<?>[] getConfigs() {
         return new Class<?>[] { node0.class, node1.class, node2.class,
-                        node3.class, node4.class, node5.class, node6.class,
-                        node7.class, node8.class, node9.class, node10.class,
-                        node11.class, node12.class, node13.class, node14.class,
-                        node15.class, node16.class, node17.class, node18.class,
-                        node19.class };
+                node3.class, node4.class, node5.class, node6.class,
+                node7.class, node8.class, node9.class, node10.class,
+                node11.class, node12.class, node13.class, node14.class,
+                node15.class, node16.class, node17.class, node18.class,
+                node19.class };
     }
 
     @Override

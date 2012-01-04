@@ -16,7 +16,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.annotations.DeployedPostProcessor;
 import com.hellblazer.pinkie.SocketOptions;
 
 @Configuration
@@ -30,11 +29,6 @@ public class ControllerConfiguration {
     public Controller controller() throws IOException {
         Controller controller = constructController();
         return controller;
-    }
-
-    @Bean
-    public DeployedPostProcessor deployedPostProcessor() {
-        return new DeployedPostProcessor();
     }
 
     @Bean
