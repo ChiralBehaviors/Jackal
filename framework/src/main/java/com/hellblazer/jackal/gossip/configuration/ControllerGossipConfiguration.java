@@ -100,7 +100,7 @@ public class ControllerGossipConfiguration {
     }
 
     @Bean
-    public Identity partitionIdentity() throws UnknownHostException {
+    public Identity partitionIdentity() throws IOException {
         return new Identity(magic(), node(), epoch().longValue());
     }
 
@@ -126,12 +126,9 @@ public class ControllerGossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(
-                                                  0.99,
-                                                  1000,
-                                                  0.45,
+        return new AdaptiveFailureDetectorFactory(0.99, 1000, 0.45,
                                                   heartbeatInterval()
-                                                                  * heartbeatTimeout(),
+                                                          * heartbeatTimeout(),
                                                   3, 100);
     }
 
@@ -181,7 +178,7 @@ public class ControllerGossipConfiguration {
         return 12345;
     }
 
-    protected int node() throws UnknownHostException {
+    protected int node() throws IOException {
         return Identity.getProcessUniqueId();
     }
 

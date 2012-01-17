@@ -59,7 +59,7 @@ public class ControllerConfiguration {
     }
 
     @Bean
-    public Identity partitionIdentity() throws UnknownHostException {
+    public Identity partitionIdentity() throws IOException {
         return new Identity(magic(), node(), epoch().longValue());
     }
 
@@ -106,7 +106,7 @@ public class ControllerConfiguration {
         return 12345;
     }
 
-    protected int node() throws UnknownHostException {
+    protected int node() throws IOException {
         return Identity.getProcessUniqueId();
     }
 }

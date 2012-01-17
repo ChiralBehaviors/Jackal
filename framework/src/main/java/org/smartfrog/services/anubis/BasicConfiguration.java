@@ -1,5 +1,6 @@
 package org.smartfrog.services.anubis;
 
+import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -198,7 +199,7 @@ public class BasicConfiguration {
     protected int node() {
         try {
             return Identity.getProcessUniqueId();
-        } catch (UnknownHostException e) {
+        } catch (IOException e) {
             throw new IllegalStateException(e);
         }
     }

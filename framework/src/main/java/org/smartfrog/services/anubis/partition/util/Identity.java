@@ -26,9 +26,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
+import java.util.Enumeration;
 
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
@@ -47,14 +47,32 @@ public class Identity implements Serializable, Cloneable, WireSizes {
     static final public int   identityWireSz   = epochIdx + longSz;
     private static final long serialVersionUID = 1L;
 
-    public static int getIdFromLocalIpAddress() throws UnknownHostException {
-        return inetAddressToNode(InetAddress.getLocalHost());
+    public static int getIdFromLocalIpAddress() throws IOException {
+        DataInputStream dis = new DataInputStream(
+                                                  new ByteArrayInputStream(
+                                                                           getInterfaceHardwareAddress()));
+        return dis.readInt();
+    }
+
+    public static byte[] getInterfaceHardwareAddress() {
+        try {
+            Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
+            while (en.hasMoreElements()) {
+                NetworkInterface nint = en.nextElement();
+                if (!nint.isLoopback()) {
+                    return nint.getHardwareAddress();
+                }
+            }
+            throw new IllegalStateException("No network interface");
+        } catch (java.net.SocketException e) {
+            throw new IllegalStateException("No network interface", e);
+        }
     }
 
     public static int getMagicFromLocalIpAddress() throws IOException {
         DataInputStream dis = new DataInputStream(
                                                   new ByteArrayInputStream(
-                                                                           InetAddress.getLocalHost().getHostAddress().getBytes()));
+                                                                           getInterfaceHardwareAddress()));
         return dis.readInt();
     }
 
@@ -64,17 +82,10 @@ public class Identity implements Serializable, Cloneable, WireSizes {
         return Integer.parseInt(pid);
     }
 
-    public static int getProcessUniqueId() throws UnknownHostException {
+    public static int getProcessUniqueId() throws IOException {
         int ip = getIdFromLocalIpAddress();
         int pid = getPID();
         return (pid ^ ip) & MAX_ID;
-    }
-
-    public static int inetAddressToNode(InetAddress address) {
-        String ipAsString = address.getHostAddress();
-        int dotIndex = ipAsString.lastIndexOf(".");
-        String nodeStr = ipAsString.substring(dotIndex + 1, ipAsString.length());
-        return Integer.parseInt(nodeStr);
     }
 
     public static Identity readWireForm(ByteBuffer bytes, int idx) {
@@ -85,6 +96,7 @@ public class Identity implements Serializable, Cloneable, WireSizes {
 
     public final long epoch;
     public final int  id;
+
     public final int  magic;
 
     public Identity(ByteBuffer buffer) {
@@ -234,5 +246,4 @@ public class Identity implements Serializable, Cloneable, WireSizes {
 
     protected void writeMessage() {
     }
-
 }

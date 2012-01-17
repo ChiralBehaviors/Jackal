@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.wire;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -48,12 +47,10 @@ public class Test extends TestCase {
             int loops = 100000;
 
             Identity outId = new Identity(123456, 1, 654321);
-            InetSocketAddress outAddress = new InetSocketAddress(
-                                                                 InetAddress.getLocalHost(),
+            InetSocketAddress outAddress = new InetSocketAddress("127.0.0.1",
                                                                  1066);
 
-            InetSocketAddress outTestIF = new InetSocketAddress(
-                                                                InetAddress.getLocalHost(),
+            InetSocketAddress outTestIF = new InetSocketAddress("127.0.0.1",
                                                                 2020);
 
             NodeIdSet outView = new NodeIdSet();
@@ -124,12 +121,10 @@ public class Test extends TestCase {
     public void testIt3() {
         try {
             Identity outId = new Identity(123456, 1, 654321);
-            InetSocketAddress outAddress = new InetSocketAddress(
-                                                                 InetAddress.getLocalHost(),
+            InetSocketAddress outAddress = new InetSocketAddress("127.0.0.1",
                                                                  1066);
 
-            InetSocketAddress outTestIF = new InetSocketAddress(
-                                                                InetAddress.getLocalHost(),
+            InetSocketAddress outTestIF = new InetSocketAddress("127.0.0.1",
                                                                 2020);
 
             NodeIdSet outView = new NodeIdSet();

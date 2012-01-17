@@ -162,12 +162,9 @@ public class GossipConfiguration {
     }
 
     protected FailureDetectorFactory adaptiveAccrualFailureDetectorFactory() {
-        return new AdaptiveFailureDetectorFactory(
-                                                  0.90,
-                                                  1000,
-                                                  0.45,
+        return new AdaptiveFailureDetectorFactory(0.90, 1000, 0.45,
                                                   heartbeatInterval()
-                                                                  * heartbeatTimeout(),
+                                                          * heartbeatTimeout(),
                                                   3, 100);
     }
 
@@ -255,7 +252,7 @@ public class GossipConfiguration {
     protected int node() {
         try {
             return Identity.getProcessUniqueId();
-        } catch (UnknownHostException e) {
+        } catch (IOException e) {
             throw new IllegalStateException(e);
         }
     }
