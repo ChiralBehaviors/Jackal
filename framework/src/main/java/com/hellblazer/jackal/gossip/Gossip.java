@@ -123,7 +123,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         intervalUnit = unit;
         fdFactory = failureDetectorFactory;
         ring = new Ring(id.id, communications);
-        scheduler = Executors.newScheduledThreadPool(2, new ThreadFactory() {
+        scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 int count = 0;
@@ -140,7 +140,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 return daemon;
             }
         });
-        dispatcher = Executors.newFixedThreadPool(3, new ThreadFactory() {
+        dispatcher = Executors.newCachedThreadPool(new ThreadFactory() {
             volatile int count = 0;
 
             @Override

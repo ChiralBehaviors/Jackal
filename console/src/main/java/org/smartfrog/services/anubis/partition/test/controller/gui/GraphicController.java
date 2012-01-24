@@ -19,7 +19,7 @@ package org.smartfrog.services.anubis.partition.test.controller.gui;
 import java.io.IOException;
 import java.util.StringTokenizer;
 import java.util.Timer;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -47,7 +47,7 @@ public class GraphicController extends Controller {
                              Identity partitionIdentity, long heartbeatTimeout,
                              long heartbeatInterval,
                              SocketOptions socketOptions,
-                             Executor dispatchExecutor,
+                             ExecutorService dispatchExecutor,
                              WireSecurity wireSecurity) throws IOException {
         super(timer, checkPeriod, expirePeriod, partitionIdentity,
               heartbeatTimeout, heartbeatInterval, socketOptions,

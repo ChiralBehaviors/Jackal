@@ -141,26 +141,24 @@ public class EndToEndTest extends TestCase {
     protected Gossip createCommunications(ConnectionManager receiver,
                                           Collection<InetSocketAddress> seedHosts,
                                           int i) {
+        ThreadFactory threadFactory = new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        e.printStackTrace();
+                    }
+                });
+                return t;
+            }
+        };
         UdpCommunications communications = new UdpCommunications(
-                                                                 new InetSocketAddress("127.0.0.1", 
+                                                                 new InetSocketAddress(
+                                                                                       "127.0.0.1",
                                                                                        0),
-                                                                 Executors.newFixedThreadPool(3,
-                                                                                              new ThreadFactory() {
-
-                                                                                                  @Override
-                                                                                                  public Thread newThread(Runnable r) {
-                                                                                                      Thread t = new Thread(
-                                                                                                                            r);
-                                                                                                      t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                                                                                                          @Override
-                                                                                                          public void uncaughtException(Thread t,
-                                                                                                                                        Throwable e) {
-                                                                                                              e.printStackTrace();
-                                                                                                          }
-                                                                                                      });
-                                                                                                      return t;
-                                                                                                  }
-                                                                                              }));
+                                                                 Executors.newCachedThreadPool(threadFactory));
 
         SystemView view = new SystemView(new Random(),
                                          communications.getLocalAddress(),
@@ -172,7 +170,9 @@ public class EndToEndTest extends TestCase {
                                                                          1.0,
                                                                          true);
         Gossip gossip = new Gossip(view, new Random(), communications, 1,
-                                   TimeUnit.SECONDS, fdFactory, new Identity(0, i, 0));
+                                   TimeUnit.SECONDS, fdFactory, new Identity(0,
+                                                                             i,
+                                                                             0));
         gossip.create(receiver);
         return gossip;
     }

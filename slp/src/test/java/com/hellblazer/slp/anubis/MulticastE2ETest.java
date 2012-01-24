@@ -129,7 +129,7 @@ public class MulticastE2ETest extends EndToEndTest {
         @Bean
         public ServiceScope anubisScope() {
             return new AnubisScope(partitionIdentity(),
-                                   Executors.newSingleThreadExecutor(),
+                                   Executors.newCachedThreadPool(),
                                    uuidGenerator(), partition());
         }
 

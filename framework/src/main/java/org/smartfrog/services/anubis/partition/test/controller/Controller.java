@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -56,8 +56,8 @@ public class Controller implements ConnectionManager {
     public Controller(Timer timer, long checkPeriod, long expirePeriod,
                       Identity partitionIdentity, long heartbeatTimeout,
                       long heartbeatInterval, SocketOptions socketOptions,
-                      Executor dispatchExec, WireSecurity wireSecurity)
-                                                                       throws IOException {
+                      ExecutorService dispatchExec, WireSecurity wireSecurity)
+                                                                              throws IOException {
         this.timer = timer;
         this.checkPeriod = checkPeriod;
         this.expirePeriod = expirePeriod;

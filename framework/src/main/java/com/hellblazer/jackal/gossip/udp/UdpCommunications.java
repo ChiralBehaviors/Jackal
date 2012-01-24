@@ -41,9 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -161,21 +159,20 @@ public class UdpCommunications implements GossipCommunications {
 
     private final ExecutorService dispatcher;
     private Gossip                gossip;
-    private final AtomicBoolean   running          = new AtomicBoolean();
-    private final Executor        serviceEvaluator = Executors.newSingleThreadExecutor();
+    private final AtomicBoolean   running = new AtomicBoolean();
     private final DatagramSocket  socket;
 
     public UdpCommunications(InetSocketAddress endpoint,
-                             ExecutorService msgDispatcher) {
-        this(endpoint, msgDispatcher, DEFAULT_RECEIVE_BUFFER_MULTIPLIER,
+                             ExecutorService executor) {
+        this(endpoint, executor, DEFAULT_RECEIVE_BUFFER_MULTIPLIER,
              DEFAULT_SEND_BUFFER_MULTIPLIER);
     }
 
     public UdpCommunications(InetSocketAddress endpoint,
-                             ExecutorService msgDispatcher,
+                             ExecutorService executor,
                              int receiveBufferMultiplier,
                              int sendBufferMultiplier) {
-        dispatcher = msgDispatcher;
+        dispatcher = executor;
         try {
             socket = new DatagramSocket(endpoint.getPort(),
                                         endpoint.getAddress());
@@ -221,7 +218,7 @@ public class UdpCommunications implements GossipCommunications {
     @Override
     public void start() {
         if (running.compareAndSet(false, true)) {
-            serviceEvaluator.execute(serviceTask());
+            dispatcher.execute(serviceTask());
         }
     }
 

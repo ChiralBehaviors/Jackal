@@ -25,10 +25,12 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.Collection;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.Locator;
@@ -69,10 +71,32 @@ import com.hellblazer.pinkie.SocketOptions;
 @Configuration
 public class GossipConfiguration {
 
+    private static final Logger log = Logger.getLogger(GossipConfiguration.class.getCanonicalName());
+
     @Bean
     public GossipCommunications communications() throws IOException {
-        return new UdpCommunications(gossipEndpoint(),
-                                     Executors.newFixedThreadPool(3), 20, 4);
+        ThreadFactory threadFactory = new ThreadFactory() {
+            int count = 0;
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(
+                                      r,
+                                      String.format("Gossip comm for node %s #%s",
+                                                    node(), count++));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.SEVERE,
+                                String.format("Exception on %s", t), e);
+                    }
+                });
+                return t;
+            }
+        };
+        ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
+        return new UdpCommunications(gossipEndpoint(), executor, 20, 4);
     }
 
     @Bean
@@ -152,8 +176,27 @@ public class GossipConfiguration {
         }
     }
 
-    protected Executor testMgrExecutor() {
-        return Executors.newCachedThreadPool();
+    protected ExecutorService testMgrExecutor() {
+        return Executors.newCachedThreadPool(new ThreadFactory() {
+            int count = 0;
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(
+                                      r,
+                                      String.format("Test mgr comm for node %s #%s",
+                                                    node(), count++));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.SEVERE,
+                                String.format("Exception on %s", t), e);
+                    }
+                });
+                return t;
+            }
+        });
     }
 
     @Bean
@@ -225,18 +268,18 @@ public class GossipConfiguration {
                                            commExecutor());
     }
 
-    protected Executor commExecutor() {
-        return Executors.newFixedThreadPool(4, new ThreadFactory() {
+    protected ExecutorService commExecutor() {
+        return Executors.newCachedThreadPool(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable target) {
                 Thread t = new Thread(target, String.format("I/O exec for %s",
                                                             node()));
                 t.setDaemon(true);
                 t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-
                     @Override
-                    public void uncaughtException(Thread arg0, Throwable arg1) {
-                        arg1.printStackTrace();
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.SEVERE,
+                                String.format("Exception on %s", t), e);
                     }
                 });
                 // t.setPriority(Thread.MAX_PRIORITY);

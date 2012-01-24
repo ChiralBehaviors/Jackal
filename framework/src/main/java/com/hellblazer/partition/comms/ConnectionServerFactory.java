@@ -19,7 +19,7 @@ package com.hellblazer.partition.comms;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServerFactory;
@@ -35,13 +35,13 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 public class ConnectionServerFactory implements IOConnectionServerFactory {
-    private final Executor      executor;
-    private final SocketOptions socketOptions;
-    private final WireSecurity  wireSecurity;
+    private final ExecutorService executor;
+    private final SocketOptions   socketOptions;
+    private final WireSecurity    wireSecurity;
 
     public ConnectionServerFactory(WireSecurity wireSecurity,
                                    SocketOptions socketOptions,
-                                   Executor executor) {
+                                   ExecutorService executor) {
         this.socketOptions = socketOptions;
         this.wireSecurity = wireSecurity;
         this.executor = executor;

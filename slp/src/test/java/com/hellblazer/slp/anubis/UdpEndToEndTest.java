@@ -178,7 +178,7 @@ public class UdpEndToEndTest extends EndToEndTest {
         @Bean
         public ServiceScope anubisScope() {
             return new AnubisScope(partitionIdentity(),
-                                   Executors.newSingleThreadExecutor(),
+                                   Executors.newCachedThreadPool(),
                                    uuidGenerator(), partition());
         }
 

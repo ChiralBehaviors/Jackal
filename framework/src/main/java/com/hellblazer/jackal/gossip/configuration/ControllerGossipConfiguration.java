@@ -20,14 +20,18 @@ package com.hellblazer.jackal.gossip.configuration;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Timer;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.GossipSnoop;
@@ -61,6 +65,8 @@ import com.hellblazer.pinkie.SocketOptions;
 @Configuration
 public class ControllerGossipConfiguration {
 
+    private static final Logger log = Logger.getLogger(ControllerGossipConfiguration.class.getCanonicalName());
+
     public static void main(String[] argv) throws Exception {
         new AnnotationConfigApplicationContext(
                                                ControllerGossipConfiguration.class);
@@ -68,8 +74,28 @@ public class ControllerGossipConfiguration {
 
     @Bean
     public GossipCommunications communications() throws IOException {
-        return new UdpCommunications(gossipEndpoint(),
-                                     Executors.newFixedThreadPool(3), 20, 4);
+        ThreadFactory threadFactory = new ThreadFactory() {
+            int count = 0;
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(
+                                      r,
+                                      String.format("Controller gossip comm for node %s #%s",
+                                                    node(), count++));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.SEVERE,
+                                String.format("Exception on %s", t), e);
+                    }
+                });
+                return t;
+            }
+        };
+        ExecutorService executor = Executors.newCachedThreadPool(threadFactory);
+        return new UdpCommunications(gossipEndpoint(), executor, 20, 4);
     }
 
     @Bean
@@ -154,8 +180,26 @@ public class ControllerGossipConfiguration {
         return new SocketOptions();
     }
 
-    protected Executor dispatchExecutor() {
-        return Executors.newCachedThreadPool();
+    protected ExecutorService dispatchExecutor() {
+        return Executors.newCachedThreadPool(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable target) {
+                Thread t = new Thread(
+                                      target,
+                                      String.format("Controller I/O exec for %s",
+                                                    node()));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.SEVERE,
+                                String.format("Exception on %s", t), e);
+                    }
+                });
+                // t.setPriority(Thread.MAX_PRIORITY);
+                return t;
+            }
+        });
     }
 
     protected Epoch epoch() {
@@ -178,8 +222,12 @@ public class ControllerGossipConfiguration {
         return 12345;
     }
 
-    protected int node() throws IOException {
-        return Identity.getProcessUniqueId();
+    protected int node() {
+        try {
+            return Identity.getProcessUniqueId();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     protected FailureDetectorFactory phiAccrualFailureDetectorFactory() {

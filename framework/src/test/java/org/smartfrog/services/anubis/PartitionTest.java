@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -52,8 +52,8 @@ abstract public class PartitionTest extends TestCase {
                             Identity partitionIdentity, long heartbeatTimeout,
                             long heartbeatInterval,
                             SocketOptions socketOptions,
-                            Executor dispatchExecutor, WireSecurity wireSecurity)
-                                                                                 throws IOException {
+                            ExecutorService dispatchExecutor,
+                            WireSecurity wireSecurity) throws IOException {
             super(timer, checkPeriod, expirePeriod, partitionIdentity,
                   heartbeatTimeout, heartbeatInterval, socketOptions,
                   dispatchExecutor, wireSecurity);
@@ -245,8 +245,7 @@ abstract public class PartitionTest extends TestCase {
             for (AnnotationConfigApplicationContext context : memberContexts) {
                 Node member = (Node) controller.getNode(context.getBean(Identity.class));
                 assertNotNull("Can't find node: "
-                                              + context.getBean(Identity.class),
-                              member);
+                                      + context.getBean(Identity.class), member);
                 partition.add(member);
             }
         } finally {

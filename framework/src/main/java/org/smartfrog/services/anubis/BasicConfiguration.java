@@ -5,9 +5,11 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
@@ -35,6 +37,7 @@ import com.hellblazer.pinkie.SocketOptions;
 
 @Configuration
 public class BasicConfiguration {
+    private static Logger log = Logger.getLogger(BasicConfiguration.class.getCanonicalName());
 
     public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(BasicConfiguration.class);
@@ -92,8 +95,27 @@ public class BasicConfiguration {
         }
     }
 
-    protected Executor testMgrExecutor() {
-        return Executors.newCachedThreadPool();
+    protected ExecutorService testMgrExecutor() {
+        return Executors.newCachedThreadPool(new ThreadFactory() {
+            int count = 0;
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(
+                                      r,
+                                      String.format("Test mgr comm for node %s #%s",
+                                                    node(), count++));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.SEVERE,
+                                String.format("Exception on %s", t), e);
+                    }
+                });
+                return t;
+            }
+        });
     }
 
     @Bean
@@ -172,18 +194,18 @@ public class BasicConfiguration {
                                            commExecutor());
     }
 
-    protected Executor commExecutor() {
-        return Executors.newFixedThreadPool(4, new ThreadFactory() {
+    protected ExecutorService commExecutor() {
+        return Executors.newCachedThreadPool(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable target) {
                 Thread t = new Thread(target, String.format("I/O exec for %s",
                                                             node()));
                 t.setDaemon(true);
                 t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-
                     @Override
-                    public void uncaughtException(Thread arg0, Throwable arg1) {
-                        arg1.printStackTrace();
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.log(Level.SEVERE,
+                                String.format("Exception on %s", t), e);
                     }
                 });
                 // t.setPriority(Thread.MAX_PRIORITY);

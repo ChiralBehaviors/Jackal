@@ -23,7 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -78,9 +78,9 @@ public class Controller {
     public Controller(InetSocketAddress endpoint,
                       PartitionManager partitionManager, int id,
                       ConnectionSet connectionSet, SocketOptions socketOptions,
-                      WireSecurity wireSecurity, Executor commsExec)
-                                                                    throws IOException,
-                                                                    Exception {
+                      WireSecurity wireSecurity, ExecutorService commsExec)
+                                                                           throws IOException,
+                                                                           Exception {
         this.partitionManager = partitionManager;
         handler = new ServerSocketChannelHandler(
                                                  String.format("Partition Manager Test Node %s - connection server",

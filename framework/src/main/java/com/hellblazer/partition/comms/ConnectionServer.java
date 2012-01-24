@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,7 +60,7 @@ public class ConnectionServer implements IOConnectionServer {
     private final Identity                   me;
     private final WireSecurity               wireSecurity;
 
-    public ConnectionServer(Executor commsExec,
+    public ConnectionServer(ExecutorService commsExec,
                             InetSocketAddress endpointAddress,
                             SocketOptions socketOptions, Identity id,
                             ConnectionSet connectionSet,

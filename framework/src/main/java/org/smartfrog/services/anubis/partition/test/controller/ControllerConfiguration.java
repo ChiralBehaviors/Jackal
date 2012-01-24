@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Timer;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
@@ -94,7 +94,7 @@ public class ControllerConfiguration {
         return new SocketOptions();
     }
 
-    protected Executor dispatchExecutor() {
+    protected ExecutorService dispatchExecutor() {
         return Executors.newCachedThreadPool();
     }
 

@@ -29,7 +29,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -141,8 +141,8 @@ abstract public class EndToEndTest extends TestCase {
                             Identity partitionIdentity, long heartbeatTimeout,
                             long heartbeatInterval,
                             SocketOptions socketOptions,
-                            Executor dispatchExecutor, WireSecurity wireSecurity)
-                                                                                 throws IOException {
+                            ExecutorService dispatchExecutor,
+                            WireSecurity wireSecurity) throws IOException {
             super(timer, checkPeriod, expirePeriod, partitionIdentity,
                   heartbeatTimeout, heartbeatInterval, socketOptions,
                   dispatchExecutor, wireSecurity);
