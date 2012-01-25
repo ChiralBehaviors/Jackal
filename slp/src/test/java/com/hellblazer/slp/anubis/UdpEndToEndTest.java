@@ -60,10 +60,9 @@ public class UdpEndToEndTest extends EndToEndTest {
 
         @Override
         protected Controller constructController() throws IOException {
-            return new MyController(timer(), 1000, 300000, partitionIdentity(),
-                                    heartbeatTimeout(), heartbeatInterval(),
-                                    socketOptions(), dispatchExecutor(),
-                                    wireSecurity());
+            return new MyController(partitionIdentity(), heartbeatTimeout(),
+                                    heartbeatInterval(), socketOptions(),
+                                    dispatchExecutor(), wireSecurity());
         }
 
         @Override

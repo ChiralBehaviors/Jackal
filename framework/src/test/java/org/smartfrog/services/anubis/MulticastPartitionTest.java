@@ -29,10 +29,9 @@ public class MulticastPartitionTest extends PartitionTest {
 
         @Override
         protected Controller constructController() throws IOException {
-            return new MyController(timer(), 1000, 300000, partitionIdentity(),
-                                    heartbeatTimeout(), heartbeatInterval(),
-                                    socketOptions(), dispatchExecutor(),
-                                    wireSecurity());
+            return new MyController(partitionIdentity(), heartbeatTimeout(),
+                                    heartbeatInterval(), socketOptions(),
+                                    dispatchExecutor(), wireSecurity());
         }
 
     }
@@ -216,11 +215,11 @@ public class MulticastPartitionTest extends PartitionTest {
     @Override
     protected Class<?>[] getConfigs() {
         return new Class[] { node0.class, node1.class, node2.class,
-                        node3.class, node4.class, node5.class, node6.class,
-                        node7.class, node8.class, node9.class, node10.class,
-                        node11.class, node12.class, node13.class, node14.class,
-                        node15.class, node16.class, node17.class, node18.class,
-                        node19.class };
+                node3.class, node4.class, node5.class, node6.class,
+                node7.class, node8.class, node9.class, node10.class,
+                node11.class, node12.class, node13.class, node14.class,
+                node15.class, node16.class, node17.class, node18.class,
+                node19.class };
     }
 
     @Override

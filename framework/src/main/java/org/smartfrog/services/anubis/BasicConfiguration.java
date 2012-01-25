@@ -51,7 +51,7 @@ public class BasicConfiguration {
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
-                                 heartbeatTimeout(), false, alwaysReconnect());
+                                 heartbeatTimeout(), false);
     }
 
     @Bean

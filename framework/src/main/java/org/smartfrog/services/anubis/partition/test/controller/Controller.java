@@ -23,10 +23,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -41,31 +43,26 @@ import com.hellblazer.pinkie.ChannelHandler;
 import com.hellblazer.pinkie.SocketOptions;
 
 public class Controller implements ConnectionManager {
-    private final long                      checkPeriod;
-    private final long                      expirePeriod;
+    private final ScheduledExecutorService  timer;
     private BitView                         globalView = new BitView();
     protected long                          heartbeatInterval;
     protected long                          heartbeatTimeout;
     protected final Identity                identity;
     protected final Map<Identity, NodeData> nodes      = new ConcurrentHashMap<Identity, NodeData>();
-    private TimerTask                       task;
-    private final Timer                     timer;
-    final ChannelHandler                    handler;
-    final WireSecurity                      wireSecurity;
+    private ScheduledFuture<?>              task;
+    private final ChannelHandler            handler;
+    private final WireSecurity              wireSecurity;
 
-    public Controller(Timer timer, long checkPeriod, long expirePeriod,
-                      Identity partitionIdentity, long heartbeatTimeout,
+    public Controller(Identity partitionIdentity, long heartbeatTimeout,
                       long heartbeatInterval, SocketOptions socketOptions,
-                      ExecutorService dispatchExec, WireSecurity wireSecurity)
-                                                                              throws IOException {
-        this.timer = timer;
-        this.checkPeriod = checkPeriod;
-        this.expirePeriod = expirePeriod;
+                      ExecutorService dispatcher, WireSecurity wireSecurity)
+                                                                            throws IOException {
+        this.timer = Executors.newScheduledThreadPool(1);
         identity = partitionIdentity;
         this.heartbeatTimeout = heartbeatTimeout;
         this.heartbeatInterval = heartbeatInterval;
         handler = new ChannelHandler("Partition Controller", socketOptions,
-                                     dispatchExec);
+                                     dispatcher);
         this.wireSecurity = wireSecurity;
     }
 
@@ -81,7 +78,7 @@ public class Controller implements ConnectionManager {
 
     public synchronized void checkNodes() {
         long timeNow = System.currentTimeMillis();
-        long expireTime = timeNow - expirePeriod;
+        long expireTime = timeNow - (heartbeatInterval * heartbeatTimeout);
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
             NodeData nodeData = iter.next();
@@ -127,7 +124,8 @@ public class Controller implements ConnectionManager {
      * @throws IOException
      */
     public synchronized void deploy() throws IOException {
-        timer.schedule(getTask(), checkPeriod, checkPeriod);
+        task = timer.schedule(getTask(), heartbeatInterval,
+                              TimeUnit.MILLISECONDS);
     }
 
     public synchronized void disconnectNode(NodeData node) {
@@ -148,10 +146,6 @@ public class Controller implements ConnectionManager {
 
     public Collection<? extends NodeData> getNodes() {
         return nodes.values();
-    }
-
-    public Timer getTimer() {
-        return timer;
     }
 
     public String nodesToString() {
@@ -187,9 +181,9 @@ public class Controller implements ConnectionManager {
         // checkPeriod = interval;
         // expirePeriod = interval * timeout;
         if (task != null) {
-            task.cancel();
+            task.cancel(true);
         }
-        timer.schedule(getTask(), checkPeriod, checkPeriod);
+        timer.schedule(getTask(), interval, TimeUnit.MILLISECONDS);
 
         /** set node's timers **/
         Iterator<NodeData> iter = nodes.values().iterator();
@@ -215,19 +209,18 @@ public class Controller implements ConnectionManager {
     public void terminate() {
         handler.terminate();
         if (task != null) {
-            task.cancel();
+            task.cancel(true);
         }
         clearNodes();
     }
 
-    private synchronized TimerTask getTask() {
-        task = new TimerTask() {
+    private synchronized Runnable getTask() {
+        return new Runnable() {
             @Override
             public void run() {
                 checkNodes();
             }
         };
-        return task;
     }
 
     protected synchronized void addNode(Heartbeat hb, NodeData nodeData) {
@@ -239,5 +232,19 @@ public class Controller implements ConnectionManager {
         NodeData nodeData;
         nodeData = new NodeData(hb, this);
         return nodeData;
+    }
+
+    /**
+     * @return
+     */
+    public WireSecurity getWireSecurity() {
+        return wireSecurity;
+    }
+
+    /**
+     * @return
+     */
+    public ChannelHandler getHandler() {
+        return handler;
     }
 }

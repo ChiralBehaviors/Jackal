@@ -3,7 +3,6 @@ package org.smartfrog.services.anubis.partition.test.controller;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -73,16 +72,10 @@ public class ControllerConfiguration {
                          partitionIdentity(), controller());
     }
 
-    @Bean
-    public Timer timer() {
-        return new Timer("Partition timer", true);
-    }
-
     protected Controller constructController() throws IOException {
-        return new Controller(timer(), 1000, 300000, partitionIdentity(),
-                              heartbeatTimeout(), heartbeatInterval(),
-                              socketOptions(), dispatchExecutor(),
-                              wireSecurity());
+        return new Controller(partitionIdentity(), heartbeatTimeout(),
+                              heartbeatInterval(), socketOptions(),
+                              dispatchExecutor(), wireSecurity());
     }
 
     @Bean

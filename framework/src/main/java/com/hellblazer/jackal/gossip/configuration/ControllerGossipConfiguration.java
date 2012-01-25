@@ -165,10 +165,9 @@ public class ControllerGossipConfiguration {
     }
 
     protected Controller constructController() throws IOException {
-        return new Controller(timer(), 1000, 300000, partitionIdentity(),
-                              heartbeatTimeout(), heartbeatInterval(),
-                              socketOptions(), dispatchExecutor(),
-                              wireSecurity());
+        return new Controller(partitionIdentity(), heartbeatTimeout(),
+                              heartbeatInterval(), socketOptions(),
+                              dispatchExecutor(), wireSecurity());
     }
 
     @Bean

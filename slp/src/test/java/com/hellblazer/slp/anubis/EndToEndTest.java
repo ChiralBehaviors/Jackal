@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -137,15 +136,13 @@ abstract public class EndToEndTest extends TestCase {
         int            cardinality;
         CountDownLatch latch;
 
-        public MyController(Timer timer, long checkPeriod, long expirePeriod,
-                            Identity partitionIdentity, long heartbeatTimeout,
+        public MyController(Identity partitionIdentity, long heartbeatTimeout,
                             long heartbeatInterval,
                             SocketOptions socketOptions,
                             ExecutorService dispatchExecutor,
                             WireSecurity wireSecurity) throws IOException {
-            super(timer, checkPeriod, expirePeriod, partitionIdentity,
-                  heartbeatTimeout, heartbeatInterval, socketOptions,
-                  dispatchExecutor, wireSecurity);
+            super(partitionIdentity, heartbeatTimeout, heartbeatInterval,
+                  socketOptions, dispatchExecutor, wireSecurity);
         }
 
         @Override

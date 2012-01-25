@@ -220,9 +220,9 @@ public class NodeData {
             return;
         }
 
-        connection = new Connection(controller.wireSecurity);
+        connection = new Connection(controller.getWireSecurity());
         try {
-            controller.handler.connectTo(address, connection);
+            controller.getHandler().connectTo(address, connection);
         } catch (IOException e) {
             connection = null;
             log.log(Level.SEVERE,

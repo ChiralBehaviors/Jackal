@@ -107,7 +107,7 @@ public class GossipConfiguration {
                                  leaderProtocolFactory(),
                                  heartbeatProtocolFactory(),
                                  partitionProtocol(), heartbeatInterval(),
-                                 heartbeatTimeout(), false, alwaysReconnect());
+                                 heartbeatTimeout(), false);
     }
 
     @Bean

@@ -19,7 +19,6 @@ package org.smartfrog.services.anubis;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,15 +47,13 @@ abstract public class PartitionTest extends TestCase {
         int            cardinality;
         CountDownLatch latch;
 
-        public MyController(Timer timer, long checkPeriod, long expirePeriod,
-                            Identity partitionIdentity, long heartbeatTimeout,
+        public MyController(Identity partitionIdentity, long heartbeatTimeout,
                             long heartbeatInterval,
                             SocketOptions socketOptions,
                             ExecutorService dispatchExecutor,
                             WireSecurity wireSecurity) throws IOException {
-            super(timer, checkPeriod, expirePeriod, partitionIdentity,
-                  heartbeatTimeout, heartbeatInterval, socketOptions,
-                  dispatchExecutor, wireSecurity);
+            super(partitionIdentity, heartbeatTimeout, heartbeatInterval,
+                  socketOptions, dispatchExecutor, wireSecurity);
         }
 
         @Override

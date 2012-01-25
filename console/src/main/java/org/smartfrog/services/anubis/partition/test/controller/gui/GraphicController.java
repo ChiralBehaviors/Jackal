@@ -18,7 +18,6 @@ package org.smartfrog.services.anubis.partition.test.controller.gui;
 
 import java.io.IOException;
 import java.util.StringTokenizer;
-import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.PostConstruct;
@@ -43,15 +42,13 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 public class GraphicController extends Controller {
-    public GraphicController(Timer timer, long checkPeriod, long expirePeriod,
-                             Identity partitionIdentity, long heartbeatTimeout,
+    public GraphicController(Identity partitionIdentity, long heartbeatTimeout,
                              long heartbeatInterval,
                              SocketOptions socketOptions,
                              ExecutorService dispatchExecutor,
                              WireSecurity wireSecurity) throws IOException {
-        super(timer, checkPeriod, expirePeriod, partitionIdentity,
-              heartbeatTimeout, heartbeatInterval, socketOptions,
-              dispatchExecutor, wireSecurity);
+        super(partitionIdentity, heartbeatTimeout, heartbeatInterval,
+              socketOptions, dispatchExecutor, wireSecurity);
     }
 
     private ColorAllocator      colorAllocator = new ColorAllocator();

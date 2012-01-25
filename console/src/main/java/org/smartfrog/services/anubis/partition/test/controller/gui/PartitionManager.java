@@ -35,10 +35,9 @@ public class PartitionManager extends ControllerGossipConfiguration {
 
     @Override
     protected Controller constructController() throws IOException {
-        return new GraphicController(timer(), 1000, 30000, partitionIdentity(),
-                                     heartbeatTimeout(), heartbeatInterval(),
-                                     socketOptions(), dispatchExecutor(),
-                                     wireSecurity());
+        return new GraphicController(partitionIdentity(), heartbeatTimeout(),
+                                     heartbeatInterval(), socketOptions(),
+                                     dispatchExecutor(), wireSecurity());
     }
 
     public static void main(String[] argv) throws Exception {

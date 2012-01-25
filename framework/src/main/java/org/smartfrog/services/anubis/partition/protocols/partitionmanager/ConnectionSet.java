@@ -75,9 +75,8 @@ import com.hellblazer.jackal.partition.test.node.Controller;
  * @version 1.0
  */
 public class ConnectionSet implements ViewListener, ConnectionManager {
-    private static final Logger             log                 = Logger.getLogger(ConnectionSet.class.getCanonicalName()); // TODO should be Async wrapped
+    private static final Logger             log                 = Logger.getLogger(ConnectionSet.class.getCanonicalName());
 
-    private final boolean                   alwaysReconnect;
     private volatile boolean                changeInViews       = false;
     private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
     private final IOConnectionServer        connectionServer;
@@ -111,8 +110,8 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                          LeaderProtocolFactory leaderProtocolFactory,
                          HeartbeatProtocolFactory heartbeatProtocolFactory,
                          PartitionProtocol partitionProtocol, long interval,
-                         long timeout, boolean isPreferredLeaderNode,
-                         boolean alwaysReconnect) throws IOException {
+                         long timeout, boolean isPreferredLeaderNode)
+                                                                     throws IOException {
         this.identity = identity;
         this.leaderProtocolFactory = leaderProtocolFactory;
         this.heartbeatProtocolFactory = heartbeatProtocolFactory;
@@ -149,7 +148,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          */
         connections.put(identity, self);
         connectionView.add(identity);
-        this.alwaysReconnect = true;
 
         log.info(String.format("Connection set: %s started on: %s", identity,
                                connectionServer.getAddress()));
@@ -195,9 +193,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             intervalExec.clearStability();
             partitionProtocol.stableView();
             dropBrokenConnections();
-            if (alwaysReconnect) {
-                reconnect();
-            }
         }
 
         /**
@@ -223,7 +218,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             if (con.isNotTimely(timenow, timeout)) {
                 if (log.isLoggable(Level.FINER)) {
                     log.finer(String.format("Terminating untimely connection: %s",
-                                           con));
+                                            con));
                 }
 
                 /**
@@ -750,18 +745,6 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             if (log.isLoggable(Level.FINE)) {
                 log.fine(String.format("Ignoring received object: %s from: %s on: %s as it is not in our view",
                                        obj, id, identity));
-            }
-        }
-    }
-
-    private void reconnect() {
-        for (int node : connectionView) {
-            if (thisEndInitiatesConnectionsTo(node)) {
-                Connection con = connections.get(new Identity(identity.magic,
-                                                              node, 0));
-                if (con == null || con instanceof HeartbeatConnection) {
-                    connect(node);
-                }
             }
         }
     }

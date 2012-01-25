@@ -33,8 +33,7 @@ public class PartitionManagerUiConfiguration extends ControllerConfiguration {
 
     @Override
     protected Controller constructController() throws IOException {
-        return new GraphicController(timer(), 1000, 300000,
-                                     partitionIdentity(), heartbeatTimeout(),
+        return new GraphicController(partitionIdentity(), heartbeatTimeout(),
                                      heartbeatInterval(), socketOptions(),
                                      dispatchExecutor(), wireSecurity());
     }
