@@ -17,41 +17,51 @@
  */
 package com.hellblazer.jackal.configuration;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
+import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
+import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
-import com.hellblazer.pinkie.SocketOptions;
-
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-public class PartitionController {
+public class MulticastHeartbeatAndDiscovery {
+    public class Configuration {
+        public final InetSocketAddress contactAddress;
+
+        /**
+         * @param contactAddress
+         */
+        public Configuration(InetSocketAddress contactAddress) {
+            super();
+            this.contactAddress = contactAddress;
+        }
+
+    }
+
     @Autowired
-    private HeartbeatConfiguration heartbeatConfiguration;
+    Identity                 partitionIdentity;
     @Autowired
-    private ExecutorService        executorService;
+    private WireSecurity     wireSecurity;
     @Autowired
-    private Identity               partitionIdentity;
+    private MulticastAddress heartbeatGroup;
     @Autowired
-    private SocketOptions          socketOptions;
-    @Autowired
-    private WireSecurity           wireSecurity;
+    private Configuration    configuration;
 
     @Bean
-    public Controller controller() throws IOException {
-        return new Controller(partitionIdentity,
-                              heartbeatConfiguration.heartbeatTimeout,
-                              heartbeatConfiguration.heartbeatInterval,
-                              socketOptions, executorService, wireSecurity);
+    public HeartbeatCommsFactory heartbeatCommsFactory()
+                                                        throws UnknownHostException {
+        return new MulticastHeartbeatCommsFactory(wireSecurity, heartbeatGroup,
+                                                  configuration.contactAddress,
+                                                  partitionIdentity);
     }
 }

@@ -17,17 +17,18 @@
  */
 package com.hellblazer.jackal.configuration;
 
-import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
+import org.smartfrog.services.anubis.partition.PartitionManager;
+import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
+import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 import com.hellblazer.pinkie.SocketOptions;
 
 /**
@@ -35,23 +36,31 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 @Configuration
-public class PartitionController {
+public class PartitionAgent {
+    public class Configuration {
+        public InetSocketAddress contactAddress;
+    }
+
     @Autowired
-    private HeartbeatConfiguration heartbeatConfiguration;
+    private Configuration    configuration;
     @Autowired
-    private ExecutorService        executorService;
+    private ConnectionSet    connectionSet;
     @Autowired
-    private Identity               partitionIdentity;
+    private ExecutorService  dispatcher;
     @Autowired
-    private SocketOptions          socketOptions;
+    private PartitionManager partitionManager;
     @Autowired
-    private WireSecurity           wireSecurity;
+    private SocketOptions    socketOptions;
+    @Autowired
+    private WireSecurity     wireSecurity;
+    @Autowired
+    Identity                 partitionIdentity;
 
     @Bean
-    public Controller controller() throws IOException {
-        return new Controller(partitionIdentity,
-                              heartbeatConfiguration.heartbeatTimeout,
-                              heartbeatConfiguration.heartbeatInterval,
-                              socketOptions, executorService, wireSecurity);
+    public ControllerAgent controller() throws Exception {
+        return new ControllerAgent(configuration.contactAddress,
+                                   partitionManager, partitionIdentity.id,
+                                   connectionSet, socketOptions, wireSecurity,
+                                   dispatcher);
     }
 }

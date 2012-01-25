@@ -41,7 +41,6 @@ import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProt
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
-import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
@@ -58,7 +57,7 @@ import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.fd.TimedFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
-import com.hellblazer.jackal.partition.test.node.Controller;
+import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 import com.hellblazer.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
 
@@ -111,11 +110,6 @@ public class GossipConfiguration {
     }
 
     @Bean
-    public Epoch epoch() {
-        return new Epoch();
-    }
-
-    @Bean
     public FailureDetectorFactory failureDetectorFactory() {
         return simpleTimeoutFailureDetectorFactory();
     }
@@ -148,7 +142,7 @@ public class GossipConfiguration {
 
     @Bean
     public Identity partitionIdentity() {
-        return new Identity(getMagic(), node(), epoch().longValue());
+        return new Identity(getMagic(), node(), System.currentTimeMillis());
     }
 
     @Bean
@@ -166,11 +160,11 @@ public class GossipConfiguration {
     }
 
     @Bean
-    public Controller controller() throws Exception {
+    public ControllerAgent controller() throws Exception {
         if (getTestable()) {
-            return new Controller(contactAddress(), partition(), node(),
-                                  connectionSet(), socketOptions(),
-                                  wireSecurity(), testMgrExecutor());
+            return new ControllerAgent(contactAddress(), partition(), node(),
+                                       connectionSet(), socketOptions(),
+                                       wireSecurity(), testMgrExecutor());
         } else {
             return null;
         }

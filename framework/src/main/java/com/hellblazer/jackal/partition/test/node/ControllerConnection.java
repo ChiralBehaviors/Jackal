@@ -46,9 +46,9 @@ public class ControllerConnection extends AbstractMessageHandler implements
 
     private static final Logger log = Logger.getLogger(ControllerConnection.class.getCanonicalName());
 
-    private final Controller    controller;
+    private final ControllerAgent    controller;
 
-    public ControllerConnection(Controller controller, WireSecurity wireSecurity) {
+    public ControllerConnection(ControllerAgent controller, WireSecurity wireSecurity) {
         super(wireSecurity);
         this.controller = controller;
 

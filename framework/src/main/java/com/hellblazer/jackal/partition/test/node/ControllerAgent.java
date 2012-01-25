@@ -51,12 +51,12 @@ import com.hellblazer.pinkie.SocketOptions;
  * @author hhildebrand
  * 
  */
-public class Controller {
+public class ControllerAgent {
     private class TestConnectionFactory implements CommunicationsHandlerFactory {
         @Override
         public CommunicationsHandler createCommunicationsHandler(SocketChannel channel) {
             ControllerConnection connection = new ControllerConnection(
-                                                                       Controller.this,
+                                                                       ControllerAgent.this,
                                                                        wireSecurity);
             connections.add(connection);
             partitionManager.register(connection);
@@ -75,7 +75,7 @@ public class Controller {
     private final ServerSocketChannelHandler handler;
     private final WireSecurity               wireSecurity;
 
-    public Controller(InetSocketAddress endpoint,
+    public ControllerAgent(InetSocketAddress endpoint,
                       PartitionManager partitionManager, int id,
                       ConnectionSet connectionSet, SocketOptions socketOptions,
                       WireSecurity wireSecurity, ExecutorService commsExec)

@@ -30,6 +30,7 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Partit
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -44,64 +45,53 @@ import com.hellblazer.pinkie.SocketOptions;
  */
 @Configuration
 public class Jackal {
-    public static class ConnectionSetConfiguration {
-        /**
-         * @param contactAddress
-         * @param heartbeatInterval
-         * @param heartbeatTimeout
-         */
-        public ConnectionSetConfiguration(InetSocketAddress contactAddress,
-                                          int heartbeatInterval,
-                                          int heartbeatTimeout,
-                                          boolean isPreferredLeader) {
-            this.contactAddress = contactAddress;
+
+    public static class HeartbeatConfiguration {
+        public final int heartbeatInterval;
+        public final int heartbeatTimeout;
+
+        public HeartbeatConfiguration(int heartbeatInterval,
+                                      int heartbeatTimeout) {
             this.heartbeatInterval = heartbeatInterval;
             this.heartbeatTimeout = heartbeatTimeout;
-            this.isPreferredLeader = isPreferredLeader;
         }
-
-        public final InetSocketAddress contactAddress;
-        public final int               heartbeatInterval;
-        public final int               heartbeatTimeout;
-        public final boolean           isPreferredLeader;
     }
 
     @Autowired
-    private ExecutorService            executorService;
+    private ExecutorService          communicationsDispatcher;
     @Autowired
-    private HeartbeatCommsFactory      heartbeatCommsFactory;
+    @Qualifier("connectionSetEndpoint")
+    private InetSocketAddress        endpoint;
     @Autowired
-    private HeartbeatProtocolFactory   heartbeatProtocolFactory;
+    private HeartbeatCommsFactory    heartbeatCommsFactory;
     @Autowired
-    private Identity                   partitionIdentity;
+    private HeartbeatConfiguration   heartbeatConfiguration;
     @Autowired
-    private SocketOptions              socketOptions;
+    private HeartbeatProtocolFactory heartbeatProtocolFactory;
     @Autowired
-    private WireSecurity               wireSecurity;
+    private LeaderProtocolFactory    leaderProtocolFactory;
     @Autowired
-    private ConnectionSetConfiguration configuration;
+    private Identity                 partitionIdentity;
+    @Autowired
+    private SocketOptions            socketOptions;
+    @Autowired
+    private WireSecurity             wireSecurity;
 
     @Bean
     public IOConnectionServerFactory connectionServerFactory() throws Exception {
         return new ConnectionServerFactory(wireSecurity, socketOptions,
-                                           executorService);
+                                           communicationsDispatcher);
     }
 
     @Bean
     public ConnectionSet connectionSet() throws Exception {
-        return new ConnectionSet(configuration.contactAddress,
-                                 partitionIdentity, heartbeatCommsFactory,
+        return new ConnectionSet(endpoint, partitionIdentity,
+                                 heartbeatCommsFactory,
                                  connectionServerFactory(),
-                                 leaderProtocolFactory(),
+                                 leaderProtocolFactory,
                                  heartbeatProtocolFactory, partitionProtocol(),
-                                 configuration.heartbeatInterval,
-                                 configuration.heartbeatTimeout,
-                                 configuration.isPreferredLeader);
-    }
-
-    @Bean
-    public LeaderProtocolFactory leaderProtocolFactory() {
-        return new LeaderProtocolFactory();
+                                 heartbeatConfiguration.heartbeatInterval,
+                                 heartbeatConfiguration.heartbeatTimeout, false);
     }
 
     @Bean

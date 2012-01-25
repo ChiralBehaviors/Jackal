@@ -17,41 +17,32 @@
  */
 package com.hellblazer.jackal.configuration;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
+import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
+import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
-import com.hellblazer.pinkie.SocketOptions;
 
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-public class PartitionController {
-    @Autowired
-    private HeartbeatConfiguration heartbeatConfiguration;
-    @Autowired
-    private ExecutorService        executorService;
-    @Autowired
-    private Identity               partitionIdentity;
-    @Autowired
-    private SocketOptions          socketOptions;
-    @Autowired
-    private WireSecurity           wireSecurity;
+public class StandardConfiguration {
+    @Bean
+    public LeaderProtocolFactory leaderProtocolFactory() {
+        return new LeaderProtocolFactory();
+    }
 
     @Bean
-    public Controller controller() throws IOException {
-        return new Controller(partitionIdentity,
-                              heartbeatConfiguration.heartbeatTimeout,
-                              heartbeatConfiguration.heartbeatInterval,
-                              socketOptions, executorService, wireSecurity);
+    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        return new TimedProtocolFactory();
+    }
+
+    @Bean
+    public WireSecurity wireSecurity() {
+        return new NoSecurityImpl();
     }
 }

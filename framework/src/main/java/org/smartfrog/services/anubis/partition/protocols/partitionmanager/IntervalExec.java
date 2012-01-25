@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 
-import com.hellblazer.jackal.partition.test.node.Controller;
+import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 
 public class IntervalExec extends Thread {
 
@@ -37,7 +37,7 @@ public class IntervalExec extends Thread {
     private volatile boolean    running       = false;
     private volatile long       stabilityTime = 0;
     private boolean             stabilizing   = false;
-    private volatile Controller controller    = null;
+    private volatile ControllerAgent controller    = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
         super("Anubis: Interval Executive (node " + id.id + ")");
@@ -71,7 +71,7 @@ public class IntervalExec extends Thread {
         return buffer.toString();
     }
 
-    public void registerController(Controller controller) {
+    public void registerController(ControllerAgent controller) {
         this.controller = controller;
     }
 

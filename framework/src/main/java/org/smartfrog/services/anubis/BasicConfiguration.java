@@ -23,7 +23,6 @@ import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedPr
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
-import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
@@ -31,7 +30,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.partition.test.node.Controller;
+import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 import com.hellblazer.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
 
@@ -55,11 +54,6 @@ public class BasicConfiguration {
     }
 
     @Bean
-    public Epoch epoch() {
-        return new Epoch();
-    }
-
-    @Bean
     public AnubisLocator locator() {
         Locator locator = new Locator(partitionIdentity(), partition(),
                                       heartbeatInterval(), heartbeatTimeout());
@@ -74,7 +68,7 @@ public class BasicConfiguration {
 
     @Bean
     public Identity partitionIdentity() {
-        return new Identity(getMagic(), node(), epoch().longValue());
+        return new Identity(getMagic(), node(), System.currentTimeMillis());
     }
 
     @Bean
@@ -85,11 +79,11 @@ public class BasicConfiguration {
     }
 
     @Bean
-    public Controller controller() throws Exception {
+    public ControllerAgent controller() throws Exception {
         if (isControllable()) {
-            return new Controller(contactAddress(), partition(), node(),
-                                  connectionSet(), socketOptions(),
-                                  wireSecurity(), testMgrExecutor());
+            return new ControllerAgent(contactAddress(), partition(), node(),
+                                       connectionSet(), socketOptions(),
+                                       wireSecurity(), testMgrExecutor());
         } else {
             return null;
         }

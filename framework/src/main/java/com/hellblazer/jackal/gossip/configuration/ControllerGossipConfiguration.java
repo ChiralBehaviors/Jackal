@@ -35,7 +35,6 @@ import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.GossipSnoop;
-import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
@@ -127,7 +126,7 @@ public class ControllerGossipConfiguration {
 
     @Bean
     public Identity partitionIdentity() throws IOException {
-        return new Identity(magic(), node(), epoch().longValue());
+        return new Identity(magic(), node(), System.currentTimeMillis());
     }
 
     @Bean
@@ -199,10 +198,6 @@ public class ControllerGossipConfiguration {
                 return t;
             }
         });
-    }
-
-    protected Epoch epoch() {
-        return new Epoch();
     }
 
     protected InetSocketAddress gossipEndpoint() throws UnknownHostException {

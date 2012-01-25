@@ -54,7 +54,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.views.ViewListener;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
-import com.hellblazer.jackal.partition.test.node.Controller;
+import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 
 /**
  * Anubis Detection Service.
@@ -81,7 +81,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
     private final IOConnectionServer        connectionServer;
     private final BitView                   connectionView      = new BitView();
-    private volatile Controller             controller;
+    private volatile ControllerAgent        agent;
     private final Heartbeat                 heartbeat;
     private final HeartbeatCommsIntf        heartbeatComms;
     private volatile long                   heartbeatInterval   = 0;
@@ -610,7 +610,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     }
 
     public synchronized boolean isIgnoring(Identity id) {
-        return controller != null && ignoring.contains(id);
+        return agent != null && ignoring.contains(id);
     }
 
     /**
@@ -749,10 +749,10 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
     }
 
-    public void registerController(Controller controller) {
+    public void registerController(ControllerAgent controller) {
         heartbeat.setController(controller.getAddress());
         intervalExec.registerController(controller);
-        this.controller = controller;
+        this.agent = controller;
     }
 
     /**
@@ -831,13 +831,13 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         }
         msgConDelayedDelete.clear();
 
-        if (controller != null) {
-            controller.updateHeartbeat(heartbeat);
+        if (agent != null) {
+            agent.updateHeartbeat(heartbeat);
         }
     }
 
     public synchronized void setIgnoring(View ignoring) {
-        if (controller == null) {
+        if (agent == null) {
             return;
         }
         if (ignoring == null) {

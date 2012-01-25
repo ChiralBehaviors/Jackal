@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
-import org.smartfrog.services.anubis.partition.util.Epoch;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
@@ -59,7 +58,7 @@ public class ControllerConfiguration {
 
     @Bean
     public Identity partitionIdentity() throws IOException {
-        return new Identity(magic(), node(), epoch().longValue());
+        return new Identity(magic(), node(), System.currentTimeMillis());
     }
 
     @Bean(initMethod = "start", destroyMethod = "shutdown")
@@ -89,10 +88,6 @@ public class ControllerConfiguration {
 
     protected ExecutorService dispatchExecutor() {
         return Executors.newCachedThreadPool();
-    }
-
-    protected Epoch epoch() {
-        return new Epoch();
     }
 
     protected int magic() {
