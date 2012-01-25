@@ -42,8 +42,8 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 public class GraphicController extends Controller {
-    public GraphicController(Identity partitionIdentity, long heartbeatTimeout,
-                             long heartbeatInterval,
+    public GraphicController(Identity partitionIdentity, int heartbeatTimeout,
+                             int heartbeatInterval,
                              SocketOptions socketOptions,
                              ExecutorService dispatchExecutor,
                              WireSecurity wireSecurity) throws IOException {

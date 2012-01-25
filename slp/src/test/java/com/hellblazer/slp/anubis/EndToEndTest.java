@@ -136,9 +136,8 @@ abstract public class EndToEndTest extends TestCase {
         int            cardinality;
         CountDownLatch latch;
 
-        public MyController(Identity partitionIdentity, long heartbeatTimeout,
-                            long heartbeatInterval,
-                            SocketOptions socketOptions,
+        public MyController(Identity partitionIdentity, int heartbeatTimeout,
+                            int heartbeatInterval, SocketOptions socketOptions,
                             ExecutorService dispatchExecutor,
                             WireSecurity wireSecurity) throws IOException {
             super(partitionIdentity, heartbeatTimeout, heartbeatInterval,

@@ -116,12 +116,12 @@ public class ControllerGossipConfiguration {
                           failureDetectorFactory(), partitionIdentity());
     }
 
-    public long heartbeatInterval() {
-        return 2000L;
+    public int heartbeatInterval() {
+        return 2000;
     }
 
-    public long heartbeatTimeout() {
-        return 3L;
+    public int heartbeatTimeout() {
+        return 3;
     }
 
     @Bean
