@@ -22,7 +22,6 @@ package org.smartfrog.services.anubis.basiccomms.multicasttransport;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,15 +46,15 @@ public class MulticastComms extends Thread {
      * network will be capable of handling this size so its transfer semantics
      * are atomic (no fragmentation in the network).
      */
-    static public final int MAX_SEG_SIZE = 1500; // Ethernet standard MTU
+    static public final int     MAX_SEG_SIZE = 1500;                                                     // Ethernet standard MTU
 
-    private MulticastAddress groupAddress;
-    private byte[] inBytes;
-    private DatagramPacket inPacket;
-    private MulticastSocket sock;
-    private static final Logger log = Logger.getLogger(MulticastComms.class.getCanonicalName());
-    volatile private boolean terminating;
-    Object outObject;
+    private MulticastAddress    groupAddress;
+    private byte[]              inBytes;
+    private DatagramPacket      inPacket;
+    private MulticastSocket     sock;
+    private static final Logger log          = Logger.getLogger(MulticastComms.class.getCanonicalName());
+    volatile private boolean    terminating;
+    Object                      outObject;
 
     /**
      * Constructor - uses MulticastAddress to define the multicast group etc.
@@ -81,12 +80,12 @@ public class MulticastComms extends Thread {
      * define the network interface to use. group etc.
      */
     public MulticastComms(String threadName, MulticastAddress address,
-                          InetSocketAddress inf) throws IOException {
+                          InetAddress inf) throws IOException {
 
         super(threadName);
         groupAddress = address;
         sock = new MulticastSocket(address.port);
-        sock.setInterface(inf.getAddress());
+        sock.setInterface(inf);
         sock.joinGroup(address.ipaddress);
         sock.setTimeToLive(address.timeToLive);
         terminating = false;

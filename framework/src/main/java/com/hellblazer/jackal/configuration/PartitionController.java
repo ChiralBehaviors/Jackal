@@ -24,6 +24,7 @@ import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,7 +40,8 @@ public class PartitionController {
     @Autowired
     private HeartbeatConfiguration heartbeatConfiguration;
     @Autowired
-    private ExecutorService        executorService;
+    @Qualifier("controllerDispatchers")
+    private ExecutorService        controllerDispatchers;
     @Autowired
     private Identity               partitionIdentity;
     @Autowired
@@ -52,6 +54,6 @@ public class PartitionController {
         return new Controller(partitionIdentity,
                               heartbeatConfiguration.heartbeatTimeout,
                               heartbeatConfiguration.heartbeatInterval,
-                              socketOptions, executorService, wireSecurity);
+                              socketOptions, controllerDispatchers, wireSecurity);
     }
 }

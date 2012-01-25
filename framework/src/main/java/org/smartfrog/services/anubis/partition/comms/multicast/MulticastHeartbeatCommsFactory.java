@@ -20,7 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
@@ -31,13 +31,13 @@ public class MulticastHeartbeatCommsFactory implements HeartbeatCommsFactory {
 
     private final WireSecurity      wireSecurity;
     private final MulticastAddress  address;
-    private final InetSocketAddress inf;
+    private final InetAddress inf;
     private final String            threadName;
     private final Identity          id;
 
     public MulticastHeartbeatCommsFactory(WireSecurity wireSecurity,
                                           MulticastAddress address,
-                                          InetSocketAddress inf, Identity id) {
+                                          InetAddress inf, Identity id) {
         this.wireSecurity = wireSecurity;
         this.address = address;
         this.inf = inf;

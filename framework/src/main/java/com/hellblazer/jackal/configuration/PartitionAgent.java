@@ -25,6 +25,7 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Connec
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -37,30 +38,28 @@ import com.hellblazer.pinkie.SocketOptions;
  */
 @Configuration
 public class PartitionAgent {
-    public class Configuration {
-        public InetSocketAddress contactAddress;
-    }
-
     @Autowired
-    private Configuration    configuration;
+    @Qualifier("agentDispatchers")
+    private ExecutorService   agentDispatchers;
     @Autowired
-    private ConnectionSet    connectionSet;
+    private ConnectionSet     connectionSet;
     @Autowired
-    private ExecutorService  dispatcher;
+    @Qualifier("controllerAgentEndpoint")
+    private InetSocketAddress contactAddress;
     @Autowired
-    private PartitionManager partitionManager;
+    private PartitionManager  partitionManager;
     @Autowired
-    private SocketOptions    socketOptions;
+    private SocketOptions     socketOptions;
     @Autowired
-    private WireSecurity     wireSecurity;
+    private WireSecurity      wireSecurity;
     @Autowired
-    Identity                 partitionIdentity;
+    Identity                  partitionIdentity;
 
     @Bean
     public ControllerAgent controller() throws Exception {
-        return new ControllerAgent(configuration.contactAddress,
-                                   partitionManager, partitionIdentity.id,
-                                   connectionSet, socketOptions, wireSecurity,
-                                   dispatcher);
+        return new ControllerAgent(contactAddress, partitionManager,
+                                   partitionIdentity.id, connectionSet,
+                                   socketOptions, wireSecurity,
+                                   agentDispatchers);
     }
 }

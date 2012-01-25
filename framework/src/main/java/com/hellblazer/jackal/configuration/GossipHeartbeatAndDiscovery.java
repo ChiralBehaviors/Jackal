@@ -68,21 +68,26 @@ public class GossipHeartbeatAndDiscovery {
     private FailureDetectorFactory  failureDetectorFactory;
     @Autowired
     private GossipConfiguration     gossipConfiguration;
+    @Autowired
+    private Identity                partitionIdentity;
     @Resource(name = "seedHosts")
     private List<InetSocketAddress> seedHosts;
     @Autowired
-    private ExecutorService         udpDispatcher;
-    @Autowired
-    private Identity                partitionIdentity;
-
-    @Bean
-    public HeartbeatConfiguration heartbeatConfig() {
-        return new HeartbeatConfiguration(3000, 2);
-    }
+    @Qualifier("gossipDispatchers")
+    private ExecutorService         gossipDispatchers;
 
     @Bean
     public GossipCommunications communications() throws IOException {
-        return new UdpCommunications(endpoint, udpDispatcher, 20, 4);
+        return new UdpCommunications(endpoint, gossipDispatchers, 20, 4);
+    }
+
+    @Bean
+    @Autowired
+    public FailureDetectorFactory failureDetectorFactory(HeartbeatConfiguration heartbeatConfig) {
+        return new SimpleTimeoutFailureDetectorFactory(
+                                                       heartbeatConfig.heartbeatInterval
+                                                               * heartbeatConfig.heartbeatTimeout
+                                                               * 3);
     }
 
     @Bean
@@ -94,28 +99,21 @@ public class GossipHeartbeatAndDiscovery {
     }
 
     @Bean
+    @Autowired
+    public GossipConfiguration gossipConfiguration(HeartbeatConfiguration heartbeatConfig) {
+        return new GossipConfiguration(
+                                       500,
+                                       TimeUnit.MILLISECONDS,
+                                       heartbeatConfig.heartbeatInterval
+                                               * (heartbeatConfig.heartbeatTimeout + 1),
+                                       500000);
+    }
+
+    @Bean
     public SystemView systemView() throws IOException {
         return new SystemView(new SecureRandom(),
                               communications().getLocalAddress(), seedHosts,
                               gossipConfiguration.quarantineDelay,
                               gossipConfiguration.unreachableNodeDelay);
-    }
-
-    @Bean
-    public GossipConfiguration gossipConfiguration() {
-        return new GossipConfiguration(
-                                       500,
-                                       TimeUnit.MILLISECONDS,
-                                       heartbeatConfig().heartbeatInterval
-                                               * (heartbeatConfig().heartbeatTimeout + 1),
-                                       500000);
-    }
-
-    @Bean
-    public FailureDetectorFactory failureDetectorFactory() {
-        return new SimpleTimeoutFailureDetectorFactory(
-                                                       heartbeatConfig().heartbeatInterval
-                                                               * heartbeatConfig().heartbeatTimeout
-                                                               * 3);
     }
 }

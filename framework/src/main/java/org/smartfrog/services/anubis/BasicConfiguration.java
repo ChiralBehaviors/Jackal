@@ -139,9 +139,10 @@ public class BasicConfiguration {
 
     protected HeartbeatCommsFactory heartbeatCommsFactory()
                                                            throws UnknownHostException {
-        return new MulticastHeartbeatCommsFactory(wireSecurity(),
+        return new MulticastHeartbeatCommsFactory(
+                                                  wireSecurity(),
                                                   heartbeatGroup(),
-                                                  contactAddress(),
+                                                  contactAddress().getAddress(),
                                                   partitionIdentity());
     }
 

@@ -20,7 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,7 +89,7 @@ public class HeartbeatComms extends MulticastComms implements
      * @throws IOException
      * @throws Exception
      */
-    public HeartbeatComms(MulticastAddress address, InetSocketAddress inf,
+    public HeartbeatComms(MulticastAddress address, InetAddress inf,
                           HeartbeatReceiver cs, String threadName, Identity id,
                           WireSecurity sec) throws IOException {
         super(threadName, address, inf);

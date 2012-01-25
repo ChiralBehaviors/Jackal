@@ -18,17 +18,20 @@
 package com.hellblazer.jackal.configuration.basic;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
+import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import com.hellblazer.jackal.configuration.GossipHeartbeatAndDiscovery;
 import com.hellblazer.jackal.configuration.Jackal;
 import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
+import com.hellblazer.jackal.configuration.MulticastHeartbeatAndDiscovery;
 import com.hellblazer.jackal.configuration.PartitionAgent;
 import com.hellblazer.jackal.configuration.StandardConfiguration;
 import com.hellblazer.jackal.configuration.ThreadConfiguration;
@@ -39,11 +42,11 @@ import com.hellblazer.jackal.configuration.ThreadConfiguration;
  */
 @Configuration
 @Import({ Jackal.class, StandardConfiguration.class, ThreadConfiguration.class,
-         PartitionAgent.class, GossipHeartbeatAndDiscovery.class,
-         GossipSeedHosts.class })
-public class LocalGossipConfiguration {
+         PartitionAgent.class, MulticastHeartbeatAndDiscovery.class })
+public class LocalMulticastConfiguration {
     public static void main(String[] argv) {
-        new AnnotationConfigApplicationContext(LocalGossipConfiguration.class);
+        new AnnotationConfigApplicationContext(
+                                               LocalMulticastConfiguration.class);
     }
 
     @Bean(name = "connectionSetEndpoint")
@@ -56,14 +59,24 @@ public class LocalGossipConfiguration {
         return new InetSocketAddress("127.0.0.1", 0);
     }
 
-    @Bean(name = "gossipEndpoint")
-    public InetSocketAddress gossipEndpoint() {
-        return new InetSocketAddress("127.0.0.1", 0);
-    }
-
     @Bean
     public HeartbeatConfiguration heartbeatConfig() {
         return new HeartbeatConfiguration(3000, 2);
+    }
+
+    @Bean
+    public MulticastAddress heartbeatGroup() throws UnknownHostException {
+        return new MulticastAddress(InetAddress.getByName("233.1.2.30"), 1966,
+                                    0);
+    }
+
+    @Bean(name = "multicastInterface")
+    public InetAddress multicastInterface() {
+        try {
+            return InetAddress.getByName("127.0.0.1");
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Bean

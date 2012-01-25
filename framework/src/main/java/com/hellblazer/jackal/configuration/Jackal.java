@@ -58,14 +58,13 @@ public class Jackal {
     }
 
     @Autowired
-    private ExecutorService          communicationsDispatcher;
+    @Qualifier("communicationsDispatchers")
+    private ExecutorService          communicationsDispatchers;
     @Autowired
     @Qualifier("connectionSetEndpoint")
     private InetSocketAddress        endpoint;
     @Autowired
     private HeartbeatCommsFactory    heartbeatCommsFactory;
-    @Autowired
-    private HeartbeatConfiguration   heartbeatConfiguration;
     @Autowired
     private HeartbeatProtocolFactory heartbeatProtocolFactory;
     @Autowired
@@ -80,18 +79,20 @@ public class Jackal {
     @Bean
     public IOConnectionServerFactory connectionServerFactory() throws Exception {
         return new ConnectionServerFactory(wireSecurity, socketOptions,
-                                           communicationsDispatcher);
+                                           communicationsDispatchers);
     }
 
     @Bean
-    public ConnectionSet connectionSet() throws Exception {
+    @Autowired
+    public ConnectionSet connectionSet(HeartbeatConfiguration heartbeatConfig)
+                                                                              throws Exception {
         return new ConnectionSet(endpoint, partitionIdentity,
                                  heartbeatCommsFactory,
                                  connectionServerFactory(),
                                  leaderProtocolFactory,
                                  heartbeatProtocolFactory, partitionProtocol(),
-                                 heartbeatConfiguration.heartbeatInterval,
-                                 heartbeatConfiguration.heartbeatTimeout, false);
+                                 heartbeatConfig.heartbeatInterval,
+                                 heartbeatConfig.heartbeatTimeout, false);
     }
 
     @Bean

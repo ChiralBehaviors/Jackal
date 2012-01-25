@@ -17,7 +17,7 @@
  */
 package com.hellblazer.jackal.configuration;
 
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
@@ -26,6 +26,7 @@ import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbea
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,18 +36,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class MulticastHeartbeatAndDiscovery {
-    public class Configuration {
-        public final InetSocketAddress contactAddress;
-
-        /**
-         * @param contactAddress
-         */
-        public Configuration(InetSocketAddress contactAddress) {
-            super();
-            this.contactAddress = contactAddress;
-        }
-
-    }
 
     @Autowired
     Identity                 partitionIdentity;
@@ -55,13 +44,14 @@ public class MulticastHeartbeatAndDiscovery {
     @Autowired
     private MulticastAddress heartbeatGroup;
     @Autowired
-    private Configuration    configuration;
+    @Qualifier("multicastInterface")
+    private InetAddress      networkInterface;
 
     @Bean
     public HeartbeatCommsFactory heartbeatCommsFactory()
                                                         throws UnknownHostException {
         return new MulticastHeartbeatCommsFactory(wireSecurity, heartbeatGroup,
-                                                  configuration.contactAddress,
+                                                  networkInterface,
                                                   partitionIdentity);
     }
 }

@@ -25,20 +25,28 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.hellblazer.pinkie.SocketOptions;
+
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
 public class StandardConfiguration {
+
+    @Bean
+    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        return new TimedProtocolFactory();
+    }
+
     @Bean
     public LeaderProtocolFactory leaderProtocolFactory() {
         return new LeaderProtocolFactory();
     }
 
     @Bean
-    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        return new TimedProtocolFactory();
+    public SocketOptions socketOptions() {
+        return new SocketOptions();
     }
 
     @Bean
