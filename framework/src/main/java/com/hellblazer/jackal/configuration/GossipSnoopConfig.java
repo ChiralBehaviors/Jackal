@@ -18,42 +18,39 @@
 package com.hellblazer.jackal.configuration;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
+import org.smartfrog.services.anubis.partition.test.controller.GossipSnoop;
 import org.smartfrog.services.anubis.partition.util.Identity;
-import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
+import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
-import com.hellblazer.pinkie.SocketOptions;
+import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
+import com.hellblazer.jackal.gossip.Gossip;
+import com.hellblazer.jackal.gossip.HeartbeatState;
 
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-public class PartitionController {
-    @Autowired
-    private HeartbeatConfiguration heartbeatConfiguration;
-    @Autowired
-    @Qualifier("controllerDispatchers")
-    private ExecutorService        controllerDispatchers;
-    @Autowired
-    private Identity               partitionIdentity;
-    @Autowired
-    private SocketOptions          socketOptions;
-    @Autowired
-    private WireSecurity           wireSecurity;
+public class GossipSnoopConfig {
 
     @Bean
-    public Controller controller() throws IOException {
-        return new Controller(partitionIdentity,
-                              heartbeatConfiguration.heartbeatTimeout,
-                              heartbeatConfiguration.heartbeatInterval,
-                              socketOptions, controllerDispatchers, wireSecurity);
+    @Autowired
+    public GossipSnoop snoop(Gossip gossip, Controller controller,
+                             Identity partitionIdentity,
+                             HeartbeatConfiguration heartbeatConfig)
+                                                                    throws IOException {
+        Heartbeat heartbeat = new HeartbeatState(gossip.getLocalAddress(), 0,
+                                                 partitionIdentity);
+        heartbeat.setTime(0);
+        gossip.create(controller);
+        return new GossipSnoop(heartbeat, gossip,
+                               heartbeatConfig.heartbeatInterval,
+                               TimeUnit.MILLISECONDS);
     }
 }

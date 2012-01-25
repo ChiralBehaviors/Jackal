@@ -37,7 +37,7 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 @Configuration
-public class PartitionAgent {
+public class PartitionAgentConfig {
     @Autowired
     @Qualifier("agentDispatchers")
     private ExecutorService   agentDispatchers;

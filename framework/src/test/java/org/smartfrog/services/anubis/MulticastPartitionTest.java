@@ -1,43 +1,16 @@
 package org.smartfrog.services.anubis;
 
-import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
-import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Configuration;
+
+import com.hellblazer.jackal.testUtil.multicast.MulticastControllerConfig;
+import com.hellblazer.jackal.testUtil.multicast.MulticastNodeCfg;
 
 public class MulticastPartitionTest extends PartitionTest {
 
     @Configuration
-    static class MyControllerConfig extends ControllerConfiguration {
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-
-        @Override
-        public int magic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        protected Controller constructController() throws IOException {
-            return new MyController(partitionIdentity(), heartbeatTimeout(),
-                                    heartbeatInterval(), socketOptions(),
-                                    dispatchExecutor(), wireSecurity());
-        }
-
-    }
-
-    @Configuration
-    static class node0 extends nodeCfg {
+    static class node0 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 0;
@@ -45,7 +18,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node1 extends nodeCfg {
+    static class node1 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 1;
@@ -53,7 +26,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node10 extends nodeCfg {
+    static class node10 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 10;
@@ -61,7 +34,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node11 extends nodeCfg {
+    static class node11 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 11;
@@ -69,7 +42,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node12 extends nodeCfg {
+    static class node12 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 12;
@@ -77,7 +50,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node13 extends nodeCfg {
+    static class node13 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 13;
@@ -85,7 +58,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node14 extends nodeCfg {
+    static class node14 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 14;
@@ -93,7 +66,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node15 extends nodeCfg {
+    static class node15 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 15;
@@ -101,7 +74,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node16 extends nodeCfg {
+    static class node16 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 16;
@@ -109,7 +82,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node17 extends nodeCfg {
+    static class node17 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 17;
@@ -117,7 +90,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node18 extends nodeCfg {
+    static class node18 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 18;
@@ -125,7 +98,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node19 extends nodeCfg {
+    static class node19 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 19;
@@ -133,7 +106,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node2 extends nodeCfg {
+    static class node2 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 2;
@@ -141,7 +114,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node3 extends nodeCfg {
+    static class node3 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 3;
@@ -149,7 +122,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node4 extends nodeCfg {
+    static class node4 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 4;
@@ -157,7 +130,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node5 extends nodeCfg {
+    static class node5 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 5;
@@ -165,7 +138,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node6 extends nodeCfg {
+    static class node6 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 6;
@@ -173,7 +146,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node7 extends nodeCfg {
+    static class node7 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 7;
@@ -181,7 +154,7 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node8 extends nodeCfg {
+    static class node8 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 8;
@@ -189,26 +162,10 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node9 extends nodeCfg {
+    static class node9 extends MulticastNodeCfg {
         @Override
         public int node() {
             return 9;
-        }
-    }
-
-    static class nodeCfg extends BasicConfiguration {
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
         }
     }
 
@@ -224,7 +181,7 @@ public class MulticastPartitionTest extends PartitionTest {
 
     @Override
     protected Class<?> getControllerConfig() {
-        return MyControllerConfig.class;
+        return MulticastControllerConfig.class;
     }
 
     @Override

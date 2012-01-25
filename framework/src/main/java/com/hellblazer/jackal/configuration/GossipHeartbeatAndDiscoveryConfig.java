@@ -32,7 +32,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
+import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.GossipCommunications;
@@ -45,7 +45,7 @@ import com.hellblazer.jackal.gossip.udp.UdpCommunications;
  * 
  */
 @Configuration
-public class GossipHeartbeatAndDiscovery {
+public class GossipHeartbeatAndDiscoveryConfig {
     public static class GossipConfiguration {
         public final int      interval;
         public final int      quarantineDelay;

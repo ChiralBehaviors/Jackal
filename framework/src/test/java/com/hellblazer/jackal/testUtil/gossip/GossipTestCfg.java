@@ -15,23 +15,20 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.configuration.basic;
+package com.hellblazer.jackal.testUtil.gossip;
 
 import static java.util.Arrays.asList;
-import java.io.IOException;
+
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 
-import org.smartfrog.services.anubis.partition.util.Identity;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import com.hellblazer.jackal.configuration.GossipHeartbeatAndDiscoveryConfig;
 import com.hellblazer.jackal.configuration.JackalConfig;
-import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
 import com.hellblazer.jackal.configuration.PartitionAgentConfig;
 import com.hellblazer.jackal.configuration.StandardConfigurationConfig;
 import com.hellblazer.jackal.configuration.ThreadConfig;
@@ -44,46 +41,36 @@ import com.hellblazer.jackal.configuration.ThreadConfig;
 @Import({ JackalConfig.class, StandardConfigurationConfig.class,
          ThreadConfig.class, PartitionAgentConfig.class,
          GossipHeartbeatAndDiscoveryConfig.class })
-public class LocalGossipConfiguration {
-    public static void main(String[] argv) {
-        new AnnotationConfigApplicationContext(LocalGossipConfiguration.class);
+public class GossipTestCfg {
+    private static int testPort1;
+
+    private static int testPort2;
+
+    static {
+        String port = System.getProperty("com.hellblazer.jackal.gossip.test.port.1",
+                                         "24010");
+        testPort1 = Integer.parseInt(port);
+        port = System.getProperty("com.hellblazer.jackal.gossip.test.port.2",
+                                  "24020");
+        testPort2 = Integer.parseInt(port);
     }
 
-    @Bean(name = "connectionSetEndpoint")
-    public InetSocketAddress connectionSetEndpoint() {
-        return new InetSocketAddress("127.0.0.1", 0);
+    public static int getTestPort1() {
+        return testPort1;
     }
 
-    @Bean(name = "controllerAgentEndpoint")
-    public InetSocketAddress controllerAgentEndpoint() {
-        return new InetSocketAddress("127.0.0.1", 0);
+    public static int getTestPort2() {
+        return testPort2;
     }
 
-    @Bean(name = "gossipEndpoint")
-    public InetSocketAddress gossipEndpoint() {
-        return new InetSocketAddress("127.0.0.1", 0);
-    }
-
-    @Bean
-    public HeartbeatConfiguration heartbeatConfig() {
-        return new HeartbeatConfiguration(3000, 2);
-    }
-
-    @Bean
-    public Identity paritionIdentity() {
-        return new Identity(0x1638, node(), System.currentTimeMillis());
-    }
-
-    private int node() {
-        try {
-            return Identity.getProcessUniqueId();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+    public static void incrementPorts() {
+        testPort1++;
+        testPort2++;
     }
 
     @Bean(name = "seedHosts")
     public List<InetSocketAddress> seedHosts() throws UnknownHostException {
-        return asList(new InetSocketAddress("127.0.0.1", 1024));
+        return asList(new InetSocketAddress("127.0.0.1", getTestPort1()),
+                      new InetSocketAddress("127.0.0.1", getTestPort2()));
     }
 }

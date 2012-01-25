@@ -1,37 +1,13 @@
 package org.smartfrog.services.anubis;
 
-import java.io.IOException;
-
-import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Configuration;
 
+import com.hellblazer.jackal.testUtil.multicast.MulticastNodeCfg;
 
 public class MulticastSmokeTest extends SmokeTest {
-    static class noTestCfg extends BasicConfiguration {
-
-        @Override
-        public boolean isControllable() {
-            return false;
-        }
-
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-
-    }
 
     @Configuration
-    static class testA extends noTestCfg {
+    static class testA extends MulticastNodeCfg {
         @Override
         public int node() {
             return 0;
@@ -39,7 +15,7 @@ public class MulticastSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testB extends noTestCfg {
+    static class testB extends MulticastNodeCfg {
         @Override
         public int node() {
             return 1;
@@ -47,7 +23,7 @@ public class MulticastSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testC extends noTestCfg {
+    static class testC extends MulticastNodeCfg {
         @Override
         public int node() {
             return 2;
@@ -55,7 +31,7 @@ public class MulticastSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testD extends noTestCfg {
+    static class testD extends MulticastNodeCfg {
         @Override
         public int node() {
             return 3;
@@ -63,7 +39,7 @@ public class MulticastSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testE extends noTestCfg {
+    static class testE extends MulticastNodeCfg {
         @Override
         public int node() {
             return 4;
@@ -71,7 +47,7 @@ public class MulticastSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testF extends noTestCfg {
+    static class testF extends MulticastNodeCfg {
         @Override
         public int node() {
             return 5;
@@ -79,7 +55,7 @@ public class MulticastSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testG extends noTestCfg {
+    static class testG extends MulticastNodeCfg {
         @Override
         public int node() {
             return 6;

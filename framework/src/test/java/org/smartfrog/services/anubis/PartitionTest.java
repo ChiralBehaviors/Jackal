@@ -16,26 +16,20 @@
  */
 package org.smartfrog.services.anubis;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
-import org.smartfrog.services.anubis.partition.views.View;
-import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import com.hellblazer.pinkie.SocketOptions;
+import com.hellblazer.jackal.testUtil.TestController;
+import com.hellblazer.jackal.testUtil.TestNode;
 
 /**
  * 
@@ -43,56 +37,15 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 abstract public class PartitionTest extends TestCase {
-    public static class MyController extends Controller {
-        int            cardinality;
-        CountDownLatch latch;
-
-        public MyController(Identity partitionIdentity, int heartbeatTimeout,
-                            int heartbeatInterval, SocketOptions socketOptions,
-                            ExecutorService dispatchExecutor,
-                            WireSecurity wireSecurity) throws IOException {
-            super(partitionIdentity, heartbeatTimeout, heartbeatInterval,
-                  socketOptions, dispatchExecutor, wireSecurity);
-        }
-
-        @Override
-        protected NodeData createNode(Heartbeat hb) {
-            Node node = new Node(hb, this);
-            node.cardinality = cardinality;
-            node.latch = latch;
-            return node;
-        }
-
-    }
-
-    public static class Node extends NodeData {
-        static final Logger log = Logger.getLogger(Node.class.getCanonicalName());
-
-        int                 cardinality;
-        CountDownLatch      latch;
-
-        public Node(Heartbeat hb, Controller controller) {
-            super(hb, controller);
-        }
-
-        @Override
-        protected void partitionNotification(View partition, int leader) {
-            log.fine("Partition notification: " + partition);
-            super.partitionNotification(partition, leader);
-            if (partition.isStable() && partition.cardinality() == cardinality) {
-                latch.countDown();
-            }
-        }
-    }
 
     @SuppressWarnings("rawtypes")
     final Class[]                            configs = getConfigs();
-    MyController                             controller;
+    TestController                           controller;
     AnnotationConfigApplicationContext       controllerContext;
     CountDownLatch                           initialLatch;
     final Logger                             log     = getLogger();
     List<AnnotationConfigApplicationContext> memberContexts;
-    List<Node>                               partition;
+    List<TestNode>                           partition;
 
     /**
      * Test that a partition can form two stable sub partions and then reform
@@ -103,13 +56,13 @@ abstract public class PartitionTest extends TestCase {
         BitView A = new BitView();
         BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionA = new ArrayList<PartitionTest.Node>();
+        List<TestNode> partitionA = new ArrayList<TestNode>();
 
         CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionB = new ArrayList<PartitionTest.Node>();
+        List<TestNode> partitionB = new ArrayList<TestNode>();
 
         int i = 0;
-        for (Node member : partition) {
+        for (TestNode member : partition) {
             if (i++ % 2 == 0) {
                 partitionA.add(member);
                 member.latch = latchA;
@@ -129,17 +82,17 @@ abstract public class PartitionTest extends TestCase {
         log.info("Awaiting stability of minor partition B");
         latchB.await(60, TimeUnit.SECONDS);
 
-        for (Node member : partitionA) {
+        for (TestNode member : partitionA) {
             assertEquals(A, member.getPartition());
         }
 
-        for (Node member : partitionB) {
+        for (TestNode member : partitionB) {
             assertEquals(B, member.getPartition());
         }
 
         // reform
         CountDownLatch latch = new CountDownLatch(configs.length);
-        for (Node node : partition) {
+        for (TestNode node : partition) {
             node.latch = latch;
             node.cardinality = configs.length;
         }
@@ -159,13 +112,13 @@ abstract public class PartitionTest extends TestCase {
         BitView B = new BitView();
         BitView All = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionA = new ArrayList<PartitionTest.Node>();
+        List<TestNode> partitionA = new ArrayList<TestNode>();
 
         CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionB = new ArrayList<PartitionTest.Node>();
+        List<TestNode> partitionB = new ArrayList<TestNode>();
 
         int i = 0;
-        for (Node member : partition) {
+        for (TestNode member : partition) {
             All.add(member.getIdentity());
             if (i++ % 2 == 0) {
                 partitionA.add(member);
@@ -186,13 +139,13 @@ abstract public class PartitionTest extends TestCase {
         // The other partition should still be unstable.
         assertEquals(configs.length / 2, latchB.getCount());
 
-        for (Node member : partitionA) {
+        for (TestNode member : partitionA) {
             assertEquals(A, member.getPartition());
         }
 
         // reform
         CountDownLatch latch = new CountDownLatch(configs.length);
-        for (Node node : partition) {
+        for (TestNode node : partition) {
             node.latch = latch;
             node.cardinality = configs.length;
         }
@@ -201,7 +154,7 @@ abstract public class PartitionTest extends TestCase {
         log.info("Awaiting stability of reformed major partition");
         latch.await(60, TimeUnit.SECONDS);
 
-        for (Node member : partition) {
+        for (TestNode member : partition) {
             assertEquals(All, member.getPartition());
         }
     }
@@ -227,7 +180,7 @@ abstract public class PartitionTest extends TestCase {
         initialLatch = new CountDownLatch(configs.length);
         controllerContext = new AnnotationConfigApplicationContext(
                                                                    getControllerConfig());
-        controller = (MyController) controllerContext.getBean(Controller.class);
+        controller = controllerContext.getBean(TestController.class);
         controller.cardinality = configs.length;
         controller.latch = initialLatch;
         memberContexts = createMembers();
@@ -237,9 +190,9 @@ abstract public class PartitionTest extends TestCase {
             success = initialLatch.await(120, TimeUnit.SECONDS);
             assertTrue("Initial partition did not acheive stability", success);
             log.info("Initial partition stable");
-            partition = new ArrayList<PartitionTest.Node>();
+            partition = new ArrayList<TestNode>();
             for (AnnotationConfigApplicationContext context : memberContexts) {
-                Node member = (Node) controller.getNode(context.getBean(Identity.class));
+                TestNode member = (TestNode) controller.getNode(context.getBean(Identity.class));
                 assertNotNull("Can't find node: "
                                       + context.getBean(Identity.class), member);
                 partition.add(member);

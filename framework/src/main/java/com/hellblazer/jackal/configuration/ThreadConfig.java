@@ -35,8 +35,8 @@ import org.springframework.context.annotation.Lazy;
  * 
  */
 @Configuration
-public class ThreadConfiguration {
-    private static final Logger log = Logger.getLogger(StandardConfiguration.class.getCanonicalName());
+public class ThreadConfig {
+    private static final Logger log = Logger.getLogger(StandardConfigurationConfig.class.getCanonicalName());
 
     @Bean(name = "communicationsDispatchers")
     @Autowired

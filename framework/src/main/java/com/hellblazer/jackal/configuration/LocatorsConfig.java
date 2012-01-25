@@ -17,41 +17,34 @@
  */
 package com.hellblazer.jackal.configuration;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
-import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
-import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
+import org.smartfrog.services.anubis.locator.AnubisLocator;
+import org.smartfrog.services.anubis.locator.Locator;
+import org.smartfrog.services.anubis.partition.PartitionManager;
 import org.smartfrog.services.anubis.partition.util.Identity;
-import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
 
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-public class MulticastHeartbeatAndDiscovery {
-
+public class LocatorsConfig {
     @Autowired
-    Identity                 partitionIdentity;
+    private HeartbeatConfiguration heartbeatConfiguration;
     @Autowired
-    private WireSecurity     wireSecurity;
+    private PartitionManager       partitionManager;
     @Autowired
-    private MulticastAddress heartbeatGroup;
-    @Autowired
-    @Qualifier("multicastInterface")
-    private InetAddress      networkInterface;
+    private Identity               partitionIdentity;
 
     @Bean
-    public HeartbeatCommsFactory heartbeatCommsFactory()
-                                                        throws UnknownHostException {
-        return new MulticastHeartbeatCommsFactory(wireSecurity, heartbeatGroup,
-                                                  networkInterface,
-                                                  partitionIdentity);
+    public AnubisLocator locator() {
+        Locator locator = new Locator(partitionIdentity, partitionManager,
+                                      heartbeatConfiguration.heartbeatInterval,
+                                      heartbeatConfiguration.heartbeatTimeout);
+        return locator;
     }
 }

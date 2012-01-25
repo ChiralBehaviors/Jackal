@@ -29,20 +29,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import com.hellblazer.jackal.configuration.Jackal;
-import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
-import com.hellblazer.jackal.configuration.MulticastHeartbeatAndDiscovery;
-import com.hellblazer.jackal.configuration.PartitionAgent;
-import com.hellblazer.jackal.configuration.StandardConfiguration;
-import com.hellblazer.jackal.configuration.ThreadConfiguration;
+import com.hellblazer.jackal.configuration.JackalConfig;
+import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
+import com.hellblazer.jackal.configuration.MulticastHeartbeatAndDiscoveryConfig;
+import com.hellblazer.jackal.configuration.PartitionAgentConfig;
+import com.hellblazer.jackal.configuration.StandardConfigurationConfig;
+import com.hellblazer.jackal.configuration.ThreadConfig;
 
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-@Import({ Jackal.class, StandardConfiguration.class, ThreadConfiguration.class,
-         PartitionAgent.class, MulticastHeartbeatAndDiscovery.class })
+@Import({ JackalConfig.class, StandardConfigurationConfig.class, ThreadConfig.class,
+         PartitionAgentConfig.class, MulticastHeartbeatAndDiscoveryConfig.class })
 public class LocalMulticastConfiguration {
     public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(

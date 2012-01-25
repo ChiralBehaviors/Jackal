@@ -32,7 +32,7 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 @Configuration
-public class StandardConfiguration {
+public class StandardConfigurationConfig {
 
     @Bean
     public HeartbeatProtocolFactory heartbeatProtocolFactory() {

@@ -44,7 +44,7 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 @Configuration
-public class Jackal {
+public class JackalConfig {
 
     public static class HeartbeatConfiguration {
         public final int heartbeatInterval;

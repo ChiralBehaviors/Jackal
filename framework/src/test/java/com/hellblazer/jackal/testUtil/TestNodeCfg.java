@@ -15,25 +15,42 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.jackal.configuration.basic;
+package com.hellblazer.jackal.testUtil;
 
-import static java.util.Arrays.asList;
+import java.io.IOException;
 
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.List;
-
+import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import com.hellblazer.jackal.configuration.JackalConfig;
+import com.hellblazer.jackal.configuration.PartitionAgentConfig;
+import com.hellblazer.jackal.configuration.StandardConfigurationConfig;
+import com.hellblazer.jackal.configuration.ThreadConfig;
 
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-public class GossipSeedHosts {
-    @Bean(name = "seedHosts")
-    public List<InetSocketAddress> seedHosts() throws UnknownHostException {
-        return asList(new InetSocketAddress("127.0.0.1", 1024));
+@Import({JackalConfig.class, StandardConfigurationConfig.class,
+         ThreadConfig.class, PartitionAgentConfig.class, TestCfg.class})
+abstract public class TestNodeCfg {
+
+    @Bean
+    public Identity partitionIdentity() {
+        return new Identity(getMagic(), node(), System.currentTimeMillis());
     }
+
+    protected int getMagic() {
+        try {
+            return Identity.getMagicFromLocalIpAddress();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    abstract protected int node();
+
 }

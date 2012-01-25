@@ -17,34 +17,41 @@
  */
 package com.hellblazer.jackal.configuration;
 
-import org.smartfrog.services.anubis.locator.AnubisLocator;
-import org.smartfrog.services.anubis.locator.Locator;
-import org.smartfrog.services.anubis.partition.PartitionManager;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
+import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
+import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.hellblazer.jackal.configuration.Jackal.HeartbeatConfiguration;
 
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-public class Locators {
+public class MulticastHeartbeatAndDiscoveryConfig {
+
     @Autowired
-    private HeartbeatConfiguration heartbeatConfiguration;
+    Identity                 partitionIdentity;
     @Autowired
-    private PartitionManager       partitionManager;
+    private WireSecurity     wireSecurity;
     @Autowired
-    private Identity               partitionIdentity;
+    private MulticastAddress heartbeatGroup;
+    @Autowired
+    @Qualifier("multicastInterface")
+    private InetAddress      networkInterface;
 
     @Bean
-    public AnubisLocator locator() {
-        Locator locator = new Locator(partitionIdentity, partitionManager,
-                                      heartbeatConfiguration.heartbeatInterval,
-                                      heartbeatConfiguration.heartbeatTimeout);
-        return locator;
+    public HeartbeatCommsFactory heartbeatCommsFactory()
+                                                        throws UnknownHostException {
+        return new MulticastHeartbeatCommsFactory(wireSecurity, heartbeatGroup,
+                                                  networkInterface,
+                                                  partitionIdentity);
     }
 }
