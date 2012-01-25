@@ -53,8 +53,8 @@ public class Controller implements ConnectionManager {
     private final ChannelHandler            handler;
     private final WireSecurity              wireSecurity;
 
-    public Controller(Identity partitionIdentity, long heartbeatTimeout,
-                      long heartbeatInterval, SocketOptions socketOptions,
+    public Controller(Identity partitionIdentity, int heartbeatTimeout,
+                      int heartbeatInterval, SocketOptions socketOptions,
                       ExecutorService dispatcher, WireSecurity wireSecurity)
                                                                             throws IOException {
         this.timer = Executors.newScheduledThreadPool(1);
