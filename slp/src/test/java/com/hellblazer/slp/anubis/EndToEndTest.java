@@ -19,7 +19,6 @@ package com.hellblazer.slp.anubis;
 import static com.hellblazer.slp.ServiceScope.SERVICE_TYPE;
 import static com.hellblazer.slp.anubis.AnubisScope.MEMBER_IDENTITY;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,26 +27,21 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
-import org.smartfrog.services.anubis.partition.views.View;
-import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import com.hellblazer.pinkie.SocketOptions;
+import com.hellblazer.jackal.testUtil.TestController;
+import com.hellblazer.jackal.testUtil.TestNode;
 import com.hellblazer.slp.InvalidSyntaxException;
 import com.hellblazer.slp.ServiceEvent;
 import com.hellblazer.slp.ServiceEvent.EventType;
@@ -132,60 +126,16 @@ abstract public class EndToEndTest extends TestCase {
         }
     }
 
-    static class MyController extends Controller {
-        int            cardinality;
-        CountDownLatch latch;
-
-        public MyController(Identity partitionIdentity, int heartbeatTimeout,
-                            int heartbeatInterval, SocketOptions socketOptions,
-                            ExecutorService dispatchExecutor,
-                            WireSecurity wireSecurity) throws IOException {
-            super(partitionIdentity, heartbeatTimeout, heartbeatInterval,
-                  socketOptions, dispatchExecutor, wireSecurity);
-        }
-
-        @Override
-        protected NodeData createNode(Heartbeat hb) {
-            Node node = new Node(hb, this);
-            node.cardinality = cardinality;
-            node.latch = latch;
-            return node;
-        }
-
-    }
-
-    static class Node extends NodeData {
-        int                 cardinality;
-        CountDownLatch      latch;
-        final static Logger log = Logger.getLogger(Node.class.getCanonicalName());
-
-        public Node(Heartbeat hb, Controller controller) {
-            super(hb, controller);
-        }
-
-        @Override
-        protected void partitionNotification(View partition, int leader) {
-            if (partition.isStable() && partition.cardinality() == cardinality) {
-                log.fine("Stabilized: " + partition);
-                latch.countDown();
-            } else {
-                log.fine(String.format("Notification: %s, stable: %s",
-                                       partition, partition.isStable()));
-            }
-            super.partitionNotification(partition, leader);
-        }
-    }
-
     static final Random                  RANDOM  = new Random(666);
 
     final Class<?>[]                     configs = getConfigs();
     List<ConnectionSet>                  connectionSets;
-    MyController                         controller;
+    TestController                       controller;
     ConfigurableApplicationContext       controllerContext;
     CountDownLatch                       initialLatch;
     final Logger                         log     = getLogger();
     List<ConfigurableApplicationContext> memberContexts;
-    List<Node>                           partition;
+    List<TestNode>                       partition;
 
     public void testSmoke() throws Exception {
         String memberIdKey = "test.member.id";
@@ -227,13 +177,13 @@ abstract public class EndToEndTest extends TestCase {
         BitView A = new BitView();
         BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionA = new ArrayList<Node>();
+        List<TestNode> partitionA = new ArrayList<TestNode>();
 
         CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionB = new ArrayList<Node>();
+        List<TestNode> partitionB = new ArrayList<TestNode>();
 
         int i = 0;
-        for (Node member : partition) {
+        for (TestNode member : partition) {
             if (i++ % 2 == 0) {
                 partitionA.add(member);
                 member.latch = latchA;
@@ -306,11 +256,11 @@ abstract public class EndToEndTest extends TestCase {
         assertTrue("minor partition B did not stabilize",
                    latchB.await(60, TimeUnit.SECONDS));
 
-        for (Node member : partitionA) {
+        for (TestNode member : partitionA) {
             assertEquals(A, member.getPartition());
         }
 
-        for (Node member : partitionB) {
+        for (TestNode member : partitionB) {
             assertEquals(B, member.getPartition());
         }
 
@@ -348,7 +298,7 @@ abstract public class EndToEndTest extends TestCase {
 
         // reform
         CountDownLatch latch = new CountDownLatch(configs.length);
-        for (Node node : partition) {
+        for (TestNode node : partition) {
             node.latch = latch;
             node.cardinality = configs.length;
         }
@@ -364,13 +314,13 @@ abstract public class EndToEndTest extends TestCase {
         BitView A = new BitView();
         BitView B = new BitView();
         CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionA = new ArrayList<Node>();
+        List<TestNode> partitionA = new ArrayList<TestNode>();
 
         CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<Node> partitionB = new ArrayList<Node>();
+        List<TestNode> partitionB = new ArrayList<TestNode>();
 
         int i = 0;
-        for (Node member : partition) {
+        for (TestNode member : partition) {
             if (i++ % 2 == 0) {
                 partitionA.add(member);
                 member.latch = latchA;
@@ -478,7 +428,7 @@ abstract public class EndToEndTest extends TestCase {
 
         // reform
         CountDownLatch latch = new CountDownLatch(configs.length);
-        for (Node node : partition) {
+        for (TestNode node : partition) {
             node.latch = latch;
             node.cardinality = configs.length;
         }
@@ -514,7 +464,7 @@ abstract public class EndToEndTest extends TestCase {
         initialLatch = new CountDownLatch(configs.length);
         controllerContext = new AnnotationConfigApplicationContext(
                                                                    getControllerConfig());
-        controller = (MyController) controllerContext.getBean(Controller.class);
+        controller = controllerContext.getBean(TestController.class);
         controller.cardinality = configs.length;
         controller.latch = initialLatch;
         memberContexts = createMembers();
@@ -528,9 +478,9 @@ abstract public class EndToEndTest extends TestCase {
             success = initialLatch.await(120, TimeUnit.SECONDS);
             assertTrue("Initial partition did not stabilize", success);
             log.info("Initial partition stable");
-            partition = new ArrayList<Node>();
+            partition = new ArrayList<TestNode>();
             for (ConfigurableApplicationContext context : memberContexts) {
-                partition.add((Node) controller.getNode(context.getBean(Identity.class)));
+                partition.add((TestNode) controller.getNode(context.getBean(Identity.class)));
             }
         } finally {
             if (!success) {

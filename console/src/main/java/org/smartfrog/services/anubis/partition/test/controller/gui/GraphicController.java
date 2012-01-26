@@ -25,7 +25,6 @@ import javax.annotation.PreDestroy;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import org.smartfrog.services.anubis.Anubis;
 import org.smartfrog.services.anubis.partition.test.colors.ColorAllocator;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
@@ -91,8 +90,7 @@ public class GraphicController extends Controller {
         }
         super.deploy();
         consoleFrame = new MainConsoleFrame(this);
-        consoleFrame.setTitle("Partition Manager Test Controller - "
-                              + Anubis.version);
+        consoleFrame.setTitle("Partition Manager Test Controller");
         consoleFrame.initialiseTiming(heartbeatInterval, heartbeatTimeout);
     }
 

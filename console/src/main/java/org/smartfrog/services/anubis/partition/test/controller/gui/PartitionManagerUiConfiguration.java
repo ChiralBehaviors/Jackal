@@ -17,25 +17,81 @@
 package org.smartfrog.services.anubis.partition.test.controller.gui;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
+import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
+import org.smartfrog.services.anubis.partition.util.Identity;
+import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
+import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
+import com.hellblazer.jackal.configuration.MulticastHeartbeatAndDiscoveryConfig;
+import com.hellblazer.jackal.configuration.MulticastSnoopConfig;
+import com.hellblazer.pinkie.SocketOptions;
 
 @Configuration
-public class PartitionManagerUiConfiguration extends ControllerConfiguration {
+@Import({ GraphicControllerConfig.class, MulticastSnoopConfig.class,
+         MulticastHeartbeatAndDiscoveryConfig.class })
+public class PartitionManagerUiConfiguration {
 
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws InterruptedException {
         new AnnotationConfigApplicationContext(
                                                PartitionManagerUiConfiguration.class);
+        while (true) {
+            Thread.sleep(50000);
+        }
     }
 
-    @Override
-    protected Controller constructController() throws IOException {
-        return new GraphicController(partitionIdentity(), heartbeatTimeout(),
-                                     heartbeatInterval(), socketOptions(),
-                                     dispatchExecutor(), wireSecurity());
+    @Bean
+    public MulticastAddress heartbeatGroup() throws UnknownHostException {
+        return new MulticastAddress(InetAddress.getByName("233.1.2.30"), 1966,
+                                    0);
+    }
+
+    @Bean(name = "multicastInterface")
+    public InetAddress multicastInterface() {
+        try {
+            return InetAddress.getByName("127.0.0.1");
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Bean
+    public HeartbeatConfiguration heartbeatConfig() {
+        return new HeartbeatConfiguration(3000, 2);
+    }
+
+    @Bean
+    public SocketOptions socketOptions() {
+        return new SocketOptions();
+    }
+
+    @Bean
+    public WireSecurity wireSecurity() {
+        return new NoSecurityImpl();
+    }
+
+    @Bean
+    public Identity partitionIdentity() {
+        return new Identity(getMagic(), node(), System.currentTimeMillis());
+    }
+
+    protected int getMagic() {
+        try {
+            return Identity.getMagicFromLocalIpAddress();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    protected int node() {
+        return 2047;
     }
 
 }

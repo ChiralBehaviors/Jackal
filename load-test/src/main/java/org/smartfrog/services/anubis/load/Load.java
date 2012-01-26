@@ -1,6 +1,7 @@
 package org.smartfrog.services.anubis.load;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -13,13 +14,24 @@ import java.util.StringTokenizer;
 
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
+import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
-import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
+import com.hellblazer.jackal.configuration.GossipHeartbeatAndDiscoveryConfig;
+import com.hellblazer.jackal.configuration.JackalConfig;
+import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
+import com.hellblazer.jackal.configuration.PartitionAgentConfig;
+import com.hellblazer.jackal.configuration.StandardConfigurationConfig;
+import com.hellblazer.jackal.configuration.ThreadConfig;
 
 @Configuration
-public class Load extends GossipConfiguration {
+@Import({ JackalConfig.class, StandardConfigurationConfig.class,
+         ThreadConfig.class, PartitionAgentConfig.class,
+         GossipHeartbeatAndDiscoveryConfig.class })
+public class Load {
     static final int                             WAIT_TIME      = 1500;
     static final String                          STATE_NAME     = "Whip It Good";
     static final String                          PROP_FILE_NAME = "load.properties";
@@ -31,26 +43,34 @@ public class Load extends GossipConfiguration {
     private static InetSocketAddress             contactEndpoint;
     private static int                           id;
 
-    @Override
+    @Bean(name = "seedHosts")
     protected Collection<InetSocketAddress> seedHosts()
                                                        throws UnknownHostException {
         return seedHosts;
     }
 
-    @Override
+    @Bean(name = "gossipEndpoint")
     protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
         return gossipEndpoint;
     }
 
-    @Override
+    @Bean(name = "connectionSetEndpoint")
     protected InetSocketAddress contactAddress() throws UnknownHostException {
         return contactEndpoint;
     }
 
-    @Override
+    @Bean
+    public HeartbeatConfiguration heartbeatConfig() {
+        return new HeartbeatConfiguration(3000, 2);
+    }
+
     protected int node() {
         if (id == -1) {
-            return super.node();
+            try {
+                return Identity.getIdFromLocalIpAddress();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
         }
         return id;
     }

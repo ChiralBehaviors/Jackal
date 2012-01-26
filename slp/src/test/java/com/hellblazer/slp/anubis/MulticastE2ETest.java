@@ -1,50 +1,17 @@
 package com.hellblazer.slp.anubis;
 
-import java.io.IOException;
-import java.util.Random;
-import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
-import org.smartfrog.services.anubis.BasicConfiguration;
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.test.controller.ControllerConfiguration;
-import org.smartfrog.services.anubis.partition.util.Identity;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
-import com.fasterxml.uuid.NoArgGenerator;
-import com.fasterxml.uuid.impl.RandomBasedGenerator;
-import com.hellblazer.slp.ServiceScope;
+import com.hellblazer.jackal.testUtil.multicast.MulticastControllerConfig;
+import com.hellblazer.jackal.testUtil.multicast.MulticastNodeCfg;
 
 public class MulticastE2ETest extends EndToEndTest {
 
     @Configuration
-    static class MyControllerConfig extends ControllerConfiguration {
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-
-        @Override
-        public int magic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        protected Controller constructController() throws IOException {
-            return new MyController(partitionIdentity(), heartbeatTimeout(),
-                                    heartbeatInterval(), socketOptions(),
-                                    dispatchExecutor(), wireSecurity());
-        }
-    }
-
-    @Configuration
-    static class node0 extends slpConfig {
+    static class node0 extends multicastSlpConfig {
         @Override
         public int node() {
             return 0;
@@ -52,7 +19,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node1 extends slpConfig {
+    static class node1 extends multicastSlpConfig {
         @Override
         public int node() {
             return 1;
@@ -60,7 +27,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node2 extends slpConfig {
+    static class node2 extends multicastSlpConfig {
         @Override
         public int node() {
             return 2;
@@ -68,7 +35,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node3 extends slpConfig {
+    static class node3 extends multicastSlpConfig {
         @Override
         public int node() {
             return 3;
@@ -76,7 +43,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node4 extends slpConfig {
+    static class node4 extends multicastSlpConfig {
         @Override
         public int node() {
             return 4;
@@ -84,7 +51,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node5 extends slpConfig {
+    static class node5 extends multicastSlpConfig {
         @Override
         public int node() {
             return 5;
@@ -92,7 +59,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node6 extends slpConfig {
+    static class node6 extends multicastSlpConfig {
         @Override
         public int node() {
             return 6;
@@ -100,7 +67,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node7 extends slpConfig {
+    static class node7 extends multicastSlpConfig {
         @Override
         public int node() {
             return 7;
@@ -108,7 +75,7 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node8 extends slpConfig {
+    static class node8 extends multicastSlpConfig {
         @Override
         public int node() {
             return 8;
@@ -116,43 +83,17 @@ public class MulticastE2ETest extends EndToEndTest {
     }
 
     @Configuration
-    static class node9 extends slpConfig {
+    static class node9 extends multicastSlpConfig {
         @Override
         public int node() {
             return 9;
         }
     }
 
-    static class slpConfig extends BasicConfiguration {
+    @Import({ SlpConfig.class })
+    @Configuration
+    static abstract class multicastSlpConfig extends MulticastNodeCfg {
 
-        @Bean
-        public ServiceScope anubisScope() {
-            return new AnubisScope(partitionIdentity(),
-                                   Executors.newCachedThreadPool(),
-                                   uuidGenerator(), partition());
-        }
-
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        public int heartbeatGroupTTL() {
-            return 0;
-        }
-
-        protected String stateName() {
-            return "Test Scope";
-        }
-
-        protected NoArgGenerator uuidGenerator() {
-            return new RandomBasedGenerator(new Random(node()));
-        }
     }
 
     @Override
@@ -164,7 +105,7 @@ public class MulticastE2ETest extends EndToEndTest {
 
     @Override
     protected Class<?> getControllerConfig() {
-        return MyControllerConfig.class;
+        return MulticastControllerConfig.class;
     }
 
     @Override
