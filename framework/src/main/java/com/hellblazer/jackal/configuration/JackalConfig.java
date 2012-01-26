@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hellblazer.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
@@ -77,12 +78,14 @@ public class JackalConfig {
     private WireSecurity             wireSecurity;
 
     @Bean
+    @Primary
     public IOConnectionServerFactory connectionServerFactory() throws Exception {
         return new ConnectionServerFactory(wireSecurity, socketOptions,
                                            communicationsDispatchers);
     }
 
     @Bean
+    @Primary
     @Autowired
     public ConnectionSet connectionSet(HeartbeatConfiguration heartbeatConfig)
                                                                               throws Exception {
@@ -96,11 +99,13 @@ public class JackalConfig {
     }
 
     @Bean
+    @Primary
     public PartitionManager partitionManager() {
         return new PartitionManager(partitionIdentity);
     }
 
     @Bean
+    @Primary
     public PartitionProtocol partitionProtocol() {
         return new PartitionProtocol(partitionIdentity, partitionManager());
     }

@@ -17,13 +17,12 @@
  */
 package com.hellblazer.jackal.configuration;
 
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
-import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.LeaderProtocolFactory;
 import org.smartfrog.services.anubis.partition.wire.security.NoSecurityImpl;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hellblazer.pinkie.SocketOptions;
 
@@ -35,21 +34,19 @@ import com.hellblazer.pinkie.SocketOptions;
 public class StandardConfigurationConfig {
 
     @Bean
-    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
-        return new TimedProtocolFactory();
-    }
-
-    @Bean
+    @Primary
     public LeaderProtocolFactory leaderProtocolFactory() {
         return new LeaderProtocolFactory();
     }
 
     @Bean
+    @Primary
     public SocketOptions socketOptions() {
         return new SocketOptions();
     }
 
     @Bean
+    @Primary
     public WireSecurity wireSecurity() {
         return new NoSecurityImpl();
     }

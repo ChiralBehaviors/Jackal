@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
 
 /**
  * @author hhildebrand
@@ -39,6 +40,7 @@ public class ThreadConfig {
     private static final Logger log = Logger.getLogger(StandardConfigurationConfig.class.getCanonicalName());
 
     @Bean(name = "communicationsDispatchers")
+    @Primary
     @Autowired
     public ExecutorService communicationsDispatchers(Identity partitionIdentity) {
         final int id = partitionIdentity.id;

@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 import com.hellblazer.pinkie.SocketOptions;
@@ -56,6 +57,7 @@ public class PartitionAgentConfig {
     Identity                  partitionIdentity;
 
     @Bean
+    @Primary
     public ControllerAgent controller() throws Exception {
         return new ControllerAgent(contactAddress, partitionManager,
                                    partitionIdentity.id, connectionSet,

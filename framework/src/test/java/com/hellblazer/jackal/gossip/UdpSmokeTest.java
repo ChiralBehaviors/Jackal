@@ -16,18 +16,13 @@
  */
 package com.hellblazer.jackal.gossip;
 
-import static java.util.Arrays.asList;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.Collection;
-
 import org.smartfrog.services.anubis.SmokeTest;
-import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
+import com.hellblazer.jackal.testUtil.gossip.GossipDiscoveryNode1Cfg;
+import com.hellblazer.jackal.testUtil.gossip.GossipDiscoveryNode2Cfg;
+import com.hellblazer.jackal.testUtil.gossip.GossipNodeCfg;
+import com.hellblazer.jackal.testUtil.gossip.GossipTestCfg;
 
 /**
  * 
@@ -35,60 +30,21 @@ import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
  * 
  */
 public class UdpSmokeTest extends SmokeTest {
-    static class noTestCfg extends GossipConfiguration {
-        static final int testPort;
 
-        static {
-            String port = System.getProperty("com.hellblazer.jackal.gossip.test.port",
-                                             "53001");
-            testPort = Integer.parseInt(port);
-        }
-
-        @Override
-        public boolean getTestable() {
-            return false;
-        }
-
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        InetSocketAddress seedContact() throws UnknownHostException {
-            return new InetSocketAddress("127.0.0.1", testPort);
-        }
-
-        InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress("127.0.0.1", testPort + 2);
-        }
-
-        @Override
-        protected Collection<InetSocketAddress> seedHosts()
-                                                           throws UnknownHostException {
-            return asList(seedContact(), seedContact2());
-        }
+    static {
+        GossipTestCfg.setTestPorts(24010, 24020);
     }
 
     @Configuration
-    static class testA extends noTestCfg {
+    static class testA extends GossipDiscoveryNode1Cfg {
         @Override
         public int node() {
             return 0;
         }
-
-        @Override
-        protected InetSocketAddress gossipEndpoint()
-                                                    throws UnknownHostException {
-            return seedContact();
-        }
     }
 
     @Configuration
-    static class testB extends noTestCfg {
+    static class testB extends GossipNodeCfg {
         @Override
         public int node() {
             return 1;
@@ -96,7 +52,7 @@ public class UdpSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testC extends noTestCfg {
+    static class testC extends GossipNodeCfg {
         @Override
         public int node() {
             return 2;
@@ -104,7 +60,7 @@ public class UdpSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testD extends noTestCfg {
+    static class testD extends GossipNodeCfg {
         @Override
         public int node() {
             return 3;
@@ -112,7 +68,7 @@ public class UdpSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testE extends noTestCfg {
+    static class testE extends GossipNodeCfg {
         @Override
         public int node() {
             return 4;
@@ -120,7 +76,7 @@ public class UdpSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testF extends noTestCfg {
+    static class testF extends GossipNodeCfg {
         @Override
         public int node() {
             return 5;
@@ -128,22 +84,16 @@ public class UdpSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testG extends noTestCfg {
+    static class testG extends GossipDiscoveryNode2Cfg {
         @Override
         public int node() {
             return 6;
-        }
-
-        @Override
-        protected InetSocketAddress gossipEndpoint()
-                                                    throws UnknownHostException {
-            return seedContact2();
         }
     }
 
     @Override
     protected Class<?>[] getConfigurations() {
         return new Class[] { testA.class, testB.class, testC.class,
-                        testD.class, testE.class, testF.class, testG.class };
+                testD.class, testE.class, testF.class, testG.class };
     }
 }

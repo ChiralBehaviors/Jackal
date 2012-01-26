@@ -36,6 +36,7 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * @author hhildebrand
@@ -46,6 +47,7 @@ public class MulticastSnoopConfig {
 
     @Autowired
     @Bean(initMethod = "start", destroyMethod = "shutdown")
+    @Primary
     public Snoop snoop(Identity partitionIdentity,
                        HeartbeatReceiver controller,
                        MulticastAddress heartbeatGroup)

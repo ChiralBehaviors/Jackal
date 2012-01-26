@@ -32,9 +32,9 @@ import com.hellblazer.jackal.testUtil.TestNodeCfg;
  */
 @Configuration
 @Import({ GossipTestCfg.class, GossipHeartbeatAndDiscoveryConfig.class })
-abstract public class GossipNodeCfg extends TestNodeCfg {
+abstract public class GossipDiscoveryNode1Cfg extends TestNodeCfg {
     @Bean(name = "gossipEndpoint")
     public InetSocketAddress gossipEndpoint() {
-        return new InetSocketAddress("127.0.0.1", 0);
+        return new InetSocketAddress("127.0.0.1", GossipTestCfg.getTestPort1());
     }
 }

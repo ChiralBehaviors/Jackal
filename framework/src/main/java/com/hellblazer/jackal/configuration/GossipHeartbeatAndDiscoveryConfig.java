@@ -26,16 +26,19 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
 
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
 import com.hellblazer.jackal.gossip.FailureDetectorFactory;
 import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.GossipCommunications;
+import com.hellblazer.jackal.gossip.GossipHeartbeatProtocolFactory;
 import com.hellblazer.jackal.gossip.SystemView;
 import com.hellblazer.jackal.gossip.fd.SimpleTimeoutFailureDetectorFactory;
 import com.hellblazer.jackal.gossip.udp.UdpCommunications;
@@ -77,11 +80,13 @@ public class GossipHeartbeatAndDiscoveryConfig {
     private ExecutorService         gossipDispatchers;
 
     @Bean
+    @Primary
     public GossipCommunications communications() throws IOException {
         return new UdpCommunications(endpoint, gossipDispatchers, 20, 4);
     }
 
     @Bean
+    @Primary
     @Autowired
     public FailureDetectorFactory failureDetectorFactory(HeartbeatConfiguration heartbeatConfig) {
         return new SimpleTimeoutFailureDetectorFactory(
@@ -91,6 +96,7 @@ public class GossipHeartbeatAndDiscoveryConfig {
     }
 
     @Bean
+    @Primary
     public Gossip gossip() throws IOException {
         return new Gossip(systemView(), new SecureRandom(), communications(),
                           gossipConfiguration.interval,
@@ -99,6 +105,7 @@ public class GossipHeartbeatAndDiscoveryConfig {
     }
 
     @Bean
+    @Primary
     @Autowired
     public GossipConfiguration gossipConfiguration(HeartbeatConfiguration heartbeatConfig) {
         return new GossipConfiguration(
@@ -110,6 +117,14 @@ public class GossipHeartbeatAndDiscoveryConfig {
     }
 
     @Bean
+    @Primary
+    public HeartbeatProtocolFactory heartbeatProtocolFactory()
+                                                              throws IOException {
+        return new GossipHeartbeatProtocolFactory(gossip());
+    }
+
+    @Bean
+    @Primary
     public SystemView systemView() throws IOException {
         return new SystemView(new SecureRandom(),
                               communications().getLocalAddress(), seedHosts,

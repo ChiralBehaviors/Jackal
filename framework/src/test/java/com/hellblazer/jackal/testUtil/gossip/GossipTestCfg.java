@@ -25,34 +25,19 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-
-import com.hellblazer.jackal.configuration.GossipHeartbeatAndDiscoveryConfig;
-import com.hellblazer.jackal.configuration.JackalConfig;
-import com.hellblazer.jackal.configuration.PartitionAgentConfig;
-import com.hellblazer.jackal.configuration.StandardConfigurationConfig;
-import com.hellblazer.jackal.configuration.ThreadConfig;
 
 /**
  * @author hhildebrand
  * 
  */
 @Configuration
-@Import({ JackalConfig.class, StandardConfigurationConfig.class,
-         ThreadConfig.class, PartitionAgentConfig.class,
-         GossipHeartbeatAndDiscoveryConfig.class })
 public class GossipTestCfg {
     private static int testPort1;
-
     private static int testPort2;
 
-    static {
-        String port = System.getProperty("com.hellblazer.jackal.gossip.test.port.1",
-                                         "24010");
-        testPort1 = Integer.parseInt(port);
-        port = System.getProperty("com.hellblazer.jackal.gossip.test.port.2",
-                                  "24020");
-        testPort2 = Integer.parseInt(port);
+    public static void setTestPorts(int port1, int port2) {
+        testPort1 = port1;
+        testPort2 = port2;
     }
 
     public static int getTestPort1() {

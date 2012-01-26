@@ -31,6 +31,7 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
 import com.hellblazer.pinkie.SocketOptions;
@@ -53,6 +54,7 @@ public class PartitionControllerConfig {
     private WireSecurity           wireSecurity;
 
     @Bean
+    @Primary
     public Controller controller() throws IOException {
         return new Controller(partitionIdentity,
                               heartbeatConfiguration.heartbeatTimeout,

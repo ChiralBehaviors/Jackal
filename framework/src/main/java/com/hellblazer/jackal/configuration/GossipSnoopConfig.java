@@ -27,6 +27,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
 import com.hellblazer.jackal.gossip.Gossip;
@@ -40,6 +41,7 @@ import com.hellblazer.jackal.gossip.HeartbeatState;
 public class GossipSnoopConfig {
 
     @Bean
+    @Primary
     @Autowired
     public GossipSnoop snoop(Gossip gossip, Controller controller,
                              Identity partitionIdentity,

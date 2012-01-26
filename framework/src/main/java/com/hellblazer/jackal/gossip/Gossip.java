@@ -299,6 +299,10 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     @Override
     public void sendHeartbeat(Heartbeat heartbeat) {
         assert heartbeat.getSender().id >= 0;
+        if (log.isLoggable(Level.FINER)) {
+            log.finer(String.format("Member: %s sending heartbeat: %s",
+                                    getId(), heartbeat));
+        }
         final HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
                                                                               view.getLocalAddress());
         localState.set(heartbeatState);
@@ -580,6 +584,11 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                                          getId(), deltaDigests, deltaState));
             }
             gossipHandler.reply(deltaDigests, deltaState);
+        } else { 
+            if (log.isLoggable(Level.FINEST)) {
+                log.finest(String.format("Member: %s no state to send",
+                                         getId()));
+            }
         }
     }
 
@@ -673,7 +682,15 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     protected void notifyUpdate(final HeartbeatState state) {
         assert state != null;
         if (state.isDiscoveryOnly() || isIgnoring(state.getSender())) {
+            if (log.isLoggable(Level.FINER)) {
+                log.finer(String.format("Member: %s discarding notification of: %s",
+                                        getId(), state));
+            }
             return;
+        }
+        if (log.isLoggable(Level.FINER)) {
+            log.finer(String.format("Member: %s notifying update of: %s",
+                                    getId(), state));
         }
         dispatcher.execute(new Runnable() {
             @Override

@@ -24,6 +24,7 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hellblazer.jackal.configuration.JackalConfig.HeartbeatConfiguration;
 
@@ -41,6 +42,7 @@ public class LocatorsConfig {
     private Identity               partitionIdentity;
 
     @Bean
+    @Primary
     public AnubisLocator locator() {
         Locator locator = new Locator(partitionIdentity, partitionManager,
                                       heartbeatConfiguration.heartbeatInterval,

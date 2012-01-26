@@ -23,12 +23,15 @@ import java.net.UnknownHostException;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.MulticastHeartbeatCommsFactory;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolFactory;
+import org.smartfrog.services.anubis.partition.protocols.heartbeat.timed.TimedProtocolFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * @author hhildebrand
@@ -48,10 +51,17 @@ public class MulticastHeartbeatAndDiscoveryConfig {
     private InetAddress      networkInterface;
 
     @Bean
+    @Primary
     public HeartbeatCommsFactory heartbeatCommsFactory()
                                                         throws UnknownHostException {
         return new MulticastHeartbeatCommsFactory(wireSecurity, heartbeatGroup,
                                                   networkInterface,
                                                   partitionIdentity);
+    }
+
+    @Bean
+    @Primary
+    public HeartbeatProtocolFactory heartbeatProtocolFactory() {
+        return new TimedProtocolFactory();
     }
 }

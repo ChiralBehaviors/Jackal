@@ -16,21 +16,16 @@
  */
 package com.hellblazer.jackal.gossip;
 
-import static java.util.Arrays.asList;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.PartitionTest;
-import org.smartfrog.services.anubis.partition.test.controller.Controller;
-import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Configuration;
 
-import com.hellblazer.jackal.gossip.configuration.ControllerGossipConfiguration;
-import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
+import com.hellblazer.jackal.testUtil.gossip.GossipControllerCfg;
+import com.hellblazer.jackal.testUtil.gossip.GossipDiscoveryNode1Cfg;
+import com.hellblazer.jackal.testUtil.gossip.GossipDiscoveryNode2Cfg;
+import com.hellblazer.jackal.testUtil.gossip.GossipNodeCfg;
+import com.hellblazer.jackal.testUtil.gossip.GossipTestCfg;
 
 /**
  * 
@@ -40,70 +35,23 @@ import com.hellblazer.jackal.gossip.configuration.GossipConfiguration;
 public class UdpPartitionTest extends PartitionTest {
 
     @Configuration
-    static class MyControllerConfig extends ControllerGossipConfiguration {
-
-        @Override
-        public int magic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        protected Controller constructController() throws IOException {
-            return new MyController(partitionIdentity(), heartbeatTimeout(),
-                                    heartbeatInterval(), socketOptions(),
-                                    dispatchExecutor(), wireSecurity());
-        }
-
-        @Override
-        protected Collection<InetSocketAddress> seedHosts()
-                                                           throws UnknownHostException {
-            return asList(seedContact1(), seedContact2());
-        }
-
-        InetSocketAddress seedContact1() throws UnknownHostException {
-            return new InetSocketAddress("127.0.0.1", testPort1);
-        }
-
-        InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress("127.0.0.1", testPort2);
-        }
-
-    }
-
-    @Configuration
-    static class node0 extends nodeCfg {
+    static class node0 extends GossipDiscoveryNode1Cfg {
         @Override
         public int node() {
             return 0;
         }
-
-        @Override
-        protected InetSocketAddress gossipEndpoint()
-                                                    throws UnknownHostException {
-            return seedContact1();
-        }
     }
 
     @Configuration
-    static class node1 extends nodeCfg {
+    static class node1 extends GossipDiscoveryNode2Cfg {
         @Override
         public int node() {
             return 1;
         }
-
-        @Override
-        protected InetSocketAddress gossipEndpoint()
-                                                    throws UnknownHostException {
-            return seedContact2();
-        }
     }
 
     @Configuration
-    static class node10 extends nodeCfg {
+    static class node10 extends GossipNodeCfg {
         @Override
         public int node() {
             return 10;
@@ -111,7 +59,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node11 extends nodeCfg {
+    static class node11 extends GossipNodeCfg {
         @Override
         public int node() {
             return 11;
@@ -119,7 +67,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node12 extends nodeCfg {
+    static class node12 extends GossipNodeCfg {
         @Override
         public int node() {
             return 12;
@@ -127,7 +75,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node13 extends nodeCfg {
+    static class node13 extends GossipNodeCfg {
         @Override
         public int node() {
             return 13;
@@ -135,7 +83,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node14 extends nodeCfg {
+    static class node14 extends GossipNodeCfg {
         @Override
         public int node() {
             return 14;
@@ -143,7 +91,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node15 extends nodeCfg {
+    static class node15 extends GossipNodeCfg {
         @Override
         public int node() {
             return 15;
@@ -151,7 +99,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node16 extends nodeCfg {
+    static class node16 extends GossipNodeCfg {
         @Override
         public int node() {
             return 16;
@@ -159,7 +107,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node17 extends nodeCfg {
+    static class node17 extends GossipNodeCfg {
         @Override
         public int node() {
             return 17;
@@ -167,7 +115,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node18 extends nodeCfg {
+    static class node18 extends GossipNodeCfg {
         @Override
         public int node() {
             return 18;
@@ -175,7 +123,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node19 extends nodeCfg {
+    static class node19 extends GossipNodeCfg {
         @Override
         public int node() {
             return 19;
@@ -183,7 +131,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node2 extends nodeCfg {
+    static class node2 extends GossipNodeCfg {
         @Override
         public int node() {
             return 2;
@@ -191,7 +139,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node3 extends nodeCfg {
+    static class node3 extends GossipNodeCfg {
         @Override
         public int node() {
             return 3;
@@ -199,7 +147,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node4 extends nodeCfg {
+    static class node4 extends GossipNodeCfg {
         @Override
         public int node() {
             return 4;
@@ -207,7 +155,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node5 extends nodeCfg {
+    static class node5 extends GossipNodeCfg {
         @Override
         public int node() {
             return 5;
@@ -215,7 +163,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node6 extends nodeCfg {
+    static class node6 extends GossipNodeCfg {
         @Override
         public int node() {
             return 6;
@@ -223,7 +171,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node7 extends nodeCfg {
+    static class node7 extends GossipNodeCfg {
         @Override
         public int node() {
             return 7;
@@ -231,7 +179,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node8 extends nodeCfg {
+    static class node8 extends GossipNodeCfg {
         @Override
         public int node() {
             return 8;
@@ -239,48 +187,15 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node9 extends nodeCfg {
+    static class node9 extends GossipNodeCfg {
         @Override
         public int node() {
             return 9;
         }
     }
 
-    static class nodeCfg extends GossipConfiguration {
-
-        @Override
-        public int getMagic() {
-            try {
-                return Identity.getMagicFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Override
-        protected Collection<InetSocketAddress> seedHosts()
-                                                           throws UnknownHostException {
-            return asList(seedContact1(), seedContact2());
-        }
-
-        InetSocketAddress seedContact1() throws UnknownHostException {
-            return new InetSocketAddress("127.0.0.1", testPort1);
-        }
-
-        InetSocketAddress seedContact2() throws UnknownHostException {
-            return new InetSocketAddress("127.0.0.1", testPort2);
-        }
-    }
-
-    static int testPort1;
-    static int testPort2;
     static {
-        String port = System.getProperty("com.hellblazer.jackal.gossip.test.port.1",
-                                         "24010");
-        testPort1 = Integer.parseInt(port);
-        port = System.getProperty("com.hellblazer.jackal.gossip.test.port.2",
-                                  "24020");
-        testPort2 = Integer.parseInt(port);
+        GossipTestCfg.setTestPorts(24030, 24050);
     }
 
     @Override
@@ -295,7 +210,7 @@ public class UdpPartitionTest extends PartitionTest {
 
     @Override
     protected Class<?> getControllerConfig() {
-        return MyControllerConfig.class;
+        return GossipControllerCfg.class;
     }
 
     @Override
@@ -305,8 +220,7 @@ public class UdpPartitionTest extends PartitionTest {
 
     @Override
     protected void setUp() throws Exception {
-        testPort1++;
-        testPort2++;
+        GossipTestCfg.incrementPorts();
         super.setUp();
     }
 }
