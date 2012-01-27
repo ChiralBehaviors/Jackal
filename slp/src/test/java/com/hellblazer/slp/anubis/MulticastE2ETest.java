@@ -1,7 +1,9 @@
 package com.hellblazer.slp.anubis;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -11,82 +13,13 @@ import com.hellblazer.jackal.testUtil.multicast.MulticastNodeCfg;
 public class MulticastE2ETest extends EndToEndTest {
 
     @Configuration
-    static class node0 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 0;
-        }
-    }
+    static class member extends multicastSlpConfig {
+        private static final AtomicInteger id = new AtomicInteger(-1);
 
-    @Configuration
-    static class node1 extends multicastSlpConfig {
         @Override
+        @Bean
         public int node() {
-            return 1;
-        }
-    }
-
-    @Configuration
-    static class node2 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 2;
-        }
-    }
-
-    @Configuration
-    static class node3 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 3;
-        }
-    }
-
-    @Configuration
-    static class node4 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 4;
-        }
-    }
-
-    @Configuration
-    static class node5 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 5;
-        }
-    }
-
-    @Configuration
-    static class node6 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 6;
-        }
-    }
-
-    @Configuration
-    static class node7 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 7;
-        }
-    }
-
-    @Configuration
-    static class node8 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 8;
-        }
-    }
-
-    @Configuration
-    static class node9 extends multicastSlpConfig {
-        @Override
-        public int node() {
-            return 9;
+            return id.incrementAndGet();
         }
     }
 
@@ -98,9 +31,9 @@ public class MulticastE2ETest extends EndToEndTest {
 
     @Override
     protected Class<?>[] getConfigs() {
-        return new Class<?>[] { node0.class, node1.class, node2.class,
-                node3.class, node4.class, node5.class, node6.class,
-                node7.class, node8.class, node9.class };
+        return new Class<?>[] { member.class, member.class, member.class,
+                member.class, member.class, member.class, member.class,
+                member.class, member.class, member.class };
     }
 
     @Override

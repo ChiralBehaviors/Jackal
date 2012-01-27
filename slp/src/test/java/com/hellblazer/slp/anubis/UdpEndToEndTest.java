@@ -16,8 +16,10 @@
  */
 package com.hellblazer.slp.anubis;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -39,7 +41,7 @@ public class UdpEndToEndTest extends EndToEndTest {
 
     @Configuration
     @Import({ SlpConfig.class })
-    static class node0 extends GossipDiscoveryNode1Cfg {
+    static class member0 extends GossipDiscoveryNode1Cfg {
         @Override
         public int node() {
             return 0;
@@ -48,7 +50,7 @@ public class UdpEndToEndTest extends EndToEndTest {
 
     @Configuration
     @Import({ SlpConfig.class })
-    static class node1 extends GossipDiscoveryNode2Cfg {
+    static class member1 extends GossipDiscoveryNode2Cfg {
         @Override
         public int node() {
             return 1;
@@ -56,66 +58,13 @@ public class UdpEndToEndTest extends EndToEndTest {
     }
 
     @Configuration
-    static class node2 extends gossipSlpConfig {
-        @Override
-        public int node() {
-            return 2;
-        }
-    }
+    static class member extends gossipSlpConfig {
+        private static final AtomicInteger id = new AtomicInteger(1);
 
-    @Configuration
-    static class node3 extends gossipSlpConfig {
         @Override
+        @Bean
         public int node() {
-            return 3;
-        }
-    }
-
-    @Configuration
-    static class node4 extends gossipSlpConfig {
-        @Override
-        public int node() {
-            return 4;
-        }
-    }
-
-    @Configuration
-    static class node5 extends gossipSlpConfig {
-        @Override
-        public int node() {
-            return 5;
-        }
-    }
-
-    @Configuration
-    static class node6 extends gossipSlpConfig {
-        @Override
-        public int node() {
-            return 6;
-        }
-    }
-
-    @Configuration
-    static class node7 extends gossipSlpConfig {
-        @Override
-        public int node() {
-            return 7;
-        }
-    }
-
-    @Configuration
-    static class node8 extends gossipSlpConfig {
-        @Override
-        public int node() {
-            return 8;
-        }
-    }
-
-    @Configuration
-    static class node9 extends gossipSlpConfig {
-        @Override
-        public int node() {
-            return 9;
+            return id.incrementAndGet();
         }
     }
 
@@ -131,9 +80,9 @@ public class UdpEndToEndTest extends EndToEndTest {
 
     @Override
     protected Class<?>[] getConfigs() {
-        return new Class<?>[] { node0.class, node1.class, node2.class,
-                node3.class, node4.class, node5.class, node6.class,
-                node7.class, node8.class, node9.class };
+        return new Class<?>[] { member0.class, member1.class, member.class,
+                member.class, member.class, member.class, member.class,
+                member.class, member.class, member.class };
     }
 
     @Override

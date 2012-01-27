@@ -16,9 +16,11 @@
  */
 package com.hellblazer.jackal.gossip;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import org.smartfrog.services.anubis.PartitionTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.testUtil.gossip.GossipControllerCfg;
@@ -35,7 +37,7 @@ import com.hellblazer.jackal.testUtil.gossip.GossipTestCfg;
 public class UdpPartitionTest extends PartitionTest {
 
     @Configuration
-    static class node0 extends GossipDiscoveryNode1Cfg {
+    static class member1 extends GossipDiscoveryNode1Cfg {
         @Override
         public int node() {
             return 0;
@@ -43,7 +45,7 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node1 extends GossipDiscoveryNode2Cfg {
+    static class member2 extends GossipDiscoveryNode2Cfg {
         @Override
         public int node() {
             return 1;
@@ -51,146 +53,13 @@ public class UdpPartitionTest extends PartitionTest {
     }
 
     @Configuration
-    static class node10 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 10;
-        }
-    }
+    static class member extends GossipNodeCfg {
+        private static final AtomicInteger id = new AtomicInteger(1);
 
-    @Configuration
-    static class node11 extends GossipNodeCfg {
         @Override
+        @Bean
         public int node() {
-            return 11;
-        }
-    }
-
-    @Configuration
-    static class node12 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 12;
-        }
-    }
-
-    @Configuration
-    static class node13 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 13;
-        }
-    }
-
-    @Configuration
-    static class node14 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 14;
-        }
-    }
-
-    @Configuration
-    static class node15 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 15;
-        }
-    }
-
-    @Configuration
-    static class node16 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 16;
-        }
-    }
-
-    @Configuration
-    static class node17 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 17;
-        }
-    }
-
-    @Configuration
-    static class node18 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 18;
-        }
-    }
-
-    @Configuration
-    static class node19 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 19;
-        }
-    }
-
-    @Configuration
-    static class node2 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 2;
-        }
-    }
-
-    @Configuration
-    static class node3 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 3;
-        }
-    }
-
-    @Configuration
-    static class node4 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 4;
-        }
-    }
-
-    @Configuration
-    static class node5 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 5;
-        }
-    }
-
-    @Configuration
-    static class node6 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 6;
-        }
-    }
-
-    @Configuration
-    static class node7 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 7;
-        }
-    }
-
-    @Configuration
-    static class node8 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 8;
-        }
-    }
-
-    @Configuration
-    static class node9 extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 9;
+            return id.incrementAndGet();
         }
     }
 
@@ -200,12 +69,12 @@ public class UdpPartitionTest extends PartitionTest {
 
     @Override
     protected Class<?>[] getConfigs() {
-        return new Class<?>[] { node0.class, node1.class, node2.class,
-                node3.class, node4.class, node5.class, node6.class,
-                node7.class, node8.class, node9.class, node10.class,
-                node11.class, node12.class, node13.class, node14.class,
-                node15.class, node16.class, node17.class, node18.class,
-                node19.class };
+        return new Class<?>[] { member1.class, member2.class, member.class,
+                member.class, member.class, member.class, member.class,
+                member.class, member.class, member.class, member.class,
+                member.class, member.class, member.class, member.class,
+                member.class, member.class, member.class, member.class,
+                member.class };
     }
 
     @Override

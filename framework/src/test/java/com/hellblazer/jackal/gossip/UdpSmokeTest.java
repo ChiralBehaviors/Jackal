@@ -16,7 +16,10 @@
  */
 package com.hellblazer.jackal.gossip;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.smartfrog.services.anubis.SmokeTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.testUtil.gossip.GossipDiscoveryNode1Cfg;
@@ -36,64 +39,39 @@ public class UdpSmokeTest extends SmokeTest {
     }
 
     @Configuration
-    static class testA extends GossipDiscoveryNode1Cfg {
+    static class test1 extends GossipDiscoveryNode1Cfg { 
+
         @Override
+        @Bean
         public int node() {
             return 0;
         }
     }
 
     @Configuration
-    static class testB extends GossipNodeCfg {
+    static class test2 extends GossipDiscoveryNode2Cfg { 
+
         @Override
+        @Bean
         public int node() {
             return 1;
         }
     }
 
     @Configuration
-    static class testC extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 2;
-        }
-    }
+    static class test extends GossipNodeCfg {
+        private static final AtomicInteger id = new AtomicInteger(1);
 
-    @Configuration
-    static class testD extends GossipNodeCfg {
         @Override
+        @Bean
         public int node() {
-            return 3;
-        }
-    }
-
-    @Configuration
-    static class testE extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 4;
-        }
-    }
-
-    @Configuration
-    static class testF extends GossipNodeCfg {
-        @Override
-        public int node() {
-            return 5;
-        }
-    }
-
-    @Configuration
-    static class testG extends GossipDiscoveryNode2Cfg {
-        @Override
-        public int node() {
-            return 6;
+            return id.incrementAndGet();
         }
     }
 
     @Override
     protected Class<?>[] getConfigurations() {
-        return new Class[] { testA.class, testB.class, testC.class,
-                testD.class, testE.class, testF.class, testG.class };
+        return new Class[] { test1.class, test2.class, test.class, test.class,
+                test.class, test.class, test.class };
     }
 }

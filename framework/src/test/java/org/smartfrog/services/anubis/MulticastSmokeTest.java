@@ -1,5 +1,8 @@
 package org.smartfrog.services.anubis;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hellblazer.jackal.testUtil.multicast.MulticastNodeCfg;
@@ -7,65 +10,20 @@ import com.hellblazer.jackal.testUtil.multicast.MulticastNodeCfg;
 public class MulticastSmokeTest extends SmokeTest {
 
     @Configuration
-    static class testA extends MulticastNodeCfg {
-        @Override
-        public int node() {
-            return 0;
-        }
-    }
+    static class test extends MulticastNodeCfg {
+        private static final AtomicInteger id = new AtomicInteger(-1);
 
-    @Configuration
-    static class testB extends MulticastNodeCfg {
         @Override
+        @Bean
         public int node() {
-            return 1;
-        }
-    }
-
-    @Configuration
-    static class testC extends MulticastNodeCfg {
-        @Override
-        public int node() {
-            return 2;
-        }
-    }
-
-    @Configuration
-    static class testD extends MulticastNodeCfg {
-        @Override
-        public int node() {
-            return 3;
-        }
-    }
-
-    @Configuration
-    static class testE extends MulticastNodeCfg {
-        @Override
-        public int node() {
-            return 4;
-        }
-    }
-
-    @Configuration
-    static class testF extends MulticastNodeCfg {
-        @Override
-        public int node() {
-            return 5;
-        }
-    }
-
-    @Configuration
-    static class testG extends MulticastNodeCfg {
-        @Override
-        public int node() {
-            return 6;
+            return id.incrementAndGet();
         }
     }
 
     @Override
     protected Class<?>[] getConfigurations() {
-        return new Class[] { testA.class, testB.class, testC.class,
-                testD.class, testE.class, testF.class, testG.class };
+        return new Class[] { test.class, test.class, test.class, test.class,
+                test.class, test.class, test.class };
     }
 
 }
