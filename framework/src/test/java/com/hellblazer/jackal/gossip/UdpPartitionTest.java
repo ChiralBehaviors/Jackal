@@ -56,6 +56,10 @@ public class UdpPartitionTest extends PartitionTest {
     static class member extends GossipNodeCfg {
         private static final AtomicInteger id = new AtomicInteger(1);
 
+        public static void reset() {
+            id.set(1);
+        }
+
         @Override
         @Bean
         public int node() {
@@ -90,6 +94,7 @@ public class UdpPartitionTest extends PartitionTest {
     @Override
     protected void setUp() throws Exception {
         GossipTestCfg.incrementPorts();
+        member.reset();
         super.setUp();
     }
 }

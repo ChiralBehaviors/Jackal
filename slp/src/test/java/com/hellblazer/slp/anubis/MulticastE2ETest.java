@@ -16,6 +16,10 @@ public class MulticastE2ETest extends EndToEndTest {
     static class member extends multicastSlpConfig {
         private static final AtomicInteger id = new AtomicInteger(-1);
 
+        public static void reset() {
+            id.set(-1);
+        }
+
         @Override
         @Bean
         public int node() {
@@ -44,6 +48,12 @@ public class MulticastE2ETest extends EndToEndTest {
     @Override
     protected Logger getLogger() {
         return Logger.getLogger(MulticastE2ETest.class.getCanonicalName());
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        member.reset();
+        super.setUp();
     }
 
 }

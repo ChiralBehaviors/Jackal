@@ -61,6 +61,10 @@ public class UdpEndToEndTest extends EndToEndTest {
     static class member extends gossipSlpConfig {
         private static final AtomicInteger id = new AtomicInteger(1);
 
+        public static void reset() {
+            id.set(1);
+        }
+
         @Override
         @Bean
         public int node() {
@@ -98,6 +102,7 @@ public class UdpEndToEndTest extends EndToEndTest {
     @Override
     protected void setUp() throws Exception {
         GossipTestCfg.incrementPorts();
+        member.reset();
         super.setUp();
     }
 }

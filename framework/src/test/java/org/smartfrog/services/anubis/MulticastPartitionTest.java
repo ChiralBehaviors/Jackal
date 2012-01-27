@@ -20,6 +20,10 @@ public class MulticastPartitionTest extends PartitionTest {
         public int node() {
             return id.incrementAndGet();
         }
+
+        public static void reset() {
+            id.set(-1);
+        }
     }
 
     @Override
@@ -30,6 +34,12 @@ public class MulticastPartitionTest extends PartitionTest {
                 member.class, member.class, member.class, member.class,
                 member.class, member.class, member.class, member.class,
                 member.class };
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        member.reset();
+        super.setUp();
     }
 
     @Override
