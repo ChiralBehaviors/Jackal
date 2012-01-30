@@ -35,12 +35,17 @@ import com.hellblazer.jackal.testUtil.gossip.GossipTestCfg;
  * 
  */
 public class UdpPartitionTest extends PartitionTest {
+    private static final AtomicInteger id = new AtomicInteger(-1);
+
+    public static void reset() {
+        id.set(-1);
+    }
 
     @Configuration
     static class member1 extends GossipDiscoveryNode1Cfg {
         @Override
         public int node() {
-            return 0;
+            return id.incrementAndGet();
         }
     }
 
@@ -48,17 +53,12 @@ public class UdpPartitionTest extends PartitionTest {
     static class member2 extends GossipDiscoveryNode2Cfg {
         @Override
         public int node() {
-            return 1;
+            return id.incrementAndGet();
         }
     }
 
     @Configuration
     static class member extends GossipNodeCfg {
-        private static final AtomicInteger id = new AtomicInteger(1);
-
-        public static void reset() {
-            id.set(1);
-        }
 
         @Override
         @Bean
@@ -94,7 +94,7 @@ public class UdpPartitionTest extends PartitionTest {
     @Override
     protected void setUp() throws Exception {
         GossipTestCfg.incrementPorts();
-        member.reset();
+        reset();
         super.setUp();
     }
 }
