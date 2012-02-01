@@ -67,6 +67,7 @@ public class UdpCommunications implements GossipCommunications {
         private final InetSocketAddress target;
 
         GossipHandler(InetSocketAddress target) {
+            assert target.getPort() != 0 : "Invalid port";
             this.target = target;
         }
 

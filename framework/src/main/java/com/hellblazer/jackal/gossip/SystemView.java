@@ -100,6 +100,7 @@ public class SystemView {
     public SystemView(Random random, InetSocketAddress local,
                       Collection<InetSocketAddress> seedHosts,
                       int quarantineDelay, int unreachableDelay) {
+        assert validAddresses(seedHosts);
         entropy = random;
         localAddress = local;
         quarantineInterval = quarantineDelay;
@@ -111,6 +112,14 @@ public class SystemView {
         }
         log.info(format("System view initialized for: %s, seeds: %s",
                         localAddress, seeds));
+    }
+
+    public boolean validAddresses(Collection<InetSocketAddress> hosts) {
+        for (InetSocketAddress address : hosts) {
+            assert address.getPort() != 0 : String.format("Invalid host address: %s",
+                                                          address);
+        }
+        return true;
     }
 
     /**
