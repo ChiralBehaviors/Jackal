@@ -49,7 +49,10 @@ public class TestCfg {
 
     @Bean
     public SocketOptions socketOptions() {
-        return new SocketOptions();
+        SocketOptions socketOptions = new SocketOptions();
+        socketOptions.setReuse_address(false);
+        socketOptions.setLinger(-1);
+        return socketOptions;
     }
 
     @Bean
