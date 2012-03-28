@@ -17,6 +17,8 @@
  */
 package com.hellblazer.jackal.util;
 
+import java.util.Arrays;
+
 /**
  * A simple ring buffer for storing windows of samples.
  * 
@@ -61,5 +63,15 @@ public class Window {
         }
         buf.append("]");
         return buf.toString();
+    }
+
+    /**
+     * reset the state of the receiver
+     */
+    public void reset() {
+        count = 0;
+        head = 0;
+        Arrays.fill(samples, 0.0D);
+        tail = 0;
     }
 }

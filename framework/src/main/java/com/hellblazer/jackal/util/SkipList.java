@@ -38,24 +38,18 @@ public final class SkipList {
     }
 
     private static final int MAX_LEVEL = 32;
-    private Node             head      = new Node(Double.NaN, MAX_LEVEL);
-    private int[]            index     = new int[MAX_LEVEL];
-    private int              level     = 1;
+    private Node             head;
+    private int              level;
     private Random           random    = new Random();
-
-    private int              size      = 0;
-
-    private Node[]           update    = new Node[MAX_LEVEL];
+    private int              size;
 
     public SkipList() {
-        for (int i = 0; i < MAX_LEVEL; i++) {
-            head.next[i] = head;
-            head.dist[i] = 1;
-        }
-        head.prev = head;
+        reset();
     }
 
     public boolean add(double e) {
+        Node[] update = new Node[MAX_LEVEL];
+        int[] index = new int[MAX_LEVEL];
         final int newLevel = randomLevel();
         Node x = head;
         Node y = head;
@@ -131,6 +125,7 @@ public final class SkipList {
     }
 
     public boolean remove(double o) {
+        Node[] update = new Node[MAX_LEVEL];
         Node curr = head;
         for (int i = level - 1; i >= 0; i--) {
             while (curr.next[i] != head && curr.next[i].element < o) {
@@ -194,6 +189,20 @@ public final class SkipList {
             }
         }
         return curr;
+    }
+
+    /**
+     * reset the receiver's state
+     */
+    public void reset() {
+        head = new Node(Double.NaN, MAX_LEVEL);
+        level = 1;
+        size = 0;
+        for (int i = 0; i < MAX_LEVEL; i++) {
+            head.next[i] = head;
+            head.dist[i] = 1;
+        }
+        head.prev = head;
     }
 
 }
