@@ -23,8 +23,8 @@ public class MulticastTool {
 
     static class Send extends TimerTask {
         private final MulticastSocket multicast;
-        private final String text;
-        private final SocketAddress address;
+        private final String          text;
+        private final SocketAddress   address;
 
         public Send(SocketAddress address, MulticastSocket multicast,
                     String text) {
@@ -47,45 +47,46 @@ public class MulticastTool {
 
     }
 
-    private static final CommandParser cmd = new CommandParser() {
-        @Override
-        protected void init() {
-            category("Options");
-            opt('h', "host").type(String.class).value("233.1.2.30").description("Address of the multicast channel");
+    private static final CommandParser cmd       = new CommandParser() {
+                                                     @Override
+                                                     protected void init() {
+                                                         category("Options");
+                                                         opt('h', "host").type(String.class).value("233.1.2.30").description("Address of the multicast channel");
 
-            opt('p', "port").type(int.class).value(1966).description("Port of the multicast channel");
+                                                         opt('p', "port").type(int.class).value(1966).description("Port of the multicast channel");
 
-            opt("date-format").type(String.class).value("HH:mm:ss").description("Date format to use for log lines");
+                                                         opt("date-format").type(String.class).value("HH:mm:ss").description("Date format to use for log lines");
 
-            category("Sending");
+                                                         category("Sending");
 
-            opt('s', "send").type(String.class).description("Optional message to broadcast to the channel");
-            opt('r', "rate").type(long.class).value(1000).description("Resend every N milliseconds. Zero sends just once");
+                                                         opt('s', "send").type(String.class).description("Optional message to broadcast to the channel");
+                                                         opt('r', "rate").type(long.class).value(1000).description("Resend every N milliseconds. Zero sends just once");
 
-            category("Advanced");
+                                                         category("Advanced");
 
-            opt("broadcast").type(boolean.class).description("java.net.MulticastSocket#setBroadcast");
-            opt("loopback-mode").type(boolean.class).description("java.net.MulticastSocket#setLoopbackMode");
-            opt("receive-buffer-size").type(int.class).description("java.net.MulticastSocket#setReceiveBufferSize");
-            opt("reuse-address").type(boolean.class).description("java.net.MulticastSocket#setReuseAddress");
-            opt("send-buffer-size").type(int.class).description("java.net.MulticastSocket#setSendBufferSize");
-            opt("so-timeout").type(int.class).description("java.net.MulticastSocket#setSoTimeout");
-            opt("time-to-live").type(int.class).description("java.net.MulticastSocket#setTimeToLive");
-            opt("traffic-class").type(int.class).description("java.net.MulticastSocket#setTrafficClass");
-        }
+                                                         opt("broadcast").type(boolean.class).description("java.net.MulticastSocket#setBroadcast");
+                                                         opt("loopback-mode").type(boolean.class).description("java.net.MulticastSocket#setLoopbackMode");
+                                                         opt(
+                                                             "receive-buffer-size").type(int.class).description("java.net.MulticastSocket#setReceiveBufferSize");
+                                                         opt("reuse-address").type(boolean.class).description("java.net.MulticastSocket#setReuseAddress");
+                                                         opt("send-buffer-size").type(int.class).description("java.net.MulticastSocket#setSendBufferSize");
+                                                         opt("so-timeout").type(int.class).description("java.net.MulticastSocket#setSoTimeout");
+                                                         opt("time-to-live").type(int.class).description("java.net.MulticastSocket#setTimeToLive");
+                                                         opt("traffic-class").type(int.class).description("java.net.MulticastSocket#setTrafficClass");
+                                                     }
 
-        @Override
-        protected List<String> usage() {
-            return super.usage();
-        }
+                                                     @Override
+                                                     protected List<String> usage() {
+                                                         return super.usage();
+                                                     }
 
-        @Override
-        protected List<String> validate(Arguments arguments) {
-            return super.validate(arguments);
-        }
-    };
+                                                     @Override
+                                                     protected List<String> validate(Arguments arguments) {
+                                                         return super.validate(arguments);
+                                                     }
+                                                 };
 
-    private static final int BUFF_SIZE = 8192;
+    private static final int           BUFF_SIZE = 8192;
 
     public static void main(String[] array) throws Exception {
 

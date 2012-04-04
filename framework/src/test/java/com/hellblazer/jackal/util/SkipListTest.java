@@ -23,6 +23,15 @@ import java.util.Random;
 import junit.framework.TestCase;
 
 public class SkipListTest extends TestCase {
+    public void testCounting() {
+        SkipList list = new SkipList();
+        for (int i = 0; i < 10; i++) {
+            list.add(i);
+        }
+
+        assertEquals(6, list.countLessThanEqualTo(5.0));
+    }
+
     public void testDuplicates() {
         SkipList list = new SkipList();
         for (int i = 0; i < 10; i++) {
@@ -45,15 +54,6 @@ public class SkipListTest extends TestCase {
         assertEquals(9, list.size());
 
         assertFalse(list.contains(Integer.valueOf(5)));
-    }
-
-    public void testCounting() {
-        SkipList list = new SkipList();
-        for (int i = 0; i < 10; i++) {
-            list.add(i);
-        }
-
-        assertEquals(6, list.countLessThanEqualTo(5.0));
     }
 
     public void testLargeRandom() {

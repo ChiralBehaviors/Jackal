@@ -21,9 +21,9 @@ package org.smartfrog.services.anubis.partition.test.stats;
 
 public class Scheduling {
 
-    private long big = 0;
-    private AveCalculator oneHourCalculator = new TimedAveCalculator(
-                                                                     60 * 60 * 1000);
+    private long          big                 = 0;
+    private AveCalculator oneHourCalculator   = new TimedAveCalculator(
+                                                                       60 * 60 * 1000);
     private AveCalculator oneMinuteCalculator = new TimedAveCalculator(
                                                                        60 * 1000);
     private AveCalculator tenMinuteCalculator = new TimedAveCalculator(

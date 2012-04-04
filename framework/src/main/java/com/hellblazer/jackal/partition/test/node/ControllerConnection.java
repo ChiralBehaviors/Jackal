@@ -18,9 +18,9 @@
 package com.hellblazer.jackal.partition.test.node;
 
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.PartitionNotification;
 import org.smartfrog.services.anubis.partition.test.msg.GetStatsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.GetThreadsMsg;
@@ -42,13 +42,14 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  * 
  */
 public class ControllerConnection extends AbstractMessageHandler implements
-                PartitionNotification {
+        PartitionNotification {
 
-    private static final Logger log = Logger.getLogger(ControllerConnection.class.getCanonicalName());
+    private static final Logger   log = LoggerFactory.getLogger(ControllerConnection.class);
 
-    private final ControllerAgent    controller;
+    private final ControllerAgent controller;
 
-    public ControllerConnection(ControllerAgent controller, WireSecurity wireSecurity) {
+    public ControllerConnection(ControllerAgent controller,
+                                WireSecurity wireSecurity) {
         super(wireSecurity);
         this.controller = controller;
 
@@ -87,8 +88,8 @@ public class ControllerConnection extends AbstractMessageHandler implements
         try {
             sendObject(new PartitionMsg(view, leader));
         } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
+            if (log.isWarnEnabled()) {
+                log.warn("", ex);
             }
         }
     }
@@ -101,9 +102,8 @@ public class ControllerConnection extends AbstractMessageHandler implements
         try {
             bytesToSend = wireSecurity.toWireForm(tm);
         } catch (Exception ex) {
-            log.log(Level.SEVERE,
-                    String.format("failed to marshall timed message: %s - not sent",
-                                  tm), ex);
+            log.error(String.format("failed to marshall timed message: %s - not sent",
+                                    tm), ex);
             return;
         }
 
@@ -114,8 +114,8 @@ public class ControllerConnection extends AbstractMessageHandler implements
         try {
             send(new SerializedMsg(obj));
         } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ex);
+            if (log.isWarnEnabled()) {
+                log.warn("", ex);
             }
         }
     }
@@ -129,16 +129,16 @@ public class ControllerConnection extends AbstractMessageHandler implements
         try {
             msg = (SerializedMsg) Wire.fromWire(readBuffer.array());
         } catch (Exception ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "Cannot deserialize message bytes", ex);
+            if (log.isWarnEnabled()) {
+                log.warn("Cannot deserialize message bytes", ex);
             }
             return;
         }
 
         Object obj = msg.getObject();
 
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("Delivering: %s", obj));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Delivering: %s", obj));
         }
 
         if (obj instanceof SetTimingMsg) {
@@ -151,9 +151,8 @@ public class ControllerConnection extends AbstractMessageHandler implements
         } else if (obj instanceof GetThreadsMsg) {
             controller.updateThreads(this);
         } else {
-            log.log(Level.SEVERE,
-                    "Unrecognised object received in test connection at node"
-                                    + obj, new Exception());
+            log.error("Unrecognised object received in test connection at node"
+                      + obj, new Exception());
         }
     }
 

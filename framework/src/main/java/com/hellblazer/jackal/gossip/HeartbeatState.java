@@ -136,7 +136,7 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         this.sender = sender;
         this.senderAddress = senderAddress;
         this.stable = stable;
-        this.controllInterface = testInterface;
+        controllInterface = testInterface;
         this.view = view;
         this.viewNumber = viewNumber;
         viewTimeStamp = viewTimestamp;
@@ -169,10 +169,6 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         candidate = new Identity(-1, -1, -1);
         msgLinks = new NodeIdSet(1);
         heartbeatAddress = hbAddress;
-    }
-
-    public String getMemberString() {
-        return "[" + getSender() + " : " + getHeartbeatAddress() + "]";
     }
 
     @Override
@@ -259,12 +255,25 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         return candidate;
     }
 
+    @Override
+    public InetSocketAddress getControllerInterface() {
+        return controllInterface;
+    }
+
     public long getEpoch() {
         return sender.epoch;
     }
 
     public InetSocketAddress getHeartbeatAddress() {
         return heartbeatAddress;
+    }
+
+    public NodeIdSet getMembers() {
+        return view;
+    }
+
+    public String getMemberString() {
+        return "[" + getSender() + " : " + getHeartbeatAddress() + "]";
     }
 
     @Override
@@ -280,11 +289,6 @@ public class HeartbeatState implements Heartbeat, Cloneable {
     @Override
     public InetSocketAddress getSenderAddress() {
         return senderAddress;
-    }
-
-    @Override
-    public InetSocketAddress getControllerInterface() {
-        return controllInterface;
     }
 
     @Override
@@ -317,8 +321,10 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         result = prime * result
                  + (senderAddress == null ? 0 : senderAddress.hashCode());
         result = prime * result + (stable ? 1231 : 1237);
-        result = prime * result
-                 + (controllInterface == null ? 0 : controllInterface.hashCode());
+        result = prime
+                 * result
+                 + (controllInterface == null ? 0
+                                             : controllInterface.hashCode());
         result = prime * result + (view == null ? 0 : view.hashCode());
         result = prime * result + (int) (viewNumber ^ viewNumber >>> 32);
         result = prime * result + (int) (viewTimeStamp ^ viewTimeStamp >>> 32);
@@ -341,6 +347,12 @@ public class HeartbeatState implements Heartbeat, Cloneable {
     }
 
     @Override
+    public void setController(InetSocketAddress address) {
+        controllInterface = address;
+        invalidateCache();
+    }
+
+    @Override
     public void setIsPreferred(boolean preferred) {
         this.preferred = preferred;
         invalidateCache();
@@ -349,12 +361,6 @@ public class HeartbeatState implements Heartbeat, Cloneable {
     @Override
     public void setMsgLinks(NodeIdSet ml) {
         msgLinks = ml;
-        invalidateCache();
-    }
-
-    @Override
-    public void setController(InetSocketAddress address) {
-        controllInterface = address;
         invalidateCache();
     }
 
@@ -392,15 +398,6 @@ public class HeartbeatState implements Heartbeat, Cloneable {
     public synchronized void writeTo(ByteBuffer buffer) {
         fillCache();
         buffer.put(binaryCache);
-    }
-
-    @Override
-    protected HeartbeatState clone() {
-        try {
-            return (HeartbeatState) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException();
-        }
     }
 
     private void fillCache() {
@@ -441,7 +438,12 @@ public class HeartbeatState implements Heartbeat, Cloneable {
         binaryCache = null;
     }
 
-    public NodeIdSet getMembers() {
-        return view;
+    @Override
+    protected HeartbeatState clone() {
+        try {
+            return (HeartbeatState) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException();
+        }
     }
 }

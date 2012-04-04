@@ -54,27 +54,27 @@ public class MainConsoleFrame extends JFrame {
      */
     private static final long serialVersionUID = 1L;
 
-    private BorderLayout borderLayout1 = new BorderLayout();
+    private BorderLayout      borderLayout1    = new BorderLayout();
 
-    private BorderLayout borderLayout2 = new BorderLayout();
-    private BorderLayout borderLayout3 = new BorderLayout();
-    private BorderLayout borderLayout4 = new BorderLayout();
+    private BorderLayout      borderLayout2    = new BorderLayout();
+    private BorderLayout      borderLayout3    = new BorderLayout();
+    private BorderLayout      borderLayout4    = new BorderLayout();
     private GraphicController controller;
-    private FlowLayout flowLayout1 = new FlowLayout();
-    private JButton jButton1 = new JButton();
-    private JButton jButton2 = new JButton();
-    private JButton jButton3 = new JButton();
-    private JButton jButton4 = new JButton();
-    private JPanel jPanel1 = new JPanel();
-    private JPanel jPanel2 = new JPanel();
-    private JPanel jPanel3 = new JPanel();
-    private JPanel jPanel4 = new JPanel();
-    private JPanel jPanel5 = new JPanel();
-    private JSlider jSlider1 = new JSlider();
-    private JSlider jSlider2 = new JSlider();
-    private JTextField jTextField2 = new JTextField();
+    private FlowLayout        flowLayout1      = new FlowLayout();
+    private JButton           jButton1         = new JButton();
+    private JButton           jButton2         = new JButton();
+    private JButton           jButton3         = new JButton();
+    private JButton           jButton4         = new JButton();
+    private JPanel            jPanel1          = new JPanel();
+    private JPanel            jPanel2          = new JPanel();
+    private JPanel            jPanel3          = new JPanel();
+    private JPanel            jPanel4          = new JPanel();
+    private JPanel            jPanel5          = new JPanel();
+    private JSlider           jSlider1         = new JSlider();
+    private JSlider           jSlider2         = new JSlider();
+    private JTextField        jTextField2      = new JTextField();
     @SuppressWarnings("unused")
-    private TitledBorder titledBorder1;
+    private TitledBorder      titledBorder1;
 
     public MainConsoleFrame(GraphicController controller) {
         try {

@@ -2,7 +2,7 @@ package org.smartfrog.services.anubis.load;
 
 public class Gate {
     private boolean isOpen;
-    private int generation;
+    private int     generation;
 
     // BLOCKS-UNTIL: opened-since(generation on entry)
     public synchronized void await() throws InterruptedException {

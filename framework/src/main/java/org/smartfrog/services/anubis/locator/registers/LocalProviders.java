@@ -22,9 +22,9 @@ package org.smartfrog.services.anubis.locator.registers;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.locator.ValueData;
@@ -64,13 +64,13 @@ public class LocalProviders {
         }
     }
 
-    private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();                     // node-->Set of listeners
+    private SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();                            // node-->Set of listeners
 
     private Locator                        locator         = null;
-    private static final Logger            log             = Logger.getLogger(LocalProviders.class.getCanonicalName());
+    private static final Logger            log             = LoggerFactory.getLogger(LocalProviders.class.getCanonicalName());
 
     private Integer                        me              = null;
-    private Map<String, ProviderInfo>      providers       = new HashMap<String, ProviderInfo>();                      // name-->record
+    private Map<String, ProviderInfo>      providers       = new HashMap<String, ProviderInfo>();                             // name-->record
 
     /**
      * Constructor
@@ -91,8 +91,8 @@ public class LocalProviders {
          * we have deregistered, but before it knew about that.
          */
         if (!providers.containsKey(listener.name)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": no provider info matching reported "
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": no provider info matching reported "
                           + listener);
             }
             return;
@@ -109,8 +109,8 @@ public class LocalProviders {
          * If there is no existing registration for this listener then add it.
          */
         if (existingReg == null) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": new registration " + listener);
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": new registration " + listener);
             }
 
             info.listeners.put(listener, listener);
@@ -124,8 +124,8 @@ public class LocalProviders {
          * deregistration that comes directly from the listener node.
          */
         else if (existingReg.uridPreceeds(listener)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": new reg superceeds existing registration "
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": new reg superceeds existing registration "
                           + listener);
             }
 
@@ -143,8 +143,8 @@ public class LocalProviders {
          * re-partitioning event. In this case we do not re-send values.
          */
         else if (existingReg.uridEquals(listener)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me
+            if (log.isTraceEnabled()) {
+                log.trace(me
                           + ": new reg does not superceed existing registration "
                           + listener);
             }
@@ -156,16 +156,16 @@ public class LocalProviders {
          * inform the listener of all the provider instances.
          */
         Iterator<ProviderInstance> iter = info.instances.values().iterator();
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(me + ": sending states of "
+        if (log.isTraceEnabled()) {
+            log.trace(me + ": sending states of "
                       + info.instances.values().size()
                       + " registered providers to added " + listener);
         }
         while (iter.hasNext()) {
 
             RegisterMsg msg = RegisterMsg.providerValue(iter.next());
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": sending " + msg + " to node " + listener.node);
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": sending " + msg + " to node " + listener.node);
             }
             locator.sendToLocal(msg, listener.node);
         }
@@ -364,8 +364,8 @@ public class LocalProviders {
          * return now
          */
         if (!providers.containsKey(listener.name)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": no provider info matching removed "
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": no provider info matching removed "
                           + listener);
             }
             return;
@@ -385,8 +385,8 @@ public class LocalProviders {
          * direct deregister.
          */
         if (listener.uridPreceeds(existingReg)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me
+            if (log.isTraceEnabled()) {
+                log.trace(me
                           + " existing registration superceeds deregistration "
                           + listener);
             }
@@ -399,8 +399,8 @@ public class LocalProviders {
          */
         info.listeners.remove(listener);
         listenersByNode.remove(listener.node, listener);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(me + ": provider info removed " + listener);
+        if (log.isTraceEnabled()) {
+            log.trace(me + ": provider info removed " + listener);
         }
     }
 
@@ -408,8 +408,8 @@ public class LocalProviders {
      * Register all the providers known to the local register.
      */
     public synchronized void reRegisterAll() {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Reregistering all providers");
+        if (log.isTraceEnabled()) {
+            log.trace("Reregistering all providers");
         }
         for (ProviderInfo info : providers.values()) {
             locator.sendToGlobal(RegisterMsg.registerProvider(info.proxy));

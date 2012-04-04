@@ -19,15 +19,15 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.locator.subprocess;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PeriodicTimer extends Thread {
-    private final static Logger log = Logger.getLogger(PeriodicTimer.class.getCanonicalName());
-    long now;
-    long period;
-    boolean running;
-    long wakeup;
+    private final static Logger log = LoggerFactory.getLogger(PeriodicTimer.class.getCanonicalName());
+    long                        now;
+    long                        period;
+    boolean                     running;
+    long                        wakeup;
 
     public PeriodicTimer(String name, long period) {
         super(name);
@@ -35,7 +35,7 @@ public class PeriodicTimer extends Thread {
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING, "Uncaught exception", e);
+                log.warn("Uncaught exception", e);
             }
         });
     }
@@ -51,7 +51,7 @@ public class PeriodicTimer extends Thread {
                 try {
                     act(now);
                 } catch (Throwable e) {
-                    log.log(Level.WARNING, "Exception performing task", e);
+                    log.warn("Exception performing task", e);
                 }
             }
             try {

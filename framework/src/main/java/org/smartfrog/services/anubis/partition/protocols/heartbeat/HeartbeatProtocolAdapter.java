@@ -20,9 +20,9 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.protocols.heartbeat;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
@@ -31,13 +31,13 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
 
-    private Candidate candidate = null;
+    private Candidate             candidate         = null;
     /**
      * Implementation of the HeartbeatProtocol
      */
-    private HeartbeatProtocol heartbeatProtocol = null;
+    private HeartbeatProtocol     heartbeatProtocol = null;
 
-    protected static final Logger log = Logger.getLogger(HeartbeatProtocolAdapter.class.getCanonicalName());
+    protected static final Logger log               = LoggerFactory.getLogger(HeartbeatProtocolAdapter.class.getCanonicalName());
 
     /**
      * Constructor - creates a HeartbeatProtocolAdapter pointing to the given
@@ -159,6 +159,11 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
     }
 
     @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return heartbeatProtocol.isNotTimely(timenow, timebound);
+    }
+
+    @Override
     public boolean isPreferred() {
         return candidate.isPreferred();
     }
@@ -195,11 +200,11 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
          * pass the heartbeat to the heartbeat protocol
          */
         boolean accepted = heartbeatProtocol.receiveHeartbeat(hb);
-        if (log.isLoggable(Level.FINEST)) {
+        if (log.isTraceEnabled()) {
             if (accepted) {
-                log.finest(String.format("Heart beat accepted from: %s", getId()));
+                log.trace(String.format("Heart beat accepted from: %s", getId()));
             } else {
-                log.finest(String.format("Heart beat rejected from: %s", getId()));
+                log.trace(String.format("Heart beat rejected from: %s", getId()));
             }
         }
 
@@ -259,8 +264,8 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
     @Override
     public void terminate() {
         heartbeatProtocol.terminate();
-        if (log.isLoggable(Level.FINEST)) {
-            log.log(Level.FINEST, "terminating connection: " + this);
+        if (log.isTraceEnabled()) {
+            log.trace("terminating connection: " + this);
         }
     }
 
@@ -272,10 +277,5 @@ public class HeartbeatProtocolAdapter implements HeartbeatProtocol, Candidate {
     @Override
     public boolean winsAgainst(Candidate c) {
         return candidate.winsAgainst(c);
-    }
-
-    @Override
-    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
-        return heartbeatProtocol.isNotTimely(timenow, timebound);
     }
 }

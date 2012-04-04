@@ -22,9 +22,9 @@ package org.smartfrog.services.anubis.partition.comms.multicast;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastComms;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatReceiver;
@@ -37,7 +37,7 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurityExcepti
 
 public class HeartbeatComms extends MulticastComms implements
         HeartbeatCommsIntf {
-    private static final Logger         log      = Logger.getLogger(HeartbeatComms.class.getCanonicalName());
+    private static final Logger         log      = LoggerFactory.getLogger(HeartbeatComms.class.getCanonicalName());
     private final HeartbeatReceiver     connectionSet;
     /**
      * for testing purposes
@@ -122,7 +122,7 @@ public class HeartbeatComms extends MulticastComms implements
         try {
             super.sendObject(wireSecurity.toWireForm(msg));
         } catch (Exception ex) {
-            log.log(Level.SEVERE, "Error sending heartbeat message", ex);
+            log.error("Error sending heartbeat message", ex);
         }
     }
 
@@ -164,9 +164,9 @@ public class HeartbeatComms extends MulticastComms implements
          * if not right magic discard it
          */
         if (!hb.getSender().equalMagic(me)) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("heartbeat discarded due to invalid magic number: "
-                           + hb);
+            if (log.isTraceEnabled()) {
+                log.trace("heartbeat discarded due to invalid magic number: "
+                          + hb);
             }
             return;
         }
@@ -175,8 +175,8 @@ public class HeartbeatComms extends MulticastComms implements
          * for testing purposes - can ignore messages from specified senders
          */
         if (isIgnoring(hb.getSender())) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Ignoring heart beat sender: " + hb);
+            if (log.isTraceEnabled()) {
+                log.trace("Ignoring heart beat sender: " + hb);
             }
             return;
         }
@@ -189,8 +189,8 @@ public class HeartbeatComms extends MulticastComms implements
          * (i.e. it may be quiescing) if it is not active it is up to the
          * connection itself to deal with the heartbeat.
          */
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Delivering heart beat: " + hb);
+        if (log.isTraceEnabled()) {
+            log.trace("Delivering heart beat: " + hb);
         }
         connectionSet.receiveHeartbeat(hb);
     }
@@ -204,20 +204,19 @@ public class HeartbeatComms extends MulticastComms implements
 
         } catch (WireSecurityException ex) {
 
-            log.severe(me
-                       + "multicast transport encountered security violation receiving message - ignoring the message ");
+            log.error(me
+                      + "multicast transport encountered security violation receiving message - ignoring the message ");
             return;
 
         } catch (Exception ex) {
-            log.log(Level.SEVERE,
-                    me + "Error reading wire form message - ignoring", ex);
+            log.error(me + "Error reading wire form message - ignoring", ex);
             return;
         }
 
         if (obj instanceof Heartbeat) {
             handleHeartbeat((Heartbeat) obj);
         } else {
-            if (log.isLoggable(Level.INFO)) {
+            if (log.isInfoEnabled()) {
                 log.info(me + "Error reading wire form message - ignoring");
             }
         }

@@ -24,8 +24,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*******************************************************************************
  * Copyright (c) 2003, 2007 IBM Corporation and others.
@@ -170,7 +171,7 @@ public class FilterImpl implements Filter {
     static class Parser {
         protected String filterstring;
         protected char[] filter;
-        protected int pos;
+        protected int    pos;
 
         protected Parser(String filterstring) {
             this.filterstring = filterstring;
@@ -554,40 +555,41 @@ public class FilterImpl implements Filter {
             this.constructor = constructor;
         }
 
+        @Override
         public Object run() {
             constructor.setAccessible(true);
             return null;
         }
     }
 
-    private final static Logger log = Logger.getLogger(FilterImpl.class.getCanonicalName());
+    private final static Logger       log             = LoggerFactory.getLogger(FilterImpl.class);
 
     /** filter operation */
-    protected int operation;
+    protected int                     operation;
 
-    protected static final int EQUAL = 1;
+    protected static final int        EQUAL           = 1;
 
-    protected static final int APPROX = 2;
+    protected static final int        APPROX          = 2;
 
-    protected static final int GREATER = 3;
+    protected static final int        GREATER         = 3;
 
-    protected static final int LESS = 4;
+    protected static final int        LESS            = 4;
 
     /* Protected fields and methods for the FilterImpl implementation */
 
-    protected static final int PRESENT = 5;
-    protected static final int SUBSTRING = 6;
-    protected static final int AND = 7;
-    protected static final int OR = 8;
-    protected static final int NOT = 9;
+    protected static final int        PRESENT         = 5;
+    protected static final int        SUBSTRING       = 6;
+    protected static final int        AND             = 7;
+    protected static final int        OR              = 8;
+    protected static final int        NOT             = 9;
     /** filter attribute or null if operation AND, OR or NOT */
-    protected String attr;
+    protected String                  attr;
     /** filter operands */
-    protected Object value;
+    protected Object                  value;
     /* normalized filter string for topLevel FilterImpl object */
-    protected String filter;
+    protected String                  filter;
     /* true if root FilterImpl object */
-    protected boolean topLevel;
+    protected boolean                 topLevel;
     protected static final Class<?>[] constructorType = new Class<?>[] { String.class };
 
     /**
@@ -737,6 +739,7 @@ public class FilterImpl implements Filter {
      * @return <code>true</code> if the Dictionary's keys match this filter;
      *         <code>false</code> otherwise.
      */
+    @Override
     public boolean match(Map<String, Object> properties) {
         if (properties != null) {
             properties = new HeaderMap(properties);
@@ -745,6 +748,7 @@ public class FilterImpl implements Filter {
         return match0(properties);
     }
 
+    @Override
     public boolean match(ServiceReference reference) {
         return match0(reference.properties);
     }
@@ -763,6 +767,7 @@ public class FilterImpl implements Filter {
      * 
      * @since 1.3
      */
+    @Override
     public boolean matchCase(Map<String, Object> properties) {
         return match0(properties);
     }
@@ -883,10 +888,27 @@ public class FilterImpl implements Filter {
         return filter;
     }
 
+    private void getAttributesInternal(ArrayList<String> results) {
+        if (value instanceof FilterImpl[]) {
+            FilterImpl[] children = (FilterImpl[]) value;
+            for (FilterImpl element : children) {
+                element.getAttributesInternal(results);
+            }
+            return;
+        } else if (value instanceof FilterImpl) {
+            // The NOT operation only has one child filter (bug 188075)
+            ((FilterImpl) value).getAttributesInternal(results);
+            return;
+        }
+        if (attr != null) {
+            results.add(attr);
+        }
+    }
+
     protected boolean compare(int operation, Object value1, Object value2) {
         if (value1 == null) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("compare(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            if (log.isTraceEnabled()) {
+                log.trace("compare(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             }
 
             return false;
@@ -962,32 +984,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return boolval == boolval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return boolval == boolval2;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return boolval == boolval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + boolval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return boolval == boolval2;
             }
@@ -1001,32 +1023,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return byteval == byteval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return byteval == byteval2;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return byteval >= byteval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + byteval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return byteval <= byteval2;
             }
@@ -1041,32 +1063,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return charval == charval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return Character.toLowerCase(charval) == Character.toLowerCase(charval2);
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return charval >= charval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + charval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return charval <= charval2;
             }
@@ -1114,32 +1136,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.compareTo(value2) == 0;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.compareTo(value2) == 0;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.compareTo(value2) >= 0;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.compareTo(value2) <= 0;
             }
@@ -1154,32 +1176,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return doubleval == doubleval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return doubleval == doubleval2;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return doubleval >= doubleval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + doubleval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return doubleval <= doubleval2;
             }
@@ -1193,32 +1215,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return floatval == floatval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return floatval == floatval2;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return floatval >= floatval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + floatval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return floatval <= floatval2;
             }
@@ -1232,32 +1254,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return intval == intval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return intval == intval2;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return intval >= intval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + intval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return intval <= intval2;
             }
@@ -1271,32 +1293,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return longval == longval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return longval == longval2;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return longval >= longval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + longval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return longval <= longval2;
             }
@@ -1440,32 +1462,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return shortval == shortval2;
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return shortval == shortval2;
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return shortval >= shortval2;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + shortval + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return shortval <= shortval2;
             }
@@ -1477,8 +1499,8 @@ public class FilterImpl implements Filter {
     protected boolean compare_String(int operation, String string, Object value2) {
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
 
                 String[] substrings = (String[]) value2;
@@ -1497,8 +1519,8 @@ public class FilterImpl implements Filter {
                                 continue; /* ignore first star */
                             }
                             /* *xxx */
-                            if (log.isLoggable(Level.FINE)) {
-                                log.fine("indexOf(\"" + substr2 + "\"," + pos + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                            if (log.isTraceEnabled()) {
+                                log.trace("indexOf(\"" + substr2 + "\"," + pos + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                             }
                             int index = string.indexOf(substr2, pos);
                             if (index == -1) {
@@ -1512,8 +1534,8 @@ public class FilterImpl implements Filter {
                         } else /* xxx */{
                             int len = substr.length();
 
-                            if (log.isLoggable(Level.FINE)) {
-                                log.fine("regionMatches(" + pos + ",\"" + substr + "\")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                            if (log.isTraceEnabled()) {
+                                log.trace("regionMatches(" + pos + ",\"" + substr + "\")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                             }
                             if (string.regionMatches(pos, substr, 0, len)) {
                                 pos += len;
@@ -1525,8 +1547,8 @@ public class FilterImpl implements Filter {
                         if (substr == null) /* * */{
                             return true;
                         }
-                        if (log.isLoggable(Level.FINE)) {
-                            log.fine("regionMatches(" + pos + "," + substr + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                        if (log.isTraceEnabled()) {
+                            log.trace("regionMatches(" + pos + "," + substr + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                         }
                         return string.endsWith(substr);
                     }
@@ -1535,14 +1557,14 @@ public class FilterImpl implements Filter {
                 return true;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return string.equals(value2);
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
 
                 string = approxString(string);
@@ -1551,14 +1573,14 @@ public class FilterImpl implements Filter {
                 return string.equalsIgnoreCase(string2);
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return string.compareTo((String) value2) >= 0;
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + string + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return string.compareTo((String) value2) <= 0;
             }
@@ -1573,8 +1595,8 @@ public class FilterImpl implements Filter {
         try {
             constructor = value1.getClass().getConstructor(constructorType);
         } catch (NoSuchMethodException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Type not supported"); //$NON-NLS-1$
+            if (log.isTraceEnabled()) {
+                log.trace("Type not supported"); //$NON-NLS-1$
             }
             return false;
         }
@@ -1594,32 +1616,32 @@ public class FilterImpl implements Filter {
 
         switch (operation) {
             case SUBSTRING: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("SUBSTRING(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("SUBSTRING(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return false;
             }
             case EQUAL: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("EQUAL(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("EQUAL(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.equals(value2);
             }
             case APPROX: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("APPROX(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("APPROX(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.equals(value2);
             }
             case GREATER: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("GREATER(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("GREATER(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.equals(value2);
             }
             case LESS: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("LESS(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                if (log.isTraceEnabled()) {
+                    log.trace("LESS(" + value1 + "," + value2 + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
                 return value1.equals(value2);
             }
@@ -1682,8 +1704,8 @@ public class FilterImpl implements Filter {
             }
 
             case PRESENT: {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("PRESENT(" + attr + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+                if (log.isTraceEnabled()) {
+                    log.trace("PRESENT(" + attr + ")"); //$NON-NLS-1$ //$NON-NLS-2$
                 }
 
                 Object prop = properties == null ? null : properties.get(attr);
@@ -1699,22 +1721,5 @@ public class FilterImpl implements Filter {
         this.operation = operation;
         this.attr = attr;
         this.value = value;
-    }
-
-    private void getAttributesInternal(ArrayList<String> results) {
-        if (value instanceof FilterImpl[]) {
-            FilterImpl[] children = (FilterImpl[]) value;
-            for (FilterImpl element : children) {
-                element.getAttributesInternal(results);
-            }
-            return;
-        } else if (value instanceof FilterImpl) {
-            // The NOT operation only has one child filter (bug 188075)
-            ((FilterImpl) value).getAttributesInternal(results);
-            return;
-        }
-        if (attr != null) {
-            results.add(attr);
-        }
     }
 }

@@ -31,7 +31,7 @@ import java.util.Properties;
 public class CommandParser {
 
     public static final class Arguments {
-        private final Options options;
+        private final Options      options;
         private final List<String> args;
 
         public Arguments(Options options, List<String> args) {
@@ -73,11 +73,11 @@ public class CommandParser {
     }
 
     public static class Option {
-        private final String mini;
-        private final String name;
-        private String description;
+        private final String            mini;
+        private final String            name;
+        private String                  description;
         private Class<? extends Object> type;
-        private Object value;
+        private Object                  value;
 
         Option(char mini, String name) {
             this(mini + "", name);

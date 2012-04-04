@@ -31,23 +31,23 @@ import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
 public class TimedMsg extends WireMsg implements Timed, Sender {
 
-    static final private int timeIdx = WIRE_SIZE;
-    static final private int timeSz = longSz;
-    static final private int orderIdx = timeIdx + timeSz;
-    static final private int orderSz = longSz;
-    static final private int identitySz = Identity.identityWireSz;
-    static final private int identityIdx = orderIdx + orderSz;
-    static final private int addressIdx = identityIdx + identitySz;
-    static final private int addressSz = AddressMarshalling.connectionAddressWireSz;
-    public static final int TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
-    public static final int TIMED_MSG_WIRE_TYPE = 200;
+    static final private int    timeIdx             = WIRE_SIZE;
+    static final private int    timeSz              = longSz;
+    static final private int    orderIdx            = timeIdx + timeSz;
+    static final private int    orderSz             = longSz;
+    static final private int    identitySz          = Identity.identityWireSz;
+    static final private int    identityIdx         = orderIdx + orderSz;
+    static final private int    addressIdx          = identityIdx + identitySz;
+    static final private int    addressSz           = AddressMarshalling.connectionAddressWireSz;
+    public static final int     TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
+    public static final int     TIMED_MSG_WIRE_TYPE = 200;
 
-    private boolean addressUnmarshalled = false;
-    protected InetSocketAddress address = null;
-    protected long order = -1;
+    private boolean             addressUnmarshalled = false;
+    protected InetSocketAddress address             = null;
+    protected long              order               = -1;
 
-    protected Identity sender;
-    protected long time;
+    protected Identity          sender;
+    protected long              time;
 
     /**
      * Constructor - Construct a timed message without setting attributes. used

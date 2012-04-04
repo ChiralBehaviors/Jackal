@@ -3,9 +3,9 @@ package com.hellblazer.jackal.gossip;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 
@@ -13,11 +13,27 @@ public class Ring {
     private final GossipCommunications               comms;
     private final AtomicReference<InetSocketAddress> neighbor = new AtomicReference<InetSocketAddress>();
     private final int                                id;
-    private static final Logger                      log      = Logger.getLogger(Ring.class.getCanonicalName());
+    private static final Logger                      log      = LoggerFactory.getLogger(Ring.class.getCanonicalName());
 
     public Ring(int identity, GossipCommunications comms) {
-        this.id = identity;
+        id = identity;
         this.comms = comms;
+    }
+
+    /**
+     * Send the heartbeat around the ring in both directions.
+     * 
+     * @param state
+     */
+    public void send(HeartbeatState state) {
+        InetSocketAddress l = neighbor.get();
+        if (l == null) {
+            if (log.isTraceEnabled()) {
+                log.trace("Ring has not been formed, not forwarding state");
+            }
+            return;
+        }
+        comms.send(state, l);
     }
 
     /**
@@ -30,9 +46,9 @@ public class Ring {
     public void update(NodeIdSet members, Collection<Endpoint> endpoints) {
         int n = members.leftNeighborOf(id);
         if (n == -1) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine(String.format("id {%s} does not have a left neighbor in: %s",
-                                       id, members));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("id {%s} does not have a left neighbor in: %s",
+                                        id, members));
             }
             return;
         }
@@ -48,28 +64,12 @@ public class Ring {
             }
         }
         if (l == null) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Ring has not been formed");
+            if (log.isTraceEnabled()) {
+                log.trace("Ring has not been formed");
             }
             neighbor.set(null);
         } else {
             neighbor.set(l);
         }
-    }
-
-    /**
-     * Send the heartbeat around the ring in both directions.
-     * 
-     * @param state
-     */
-    public void send(HeartbeatState state) {
-        InetSocketAddress l = neighbor.get();
-        if (l == null) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Ring has not been formed, not forwarding state");
-            }
-            return;
-        }
-        comms.send(state, l);
     }
 }

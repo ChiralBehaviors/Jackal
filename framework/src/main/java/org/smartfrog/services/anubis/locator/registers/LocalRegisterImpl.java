@@ -26,9 +26,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 import org.smartfrog.services.anubis.locator.AnubisStability;
@@ -96,7 +96,7 @@ public class LocalRegisterImpl {
     private volatile long              timeRef                = -1;
     private DebugFrame                 debug                  = null;
     private final LocalListeners       listeners;
-    private static final Logger        log                    = Logger.getLogger(LocalRegisterImpl.class.getCanonicalName());
+    private static final Logger        log                    = LoggerFactory.getLogger(LocalRegisterImpl.class.getCanonicalName());
     private final Identity             me;
     private final Integer              node;
     private final LocalProviders       providers;
@@ -140,8 +140,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -164,8 +164,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -188,8 +188,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -211,8 +211,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -235,8 +235,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -255,8 +255,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -281,8 +281,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -304,8 +304,8 @@ public class LocalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Rejecting message due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting message due to shutdown");
             }
         }
     }
@@ -396,7 +396,7 @@ public class LocalRegisterImpl {
                 updateDebugFrame();
                 break;
             default:
-                log.severe(me + " *** Local received unexpected message " + msg);
+                log.error(me + " *** Local received unexpected message " + msg);
         }
     }
 
@@ -411,9 +411,9 @@ public class LocalRegisterImpl {
                 updateDebugFrame();
                 break;
             default:
-                log.severe(me
-                           + " *** Local register encountered unknown user stability request type: "
-                           + request.type);
+                log.error(me
+                          + " *** Local register encountered unknown user stability request type: "
+                          + request.type);
         }
     }
 
@@ -435,9 +435,9 @@ public class LocalRegisterImpl {
                 break;
 
             default:
-                log.severe(me
-                           + " *** Local register encountered unknown user provider request type: "
-                           + request.type);
+                log.error(me
+                          + " *** Local register encountered unknown user provider request type: "
+                          + request.type);
         }
     }
 
@@ -452,9 +452,9 @@ public class LocalRegisterImpl {
                 stabilityNotifications.remove(request.stability);
                 break;
             default:
-                log.severe(me
-                           + " *** Local register encountered unknown user stability request type: "
-                           + request.type);
+                log.error(me
+                          + " *** Local register encountered unknown user stability request type: "
+                          + request.type);
         }
     }
 

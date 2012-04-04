@@ -56,6 +56,14 @@ public interface GossipCommunications {
     InetSocketAddress getLocalAddress();
 
     /**
+     * Send the heartbeat state to the two members
+     * 
+     * @param state
+     * @param inetSocketAddress
+     */
+    void send(HeartbeatState state, InetSocketAddress inetSocketAddress);
+
+    /**
      * Set the gossip service
      * 
      * @param gossip
@@ -71,12 +79,4 @@ public interface GossipCommunications {
      * Tereminate the communications service
      */
     void terminate();
-
-    /**
-     * Send the heartbeat state to the two members
-     * 
-     * @param state
-     * @param inetSocketAddress
-     */
-    void send(HeartbeatState state, InetSocketAddress inetSocketAddress);
 }

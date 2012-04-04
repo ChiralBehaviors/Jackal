@@ -99,12 +99,39 @@ public class Node {
         });
     }
 
+    public int getIdentity() {
+        return identity;
+    }
+
     public List<SendHistory> getSendHistory() {
         return sendHistory;
     }
 
     public List<ValueHistory> getValueHistory(int node) {
         return receiveHistory.get(node);
+    }
+
+    public boolean isMissingMessages() {
+        for (CountDownLatch latch : msgReceivedLatches.values()) {
+            if (latch.getCount() > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String report() {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<Integer, CountDownLatch> entry : msgReceivedLatches.entrySet()) {
+            if (entry.getValue().getCount() > 0) {
+                builder.append(String.format("Node %s didn't receive %s messages from %s",
+                                             identity,
+                                             entry.getValue().getCount(),
+                                             entry.getKey()));
+                builder.append(", ");
+            }
+        }
+        return builder.toString();
     }
 
     public void shutDown() {
@@ -169,32 +196,5 @@ public class Node {
                 connection.sendObject(counter);
             }
         }
-    }
-
-    public boolean isMissingMessages() {
-        for (CountDownLatch latch : msgReceivedLatches.values()) {
-            if (latch.getCount() > 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public String report() {
-        StringBuilder builder = new StringBuilder();
-        for (Map.Entry<Integer, CountDownLatch> entry : msgReceivedLatches.entrySet()) {
-            if (entry.getValue().getCount() > 0) {
-                builder.append(String.format("Node %s didn't receive %s messages from %s",
-                                             identity,
-                                             entry.getValue().getCount(),
-                                             entry.getKey()));
-                builder.append(", ");
-            }
-        }
-        return builder.toString();
-    }
-
-    public int getIdentity() {
-        return identity;
     }
 }

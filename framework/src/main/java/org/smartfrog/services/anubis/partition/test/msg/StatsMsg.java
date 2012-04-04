@@ -26,10 +26,10 @@ public class StatsMsg implements Serializable {
      * 
      */
     private static final long serialVersionUID = 1L;
-    public long schedulingLongest;
-    public long schedulingOneHour;
-    public long schedulingOneMinute;
-    public long schedulingTenMinute;
+    public long               schedulingLongest;
+    public long               schedulingOneHour;
+    public long               schedulingOneMinute;
+    public long               schedulingTenMinute;
 
     public StatsMsg(long sOneM, long sTenM, long sOneH, long longest) {
         schedulingOneMinute = sOneM;

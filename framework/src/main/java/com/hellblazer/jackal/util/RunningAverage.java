@@ -1,7 +1,7 @@
 package com.hellblazer.jackal.util;
 
 public class RunningAverage extends Window implements SampledWindow {
-    private double sum          = 0.0D;
+    private double sum = 0.0D;
 
     public RunningAverage(int windowSize) {
         super(windowSize);

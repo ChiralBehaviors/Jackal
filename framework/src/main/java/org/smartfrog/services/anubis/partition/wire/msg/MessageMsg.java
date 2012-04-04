@@ -31,15 +31,15 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public final class MessageMsg extends TimedMsg {
 
-    public static final int MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
-    public static final int MESSAGE_MSG_WIRE_TYPE = 400;
-    private static final int payloadLengthIdx = TIMED_MSG_WIRE_SIZE;
-    private static final int payloadIdx = payloadLengthIdx + intSz;
+    public static final int  MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
+    public static final int  MESSAGE_MSG_WIRE_TYPE = 400;
+    private static final int payloadLengthIdx      = TIMED_MSG_WIRE_SIZE;
+    private static final int payloadIdx            = payloadLengthIdx + intSz;
 
-    private Object message = null;
+    private Object           message               = null;
 
-    private byte[] payload = null;
-    private int payloadSz = UNDEFINED_SIZE;
+    private byte[]           payload               = null;
+    private int              payloadSz             = UNDEFINED_SIZE;
 
     public MessageMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                           WireFormException, IOException {

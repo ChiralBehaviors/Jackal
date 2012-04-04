@@ -36,12 +36,12 @@ public class MulticastAddress {
     /**
      * the multicast address port
      */
-    public int port;
+    public int         port;
 
     /**
      * time to live to use when talking to this address
      */
-    public int timeToLive;
+    public int         timeToLive;
 
     /**
      * constructing the multicast address from a given set of parameters.

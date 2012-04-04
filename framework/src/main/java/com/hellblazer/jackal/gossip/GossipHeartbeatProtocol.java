@@ -18,9 +18,9 @@
 package com.hellblazer.jackal.gossip;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -37,7 +37,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class GossipHeartbeatProtocol extends BitView implements
         HeartbeatProtocol {
 
-    private static final Logger          log              = Logger.getLogger(GossipHeartbeatProtocol.class.getCanonicalName());
+    private static final Logger          log              = LoggerFactory.getLogger(GossipHeartbeatProtocol.class);
     private static final long            serialVersionUID = 1L;
 
     private final InetSocketAddress      address;
@@ -68,6 +68,11 @@ public class GossipHeartbeatProtocol extends BitView implements
     }
 
     @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
     public Identity getSender() {
         return sender;
     }
@@ -83,12 +88,22 @@ public class GossipHeartbeatProtocol extends BitView implements
     }
 
     @Override
+    public int hashCode() {
+        return address.hashCode();
+    }
+
+    @Override
     public boolean isNotTimely(long timenow, long timebound) {
         if (terminated) {
             return true;
         }
         // return timenow - time > timebound || time - timenow > timebound;
         return gossip.shouldConvict(heartbeatAddress, timenow);
+    }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return timenow - time > timebound || time - timenow > timebound;
     }
 
     @Override
@@ -150,16 +165,16 @@ public class GossipHeartbeatProtocol extends BitView implements
                 listener.newViewTime(sender, this);
             }
 
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Accepting heartbeat on: %s from: %s viewchange: %s",
-                                         me, hb.getSender(), viewChanged));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Accepting heartbeat on: %s from: %s viewchange: %s",
+                                        me, hb.getSender(), viewChanged));
             }
             return true;
 
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Rejecting heartbeat on: %s from: %s", me,
-                                     hb.getSender()));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Rejecting heartbeat on: %s from: %s", me,
+                                    hb.getSender()));
         }
         return false;
     }
@@ -173,20 +188,5 @@ public class GossipHeartbeatProtocol extends BitView implements
     @Override
     public void terminate() {
         terminated = true;
-    }
-
-    @Override
-    public int hashCode() {
-        return address.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
-    }
-
-    @Override
-    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
-        return timenow - time > timebound || time - timenow > timebound;
     }
 }

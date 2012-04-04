@@ -16,10 +16,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 For more information: www.smartfrog.org
 
-*/
+ */
 package org.smartfrog.services.anubis.locator.subprocess;
-
-
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -28,6 +26,9 @@ import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
 public interface SPListener extends Remote {
     public void newValue(ProviderInstance i) throws RemoteException;
+
     public void removeValue(ProviderInstance i) throws RemoteException;
-    public void removeValue(ProviderInstance i, long time) throws RemoteException;
+
+    public void removeValue(ProviderInstance i, long time)
+                                                          throws RemoteException;
 }

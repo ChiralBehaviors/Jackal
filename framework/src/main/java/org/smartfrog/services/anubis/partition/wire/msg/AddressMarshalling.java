@@ -4,22 +4,19 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
 final public class AddressMarshalling implements WireSizes {
-    static final private Logger log = Logger.getLogger(AddressMarshalling.class.getCanonicalName());
-    static final private int addressIdx = intSz;
-    static final private int lengthIdx = 0;
-    static final private int nullAddress = 0;
-    static final private int portIdx = addressIdx + maxInetAddressSz;
-    static final public int connectionAddressWireSz = portIdx + intSz;
-
-    private AddressMarshalling() {
-        // no instances
-    }
+    static final private Logger log                     = LoggerFactory.getLogger(AddressMarshalling.class.getCanonicalName());
+    static final private int    addressIdx              = intSz;
+    static final private int    lengthIdx               = 0;
+    static final private int    nullAddress             = 0;
+    static final private int    portIdx                 = addressIdx
+                                                          + maxInetAddressSz;
+    static final public int     connectionAddressWireSz = portIdx + intSz;
 
     public static InetSocketAddress readWireForm(ByteBuffer bytes, int idx) {
         int length = bytes.getInt(idx + lengthIdx);
@@ -35,8 +32,7 @@ final public class AddressMarshalling implements WireSizes {
         try {
             inetAddress = InetAddress.getByAddress(address);
         } catch (UnknownHostException ex) {
-            log.log(Level.WARNING,
-                    "Unknown host when unmarshalling socket address", ex);
+            log.warn("Unknown host when unmarshalling socket address", ex);
             return null;
         }
 
@@ -56,5 +52,9 @@ final public class AddressMarshalling implements WireSizes {
             bytes.put(idx + addressIdx + i, address[i]);
         }
         bytes.putInt(idx + portIdx, ipaddress.getPort());
+    }
+
+    private AddressMarshalling() {
+        // no instances
     }
 }

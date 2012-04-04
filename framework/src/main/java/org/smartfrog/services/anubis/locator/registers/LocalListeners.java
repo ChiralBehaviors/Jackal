@@ -24,9 +24,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
@@ -74,7 +74,7 @@ public class LocalListeners {
     private Map<String, ListenerInfo>      listeners       = new HashMap<String, ListenerInfo>();
     private Locator                        locator         = null;
 
-    private static final Logger            log             = Logger.getLogger(LocalListeners.class.getCanonicalName());
+    private static final Logger            log             = LoggerFactory.getLogger(LocalListeners.class.getCanonicalName());
 
     private int                            me;
     /**
@@ -84,7 +84,7 @@ public class LocalListeners {
      * be removed from the listenerInfo records.
      */
     private SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
-    private long                           uniqueRegId     = 0;                                                         ;
+    private long                           uniqueRegId     = 0;                                                                ;
 
     public LocalListeners(Locator l, int id) {
         locator = l;
@@ -214,8 +214,8 @@ public class LocalListeners {
          * if there is no corresponding listener info then just drop
          */
         if (!listeners.containsKey(provider.name)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": there are no listeners for removed "
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": there are no listeners for removed "
                           + provider);
             }
             return;
@@ -226,8 +226,8 @@ public class LocalListeners {
          */
         ListenerInfo info = listeners.get(provider.name);
         if (info.providers.remove(provider) == null) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": listeners did not know removed " + provider);
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": listeners did not know removed " + provider);
             }
             return;
         }
@@ -258,8 +258,8 @@ public class LocalListeners {
          * deregister will happen.
          */
         if (!listeners.containsKey(provider.name)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me + ": no listener info matching reported "
+            if (log.isTraceEnabled()) {
+                log.trace(me + ": no listener info matching reported "
                           + provider);
             }
             return;
@@ -276,8 +276,8 @@ public class LocalListeners {
          * contains a record for the source node.
          */
         if (info.providers.put(provider, provider) == null) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(me
+            if (log.isTraceEnabled()) {
+                log.trace(me
                           + ": listeners received state of previously unknown "
                           + provider);
             }
@@ -340,8 +340,8 @@ public class LocalListeners {
      * bound.
      */
     public synchronized void reRegisterAll() {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Reregistering all listeners");
+        if (log.isTraceEnabled()) {
+            log.trace("Reregistering all listeners");
         }
         Iterator<ListenerInfo> iter = listeners.values().iterator();
         while (iter.hasNext()) {

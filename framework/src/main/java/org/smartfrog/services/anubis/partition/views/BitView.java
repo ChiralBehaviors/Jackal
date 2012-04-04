@@ -143,11 +143,6 @@ public class BitView implements View, Cloneable, Serializable,
     }
 
     @Override
-    public int hashCode() {
-        return view.hashCode();
-    }
-
-    @Override
     public boolean equalsView(View v) {
         return view.equals(v.toBitSet());
     }
@@ -158,6 +153,11 @@ public class BitView implements View, Cloneable, Serializable,
     }
 
     @Override
+    public int hashCode() {
+        return view.hashCode();
+    }
+
+    @Override
     public boolean isEmpty() {
         return view.isEmpty();
     }
@@ -165,6 +165,46 @@ public class BitView implements View, Cloneable, Serializable,
     @Override
     public boolean isStable() {
         return stable;
+    }
+
+    @Override
+    public Iterator<Integer> iterator() {
+        int i = 0;
+        for (i = 0; i < size(); i++) {
+            if (contains(i)) {
+                break;
+            }
+        }
+        final int startPos = i;
+        return new Iterator<Integer>() {
+            int index = startPos;
+
+            @Override
+            public boolean hasNext() {
+                return contains(index);
+            }
+
+            @Override
+            public Integer next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                int value = index;
+                int i = index + 1;
+                for (; i < size(); i++) {
+                    if (contains(i)) {
+                        break;
+                    }
+                }
+                index = i;
+                return value;
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     public BitView merge(View v) {
@@ -237,45 +277,5 @@ public class BitView implements View, Cloneable, Serializable,
         }
         builder.append(">");
         return builder.toString();
-    }
-
-    @Override
-    public Iterator<Integer> iterator() {
-        int i = 0;
-        for (i = 0; i < size(); i++) {
-            if (contains(i)) {
-                break;
-            }
-        }
-        final int startPos = i;
-        return new Iterator<Integer>() {
-            int index = startPos;
-
-            @Override
-            public boolean hasNext() {
-                return contains(index);
-            }
-
-            @Override
-            public Integer next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-                int value = index;
-                int i = index + 1;
-                for (; i < size(); i++) {
-                    if (contains(i)) {
-                        break;
-                    }
-                }
-                index = i;
-                return value;
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
     }
 }

@@ -17,10 +17,9 @@
  */
 package com.hellblazer.jackal.gossip.fd;
 
-import com.hellblazer.jackal.gossip.FailureDetector;
-import com.hellblazer.jackal.gossip.fd.PhiAccrualFailureDetector;
-
 import junit.framework.TestCase;
+
+import com.hellblazer.jackal.gossip.FailureDetector;
 
 /**
  * Basic testing of the failure detector
@@ -32,11 +31,9 @@ public class PhiAccrualFailureDetectorTest extends TestCase {
 
     public void testDetector() throws Exception {
 
-        FailureDetector detector = new PhiAccrualFailureDetector(11,
-                                                                        false,
-                                                                        1000,
-                                                                        500, 0,
-                                                                        1.0);
+        FailureDetector detector = new PhiAccrualFailureDetector(11, false,
+                                                                 1000, 500, 0,
+                                                                 1.0);
         long inc = 500;
 
         long now = System.currentTimeMillis();

@@ -33,16 +33,16 @@ public class TimedFailureDetector implements FailureDetector {
     }
 
     @Override
+    public void record(long now, long delay) {
+        last = now;
+    }
+
+    @Override
     public boolean shouldConvict(long now) {
         if (last < 0) {
             return false;
         }
         return now - last > maxInterval;
-    }
-
-    @Override
-    public void record(long now, long delay) {
-        last = now;
     }
 
 }

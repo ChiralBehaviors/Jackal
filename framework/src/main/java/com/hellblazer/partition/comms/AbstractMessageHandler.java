@@ -29,9 +29,8 @@ import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 import com.hellblazer.jackal.util.HexDump;
@@ -71,8 +70,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
 
     @Override
     public void readReady() {
-        if (getLog().isLoggable(Level.FINEST)) {
-            getLog().finest(format("Socket read ready [%s]", this));
+        if (getLog().isTraceEnabled()) {
+            getLog().trace(format("Socket read ready [%s]", this));
         }
         switch (readState) {
             case ERROR:
@@ -88,23 +87,23 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                 }
                 rxHeader.clear();
                 int readMagic = rxHeader.getInt();
-                if (getLog().isLoggable(Level.FINEST)) {
-                    getLog().finest("Read magic number: " + readMagic);
+                if (getLog().isTraceEnabled()) {
+                    getLog().trace("Read magic number: " + readMagic);
                 }
                 if (readMagic == MAGIC_NUMBER) {
-                    if (getLog().isLoggable(Level.FINEST)) {
-                        getLog().finest("RxHeader magic-number fits");
+                    if (getLog().isTraceEnabled()) {
+                        getLog().trace("RxHeader magic-number fits");
                     }
                     // get the object size and create a new buffer for it
                     int objectSize = rxHeader.getInt();
-                    if (getLog().isLoggable(Level.FINEST)) {
-                        getLog().finest("read objectSize: " + objectSize);
+                    if (getLog().isTraceEnabled()) {
+                        getLog().trace("read objectSize: " + objectSize);
                     }
                     readBuffer = ByteBuffer.wrap(new byte[objectSize]);
                     readState = State.BODY;
                 } else {
-                    getLog().severe("%  CANNOT FIND MAGIC_NUMBER:  "
-                                            + readMagic + " instead");
+                    getLog().error("%  CANNOT FIND MAGIC_NUMBER:  " + readMagic
+                                           + " instead");
                     readState = State.ERROR;
                     shutdown();
                     return;
@@ -144,8 +143,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
             return;
         }
         try {
-            if (getLog().isLoggable(Level.FINEST)) {
-                getLog().finest(format("Socket write ready [%s]", this));
+            if (getLog().isTraceEnabled()) {
+                getLog().trace(format("Socket write ready [%s]", this));
             }
             switch (writeState) {
                 case ERROR:
@@ -208,18 +207,16 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                 return false;
             }
         } catch (IOException ioe) {
-            if (getLog().isLoggable(Level.FINE)) {
-                getLog().log(Level.FINE,
-                             format("Failed to read socket channel [%s]", this),
-                             ioe);
+            if (getLog().isTraceEnabled()) {
+                getLog().trace(format("Failed to read socket channel [%s]",
+                                      this), ioe);
             }
             error();
             return false;
         } catch (NotYetConnectedException nycex) {
-            if (getLog().isLoggable(Level.WARNING)) {
-                getLog().log(Level.WARNING,
-                             "Attempt to read a socket channel before it is connected",
-                             nycex);
+            if (getLog().isWarnEnabled()) {
+                getLog().warn("Attempt to read a socket channel before it is connected",
+                              nycex);
             }
             error();
             return false;
@@ -234,16 +231,15 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                 return false;
             }
         } catch (ClosedChannelException e) {
-            if (getLog().isLoggable(Level.FINER)) {
-                getLog().log(Level.FINER,
-                             format("shutting down handler due to other side closing [%s]",
-                                    this), e);
+            if (getLog().isTraceEnabled()) {
+                getLog().trace(format("shutting down handler due to other side closing [%s]",
+                                      this), e);
             }
             error();
             return false;
         } catch (IOException ioe) {
-            if (getLog().isLoggable(Level.WARNING) && !isClose(ioe)) {
-                getLog().log(Level.WARNING, "shutting down handler", ioe);
+            if (getLog().isWarnEnabled() && !isClose(ioe)) {
+                getLog().warn("shutting down handler", ioe);
             }
             error();
             return false;
@@ -266,8 +262,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     abstract protected Logger getLog();
 
     protected void sendObject(byte[] bytes) {
-        if (getLog().isLoggable(Level.FINER)) {
-            getLog().finer(format("sendObject being called [%s]", this));
+        if (getLog().isTraceEnabled()) {
+            getLog().trace(format("sendObject being called [%s]", this));
         }
         writes.add(ByteBuffer.wrap(bytes));
         handler.selectForWrite();

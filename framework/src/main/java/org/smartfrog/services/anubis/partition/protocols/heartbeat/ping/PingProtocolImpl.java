@@ -20,9 +20,9 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.ping;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -62,7 +62,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     private InetSocketAddress                address          = null;
     private boolean                          expected         = true;
     private transient final ViewListener     listener;
-    private static final Logger              log              = Logger.getLogger(PingProtocolImpl.class.getCanonicalName());
+    private static final Logger              log              = LoggerFactory.getLogger(PingProtocolImpl.class.getCanonicalName());
     private Identity                         me               = null;
     private long                             pingTime         = 0;
     private Identity                         sender           = null;
@@ -98,6 +98,11 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
         }
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
     /**
      * Sender interface
      * 
@@ -123,6 +128,11 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
         return time;
     }
 
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
     /**
      * indicates if the heartbeat protocol is timely. This method is called
      * periodically by the connectionSet as part of a connection cleanup action.
@@ -140,6 +150,11 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
             return true;
         }
         return timenow - pingTime > timebound;
+    }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return isNotTimely(timenow, timebound);
     }
 
     /**
@@ -186,7 +201,7 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     public boolean receiveHeartbeat(Heartbeat hb) {
 
         if (!(hb instanceof PingHeartbeatMsg)) {
-            log.severe(me + " ping protocol received a non-ping heartbeat");
+            log.error(me + " ping protocol received a non-ping heartbeat");
             return false;
         }
 
@@ -227,14 +242,14 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
                 listener.newView(sender, this);
             }
 
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Accepting heart beat: " + hb);
+            if (log.isTraceEnabled()) {
+                log.trace("Accepting heart beat: " + hb);
             }
             return true;
 
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Rejecting heart beat: " + hb);
+        if (log.isTraceEnabled()) {
+            log.trace("Rejecting heart beat: " + hb);
         }
         return false;
     }
@@ -248,20 +263,5 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
     public void terminate() {
         terminated = true;
         sharedData.clearPingBit(me);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
-        return isNotTimely(timenow, timebound);
     }
 }

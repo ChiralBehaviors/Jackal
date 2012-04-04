@@ -22,8 +22,8 @@ package org.smartfrog.services.anubis.partition.comms;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 
 public interface Connection extends HeartbeatProtocol {
+    public boolean isSelf();
+
     @Override
     public void terminate();
-
-    public boolean isSelf();
 }

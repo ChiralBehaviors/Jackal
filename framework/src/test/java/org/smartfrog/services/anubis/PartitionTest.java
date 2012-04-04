@@ -20,10 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import junit.framework.TestCase;
 
+import org.slf4j.Logger;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -46,61 +46,6 @@ abstract public class PartitionTest extends TestCase {
     final Logger                             log     = getLogger();
     List<AnnotationConfigApplicationContext> memberContexts;
     List<TestNode>                           partition;
-
-    /**
-     * Test that a partition can form two stable sub partions and then reform
-     * the original partition.
-     */
-    public void testSymmetricPartition() throws Exception {
-        int minorPartitionSize = configs.length / 2;
-        BitView A = new BitView();
-        BitView B = new BitView();
-        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
-        List<TestNode> partitionA = new ArrayList<TestNode>();
-
-        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
-        List<TestNode> partitionB = new ArrayList<TestNode>();
-
-        int i = 0;
-        for (TestNode member : partition) {
-            if (i++ % 2 == 0) {
-                partitionA.add(member);
-                member.latch = latchA;
-                member.cardinality = minorPartitionSize;
-                A.add(member.getIdentity());
-            } else {
-                partitionB.add(member);
-                member.latch = latchB;
-                member.cardinality = minorPartitionSize;
-                B.add(member.getIdentity());
-            }
-        }
-        log.info("symmetric partitioning: " + A);
-        controller.symPartition(A);
-        log.info("Awaiting stability of minor partition A");
-        latchA.await(60, TimeUnit.SECONDS);
-        log.info("Awaiting stability of minor partition B");
-        latchB.await(60, TimeUnit.SECONDS);
-
-        for (TestNode member : partitionA) {
-            assertEquals(A, member.getPartition());
-        }
-
-        for (TestNode member : partitionB) {
-            assertEquals(B, member.getPartition());
-        }
-
-        // reform
-        CountDownLatch latch = new CountDownLatch(configs.length);
-        for (TestNode node : partition) {
-            node.latch = latch;
-            node.cardinality = configs.length;
-        }
-
-        controller.clearPartitions();
-        log.info("Awaiting stability of reformed major partition");
-        latch.await(60, TimeUnit.SECONDS);
-    }
 
     /**
      * Test that a partition can form two asymmetric partitions, with one
@@ -157,6 +102,61 @@ abstract public class PartitionTest extends TestCase {
         for (TestNode member : partition) {
             assertEquals(All, member.getPartition());
         }
+    }
+
+    /**
+     * Test that a partition can form two stable sub partions and then reform
+     * the original partition.
+     */
+    public void testSymmetricPartition() throws Exception {
+        int minorPartitionSize = configs.length / 2;
+        BitView A = new BitView();
+        BitView B = new BitView();
+        CountDownLatch latchA = new CountDownLatch(minorPartitionSize);
+        List<TestNode> partitionA = new ArrayList<TestNode>();
+
+        CountDownLatch latchB = new CountDownLatch(minorPartitionSize);
+        List<TestNode> partitionB = new ArrayList<TestNode>();
+
+        int i = 0;
+        for (TestNode member : partition) {
+            if (i++ % 2 == 0) {
+                partitionA.add(member);
+                member.latch = latchA;
+                member.cardinality = minorPartitionSize;
+                A.add(member.getIdentity());
+            } else {
+                partitionB.add(member);
+                member.latch = latchB;
+                member.cardinality = minorPartitionSize;
+                B.add(member.getIdentity());
+            }
+        }
+        log.info("symmetric partitioning: " + A);
+        controller.symPartition(A);
+        log.info("Awaiting stability of minor partition A");
+        latchA.await(60, TimeUnit.SECONDS);
+        log.info("Awaiting stability of minor partition B");
+        latchB.await(60, TimeUnit.SECONDS);
+
+        for (TestNode member : partitionA) {
+            assertEquals(A, member.getPartition());
+        }
+
+        for (TestNode member : partitionB) {
+            assertEquals(B, member.getPartition());
+        }
+
+        // reform
+        CountDownLatch latch = new CountDownLatch(configs.length);
+        for (TestNode node : partition) {
+            node.latch = latch;
+            node.cardinality = configs.length;
+        }
+
+        controller.clearPartitions();
+        log.info("Awaiting stability of reformed major partition");
+        latch.await(60, TimeUnit.SECONDS);
     }
 
     private List<AnnotationConfigApplicationContext> createMembers() {

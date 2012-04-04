@@ -26,7 +26,7 @@ public class ThreadsMsg implements Serializable {
      * 
      */
     private static final long serialVersionUID = 1L;
-    public String threadsStatusString;
+    public String             threadsStatusString;
 
     public ThreadsMsg(String threadsStatus) {
         threadsStatusString = threadsStatus;

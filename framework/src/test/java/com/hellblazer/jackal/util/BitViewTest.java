@@ -15,13 +15,13 @@ public class BitViewTest extends TestCase {
         for (int i = 0; i < 10; i++) {
             bv.add(i);
         }
-        
+
         Set<Integer> bag = new HashSet<Integer>();
-        for (int i: bv) {
+        for (int i : bv) {
             bag.add(i);
         }
         assertEquals(10, bag.size());
-        
+
         for (int i = 0; i < 10; i++) {
             assertTrue(bag.contains(i));
         }

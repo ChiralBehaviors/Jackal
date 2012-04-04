@@ -17,8 +17,9 @@
 package com.hellblazer.jackal.gossip;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.PartitionTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,10 +36,14 @@ import com.hellblazer.jackal.testUtil.gossip.GossipTestCfg;
  * 
  */
 public class UdpPartitionTest extends PartitionTest {
-    private static final AtomicInteger id = new AtomicInteger(-1);
+    @Configuration
+    static class member extends GossipNodeCfg {
 
-    public static void reset() {
-        id.set(-1);
+        @Override
+        @Bean
+        public int node() {
+            return id.incrementAndGet();
+        }
     }
 
     @Configuration
@@ -57,18 +62,14 @@ public class UdpPartitionTest extends PartitionTest {
         }
     }
 
-    @Configuration
-    static class member extends GossipNodeCfg {
-
-        @Override
-        @Bean
-        public int node() {
-            return id.incrementAndGet();
-        }
-    }
+    private static final AtomicInteger id = new AtomicInteger(-1);
 
     static {
         GossipTestCfg.setTestPorts(24030, 24050);
+    }
+
+    public static void reset() {
+        id.set(-1);
     }
 
     @Override
@@ -88,7 +89,7 @@ public class UdpPartitionTest extends PartitionTest {
 
     @Override
     protected Logger getLogger() {
-        return Logger.getLogger(getClass().getCanonicalName());
+        return LoggerFactory.getLogger(getClass());
     }
 
     @Override

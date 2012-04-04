@@ -24,12 +24,12 @@ import java.nio.ByteBuffer;
 
 public class WireMsg implements WireSizes {
 
-    public static final int WIRE_TYPE = 100;
-    protected static final int WIRE_SIZE = intSz;
-    protected byte[] bytes = null;
+    public static final int    WIRE_TYPE   = 100;
+    protected static final int WIRE_SIZE   = intSz;
+    protected byte[]           bytes       = null;
 
-    protected int trailerSize = 0;
-    protected ByteBuffer wireForm = null;
+    protected int              trailerSize = 0;
+    protected ByteBuffer       wireForm    = null;
 
     /**
      * Construct from the wire form. Each substype should implement a similar

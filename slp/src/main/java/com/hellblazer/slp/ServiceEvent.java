@@ -36,11 +36,11 @@ public class ServiceEvent implements Serializable {
     public ServiceEvent(EventType type, ServiceReference reference) {
         this.type = type;
         this.reference = reference;
-    } 
+    }
 
     public ServiceReference getReference() {
         return reference;
-    } 
+    }
 
     public EventType getType() {
         return type;

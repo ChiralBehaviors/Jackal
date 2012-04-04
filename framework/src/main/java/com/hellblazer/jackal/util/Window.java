@@ -49,6 +49,16 @@ public class Window {
         return item;
     }
 
+    /**
+     * reset the state of the receiver
+     */
+    public void reset() {
+        count = 0;
+        head = 0;
+        Arrays.fill(samples, 0.0D);
+        tail = 0;
+    }
+
     public int size() {
         return count;
     }
@@ -63,15 +73,5 @@ public class Window {
         }
         buf.append("]");
         return buf.toString();
-    }
-
-    /**
-     * reset the state of the receiver
-     */
-    public void reset() {
-        count = 0;
-        head = 0;
-        Arrays.fill(samples, 0.0D);
-        tail = 0;
     }
 }

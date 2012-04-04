@@ -20,7 +20,8 @@ import java.io.Serializable;
 
 /**
  * The service type represents a service advertisement's type. They may be of
- * three types : 
+ * three types :
+ * 
  * <pre>
  *      simple type     : 'service:simpletype' 
  *                              e.g. 'service:http' , 'service:telnet' 
@@ -32,17 +33,17 @@ import java.io.Serializable;
  * 
  */
 public class ServiceType implements Serializable {
-    private static final long serialVersionUID = 1L; 
-    public static final String IANA = ""; 
-    public static final String servicePrefix = "service:";
-    private String concreteType = "";
-    private String abstractType = "";
-    private String simpleType = "";
+    private static final long  serialVersionUID = 1L;
+    public static final String IANA             = "";
+    public static final String servicePrefix    = "service:";
+    private String             concreteType     = "";
+    private String             abstractType     = "";
+    private String             simpleType       = "";
 
-    String typeName;
-    String namingAuthority = IANA;;
+    String                     typeName;
+    String                     namingAuthority  = IANA;       ;
 
-    boolean isServiceType = false, isAbstract = false;
+    boolean                    isServiceType    = false, isAbstract = false;
 
     /**
      * Create a service type object from the type name. The name may take the

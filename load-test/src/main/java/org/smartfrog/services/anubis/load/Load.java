@@ -43,38 +43,6 @@ public class Load {
     private static InetSocketAddress             contactEndpoint;
     private static int                           id;
 
-    @Bean(name = "seedHosts")
-    protected Collection<InetSocketAddress> seedHosts()
-                                                       throws UnknownHostException {
-        return seedHosts;
-    }
-
-    @Bean(name = "gossipEndpoint")
-    protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
-        return gossipEndpoint;
-    }
-
-    @Bean(name = "connectionSetEndpoint")
-    protected InetSocketAddress contactAddress() throws UnknownHostException {
-        return contactEndpoint;
-    }
-
-    @Bean
-    public HeartbeatConfiguration heartbeatConfig() {
-        return new HeartbeatConfiguration(3000, 2);
-    }
-
-    protected int node() {
-        if (id == -1) {
-            try {
-                return Identity.getIdFromLocalIpAddress();
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-        return id;
-    }
-
     public static void main(String[] argv) throws Exception {
         FileInputStream fis = new FileInputStream(PROP_FILE_NAME);
         Properties props = new Properties();
@@ -156,5 +124,37 @@ public class Load {
         }
         throw new IllegalArgumentException("Invalid host:port specification: "
                                            + endpoint);
+    }
+
+    @Bean
+    public HeartbeatConfiguration heartbeatConfig() {
+        return new HeartbeatConfiguration(3000, 2);
+    }
+
+    @Bean(name = "connectionSetEndpoint")
+    protected InetSocketAddress contactAddress() throws UnknownHostException {
+        return contactEndpoint;
+    }
+
+    @Bean(name = "gossipEndpoint")
+    protected InetSocketAddress gossipEndpoint() throws UnknownHostException {
+        return gossipEndpoint;
+    }
+
+    protected int node() {
+        if (id == -1) {
+            try {
+                return Identity.getIdFromLocalIpAddress();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return id;
+    }
+
+    @Bean(name = "seedHosts")
+    protected Collection<InetSocketAddress> seedHosts()
+                                                       throws UnknownHostException {
+        return seedHosts;
     }
 }

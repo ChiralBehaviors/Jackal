@@ -22,8 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import com.hellblazer.jackal.util.RunningMedian;
-
 import junit.framework.TestCase;
 
 public class RunningMedianTest extends TestCase {

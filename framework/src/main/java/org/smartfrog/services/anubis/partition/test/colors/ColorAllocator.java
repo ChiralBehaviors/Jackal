@@ -34,15 +34,15 @@ public class ColorAllocator {
      * keep a list of colors that have been allocated indexed by bitmap (from
      * the view)
      */
-    private Map<NodeIdSet, Color> allocations = new HashMap<NodeIdSet, Color>();
+    private Map<NodeIdSet, Color>       allocations = new HashMap<NodeIdSet, Color>();
 
-    private ColorMap colorMap = new ColorMap();
+    private ColorMap                    colorMap    = new ColorMap();
 
     /**
      * keep a list of nodes that have a color allocated indexed by bitmap (from
      * the view)
      */
-    private SetMap<NodeIdSet, NodeData> nodes = new SetMap<NodeIdSet, NodeData>();
+    private SetMap<NodeIdSet, NodeData> nodes       = new SetMap<NodeIdSet, NodeData>();
 
     public ColorAllocator() {
     }

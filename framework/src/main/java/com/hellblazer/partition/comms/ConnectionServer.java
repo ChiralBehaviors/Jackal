@@ -22,9 +22,9 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.comms.IOConnectionServer;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionSet;
@@ -53,7 +53,7 @@ public class ConnectionServer implements IOConnectionServer {
 
     }
 
-    private final static Logger              log = Logger.getLogger(ConnectionServer.class.getCanonicalName());
+    private final static Logger              log = LoggerFactory.getLogger(ConnectionServer.class);
 
     private final ConnectionSet              connectionSet;
     private final ServerSocketChannelHandler handler;
@@ -89,8 +89,8 @@ public class ConnectionServer implements IOConnectionServer {
     @Override
     public void initiateConnection(Identity id, MessageConnection con,
                                    Heartbeat hb) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Initiating connection to " + con.getSender());
+        if (log.isTraceEnabled()) {
+            log.trace("Initiating connection to " + con.getSender());
         }
         InetSocketAddress conAd = con.getSenderAddress();
         try {
@@ -105,12 +105,12 @@ public class ConnectionServer implements IOConnectionServer {
                                                                          HeartbeatMsg.toHeartbeatMsg(hb),
                                                                          wireSecurity)));
         } catch (ClosedByInterruptException e) {
-            if (log.isLoggable(Level.INFO)) {
-                log.log(Level.INFO, "Connection closed", e);
+            if (log.isInfoEnabled()) {
+                log.info("Connection closed", e);
             }
         } catch (Exception e) {
-            if (log.isLoggable(Level.INFO)) {
-                log.log(Level.INFO, "Cannot start connection", e);
+            if (log.isInfoEnabled()) {
+                log.info("Cannot start connection", e);
             }
         }
     }

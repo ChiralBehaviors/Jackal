@@ -141,6 +141,20 @@ public final class SkipList {
         return true;
     }
 
+    /**
+     * reset the receiver's state
+     */
+    public void reset() {
+        head = new Node(Double.NaN, MAX_LEVEL);
+        level = 1;
+        size = 0;
+        for (int i = 0; i < MAX_LEVEL; i++) {
+            head.next[i] = head;
+            head.dist[i] = 1;
+        }
+        head.prev = head;
+    }
+
     public int size() {
         return size;
     }
@@ -189,20 +203,6 @@ public final class SkipList {
             }
         }
         return curr;
-    }
-
-    /**
-     * reset the receiver's state
-     */
-    public void reset() {
-        head = new Node(Double.NaN, MAX_LEVEL);
-        level = 1;
-        size = 0;
-        for (int i = 0; i < MAX_LEVEL; i++) {
-            head.next[i] = head;
-            head.dist[i] = 1;
-        }
-        head.prev = head;
     }
 
 }

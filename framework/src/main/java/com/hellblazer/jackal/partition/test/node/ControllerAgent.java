@@ -76,11 +76,12 @@ public class ControllerAgent {
     private final WireSecurity               wireSecurity;
 
     public ControllerAgent(InetSocketAddress endpoint,
-                      PartitionManager partitionManager, int id,
-                      ConnectionSet connectionSet, SocketOptions socketOptions,
-                      WireSecurity wireSecurity, ExecutorService commsExec)
-                                                                           throws IOException,
-                                                                           Exception {
+                           PartitionManager partitionManager, int id,
+                           ConnectionSet connectionSet,
+                           SocketOptions socketOptions,
+                           WireSecurity wireSecurity, ExecutorService commsExec)
+                                                                                throws IOException,
+                                                                                Exception {
         this.partitionManager = partitionManager;
         handler = new ServerSocketChannelHandler(
                                                  String.format("Partition Manager Test Node %s - connection server",
@@ -151,6 +152,10 @@ public class ControllerAgent {
         tc.sendObject(new IgnoringMsg(ignoring));
     }
 
+    public void updateStats(ControllerConnection connection) {
+        connection.sendObject(statistics.statsMsg());
+    }
+
     public void updateStats(long timenow) {
         if (lastStatistics < timenow - statisticsInterval) {
             Iterator<ControllerConnection> iter = connections.iterator();
@@ -159,10 +164,6 @@ public class ControllerAgent {
             }
             lastStatistics = timenow;
         }
-    }
-
-    public void updateStats(ControllerConnection connection) {
-        connection.sendObject(statistics.statsMsg());
     }
 
     public void updateStatus(ControllerConnection connection) {

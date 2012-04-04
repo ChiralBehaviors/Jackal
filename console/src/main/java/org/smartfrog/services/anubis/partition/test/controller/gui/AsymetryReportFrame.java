@@ -44,11 +44,11 @@ public class AsymetryReportFrame extends JFrame {
      * 
      */
     private static final long serialVersionUID = 1L;
-    private JTable asymetryTable = null;
+    private JTable            asymetryTable    = null;
     private GraphicController controller;
-    private JPanel jPanel1 = new JPanel();
-    private JScrollPane jScrollPane = new JScrollPane(jPanel1);
-    private int magic;
+    private JPanel            jPanel1          = new JPanel();
+    private JScrollPane       jScrollPane      = new JScrollPane(jPanel1);
+    private int               magic;
 
     public AsymetryReportFrame(GraphicController controller,
                                Map<Identity, NodeData> nodes, Identity id)

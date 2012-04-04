@@ -28,7 +28,7 @@ public class SetIgnoringMsg implements Serializable {
      * 
      */
     private static final long serialVersionUID = 1L;
-    public View ignoring;
+    public View               ignoring;
 
     public SetIgnoringMsg(View ignoring) {
         this.ignoring = ignoring;

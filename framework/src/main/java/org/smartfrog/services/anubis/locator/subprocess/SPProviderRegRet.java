@@ -23,8 +23,8 @@ import java.io.Serializable;
 
 public class SPProviderRegRet implements Serializable {
     private static final long serialVersionUID = 1L;
-    public String instance;
-    public long time;
+    public String             instance;
+    public long               time;
 
     public SPProviderRegRet(String instance, long time) {
         this.instance = instance;

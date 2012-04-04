@@ -19,24 +19,23 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 
 public class IntervalExec extends Thread {
 
-    private static final Logger log           = Logger.getLogger(IntervalExec.class.getCanonicalName());
+    private static final Logger      log           = LoggerFactory.getLogger(IntervalExec.class.getCanonicalName());
 
-    private final ConnectionSet connectionSet;
-    private long                heartbeatTime = 0;
-    private volatile long       interval      = 0;
-    private long                lastCheckTime = 0;
-    private volatile boolean    running       = false;
-    private volatile long       stabilityTime = 0;
-    private boolean             stabilizing   = false;
+    private final ConnectionSet      connectionSet;
+    private long                     heartbeatTime = 0;
+    private volatile long            interval      = 0;
+    private long                     lastCheckTime = 0;
+    private volatile boolean         running       = false;
+    private volatile long            stabilityTime = 0;
+    private boolean                  stabilizing   = false;
     private volatile ControllerAgent controller    = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
@@ -47,7 +46,7 @@ public class IntervalExec extends Thread {
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING, "Uncaught exception", e);
+                log.warn("Uncaught exception", e);
             }
         });
     }
@@ -158,8 +157,7 @@ public class IntervalExec extends Thread {
                         connectionSet.checkStability(timenow);
                     }
                 } catch (Throwable e) {
-                    log.log(Level.WARNING, "Error during interval maintenance",
-                            e);
+                    log.warn("Error during interval maintenance", e);
                 }
             }
         }
@@ -197,8 +195,7 @@ public class IntervalExec extends Thread {
         long delay;
 
         if (timenow < lastCheckTime) {
-            log.log(Level.SEVERE,
-                    "IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
+            log.error("IntervalExec observed a system time adjustment - time has gone backwards during the sleep interval");
 
         }
 
@@ -213,23 +210,23 @@ public class IntervalExec extends Thread {
         delay = timenow - earliest;
 
         if (delay > 15000) {
-            log.severe("IntervalExec may have observed a system time adjustment - overslept by "
-                       + delay
-                       + "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
-            if (log.isLoggable(Level.FINE)) {
-                log.fine(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s",
-                                       timenow, delay, stabilityTime,
-                                       heartbeatTime));
+            log.error("IntervalExec may have observed a system time adjustment - overslept by "
+                      + delay
+                      + "ms - this is excessive for a scheduling delay and is most likely to be a system time adjustment");
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s",
+                                        timenow, delay, stabilityTime,
+                                        heartbeatTime));
             }
         } else if (delay > 200) {
-            if (log.isLoggable(Level.INFO)) {
+            if (log.isInfoEnabled()) {
                 log.info("IntervalExec overslept by " + delay
                          + "ms - this is a scheduling delay or time adjustment");
             }
-            if (log.isLoggable(Level.FINE)) {
-                log.fine(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s",
-                                       timenow, delay, stabilityTime,
-                                       heartbeatTime));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("timenow: %s, delay:%s, stabilityTime: %s, heartbeatTime: %s",
+                                        timenow, delay, stabilityTime,
+                                        heartbeatTime));
             }
         }
     }

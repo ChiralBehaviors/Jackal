@@ -27,16 +27,6 @@ package com.hellblazer.jackal.gossip;
 public interface FailureDetector {
 
     /**
-     * Answer true if the suspicion level of the detector has exceeded the
-     * conviction threshold.
-     * 
-     * @param now
-     *            - the the time to calculate conviction
-     * @return - true if the conviction threshold has been exceeded.
-     */
-    public abstract boolean shouldConvict(long now);
-
-    /**
      * Record the arrival time of a heartbeat.
      * 
      * @param now
@@ -45,5 +35,15 @@ public interface FailureDetector {
      *            - the local delay perceived in receiving the heartbeat
      */
     public abstract void record(long now, long delay);
+
+    /**
+     * Answer true if the suspicion level of the detector has exceeded the
+     * conviction threshold.
+     * 
+     * @param now
+     *            - the the time to calculate conviction
+     * @return - true if the conviction threshold has been exceeded.
+     */
+    public abstract boolean shouldConvict(long now);
 
 }

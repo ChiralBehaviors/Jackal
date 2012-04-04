@@ -27,10 +27,10 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 
 public class ColorMap {
 
-    public static final Color defaultColor = Color.white;
-    private ColorMatrix color;
+    public static final Color       defaultColor = Color.white;
+    private ColorMatrix             color;
 
-    private Map<Integer, NodeIdSet> viewColor = new HashMap<Integer, NodeIdSet>();
+    private Map<Integer, NodeIdSet> viewColor    = new HashMap<Integer, NodeIdSet>();
 
     public ColorMap() {
         color = new ColorMatrix();
@@ -95,12 +95,12 @@ public class ColorMap {
 
 class ColorMatrix {
 
-    int blueStep = 11; // 10 values (dito)
-    Color[] color = new Color[301];
-    int greenStep = 11; // 10 values (100, 111, 122, 133, ..., 199)
-    int redStep = 34; // 3 values (100, 134, 168)
-    int size = 301;
-    int step = 7;
+    int     blueStep  = 11;            // 10 values (dito)
+    Color[] color     = new Color[301];
+    int     greenStep = 11;            // 10 values (100, 111, 122, 133, ..., 199)
+    int     redStep   = 34;            // 3 values (100, 134, 168)
+    int     size      = 301;
+    int     step      = 7;
 
     ColorMatrix() {
         int idx = 0;

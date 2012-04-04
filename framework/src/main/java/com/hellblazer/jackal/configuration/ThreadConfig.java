@@ -21,9 +21,9 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -37,34 +37,7 @@ import org.springframework.context.annotation.Primary;
  */
 @Configuration
 public class ThreadConfig {
-    private static final Logger log = Logger.getLogger(StandardConfigurationConfig.class.getCanonicalName());
-
-    @Bean(name = "communicationsDispatchers")
-    @Primary
-    @Autowired
-    public ExecutorService communicationsDispatchers(Identity partitionIdentity) {
-        final int id = partitionIdentity.id;
-        return Executors.newCachedThreadPool(new ThreadFactory() {
-            int count = 0;
-
-            @Override
-            public Thread newThread(Runnable target) {
-                Thread t = new Thread(
-                                      target,
-                                      String.format("Communications Dispatcher[%s] for node[%s]",
-                                                    count++, id));
-                t.setDaemon(true);
-                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.SEVERE,
-                                String.format("Exception on %s", t), e);
-                    }
-                });
-                return t;
-            }
-        });
-    }
+    private static final Logger log = LoggerFactory.getLogger(StandardConfigurationConfig.class);
 
     @Bean(name = "agentDispatchers")
     @Lazy
@@ -84,8 +57,33 @@ public class ThreadConfig {
                 t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.SEVERE,
-                                String.format("Exception on %s", t), e);
+                        log.error(String.format("Exception on %s", t), e);
+                    }
+                });
+                return t;
+            }
+        });
+    }
+
+    @Bean(name = "communicationsDispatchers")
+    @Primary
+    @Autowired
+    public ExecutorService communicationsDispatchers(Identity partitionIdentity) {
+        final int id = partitionIdentity.id;
+        return Executors.newCachedThreadPool(new ThreadFactory() {
+            int count = 0;
+
+            @Override
+            public Thread newThread(Runnable target) {
+                Thread t = new Thread(
+                                      target,
+                                      String.format("Communications Dispatcher[%s] for node[%s]",
+                                                    count++, id));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.error(String.format("Exception on %s", t), e);
                     }
                 });
                 return t;
@@ -111,8 +109,7 @@ public class ThreadConfig {
                 t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.SEVERE,
-                                String.format("Exception on %s", t), e);
+                        log.error(String.format("Exception on %s", t), e);
                     }
                 });
                 return t;

@@ -27,12 +27,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.registers.GlobalRegisterImpl;
 import org.smartfrog.services.anubis.locator.registers.LocalRegisterImpl;
@@ -54,12 +54,12 @@ public class Locator implements PartitionNotification, AnubisLocator {
         }
     }
 
-    private static final Logger                   log               = Logger.getLogger(Locator.class.getCanonicalName());
+    private static final Logger                   log               = LoggerFactory.getLogger(Locator.class.getCanonicalName());
 
     @SuppressWarnings("rawtypes")
     public final ThreadLocal                      callingThread     = new ThreadLocal();
-    public final GlobalRegisterImpl               global;                                                                // public for debug
-    public final LocalRegisterImpl                local;                                                                 // public for debug
+    public final GlobalRegisterImpl               global;                                                                       // public for debug
+    public final LocalRegisterImpl                local;                                                                        // public for debug
     public final Integer                          me;
     private final Identity                        identity;
     private final InstanceGenerator               instanceGenerator = new InstanceGenerator();
@@ -87,7 +87,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                        log.warn("Uncaught exceptiion", e);
                     }
                 });
                 daemon.setDaemon(true);
@@ -163,9 +163,9 @@ public class Locator implements PartitionNotification, AnubisLocator {
         if (obj instanceof RegisterMsg) {
             deliverRequest((RegisterMsg) obj);
         } else {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest("Locator received un-recognised message " + obj
-                           + " in objectNotificaiton");
+            if (log.isTraceEnabled()) {
+                log.trace("Locator received un-recognised message " + obj
+                          + " in objectNotificaiton");
             }
         }
     }
@@ -178,18 +178,18 @@ public class Locator implements PartitionNotification, AnubisLocator {
      */
     @Override
     public void partitionNotification(final View view, final int leader) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("Partition view: %s, leader: %s, on member %s",
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Partition view: %s, leader: %s, on member %s",
                                     view, leader, me));
         }
-        
+
         /**
          * Keep record of the current stability and which node is leader. The
          * leader holds the active global register.
          */
         stable.set(view.isStable());
         this.leader = Integer.valueOf(leader);
-        
+
         /**
          * The view will only be the same or larger when a stable report is
          * received. If it was stable already it may have jumped to a larger
@@ -201,16 +201,16 @@ public class Locator implements PartitionNotification, AnubisLocator {
          * ....if the global has changed we need to start using the new one.
          */
         if (view.isStable()) {
-        
+
             /**
              * No point in putting jitter in at the global because it doesn't
              * send messages at stability.
              */
             global.stable(leader);
-        
+
             local.stable(leader, view.getTimeStamp());
         }
-        
+
         /**
          * If a view is unstable it may be the same size as previously (in the
          * case that a node has been added) or it may be smaller (in the case
@@ -278,7 +278,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
                 send(msg, leader);
             }
         } else {
-            if (log.isLoggable(Level.INFO)) {
+            if (log.isInfoEnabled()) {
                 log.info("Due to instability I am _NOT_ Sending " + msg
                          + " to global register");
             }
@@ -308,8 +308,8 @@ public class Locator implements PartitionNotification, AnubisLocator {
 
     @PreDestroy
     public void terminate() {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Terminating Locator");
+        if (log.isTraceEnabled()) {
+            log.trace("Terminating Locator");
         }
         global.terminate();
         local.terminate();
@@ -377,16 +377,16 @@ public class Locator implements PartitionNotification, AnubisLocator {
             if (con == null) {
                 con = partition.connect(node.intValue());
                 if (con == null) {
-                    if (log.isLoggable(Level.FINER)) {
-                        log.finer(String.format("Dropping message: %s on: %s destined for: %s, as there is no connection",
+                    if (log.isTraceEnabled()) {
+                        log.trace(String.format("Dropping message: %s on: %s destined for: %s, as there is no connection",
                                                 obj, me, node));
                     }
                     return;
                 }
                 links.put(node, con);
             }
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Sending message: %s on: %s destined for: %s",
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Sending message: %s on: %s destined for: %s",
                                         obj, me, node));
             }
             con.sendObject(obj);

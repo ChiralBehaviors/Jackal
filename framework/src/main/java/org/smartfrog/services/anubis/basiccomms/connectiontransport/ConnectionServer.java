@@ -23,8 +23,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Server of connections.
@@ -36,10 +37,10 @@ import java.util.logging.Logger;
  */
 public class ConnectionServer extends Thread {
 
-    private ConnectionFactory connectionFactory;
+    private ConnectionFactory   connectionFactory;
     private ServerSocketChannel listenSocket;
-    private static final Logger log = Logger.getLogger(ConnectionServer.class.getCanonicalName());
-    volatile private boolean open;
+    private static final Logger log = LoggerFactory.getLogger(ConnectionServer.class.getCanonicalName());
+    volatile private boolean    open;
 
     /**
      * Default constructor is initially unusable. Constructor - sets a null
@@ -50,7 +51,7 @@ public class ConnectionServer extends Thread {
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING, "Uncaught exception", e);
+                log.warn("Uncaught exception", e);
             }
         });
 
@@ -123,21 +124,21 @@ public class ConnectionServer extends Thread {
      */
     @Override
     public void run() {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Starting connection server");
+        if (log.isTraceEnabled()) {
+            log.trace("Starting connection server");
         }
         while (open) {
 
             try {
                 SocketChannel channel = listenSocket.accept();
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer("Accept new socket connection: " + channel);
+                if (log.isTraceEnabled()) {
+                    log.trace("Accept new socket connection: " + channel);
                 }
                 connectionFactory.createConnection(channel);
             } catch (Throwable ex) {
                 if (open) {
-                    if (log.isLoggable(Level.WARNING)) {
-                        log.log(Level.WARNING, "error accepting connection", ex);
+                    if (log.isWarnEnabled()) {
+                        log.warn("error accepting connection", ex);
                     }
                 }
             }
@@ -154,8 +155,8 @@ public class ConnectionServer extends Thread {
     }
 
     public void shutdown() {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Shutting down connection server");
+        if (log.isTraceEnabled()) {
+            log.trace("Shutting down connection server");
         }
         open = false;
         try {
@@ -170,15 +171,15 @@ public class ConnectionServer extends Thread {
      * port. Initially the default connection factory is assumed.
      */
 
-    private void constructServer(InetSocketAddress endpoint)
-                                                                   throws IOException {
+    private void constructServer(InetSocketAddress endpoint) throws IOException {
 
         connectionFactory = new DefaultConnectionFactory();
 
         try {
 
-            if (log.isLoggable(Level.FINE)) {
-                log.fine("Binding blocking connection server to port: " + endpoint.getPort());
+            if (log.isTraceEnabled()) {
+                log.trace("Binding blocking connection server to port: "
+                          + endpoint.getPort());
             }
 
             listenSocket = ServerSocketChannel.open();
@@ -186,7 +187,7 @@ public class ConnectionServer extends Thread {
             listenSocket.socket().bind(endpoint);
 
         } catch (IOException ioex) {
-            log.log(Level.SEVERE, "Failed to create server socket: ", ioex);
+            log.error("Failed to create server socket: ", ioex);
 
             listenSocket = null;
             open = false;

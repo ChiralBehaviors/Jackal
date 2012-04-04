@@ -29,14 +29,15 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public class PingHeartbeatMsg extends HeartbeatMsg {
 
-    static final private int pingBitSz = MAX_BIT_SIZE + intSz;
-    public static final int PING_HEARTBEAT_MSG_WIRE_SIZE = HEARTBEAT_MSG_WIRE_SIZE
-                                                           + pingBitSz;
+    static final private int pingBitSz                    = MAX_BIT_SIZE
+                                                            + intSz;
+    public static final int  PING_HEARTBEAT_MSG_WIRE_SIZE = HEARTBEAT_MSG_WIRE_SIZE
+                                                            + pingBitSz;
 
-    public static final int PING_HEARTBEAT_MSG_WIRE_TYPE = 310;
-    static final private int pingBitIdx = HEARTBEAT_MSG_WIRE_SIZE;
+    public static final int  PING_HEARTBEAT_MSG_WIRE_TYPE = 310;
+    static final private int pingBitIdx                   = HEARTBEAT_MSG_WIRE_SIZE;
 
-    private NodeIdSet pings;
+    private NodeIdSet        pings;
 
     public PingHeartbeatMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                                 WireFormException, IOException {
@@ -121,9 +122,10 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
      *            byte[]
      */
     @Override
-    protected synchronized void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
+    protected synchronized void readWireForm(ByteBuffer buf)
+                                                            throws IOException,
+                                                            WireFormException,
+                                                            ClassNotFoundException {
         super.readWireForm(buf);
         pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
     }

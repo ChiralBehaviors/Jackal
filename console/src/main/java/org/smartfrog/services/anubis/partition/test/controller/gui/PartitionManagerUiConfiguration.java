@@ -48,6 +48,11 @@ public class PartitionManagerUiConfiguration {
     }
 
     @Bean
+    public HeartbeatConfiguration heartbeatConfig() {
+        return new HeartbeatConfiguration(3000, 2);
+    }
+
+    @Bean
     public MulticastAddress heartbeatGroup() throws UnknownHostException {
         return new MulticastAddress(InetAddress.getByName("233.1.2.30"), 1966,
                                     0);
@@ -63,8 +68,8 @@ public class PartitionManagerUiConfiguration {
     }
 
     @Bean
-    public HeartbeatConfiguration heartbeatConfig() {
-        return new HeartbeatConfiguration(3000, 2);
+    public Identity partitionIdentity() {
+        return new Identity(getMagic(), node(), System.currentTimeMillis());
     }
 
     @Bean
@@ -75,11 +80,6 @@ public class PartitionManagerUiConfiguration {
     @Bean
     public WireSecurity wireSecurity() {
         return new NoSecurityImpl();
-    }
-
-    @Bean
-    public Identity partitionIdentity() {
-        return new Identity(getMagic(), node(), System.currentTimeMillis());
     }
 
     protected int getMagic() {

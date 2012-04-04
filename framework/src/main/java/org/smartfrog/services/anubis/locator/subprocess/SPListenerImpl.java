@@ -26,21 +26,24 @@ import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
 public class SPListenerImpl extends UnicastRemoteObject implements SPListener {
-    private static final long serialVersionUID = 1L;
+    private static final long              serialVersionUID = 1L;
     private final transient AnubisListener listener;
 
     public SPListenerImpl(AnubisListener listener) throws RemoteException {
         this.listener = listener;
     }
 
+    @Override
     public void newValue(ProviderInstance i) throws RemoteException {
         listener.newValue(i);
     }
 
+    @Override
     public void removeValue(ProviderInstance i) throws RemoteException {
         listener.removeValue(i);
     }
 
+    @Override
     public void removeValue(ProviderInstance i, long time)
                                                           throws RemoteException {
         listener.removeValue(i, time);

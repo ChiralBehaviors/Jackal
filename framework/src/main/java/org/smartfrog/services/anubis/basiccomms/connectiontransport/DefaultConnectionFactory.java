@@ -20,8 +20,9 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.basiccomms.connectiontransport;
 
 import java.nio.channels.SocketChannel;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The default connection factory is used by ConnectionServer when no other
@@ -29,13 +30,13 @@ import java.util.logging.Logger;
  */
 
 public class DefaultConnectionFactory implements ConnectionFactory {
-    private static final Logger log = Logger.getLogger(DefaultConnectionFactory.class.getCanonicalName());
+    private static final Logger log = LoggerFactory.getLogger(DefaultConnectionFactory.class.getCanonicalName());
 
     @Override
     public void createConnection(SocketChannel channel) {
         try {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer("Immediately closing connection: " + channel);
+            if (log.isTraceEnabled()) {
+                log.trace("Immediately closing connection: " + channel);
             }
             channel.close();
         } catch (Exception ex) {

@@ -43,9 +43,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 import com.hellblazer.jackal.gossip.Digest;
@@ -135,7 +135,7 @@ public class UdpCommunications implements GossipCommunications {
     private static final int                  DEFAULT_SEND_BUFFER_MULTIPLIER    = 4;
     @SuppressWarnings("unchecked")
     private static final List<HeartbeatState> EMPTY_HEATBEAT_LIST               = Collections.EMPTY_LIST;
-    private static final Logger               log                               = Logger.getLogger(UdpCommunications.class.getCanonicalName());
+    private static final Logger               log                               = LoggerFactory.getLogger(UdpCommunications.class);
     private static final int                  MAGIC_NUMBER                      = 24051967;
     private static final int                  MAX_DIGESTS;
     /**
@@ -178,7 +178,7 @@ public class UdpCommunications implements GossipCommunications {
             socket = new DatagramSocket(endpoint.getPort(),
                                         endpoint.getAddress());
         } catch (SocketException e) {
-            log.severe(format("Unable to bind to: %s", endpoint));
+            log.error(format("Unable to bind to: %s", endpoint));
             throw new IllegalStateException(format("Unable to bind to: %s",
                                                    endpoint), e);
         }
@@ -188,7 +188,7 @@ public class UdpCommunications implements GossipCommunications {
             socket.setSendBufferSize(MAX_SEG_SIZE * sendBufferMultiplier);
             socket.setSendBufferSize(RECEIVE_TIME_OUT);
         } catch (SocketException e) {
-            log.severe(format("Unable to configure endpoint: %s", socket));
+            log.error(format("Unable to configure endpoint: %s", socket));
             throw new IllegalStateException(
                                             format("Unable to configure endpoint: %s",
                                                    socket), e);
@@ -206,6 +206,20 @@ public class UdpCommunications implements GossipCommunications {
     public InetSocketAddress getLocalAddress() {
         return new InetSocketAddress(socket.getLocalAddress(),
                                      socket.getLocalPort());
+    }
+
+    @Override
+    public void send(HeartbeatState state, InetSocketAddress left) {
+        ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.clear();
+        buffer.position(4);
+        buffer.put(UPDATE);
+        state.writeTo(buffer);
+        buffer.flip();
+        if (!gossip.isIgnoring(left)) {
+            send(buffer, left);
+        }
     }
 
     @Override
@@ -229,7 +243,7 @@ public class UdpCommunications implements GossipCommunications {
     @Override
     public void terminate() {
         if (running.compareAndSet(true, false)) {
-            if (log.isLoggable(Level.INFO)) {
+            if (log.isInfoEnabled()) {
                 log.info(String.format("Terminating UDP Communications on %s",
                                        socket.getLocalSocketAddress()));
             }
@@ -237,24 +251,24 @@ public class UdpCommunications implements GossipCommunications {
         }
     }
 
-    @Override
-    public void send(HeartbeatState state, InetSocketAddress left) {
-        ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        buffer.clear();
-        buffer.position(4);
-        buffer.put(UPDATE);
-        state.writeTo(buffer);
-        buffer.flip();
-        if (!gossip.isIgnoring(left)) {
-            send(buffer, left);
+    private void handleConnectTo(ByteBuffer buffer) {
+        Identity peer;
+        try {
+            peer = new Identity(buffer);
+        } catch (Throwable e) {
+            if (log.isWarnEnabled()) {
+                log.warn("Cannot deserialize identity. Ignoring the connection request.",
+                         e);
+            }
+            return;
         }
+        gossip.connectTo(peer);
     }
 
     private void handleGossip(final InetSocketAddress target, ByteBuffer msg) {
         int count = msg.getInt();
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("Handling gossip, digest count: " + count);
+        if (log.isTraceEnabled()) {
+            log.trace("Handling gossip, digest count: " + count);
         }
         final List<Digest> digests = new ArrayList<Digest>(count);
         for (int i = 0; i < count; i++) {
@@ -262,25 +276,24 @@ public class UdpCommunications implements GossipCommunications {
             try {
                 digest = new Digest(msg);
             } catch (Throwable e) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING,
-                            "Cannot deserialize digest. Ignoring the digest.",
-                            e);
+                if (log.isWarnEnabled()) {
+                    log.warn("Cannot deserialize digest. Ignoring the digest.",
+                             e);
                 }
                 continue;
             }
             digests.add(digest);
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Gossip digests from %s are : %s", this, digests));
+        if (log.isTraceEnabled()) {
+            log.trace(format("Gossip digests from %s are : %s", this, digests));
         }
         gossip.gossip(digests, new GossipHandler(target));
     }
 
     private void handleReply(final InetSocketAddress target, ByteBuffer msg) {
         int digestCount = msg.getInt();
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("Handling reply, digest count: " + digestCount);
+        if (log.isTraceEnabled()) {
+            log.trace("Handling reply, digest count: " + digestCount);
         }
         final List<Digest> digests = new ArrayList<Digest>(digestCount);
         for (int i = 0; i < digestCount; i++) {
@@ -288,10 +301,9 @@ public class UdpCommunications implements GossipCommunications {
             try {
                 digest = new Digest(msg);
             } catch (Throwable e) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING,
-                            "Cannot deserialize digest. Ignoring the digest.",
-                            e);
+                if (log.isWarnEnabled()) {
+                    log.warn("Cannot deserialize digest. Ignoring the digest.",
+                             e);
                 }
                 continue;
             }
@@ -305,15 +317,14 @@ public class UdpCommunications implements GossipCommunications {
         try {
             state = new HeartbeatState(msg);
         } catch (Throwable e) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
-                        "Cannot deserialize heartbeat state. Ignoring the state.",
-                        e);
+            if (log.isWarnEnabled()) {
+                log.warn("Cannot deserialize heartbeat state. Ignoring the state.",
+                         e);
             }
             return;
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Heartbeat state from %s is : %s", this, state));
+        if (log.isTraceEnabled()) {
+            log.trace(format("Heartbeat state from %s is : %s", this, state));
         }
         gossip.update(asList(state));
     }
@@ -337,9 +348,8 @@ public class UdpCommunications implements GossipCommunications {
      */
     private void processInbound(InetSocketAddress sender, ByteBuffer buffer) {
         if (gossip.isIgnoring(sender)) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Ignoring inbound msg from: %s",
-                                         sender));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Ignoring inbound msg from: %s", sender));
             }
             return;
         }
@@ -362,27 +372,12 @@ public class UdpCommunications implements GossipCommunications {
                 break;
             }
             default: {
-                if (log.isLoggable(Level.INFO)) {
+                if (log.isInfoEnabled()) {
                     log.info(format("invalid message type: %s from: %s",
                                     msgType, this));
                 }
             }
         }
-    }
-
-    private void handleConnectTo(ByteBuffer buffer) {
-        Identity peer;
-        try {
-            peer = new Identity(buffer);
-        } catch (Throwable e) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
-                        "Cannot deserialize identity. Ignoring the connection request.",
-                        e);
-            }
-            return;
-        }
-        gossip.connectTo(peer);
     }
 
     /**
@@ -402,13 +397,13 @@ public class UdpCommunications implements GossipCommunications {
         } catch (SocketException e) {
             if (!"Socket is closed".equals(e.getMessage())
                 && !"Bad file descriptor".equals(e.getMessage())) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING, "Error sending packet", e);
+                if (log.isWarnEnabled()) {
+                    log.warn("Error sending packet", e);
                 }
             }
         } catch (IOException e) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "Error sending packet", e);
+            if (log.isWarnEnabled()) {
+                log.warn("Error sending packet", e);
             }
         }
     }
@@ -428,12 +423,12 @@ public class UdpCommunications implements GossipCommunications {
             public void run() {
                 ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
                 buffer.order(ByteOrder.BIG_ENDIAN);
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(prettyPrint(packet.getSocketAddress(),
-                                           buffer.array()));
-                } else if (log.isLoggable(Level.FINE)) {
-                    log.fine("Received packet from: "
-                             + packet.getSocketAddress());
+                if (log.isTraceEnabled()) {
+                    log.trace(prettyPrint(packet.getSocketAddress(),
+                                          buffer.array()));
+                } else if (log.isTraceEnabled()) {
+                    log.trace("Received packet from: "
+                              + packet.getSocketAddress());
                 }
                 int magic = buffer.getInt();
                 if (MAGIC_NUMBER == magic) {
@@ -441,16 +436,16 @@ public class UdpCommunications implements GossipCommunications {
                         processInbound((InetSocketAddress) packet.getSocketAddress(),
                                        buffer);
                     } catch (BufferOverflowException e) {
-                        if (log.isLoggable(Level.WARNING)) {
-                            log.warning(format("Invalid message: %s",
-                                               prettyPrint(packet.getSocketAddress(),
-                                                           buffer.array())));
+                        if (log.isWarnEnabled()) {
+                            log.warn(format("Invalid message: %s",
+                                            prettyPrint(packet.getSocketAddress(),
+                                                        buffer.array())));
                         }
                     }
                 } else {
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(format("Msg with invalid MAGIC header [%s] discarded",
-                                          magic));
+                    if (log.isTraceEnabled()) {
+                        log.trace(format("Msg with invalid MAGIC header [%s] discarded",
+                                         magic));
                     }
                 }
             }
@@ -466,7 +461,7 @@ public class UdpCommunications implements GossipCommunications {
         return new Runnable() {
             @Override
             public void run() {
-                if (log.isLoggable(Level.INFO)) {
+                if (log.isInfoEnabled()) {
                     log.info(String.format("UDP Gossip communications started on %s",
                                            socket.getLocalSocketAddress()));
                 }
@@ -476,16 +471,15 @@ public class UdpCommunications implements GossipCommunications {
                                                    MAX_SEG_SIZE));
                     } catch (SocketException e) {
                         if ("Socket closed".equals(e.getMessage())) {
-                            if (log.isLoggable(Level.FINE)) {
-                                log.fine("Socket closed, shutting down");
+                            if (log.isTraceEnabled()) {
+                                log.trace("Socket closed, shutting down");
                                 terminate();
                                 return;
                             }
                         }
                     } catch (Throwable e) {
-                        if (log.isLoggable(Level.WARNING)) {
-                            log.log(Level.WARNING,
-                                    "Exception processing inbound message", e);
+                        if (log.isWarnEnabled()) {
+                            log.warn("Exception processing inbound message", e);
                         }
                     }
                 }

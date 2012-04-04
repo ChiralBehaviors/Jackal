@@ -29,11 +29,11 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 public class MulticastHeartbeatCommsFactory implements HeartbeatCommsFactory {
 
-    private final WireSecurity      wireSecurity;
-    private final MulticastAddress  address;
-    private final InetAddress inf;
-    private final String            threadName;
-    private final Identity          id;
+    private final WireSecurity     wireSecurity;
+    private final MulticastAddress address;
+    private final InetAddress      inf;
+    private final String           threadName;
+    private final Identity         id;
 
     public MulticastHeartbeatCommsFactory(WireSecurity wireSecurity,
                                           MulticastAddress address,
@@ -41,7 +41,7 @@ public class MulticastHeartbeatCommsFactory implements HeartbeatCommsFactory {
         this.wireSecurity = wireSecurity;
         this.address = address;
         this.inf = inf;
-        this.threadName = "Anubis: Heartbeat Comms (node " + id.id + ")";
+        threadName = "Anubis: Heartbeat Comms (node " + id.id + ")";
         this.id = id;
     }
 

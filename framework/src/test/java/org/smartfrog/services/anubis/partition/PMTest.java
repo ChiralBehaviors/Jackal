@@ -26,7 +26,7 @@ public class PMTest implements PartitionNotification {
 
     static class Tester extends Thread {
         Partition partition = null;
-        int remote = 0;
+        int       remote    = 0;
 
         Tester(Partition p, int r) {
             super("Anubis: Test Driver");
@@ -43,10 +43,10 @@ public class PMTest implements PartitionNotification {
         }
     }
 
-    boolean done = false;
+    boolean   done      = false;
     Partition partition = null;
-    String name = null;
-    int remote = -1;
+    String    name      = null;
+    int       remote    = -1;
 
     public PMTest() {
         System.out.println("Created test");

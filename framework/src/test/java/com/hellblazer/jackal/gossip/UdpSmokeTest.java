@@ -34,30 +34,6 @@ import com.hellblazer.jackal.testUtil.gossip.GossipTestCfg;
  */
 public class UdpSmokeTest extends SmokeTest {
 
-    static {
-        GossipTestCfg.setTestPorts(24010, 24020);
-    }
-
-    @Configuration
-    static class test1 extends GossipDiscoveryNode1Cfg { 
-
-        @Override
-        @Bean
-        public int node() {
-            return 0;
-        }
-    }
-
-    @Configuration
-    static class test2 extends GossipDiscoveryNode2Cfg { 
-
-        @Override
-        @Bean
-        public int node() {
-            return 1;
-        }
-    }
-
     @Configuration
     static class test extends GossipNodeCfg {
         private static final AtomicInteger id = new AtomicInteger(1);
@@ -67,6 +43,30 @@ public class UdpSmokeTest extends SmokeTest {
         public int node() {
             return id.incrementAndGet();
         }
+    }
+
+    @Configuration
+    static class test1 extends GossipDiscoveryNode1Cfg {
+
+        @Override
+        @Bean
+        public int node() {
+            return 0;
+        }
+    }
+
+    @Configuration
+    static class test2 extends GossipDiscoveryNode2Cfg {
+
+        @Override
+        @Bean
+        public int node() {
+            return 1;
+        }
+    }
+
+    static {
+        GossipTestCfg.setTestPorts(24010, 24020);
     }
 
     @Override

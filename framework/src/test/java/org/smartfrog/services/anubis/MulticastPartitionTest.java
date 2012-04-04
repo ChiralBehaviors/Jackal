@@ -1,8 +1,9 @@
 package org.smartfrog.services.anubis;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,14 +16,14 @@ public class MulticastPartitionTest extends PartitionTest {
     static class member extends MulticastNodeCfg {
         private static final AtomicInteger id = new AtomicInteger(-1);
 
+        public static void reset() {
+            id.set(-1);
+        }
+
         @Override
         @Bean
         public int node() {
             return id.incrementAndGet();
-        }
-
-        public static void reset() {
-            id.set(-1);
         }
     }
 
@@ -37,18 +38,18 @@ public class MulticastPartitionTest extends PartitionTest {
     }
 
     @Override
-    protected void setUp() throws Exception {
-        member.reset();
-        super.setUp();
-    }
-
-    @Override
     protected Class<?> getControllerConfig() {
         return MulticastControllerConfig.class;
     }
 
     @Override
     protected Logger getLogger() {
-        return Logger.getLogger(getClass().getCanonicalName());
+        return LoggerFactory.getLogger(getClass().getCanonicalName());
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        member.reset();
+        super.setUp();
     }
 }

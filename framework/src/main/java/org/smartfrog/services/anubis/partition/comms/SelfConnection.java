@@ -32,10 +32,10 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 public class SelfConnection extends BitView implements Connection,
         HeartbeatProtocol, Candidate {
 
-    private static final long         serialVersionUID = 1L;
-    private final InetSocketAddress   address;
-    private transient Candidate candidate;
-    private final Identity            me;
+    private static final long       serialVersionUID = 1L;
+    private final InetSocketAddress address;
+    private transient Candidate     candidate;
+    private final Identity          me;
 
     public SelfConnection(Identity id, View v, InetSocketAddress addr,
                           boolean preferred) {
@@ -54,6 +54,14 @@ public class SelfConnection extends BitView implements Connection,
     @Override
     public int countReceivedVotes() {
         return candidate.countReceivedVotes();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SelfConnection) {
+            return me.equals(((SelfConnection) obj).me);
+        }
+        return false;
     }
 
     /**
@@ -92,12 +100,22 @@ public class SelfConnection extends BitView implements Connection,
         return candidate.getVote();
     }
 
+    @Override
+    public int hashCode() {
+        return me.hashCode();
+    }
+
     /**
      * HeartbeatProtocol interface
      */
     @Override
     public boolean isNotTimely(long timenow, long timeout) {
         return false;
+    }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return isNotTimely(timenow, timebound);
     }
 
     @Override
@@ -108,6 +126,11 @@ public class SelfConnection extends BitView implements Connection,
     @Override
     public boolean isQuiesced(long timenow, long quiesce) {
         return false;
+    }
+
+    @Override
+    public boolean isSelf() {
+        return true;
     }
 
     /**
@@ -156,28 +179,5 @@ public class SelfConnection extends BitView implements Connection,
     @Override
     public boolean winsAgainst(Candidate c) {
         return candidate.winsAgainst(c);
-    }
-
-    @Override
-    public boolean equals(Object obj) { 
-        if (obj instanceof SelfConnection) {
-            return me.equals(((SelfConnection) obj).me);
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return me.hashCode();
-    }
-
-    @Override
-    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
-        return isNotTimely(timenow, timebound);
-    }
-
-    @Override
-    public boolean isSelf() { 
-        return true;
     }
 }

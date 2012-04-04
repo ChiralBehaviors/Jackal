@@ -23,9 +23,9 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -46,7 +46,33 @@ import com.hellblazer.jackal.testUtil.TestControllerConfig;
 @Import({ TestControllerConfig.class, GossipSnoopConfig.class, TestCfg.class,
          GossipHeartbeatAndDiscoveryConfig.class, GossipTestCfg.class })
 public class GossipControllerCfg {
-    private final static Logger log = Logger.getLogger(GossipControllerCfg.class.getCanonicalName());
+    private final static Logger log = LoggerFactory.getLogger(GossipControllerCfg.class);
+
+    @Bean(name = "gossipDispatchers")
+    @Lazy
+    @Autowired
+    public ExecutorService gossipDispatchers(Identity partitionIdentity) {
+        final int id = partitionIdentity.id;
+        return Executors.newCachedThreadPool(new ThreadFactory() {
+            int count = 0;
+
+            @Override
+            public Thread newThread(Runnable target) {
+                Thread t = new Thread(
+                                      target,
+                                      String.format("Gossip Dispatcher[%s] for node[%s]",
+                                                    count++, id));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.error(String.format("Exception on %s", t), e);
+                    }
+                });
+                return t;
+            }
+        });
+    }
 
     @Bean(name = "gossipEndpoint")
     public InetSocketAddress gossipEndpoint() {
@@ -68,32 +94,5 @@ public class GossipControllerCfg {
 
     protected int node() {
         return 2047;
-    }
-
-    @Bean(name = "gossipDispatchers")
-    @Lazy
-    @Autowired
-    public ExecutorService gossipDispatchers(Identity partitionIdentity) {
-        final int id = partitionIdentity.id;
-        return Executors.newCachedThreadPool(new ThreadFactory() {
-            int count = 0;
-
-            @Override
-            public Thread newThread(Runnable target) {
-                Thread t = new Thread(
-                                      target,
-                                      String.format("Gossip Dispatcher[%s] for node[%s]",
-                                                    count++, id));
-                t.setDaemon(true);
-                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.SEVERE,
-                                String.format("Exception on %s", t), e);
-                    }
-                });
-                return t;
-            }
-        });
     }
 }

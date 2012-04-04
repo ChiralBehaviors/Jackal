@@ -32,8 +32,8 @@ import com.hellblazer.slp.ServiceURL;
 public class ServiceReferenceImpl extends ServiceReference implements Cloneable {
     private static final long serialVersionUID = 1L;
 
-    private final UUID registration;
-    private final int member;
+    private final UUID        registration;
+    private final int         member;
 
     public ServiceReferenceImpl(ServiceURL url, Map<String, Object> properties,
                                 UUID registration, int member) {
@@ -59,6 +59,19 @@ public class ServiceReferenceImpl extends ServiceReference implements Cloneable 
         return registration.hashCode();
     }
 
+    @Override
+    protected ServiceReferenceImpl clone() {
+        try {
+            return (ServiceReferenceImpl) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException("Clone is not supported", e);
+        }
+    }
+
+    protected Map<String, Object> currentProperties() {
+        return properties;
+    }
+
     protected int getMember() {
         return member;
     }
@@ -69,17 +82,5 @@ public class ServiceReferenceImpl extends ServiceReference implements Cloneable 
 
     protected void setProperties(Map<String, Object> properties) {
         this.properties = properties;
-    }
-
-    protected Map<String, Object> currentProperties() {
-        return properties;
-    }
-
-    protected ServiceReferenceImpl clone() {
-        try {
-            return (ServiceReferenceImpl) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException("Clone is not supported", e);
-        }
     }
 }

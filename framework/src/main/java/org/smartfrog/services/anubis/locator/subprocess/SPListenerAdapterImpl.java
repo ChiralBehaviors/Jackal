@@ -20,17 +20,17 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.locator.subprocess;
 
 import java.rmi.RemoteException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisValue;
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
 public class SPListenerAdapterImpl extends AnubisListener {
-    private final static Logger log = Logger.getLogger(SPListenerAdapterImpl.class.getCanonicalName());
+    private final static Logger log = LoggerFactory.getLogger(SPListenerAdapterImpl.class.getCanonicalName());
 
-    private SPListener listener;
+    private SPListener          listener;
 
     public SPListenerAdapterImpl(String name, SPListener listener) {
         super(name);
@@ -38,10 +38,23 @@ public class SPListenerAdapterImpl extends AnubisListener {
     }
 
     /**
+     * Upcalls for to newValue() are never generated - exception if done
+     * 
+     * @param value
+     */
+    @Override
+    public void newValue(AnubisValue value) {
+        Exception thrown = new Exception();
+        thrown.fillInStackTrace();
+        log.error("newValue() should not be called here", thrown);
+    }
+
+    /**
      * newValue() passes through to the sub-process listener
      * 
      * @param i
      */
+    @Override
     public synchronized void newValue(ProviderInstance i) {
         try {
             listener.newValue(i);
@@ -51,10 +64,23 @@ public class SPListenerAdapterImpl extends AnubisListener {
     }
 
     /**
+     * Upcalls for to removeValue() are never generated - exception if done
+     * 
+     * @param value
+     */
+    @Override
+    public void removeValue(AnubisValue value) {
+        Exception thrown = new Exception();
+        thrown.fillInStackTrace();
+        log.error("newValue() should not be called here", thrown);
+    }
+
+    /**
      * removeValue() passes through to the sub-process listener
      * 
      * @param i
      */
+    @Override
     public synchronized void removeValue(ProviderInstance i) {
         try {
             listener.removeValue(i);
@@ -67,32 +93,11 @@ public class SPListenerAdapterImpl extends AnubisListener {
      * 
      * @param i
      */
+    @Override
     public synchronized void removeValue(ProviderInstance i, long time) {
         try {
             listener.removeValue(i, time);
         } catch (RemoteException ex) {
         }
-    }
-
-    /**
-     * Upcalls for to newValue() are never generated - exception if done
-     * 
-     * @param value
-     */
-    public void newValue(AnubisValue value) {
-        Exception thrown = new Exception();
-        thrown.fillInStackTrace();
-        log.log(Level.SEVERE, "newValue() should not be called here", thrown);
-    }
-
-    /**
-     * Upcalls for to removeValue() are never generated - exception if done
-     * 
-     * @param value
-     */
-    public void removeValue(AnubisValue value) {
-        Exception thrown = new Exception();
-        thrown.fillInStackTrace();
-        log.log(Level.SEVERE, "newValue() should not be called here", thrown);
     }
 }

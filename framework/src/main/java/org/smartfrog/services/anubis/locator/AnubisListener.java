@@ -41,19 +41,19 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.names.ProviderInstance;
 
 abstract public class AnubisListener {
-    private static final Logger        log              = Logger.getLogger(AnubisListener.class.getCanonicalName());
+    private static final Logger        log              = LoggerFactory.getLogger(AnubisListener.class.getCanonicalName());
     protected ScheduledExecutorService timers;
     private long                       mostRecentChange = -1;
     /**
      * The name of the provider that this listener listens for.
      */
-    private String                     name;                                                                         ;
+    private String                     name;                                                                                ;
     private Map<String, AnubisValue>   values           = new HashMap<String, AnubisValue>();
 
     public AnubisListener(String n) {
@@ -158,27 +158,26 @@ abstract public class AnubisListener {
 
                 @Override
                 public void run() {
-                    log.warning("User API Upcall took >200ms in newValue(p) where p="
-                                + v);
+                    log.warn("User API Upcall took >200ms in newValue(p) where p="
+                             + v);
                 }
             }, 200, TimeUnit.MILLISECONDS);
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINER)) {
-                log.fine("Rejecting new value due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting new value due to shutdown");
             }
             return;
         }
         try {
             newValue(v);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in newValue(p) where p="
-                            + v, ex);
+            log.error("User API Upcall threw Throwable in newValue(p) where p="
+                      + v, ex);
         }
         timeout = System.currentTimeMillis();
         task.cancel(true);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
+        if (log.isTraceEnabled()) {
+            log.trace("User API Upcall took " + (timeout - timein)
                       + "ms in newValue(p) where p=" + v);
         }
     }
@@ -199,13 +198,13 @@ abstract public class AnubisListener {
 
                 @Override
                 public void run() {
-                    log.warning("User API Upcall took >200ms in removeValue(p) where p="
-                                + v);
+                    log.warn("User API Upcall took >200ms in removeValue(p) where p="
+                             + v);
                 }
             }, 200, TimeUnit.MILLISECONDS);
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINER)) {
-                log.fine("Rejecting new value due to shutdown");
+            if (log.isTraceEnabled()) {
+                log.trace("Rejecting new value due to shutdown");
             }
             return;
         }
@@ -213,14 +212,13 @@ abstract public class AnubisListener {
         try {
             removeValue(v);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in removeValue(p) where p="
-                            + v, ex);
+            log.error("User API Upcall threw Throwable in removeValue(p) where p="
+                              + v, ex);
         }
         timeout = System.currentTimeMillis();
         task.cancel(true);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
+        if (log.isTraceEnabled()) {
+            log.trace("User API Upcall took " + (timeout - timein)
                       + "ms in removeValue(p) where p=" + v);
         }
     }

@@ -5,10 +5,10 @@ import java.util.ArrayList;
 public class AVLNode<E> {
 
     AVLNode<E>   _parent;
-    E            _data;                             // data held by the AVLNode
-    AVLNode<E>   _left;                             // His left son.
-    AVLNode<E>   _right;                            // His right son.
-    ArrayList<E> _myElements   = new ArrayList<E>();
+    E            _data;                           // data held by the AVLNode
+    AVLNode<E>   _left;                           // His left son.
+    AVLNode<E>   _right;                          // His right son.
+    ArrayList<E> _myElements = new ArrayList<E>();
     int          _height;
 
     public AVLNode(E data) {

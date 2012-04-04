@@ -1,16 +1,17 @@
 package org.smartfrog.services.anubis.load;
 
 import java.util.Random;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
 
 public class Sender implements Runnable {
-    private final Gate gate;
+    private final Gate           gate;
     private final AnubisProvider provider;
-    private final int waitTime;
-    private String instance;
-    private static final Logger log = Logger.getLogger(Sender.class.getCanonicalName());
+    private final int            waitTime;
+    private String               instance;
+    private static final Logger  log = LoggerFactory.getLogger(Sender.class.getCanonicalName());
 
     public Sender(Gate gate, AnubisProvider provider, int waitTime) {
         this.gate = gate;

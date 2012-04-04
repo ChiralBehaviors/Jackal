@@ -23,9 +23,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.comms.IOConnection;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
@@ -52,7 +52,7 @@ public class MessageHandler extends AbstractMessageHandler implements
         BODY, CLOSED, ERROR, HEADER, INITIAL;
     };
 
-    static final Logger                log               = Logger.getLogger(MessageHandler.class.getCanonicalName());
+    static final Logger                log               = LoggerFactory.getLogger(MessageHandler.class);
 
     private boolean                    announceTerm      = true;
     private final ConnectionSet        connectionSet;
@@ -83,8 +83,8 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     public void accept(SocketChannelHandler handler) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("Socket accepted [%s]", me));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Socket accepted [%s]", me));
         }
         this.handler = handler;
         open.set(true);
@@ -95,8 +95,8 @@ public class MessageHandler extends AbstractMessageHandler implements
     public void closing() {
         writes.clear();
         writeState = readState = State.CLOSED;
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("closing is being called [%s]",
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("closing is being called [%s]",
                                     messageConnection));
         }
         if (announceTerm && messageConnection.get() != null) {
@@ -106,8 +106,8 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     public void connect(SocketChannelHandler handler) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("Socket connected [%s]", me));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Socket connected [%s]", me));
         }
         this.handler = handler;
         open.set(true);
@@ -136,9 +136,8 @@ public class MessageHandler extends AbstractMessageHandler implements
             tm.setOrder(sendCount.incrementAndGet());
             bytesToSend = wireSecurity.toWireForm(tm);
         } catch (Exception ex) {
-            log.log(Level.SEVERE,
-                    format("%s failed to marshall timed message: %s - not sent",
-                           me, tm), ex);
+            log.error(format("%s failed to marshall timed message: %s - not sent",
+                             me, tm), ex);
             return;
         }
 
@@ -147,8 +146,8 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     public void setIgnoring(boolean ignoring) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(format("setIgnoring is being called [%s]",
+        if (log.isTraceEnabled()) {
+            log.trace(format("setIgnoring is being called [%s]",
                              messageConnection));
         }
         this.ignoring = ignoring;
@@ -156,18 +155,17 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     public void silent() {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(format("silent is being called [%s]", messageConnection));
+        if (log.isTraceEnabled()) {
+            log.trace(format("silent is being called [%s]", messageConnection));
         }
         announceTerm = false;
     }
 
     @Override
     public void terminate() {
-        if (log.isLoggable(Level.FINEST)) {
-            log.log(Level.FINEST,
-                    format("terminate is being called [%s]", messageConnection),
-                    new Exception());
+        if (log.isTraceEnabled()) {
+            log.trace(format("terminate is being called [%s]",
+                             messageConnection), new Exception());
         }
         announceTerm = false;
         shutdown();
@@ -182,8 +180,8 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     private void initialMsg(TimedMsg tm) {
 
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(format("initialMsg is being called [%s]",
+        if (log.isTraceEnabled()) {
+            log.trace(format("initialMsg is being called [%s]",
                              messageConnection));
         }
 
@@ -194,8 +192,8 @@ public class MessageHandler extends AbstractMessageHandler implements
          * must be a heartbeat message
          */
         if (!(obj instanceof HeartbeatMsg)) {
-            log.severe(format("%s did not receive a heartbeat message first - shutdown",
-                              me));
+            log.error(format("%s did not receive a heartbeat message first - shutdown",
+                             me));
             shutdown();
             return;
         }
@@ -206,7 +204,7 @@ public class MessageHandler extends AbstractMessageHandler implements
          * There must be a valid connection (heartbeat connection)
          */
         if (!connectionSet.contains(hbmsg.getSender())) {
-            if (log.isLoggable(Level.INFO)) {
+            if (log.isInfoEnabled()) {
                 log.info(format("%s did not have incoming connection for %s in the connection set",
                                 me, hbmsg.getSender()));
             }
@@ -227,8 +225,8 @@ public class MessageHandler extends AbstractMessageHandler implements
                 messageConnection.set((MessageConnection) con);
                 messageConnection.get().deliver(bytes);
             } else {
-                log.severe(format("Failed to assign existing msg connection impl: %s",
-                                  con));
+                log.error(format("Failed to assign existing msg connection impl: %s",
+                                 con));
                 silent();
                 shutdown();
             }
@@ -239,8 +237,8 @@ public class MessageHandler extends AbstractMessageHandler implements
          * By now we should be left with a heartbeat connection - sanity check
          */
         if (!(con instanceof HeartbeatConnection)) {
-            log.severe(format("%s ?!? incoming connection is in connection set, but not heartbeat or message type",
-                              this));
+            log.error(format("%s ?!? incoming connection is in connection set, but not heartbeat or message type",
+                             this));
             shutdown();
             return;
         }
@@ -261,8 +259,8 @@ public class MessageHandler extends AbstractMessageHandler implements
          * do log its occurance.
          */
         if (!hbmsg.getMsgLinks().contains(me.id)) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(format("%s incoming connection from %s when neither end wants the connection",
+            if (log.isTraceEnabled()) {
+                log.trace(format("%s incoming connection from %s when neither end wants the connection",
                                  me, con.getSender()));
             }
         }
@@ -282,8 +280,8 @@ public class MessageHandler extends AbstractMessageHandler implements
                                                     hbcon.getProtocol(),
                                                     hbcon.getCandidate()));
         if (!messageConnection.get().assignImpl(this)) {
-            log.severe(format("Failed to assign incoming connection on heartbeat: %s",
-                              messageConnection));
+            log.error(format("Failed to assign incoming connection on heartbeat: %s",
+                             messageConnection));
             silent();
             shutdown();
         }
@@ -305,7 +303,7 @@ public class MessageHandler extends AbstractMessageHandler implements
          * comit suicide in disgust!!!!
          */
         if (!connectionSet.useNewMessageConnection(messageConnection.get())) {
-            if (log.isLoggable(Level.INFO)) {
+            if (log.isInfoEnabled()) {
                 log.info(format("%s Concurrent creation of message connections from %s",
                                 me, messageConnection.get().getSender()));
             }
@@ -316,9 +314,9 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     protected void deliverObject(ByteBuffer fullRxBuffer) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("deliverObject is being called [%s]",
-                                     messageConnection));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("deliverObject is being called [%s]",
+                                    messageConnection));
         }
 
         if (ignoring) {
@@ -329,29 +327,27 @@ public class MessageHandler extends AbstractMessageHandler implements
         try {
 
             byte[] bytes = fullRxBuffer.array();
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("Delivering bytes [%s]: \n%s",
-                                  messageConnection, toHex(bytes)));
+            if (log.isTraceEnabled()) {
+                log.trace(format("Delivering bytes [%s]: \n%s",
+                                 messageConnection, toHex(bytes)));
             }
             msg = wireSecurity.fromWireForm(bytes);
 
         } catch (WireSecurityException ex) {
-            log.log(Level.SEVERE,
-                    format("%s non blocking connection transport encountered security violation unmarshalling message - ignoring the message ",
-                           me), ex);
+            log.error(format("%s non blocking connection transport encountered security violation unmarshalling message - ignoring the message ",
+                             me), ex);
             return;
 
         } catch (Exception ex) {
-            log.log(Level.SEVERE,
-                    format("%s connection transport unable to unmarshall message ",
-                           me), ex);
+            log.error(format("%s connection transport unable to unmarshall message ",
+                             me), ex);
             shutdown();
             return;
         }
 
         if (!(msg instanceof TimedMsg)) {
-            log.severe(format("%s connection transport received non timed message ",
-                              me));
+            log.error(format("%s connection transport received non timed message ",
+                             me));
             shutdown();
             return;
         }
@@ -359,8 +355,8 @@ public class MessageHandler extends AbstractMessageHandler implements
         final TimedMsg tm = (TimedMsg) msg;
 
         if (tm.getOrder() != receiveCount.get()) {
-            log.severe(format("%s connection transport has delivered a message out of order - shutting down.  Expected: %s, received: %s",
-                              me, receiveCount, tm.getOrder()));
+            log.error(format("%s connection transport has delivered a message out of order - shutting down.  Expected: %s, received: %s",
+                             me, receiveCount, tm.getOrder()));
             shutdown();
             return;
         }
@@ -373,8 +369,8 @@ public class MessageHandler extends AbstractMessageHandler implements
             try {
                 initialMsg(tm);
             } catch (Throwable e) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.log(Level.INFO, "Error delivering initial message", e);
+                if (log.isInfoEnabled()) {
+                    log.info("Error delivering initial message", e);
 
                 }
                 error();
@@ -382,16 +378,16 @@ public class MessageHandler extends AbstractMessageHandler implements
         } else {
             receiveCount.incrementAndGet();
             if (!(tm instanceof Heartbeat)) {
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(format("delivering %s [%s]", tm,
+                if (log.isTraceEnabled()) {
+                    log.trace(format("delivering %s [%s]", tm,
                                      messageConnection));
                 }
             }
             try {
                 messageConnection.get().deliver(tm);
             } catch (Throwable e) {
-                if (log.isLoggable(Level.INFO)) {
-                    log.log(Level.INFO, "Error delivering message", e);
+                if (log.isInfoEnabled()) {
+                    log.info("Error delivering message", e);
 
                 }
                 error();

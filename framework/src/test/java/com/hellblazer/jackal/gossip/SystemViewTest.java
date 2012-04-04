@@ -25,8 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
-import com.hellblazer.jackal.gossip.SystemView;
-
 import junit.framework.TestCase;
 
 /**
@@ -36,6 +34,78 @@ import junit.framework.TestCase;
  * 
  */
 public class SystemViewTest extends TestCase {
+
+    public void testLiveMembers() throws Exception {
+        Random random = mock(Random.class);
+        when(random.nextInt(3)).thenReturn(2);
+
+        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
+
+        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
+        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
+
+        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
+        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
+        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
+
+        Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
+                                                                seed3, seed4);
+        int quarantineDelay = 30;
+        int unreachableDelay = 400;
+        SystemView view = new SystemView(random, local, seedHosts,
+                                         quarantineDelay, unreachableDelay);
+
+        view.markAlive(live1);
+        view.markAlive(live2);
+        view.markAlive(live3);
+
+        assertEquals(live3, view.getRandomLiveMember());
+    }
+
+    public void testQuarantined() throws Exception {
+        Random random = mock(Random.class);
+
+        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
+
+        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
+        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
+        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
+        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
+
+        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
+        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
+        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
+        InetSocketAddress live4 = new InetSocketAddress("127.0.0.1", 20);
+        InetSocketAddress live5 = new InetSocketAddress("127.0.0.1", 21);
+        InetSocketAddress live6 = new InetSocketAddress("127.0.0.1", 22);
+        InetSocketAddress live7 = new InetSocketAddress("127.0.0.1", 23);
+        InetSocketAddress live8 = new InetSocketAddress("127.0.0.1", 24);
+
+        Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
+                                                                seed3, seed4);
+        int quarantineDelay = 30;
+        int unreachableDelay = 400;
+        SystemView view = new SystemView(random, local, seedHosts,
+                                         quarantineDelay, unreachableDelay);
+
+        view.markAlive(live1);
+        view.markAlive(live2);
+        view.markAlive(live3);
+        view.markAlive(live4);
+        view.markAlive(live5);
+        view.markAlive(live6);
+        view.markAlive(live7);
+        view.markAlive(live8);
+
+        assertFalse(view.isQuarantined(live4));
+
+        view.markDead(live1, 0);
+        assertTrue(view.isQuarantined(live1));
+        view.cullQuarantined(quarantineDelay + 10);
+        assertFalse(view.isQuarantined(live1));
+    }
 
     public void testSeedMembers() throws Exception {
         Random random = mock(Random.class);
@@ -93,35 +163,6 @@ public class SystemViewTest extends TestCase {
         assertNotNull(view.getRandomSeedMember(local));
     }
 
-    public void testLiveMembers() throws Exception {
-        Random random = mock(Random.class);
-        when(random.nextInt(3)).thenReturn(2);
-
-        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
-
-        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
-        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
-        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
-        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
-
-        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
-        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
-        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
-
-        Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
-                                                                seed3, seed4);
-        int quarantineDelay = 30;
-        int unreachableDelay = 400;
-        SystemView view = new SystemView(random, local, seedHosts,
-                                         quarantineDelay, unreachableDelay);
-
-        view.markAlive(live1);
-        view.markAlive(live2);
-        view.markAlive(live3);
-
-        assertEquals(live3, view.getRandomLiveMember());
-    }
-
     public void testUnreachableMembers() throws Exception {
         Random random = mock(Random.class);
 
@@ -176,48 +217,5 @@ public class SystemViewTest extends TestCase {
 
         assertNull(view.getRandomUnreachableMember());
         assertEquals(unreachable3, view.getRandomUnreachableMember());
-    }
-
-    public void testQuarantined() throws Exception {
-        Random random = mock(Random.class);
-
-        InetSocketAddress local = new InetSocketAddress("127.0.0.1", 1);
-
-        InetSocketAddress seed1 = new InetSocketAddress("127.0.0.1", 2);
-        InetSocketAddress seed2 = new InetSocketAddress("127.0.0.1", 3);
-        InetSocketAddress seed3 = new InetSocketAddress("127.0.0.1", 4);
-        InetSocketAddress seed4 = new InetSocketAddress("127.0.0.1", 5);
-
-        InetSocketAddress live1 = new InetSocketAddress("127.0.0.1", 10);
-        InetSocketAddress live2 = new InetSocketAddress("127.0.0.1", 11);
-        InetSocketAddress live3 = new InetSocketAddress("127.0.0.1", 12);
-        InetSocketAddress live4 = new InetSocketAddress("127.0.0.1", 20);
-        InetSocketAddress live5 = new InetSocketAddress("127.0.0.1", 21);
-        InetSocketAddress live6 = new InetSocketAddress("127.0.0.1", 22);
-        InetSocketAddress live7 = new InetSocketAddress("127.0.0.1", 23);
-        InetSocketAddress live8 = new InetSocketAddress("127.0.0.1", 24);
-
-        Collection<InetSocketAddress> seedHosts = Arrays.asList(seed1, seed2,
-                                                                seed3, seed4);
-        int quarantineDelay = 30;
-        int unreachableDelay = 400;
-        SystemView view = new SystemView(random, local, seedHosts,
-                                         quarantineDelay, unreachableDelay);
-
-        view.markAlive(live1);
-        view.markAlive(live2);
-        view.markAlive(live3);
-        view.markAlive(live4);
-        view.markAlive(live5);
-        view.markAlive(live6);
-        view.markAlive(live7);
-        view.markAlive(live8);
-
-        assertFalse(view.isQuarantined(live4));
-
-        view.markDead(live1, 0);
-        assertTrue(view.isQuarantined(live1)); 
-        view.cullQuarantined(quarantineDelay + 10);
-        assertFalse(view.isQuarantined(live1)); 
     }
 }

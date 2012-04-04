@@ -28,12 +28,12 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.AnubisListener;
 import org.smartfrog.services.anubis.locator.AnubisLocator;
 import org.smartfrog.services.anubis.locator.AnubisProvider;
@@ -64,7 +64,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
         }
     }
 
-    private static final Logger               log            = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
+    private static final Logger               log            = LoggerFactory.getLogger(SPLocatorImpl.class.getCanonicalName());
     private boolean                           isDeployed     = false;
     private boolean                           isRegistered   = false;
     private Object                            adapterMonitor = new Object();
@@ -77,8 +77,8 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
     private Pinger                            pinger;
     private ScheduledExecutorService          timers;
     private long                              maxTransDelay;
-    private Logger                            syncLog        = Logger.getLogger(SPLocatorImpl.class.getCanonicalName());
-    private Logger                            asyncLog       = syncLog;                                                 // TO Do: wrap with Async...
+    private Logger                            syncLog        = LoggerFactory.getLogger(SPLocatorImpl.class.getCanonicalName());
+    private Logger                            asyncLog       = syncLog;                                                        // TO Do: wrap with Async...
     private volatile boolean                  terminated     = false;
     private long                              period;
     private long                              timeout;
@@ -93,7 +93,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                        log.warn("Uncaught exceptiion", e);
                     }
                 });
                 daemon.setDaemon(true);
@@ -101,7 +101,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             }
         });
     }
- 
+
     public void deploy() throws RemoteException {
         try {
             liveness = new Liveness(timeout);
@@ -140,10 +140,10 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             adapter.deregisterListener(this, spListener);
             // don't set timers to null in listener
         } catch (RemoteException ex) {
-            syncLog.log(Level.SEVERE, "Failed to call adapter", ex);
+            syncLog.error("Failed to call adapter", ex);
             terminate();
         } catch (UnknownSPLocatorException ex) {
-            syncLog.log(Level.SEVERE, "Adapter did not recognize me", ex);
+            syncLog.error("Adapter did not recognize me", ex);
             terminate();
         }
     }
@@ -167,10 +167,10 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             adapter.deregisterProvider(this, provider.getInstance());
             providers.remove(provider);
         } catch (RemoteException ex) {
-            syncLog.log(Level.SEVERE, "Failed to call adapter", ex);
+            syncLog.error("Failed to call adapter", ex);
             terminate();
         } catch (UnknownSPLocatorException ex) {
-            syncLog.log(Level.SEVERE, "Adapter did not recognise me", ex);
+            syncLog.error("Adapter did not recognise me", ex);
             terminate();
         }
     }
@@ -194,10 +194,10 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             adapter.deregisterStability(this, stabilities.remove(stability));
             // don't set timers to null in stability
         } catch (RemoteException ex) {
-            syncLog.log(Level.SEVERE, "Failed to call adapter", ex);
+            syncLog.error("Failed to call adapter", ex);
             terminate();
         } catch (UnknownSPLocatorException ex) {
-            syncLog.log(Level.SEVERE, "Adapter did not recognise me", ex);
+            syncLog.error("Adapter did not recognise me", ex);
             terminate();
         }
     }
@@ -241,10 +241,10 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
                                      provider.getValueData(),
                                      provider.getTime());
         } catch (RemoteException ex) {
-            syncLog.log(Level.SEVERE, "Failed to call adapter", ex);
+            syncLog.error("Failed to call adapter", ex);
             terminate();
         } catch (UnknownSPLocatorException ex) {
-            syncLog.log(Level.SEVERE, "Adapter did not recognise me", ex);
+            syncLog.error("Adapter did not recognise me", ex);
             terminate();
         }
     }
@@ -270,10 +270,10 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             adapter.registerListener(this, listener.getName(), spListener);
             listeners.put(listener, spListener);
         } catch (RemoteException ex) {
-            syncLog.log(Level.SEVERE, "Failed to call adapter", ex);
+            syncLog.error("Failed to call adapter", ex);
             terminate();
         } catch (UnknownSPLocatorException ex) {
-            syncLog.log(Level.SEVERE, "Adapter did not recognise me", ex);
+            syncLog.error("Adapter did not recognise me", ex);
             terminate();
         }
     }
@@ -300,10 +300,10 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             provider.setAnubisData(this, ret.time, ret.instance);
             providers.add(provider);
         } catch (RemoteException ex) {
-            syncLog.log(Level.SEVERE, "Failed to call adapter", ex);
+            syncLog.error("Failed to call adapter", ex);
             terminate();
         } catch (UnknownSPLocatorException ex) {
-            syncLog.log(Level.SEVERE, "Adapter did not recognise me", ex);
+            syncLog.error("Adapter did not recognise me", ex);
             terminate();
         }
     }
@@ -329,10 +329,10 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             adapter.registerStability(this, spStability);
             stabilities.put(stability, spStability);
         } catch (RemoteException ex) {
-            syncLog.log(Level.SEVERE, "Failed to call adapter", ex);
+            syncLog.error("Failed to call adapter", ex);
             terminate();
         } catch (UnknownSPLocatorException ex) {
-            syncLog.log(Level.SEVERE, "Adapter did not recognise me", ex);
+            syncLog.error("Adapter did not recognise me", ex);
             terminate();
         }
     }
@@ -378,7 +378,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
 
     private void checkLiveness(long now) {
         if (liveness.isNotTimely(now)) {
-            syncLog.severe("Failed timeliness at SPLocator end");
+            syncLog.error("Failed timeliness at SPLocator end");
             terminate();
         }
     }
@@ -420,21 +420,21 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
 
         } catch (UnknownSPLocatorException ex) {
 
-            if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "Unknown Locator", ex);
+            if (asyncLog.isWarnEnabled()) {
+                asyncLog.warn("Unknown Locator", ex);
             }
             pinger.terminate();
 
         } catch (RemoteException ex) {
 
-            if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "Exception during ping", ex);
+            if (asyncLog.isWarnEnabled()) {
+                asyncLog.warn("Exception during ping", ex);
             }
             pinger.terminate();
 
         } catch (AdapterTerminatedException ex) {
-            if (asyncLog.isLoggable(Level.WARNING)) {
-                asyncLog.log(Level.WARNING, "Adapter has been terminated", ex);
+            if (asyncLog.isWarnEnabled()) {
+                asyncLog.warn("Adapter has been terminated", ex);
             }
             pinger.terminate();
         }
@@ -445,7 +445,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             if (!isDeployed) {
                 // this case implies an attempt to register before the component
                 // has been fully deployed.
-                syncLog.severe("Attempt to register with adapter before depoyed");
+                syncLog.error("Attempt to register with adapter before depoyed");
                 terminate();
                 return false;
             }
@@ -470,16 +470,14 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
                 livenessChecker.start();
                 return true;
             } catch (DuplicateSPLocatorException ex) {
-                syncLog.log(Level.SEVERE,
-                            "Already registered when trying to register with SPLocatorAdapter",
-                            ex);
+                syncLog.error("Already registered when trying to register with SPLocatorAdapter",
+                              ex);
                 terminate();
                 return false;
 
             } catch (RemoteException ex) {
-                syncLog.log(Level.SEVERE,
-                            "Remote exception trying to register with SPLocatorAdapter",
-                            ex);
+                syncLog.error("Remote exception trying to register with SPLocatorAdapter",
+                              ex);
                 terminate();
                 return false;
 

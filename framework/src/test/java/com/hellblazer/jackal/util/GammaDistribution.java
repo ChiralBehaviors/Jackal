@@ -8,9 +8,10 @@ public class GammaDistribution {
     private final double beta;
 
     GammaDistribution(Random random, double alpha, double beta) {
-        if (alpha <= 0 || beta <= 0)
+        if (alpha <= 0 || beta <= 0) {
             throw new IllegalArgumentException(
                                                "alpha and beta must be strictly positive.");
+        }
         this.random = random;
         this.alpha = alpha;
         this.beta = beta;
@@ -26,21 +27,24 @@ public class GammaDistribution {
                 p = b * random.nextDouble();
                 if (p > 1) {
                     gamma = -Math.log((b - p) / alpha);
-                    if (random.nextDouble() <= Math.pow(gamma, alpha - 1))
+                    if (random.nextDouble() <= Math.pow(gamma, alpha - 1)) {
                         flag = true;
+                    }
                 } else {
                     gamma = Math.pow(p, 1 / alpha);
-                    if (random.nextDouble() <= Math.exp(-gamma))
+                    if (random.nextDouble() <= Math.exp(-gamma)) {
                         flag = true;
+                    }
                 }
             }
-        } else if (alpha == 1)
+        } else if (alpha == 1) {
             gamma = -Math.log(random.nextDouble());
-        else {
+        } else {
             double y = -Math.log(random.nextDouble());
             while (random.nextDouble() > Math.pow(y * Math.exp(1 - y),
-                                                  alpha - 1))
+                                                  alpha - 1)) {
                 y = -Math.log(random.nextDouble());
+            }
             gamma = alpha * y;
         }
         return beta * gamma;

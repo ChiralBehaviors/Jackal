@@ -26,14 +26,18 @@ import org.smartfrog.services.anubis.locator.subprocess.SPLocatorAdapterImpl.Pro
 
 public class SPLocatorData {
 
-    private Liveness liveness;
-    private Map<String, Provider> providers = new HashMap<String, Provider>();
-    private Map<SPListener, SPListenerAdapterImpl> listeners = new HashMap<SPListener, SPListenerAdapterImpl>();
+    private Liveness                                 liveness;
+    private Map<String, Provider>                    providers   = new HashMap<String, Provider>();
+    private Map<SPListener, SPListenerAdapterImpl>   listeners   = new HashMap<SPListener, SPListenerAdapterImpl>();
     private Map<SPStability, SPStabilityAdapterImpl> stabilities = new HashMap<SPStability, SPStabilityAdapterImpl>();
 
     SPLocatorData(long timeout) {
         liveness = new Liveness(timeout);
         liveness.ping();
+    }
+
+    public Map<SPListener, SPListenerAdapterImpl> getListeners() {
+        return listeners;
     }
 
     public Liveness getLiveness() {
@@ -42,10 +46,6 @@ public class SPLocatorData {
 
     public Map<String, Provider> getProviders() {
         return providers;
-    }
-
-    public Map<SPListener, SPListenerAdapterImpl> getListeners() {
-        return listeners;
     }
 
     public Map<SPStability, SPStabilityAdapterImpl> getStabilities() {

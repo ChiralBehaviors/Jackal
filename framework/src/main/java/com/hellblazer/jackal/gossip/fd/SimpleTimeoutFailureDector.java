@@ -11,16 +11,16 @@ public class SimpleTimeoutFailureDector implements FailureDetector {
     }
 
     @Override
+    public void record(long now, long delay) {
+        lastRecord = now + delay;
+    }
+
+    @Override
     public boolean shouldConvict(long now) {
         if (lastRecord < 0) {
             return false;
         }
-        return (now - lastRecord) > timeout;
-    }
-
-    @Override
-    public void record(long now, long delay) {
-        lastRecord = now + delay;
+        return now - lastRecord > timeout;
     }
 
 }

@@ -31,17 +31,18 @@ import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
 public final class SerializedMsg extends WireMsg {
 
-    public static final int MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
+    public static final int  MESSAGE_MSG_WIRE_SIZE    = UNDEFINED_SIZE;
 
-    public static final int MESSAGE_MSG_WIRE_TYPE = 500;
-    public static final int SERIALIZED_MSG_WIRE_TYPE = 999;
-    private static final int payloadLengthIdx = WIRE_SIZE;
-    private static final int payloadIdx = payloadLengthIdx + intSz;
+    public static final int  MESSAGE_MSG_WIRE_TYPE    = 500;
+    public static final int  SERIALIZED_MSG_WIRE_TYPE = 999;
+    private static final int payloadLengthIdx         = WIRE_SIZE;
+    private static final int payloadIdx               = payloadLengthIdx
+                                                        + intSz;
 
-    private byte[] payload = null;
+    private byte[]           payload                  = null;
 
-    private int payloadSz = UNDEFINED_SIZE;
-    protected Object msg;
+    private int              payloadSz                = UNDEFINED_SIZE;
+    protected Object         msg;
 
     public SerializedMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                              WireFormException, IOException {

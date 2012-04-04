@@ -22,9 +22,9 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
@@ -42,7 +42,7 @@ import com.hellblazer.pinkie.SocketOptions;
  */
 @Configuration
 public class TestControllerConfig {
-    private static final Logger    log = Logger.getLogger(PartitionControllerConfig.class.getCanonicalName());
+    private static final Logger    log = LoggerFactory.getLogger(PartitionControllerConfig.class);
 
     @Autowired
     private HeartbeatConfiguration heartbeatConfiguration;
@@ -77,8 +77,7 @@ public class TestControllerConfig {
                 t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.SEVERE,
-                                String.format("Exception on %s", t), e);
+                        log.error(String.format("Exception on %s", t), e);
                     }
                 });
                 return t;

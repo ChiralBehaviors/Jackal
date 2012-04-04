@@ -28,8 +28,8 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class LeaderMgr {
 
-    protected Map<Identity, Connection> candidates = null;
-    protected Candidate localCandidate = null;
+    protected Map<Identity, Connection> candidates     = null;
+    protected Candidate                 localCandidate = null;
 
     public LeaderMgr(Map<Identity, Connection> candidateMap, Candidate local) {
         candidates = candidateMap;
@@ -96,7 +96,7 @@ public class LeaderMgr {
         /**
          * reset the candidates (clear the votes)
          */
-        for(Connection candidate: candidates.values()){
+        for (Connection candidate : candidates.values()) {
             ((Candidate) candidate).clearReceivedVotes();
         }
 

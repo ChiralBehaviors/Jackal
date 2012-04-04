@@ -118,7 +118,9 @@ public class PhiAccrualFailureDetector implements FailureDetector {
                 return false;
             }
             double delta = now - last;
-            double phi = -1 * Math.log10(Math.pow(Math.E, -1 * delta / window.value()));
+            double phi = -1
+                         * Math.log10(Math.pow(Math.E,
+                                               -1 * delta / window.value()));
             boolean shouldConvict = phi > threshold;
             /*
             if (shouldConvict) {

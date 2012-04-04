@@ -34,8 +34,8 @@ import com.hellblazer.jackal.configuration.ThreadConfig;
  * 
  */
 @Configuration
-@Import({JackalConfig.class, StandardConfigurationConfig.class,
-         ThreadConfig.class, PartitionAgentConfig.class, TestCfg.class})
+@Import({ JackalConfig.class, StandardConfigurationConfig.class,
+         ThreadConfig.class, PartitionAgentConfig.class, TestCfg.class })
 abstract public class TestNodeCfg {
 
     @Bean

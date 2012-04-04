@@ -28,21 +28,21 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.NumberedView;
 
 public interface Heartbeat extends Sender, Timed, NumberedView {
-    Heartbeat toClose();
-
     Identity getCandidate();
 
-    NodeIdSet getMsgLinks();
-
     InetSocketAddress getControllerInterface();
+
+    NodeIdSet getMsgLinks();
 
     boolean isPreferred();
 
     void setCandidate(Identity id);
 
+    void setController(InetSocketAddress address);
+
     void setIsPreferred(boolean preferred);
 
     void setMsgLinks(NodeIdSet ml);
 
-    void setController(InetSocketAddress address);
+    Heartbeat toClose();
 }

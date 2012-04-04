@@ -41,8 +41,9 @@ import com.hellblazer.jackal.configuration.ThreadConfig;
  * 
  */
 @Configuration
-@Import({ JackalConfig.class, StandardConfigurationConfig.class, ThreadConfig.class,
-         PartitionAgentConfig.class, MulticastHeartbeatAndDiscoveryConfig.class })
+@Import({ JackalConfig.class, StandardConfigurationConfig.class,
+         ThreadConfig.class, PartitionAgentConfig.class,
+         MulticastHeartbeatAndDiscoveryConfig.class })
 public class LocalMulticastConfiguration {
     public static void main(String[] argv) {
         new AnnotationConfigApplicationContext(

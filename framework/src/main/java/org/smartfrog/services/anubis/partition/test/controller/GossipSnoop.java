@@ -22,12 +22,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
@@ -39,7 +39,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
  * 
  */
 public class GossipSnoop {
-    private final static Logger            log = Logger.getLogger(GossipSnoop.class.getCanonicalName());
+    private final static Logger            log = LoggerFactory.getLogger(GossipSnoop.class.getCanonicalName());
 
     private final HeartbeatCommsIntf       underlying;
     private volatile ScheduledFuture<?>    updateTask;
@@ -81,11 +81,6 @@ public class GossipSnoop {
         }
     }
 
-    protected void update() {
-        state.setTime(state.getTime() + 1);
-        underlying.sendHeartbeat(state);
-    }
-
     private Runnable updateTask() {
         return new Runnable() {
 
@@ -95,9 +90,14 @@ public class GossipSnoop {
                     update();
                     underlying.sendHeartbeat(state);
                 } catch (Throwable e) {
-                    log.log(Level.WARNING, "Problem updating", e);
+                    log.warn("Problem updating", e);
                 }
             }
         };
+    }
+
+    protected void update() {
+        state.setTime(state.getTime() + 1);
+        underlying.sendHeartbeat(state);
     }
 }

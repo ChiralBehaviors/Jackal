@@ -88,9 +88,9 @@ public class Options {
 
         public boolean isWarningEnabled();
 
-        public void warning(String message);
+        public void warn(String message);
 
-        public void warning(String message, Throwable t);
+        public void warn(String message, Throwable t);
     }
 
     public static class NullLog implements Log {
@@ -126,11 +126,11 @@ public class Options {
         }
 
         @Override
-        public void warning(String message) {
+        public void warn(String message) {
         }
 
         @Override
-        public void warning(String message, Throwable t) {
+        public void warn(String message, Throwable t) {
         }
     }
 
@@ -310,7 +310,7 @@ public class Options {
         return possibleValues(enumType);
     }
 
-    private final Options parent;
+    private final Options    parent;
 
     private final Properties properties;
 
@@ -349,8 +349,8 @@ public class Options {
         try {
             return log(property, classLoader.loadClass(className));
         } catch (Exception e) {
-            getLogger().warning("Could not load " + property + " : "
-                                        + className, e);
+            getLogger().warn("Could not load " + property + " : " + className,
+                             e);
             return parent.get(property, defaultValue);
         }
     }
@@ -506,13 +506,13 @@ public class Options {
     }
 
     private void warn(String property, String value) {
-        getLogger().warning("Cannot parse supplied value \"" + value
-                                    + "\" for option \"" + property + "\"");
+        getLogger().warn("Cannot parse supplied value \"" + value
+                                 + "\" for option \"" + property + "\"");
     }
 
     private void warn(String property, String value, Exception e) {
-        getLogger().warning("Cannot parse supplied value \"" + value
-                                    + "\" for option \"" + property + "\"", e);
+        getLogger().warn("Cannot parse supplied value \"" + value
+                                 + "\" for option \"" + property + "\"", e);
     }
 
     protected <T extends Enum<T>> Set<T> getAll(String property,

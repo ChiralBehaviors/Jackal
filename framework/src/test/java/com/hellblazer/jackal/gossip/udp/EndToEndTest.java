@@ -50,6 +50,52 @@ import com.hellblazer.jackal.gossip.fd.PhiFailureDetectorFactory;
  */
 public class EndToEndTest extends TestCase {
 
+    private static class Receiver implements ConnectionManager {
+        private static final AtomicInteger count = new AtomicInteger();
+
+        private final CountDownLatch[]     latches;
+
+        Receiver(int members, int id) {
+            super();
+            latches = new CountDownLatch[members];
+            setLatches(id);
+        }
+
+        public void await(int timeout, TimeUnit unit)
+                                                     throws InterruptedException {
+            for (CountDownLatch latche : latches) {
+                latche.await(timeout, unit);
+            }
+        }
+
+        @Override
+        public void connectTo(Identity peer) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean receiveHeartbeat(Heartbeat hb) {
+            assert hb.getSender().id >= 0;
+            // System.out.println("Heartbeat received: " + hb);
+            int currentCount = count.incrementAndGet();
+            if (currentCount % 100 == 0) {
+                System.out.print('.');
+            } else if (currentCount % 1000 == 0) {
+                System.out.println();
+            }
+
+            latches[hb.getSender().id].countDown();
+            return false;
+        }
+
+        void setLatches(int id) {
+            for (int i = 0; i < latches.length; i++) {
+                int count = i == id ? 0 : 1;
+                latches[i] = new CountDownLatch(count);
+            }
+        }
+    }
+
     public void testEnd2End() throws Exception {
         int membership = 64;
         int maxSeeds = 1;
@@ -110,34 +156,6 @@ public class EndToEndTest extends TestCase {
         }
     }
 
-    protected void updateAndAwait(int iteration, int membership,
-                                  Receiver[] receivers, List<Gossip> members)
-                                                                             throws InterruptedException {
-        int id = 0;
-        for (Receiver receiver : receivers) {
-            receiver.setLatches(id++);
-        }
-        id = 0;
-        for (Gossip member : members) {
-            HeartbeatState heartbeat = new HeartbeatState(
-                                                          new Identity(666, 0,
-                                                                       0),
-                                                          false,
-                                                          member.getLocalAddress(),
-                                                          new NodeIdSet(),
-                                                          true,
-                                                          new Identity(666,
-                                                                       id++, 1),
-                                                          null, false, null,
-                                                          new NodeIdSet(), 0, 0);
-            heartbeat.setTime(iteration + 1);
-            member.sendHeartbeat(heartbeat);
-        }
-        for (int i = 0; i < membership; i++) {
-            receivers[i].await(60, TimeUnit.SECONDS);
-        }
-    }
-
     protected Gossip createCommunications(ConnectionManager receiver,
                                           Collection<InetSocketAddress> seedHosts,
                                           int i) {
@@ -177,49 +195,31 @@ public class EndToEndTest extends TestCase {
         return gossip;
     }
 
-    private static class Receiver implements ConnectionManager {
-        private static final AtomicInteger count = new AtomicInteger();
-
-        private final CountDownLatch[]     latches;
-
-        Receiver(int members, int id) {
-            super();
-            latches = new CountDownLatch[members];
-            setLatches(id);
+    protected void updateAndAwait(int iteration, int membership,
+                                  Receiver[] receivers, List<Gossip> members)
+                                                                             throws InterruptedException {
+        int id = 0;
+        for (Receiver receiver : receivers) {
+            receiver.setLatches(id++);
         }
-
-        void setLatches(int id) {
-            for (int i = 0; i < latches.length; i++) {
-                int count = i == id ? 0 : 1;
-                latches[i] = new CountDownLatch(count);
-            }
+        id = 0;
+        for (Gossip member : members) {
+            HeartbeatState heartbeat = new HeartbeatState(
+                                                          new Identity(666, 0,
+                                                                       0),
+                                                          false,
+                                                          member.getLocalAddress(),
+                                                          new NodeIdSet(),
+                                                          true,
+                                                          new Identity(666,
+                                                                       id++, 1),
+                                                          null, false, null,
+                                                          new NodeIdSet(), 0, 0);
+            heartbeat.setTime(iteration + 1);
+            member.sendHeartbeat(heartbeat);
         }
-
-        public void await(int timeout, TimeUnit unit)
-                                                     throws InterruptedException {
-            for (int i = 0; i < latches.length; i++) {
-                latches[i].await(timeout, unit);
-            }
-        }
-
-        @Override
-        public boolean receiveHeartbeat(Heartbeat hb) {
-            assert hb.getSender().id >= 0;
-            // System.out.println("Heartbeat received: " + hb);
-            int currentCount = count.incrementAndGet();
-            if (currentCount % 100 == 0) {
-                System.out.print('.');
-            } else if (currentCount % 1000 == 0) {
-                System.out.println();
-            }
-
-            latches[hb.getSender().id].countDown();
-            return false;
-        }
-
-        @Override
-        public void connectTo(Identity peer) {
-            throw new UnsupportedOperationException();
+        for (int i = 0; i < membership; i++) {
+            receivers[i].await(60, TimeUnit.SECONDS);
         }
     }
 }

@@ -26,9 +26,6 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.View;
 
-import com.hellblazer.jackal.gossip.GossipMessages;
-import com.hellblazer.jackal.gossip.HeartbeatState;
-
 /**
  * Basic testing of the heartbeat state
  * 

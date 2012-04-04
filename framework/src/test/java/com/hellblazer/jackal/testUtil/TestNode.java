@@ -18,8 +18,9 @@
 package com.hellblazer.jackal.testUtil;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.test.controller.Controller;
 import org.smartfrog.services.anubis.partition.test.controller.NodeData;
 import org.smartfrog.services.anubis.partition.views.View;
@@ -31,7 +32,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
  * 
  */
 public class TestNode extends NodeData {
-    static final Logger   log = Logger.getLogger(TestNode.class.getCanonicalName());
+    static final Logger   log = LoggerFactory.getLogger(TestNode.class);
 
     public int            cardinality;
     public CountDownLatch latch;
@@ -42,7 +43,7 @@ public class TestNode extends NodeData {
 
     @Override
     protected void partitionNotification(View partition, int leader) {
-        log.fine("Partition notification: " + partition);
+        log.trace("Partition notification: " + partition);
         super.partitionNotification(partition, leader);
         if (partition.isStable() && partition.cardinality() == cardinality) {
             latch.countDown();

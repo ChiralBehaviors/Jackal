@@ -23,8 +23,9 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MulticastComms is an abstract class representing an end point for multicast
@@ -46,13 +47,13 @@ public class MulticastComms extends Thread {
      * network will be capable of handling this size so its transfer semantics
      * are atomic (no fragmentation in the network).
      */
-    static public final int     MAX_SEG_SIZE = 1500;                                                     // Ethernet standard MTU
+    static public final int     MAX_SEG_SIZE = 1500;                                                            // Ethernet standard MTU
 
     private MulticastAddress    groupAddress;
     private byte[]              inBytes;
     private DatagramPacket      inPacket;
     private MulticastSocket     sock;
-    private static final Logger log          = Logger.getLogger(MulticastComms.class.getCanonicalName());
+    private static final Logger log          = LoggerFactory.getLogger(MulticastComms.class.getCanonicalName());
     volatile private boolean    terminating;
     Object                      outObject;
 
@@ -70,7 +71,7 @@ public class MulticastComms extends Thread {
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING, "Uncaught exception", e);
+                log.warn("Uncaught exception", e);
             }
         });
     }
@@ -110,8 +111,8 @@ public class MulticastComms extends Thread {
      */
     @Override
     public void run() {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("Starting receive processing on: " + groupAddress);
+        if (log.isTraceEnabled()) {
+            log.trace("Starting receive processing on: " + groupAddress);
         }
         while (!terminating) {
 
@@ -120,17 +121,16 @@ public class MulticastComms extends Thread {
                 inBytes = new byte[MAX_SEG_SIZE];
                 inPacket = new DatagramPacket(inBytes, inBytes.length);
                 sock.receive(inPacket);
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest("Received packet from: "
-                               + inPacket.getSocketAddress());
+                if (log.isTraceEnabled()) {
+                    log.trace("Received packet from: "
+                              + inPacket.getSocketAddress());
                 }
                 deliverBytes(inPacket.getData());
 
             } catch (Throwable e) {
 
-                if (!terminating && log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING,
-                            "Exception processing inbound message", e);
+                if (!terminating && log.isWarnEnabled()) {
+                    log.warn("Exception processing inbound message", e);
                 }
 
             }
@@ -151,8 +151,8 @@ public class MulticastComms extends Thread {
             sock.send(bytesToPacket(bytes, groupAddress.ipaddress,
                                     groupAddress.port));
         } catch (IOException ioe) {
-            if (!terminating && log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING, "", ioe);
+            if (!terminating && log.isWarnEnabled()) {
+                log.warn("", ioe);
             }
         }
     }

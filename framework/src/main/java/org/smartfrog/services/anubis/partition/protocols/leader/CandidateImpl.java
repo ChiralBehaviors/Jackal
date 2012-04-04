@@ -23,13 +23,13 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class CandidateImpl implements Candidate {
 
-    private int count = 0;
+    private int      count     = 0;
     /**
      * Candidate information
      */
-    private Identity me = null;
-    private boolean preferred = false;
-    private Identity vote = null;
+    private Identity me        = null;
+    private boolean  preferred = false;
+    private Identity vote      = null;
 
     /**
      * Constructor - set to vote for given candidate

@@ -27,8 +27,8 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 
 public class StatsManager {
 
-    private Map<Identity, Heartbeats> heartbeat = new HashMap<Identity, Heartbeats>();
-    private Scheduling scheduling = new Scheduling();
+    private Map<Identity, Heartbeats> heartbeat  = new HashMap<Identity, Heartbeats>();
+    private Scheduling                scheduling = new Scheduling();
 
     public StatsManager() {
     }

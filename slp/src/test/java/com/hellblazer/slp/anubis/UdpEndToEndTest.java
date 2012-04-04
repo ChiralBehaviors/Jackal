@@ -17,8 +17,9 @@
 package com.hellblazer.slp.anubis;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -39,22 +40,10 @@ import com.hellblazer.jackal.testUtil.gossip.GossipTestCfg;
  */
 public class UdpEndToEndTest extends EndToEndTest {
 
-    @Configuration
     @Import({ SlpConfig.class })
-    static class member0 extends GossipDiscoveryNode1Cfg {
-        @Override
-        public int node() {
-            return 0;
-        }
-    }
+    @Configuration
+    static abstract class gossipSlpConfig extends GossipNodeCfg {
 
-    @Configuration
-    @Import({ SlpConfig.class })
-    static class member1 extends GossipDiscoveryNode2Cfg {
-        @Override
-        public int node() {
-            return 1;
-        }
     }
 
     @Configuration
@@ -72,10 +61,22 @@ public class UdpEndToEndTest extends EndToEndTest {
         }
     }
 
-    @Import({ SlpConfig.class })
     @Configuration
-    static abstract class gossipSlpConfig extends GossipNodeCfg {
+    @Import({ SlpConfig.class })
+    static class member0 extends GossipDiscoveryNode1Cfg {
+        @Override
+        public int node() {
+            return 0;
+        }
+    }
 
+    @Configuration
+    @Import({ SlpConfig.class })
+    static class member1 extends GossipDiscoveryNode2Cfg {
+        @Override
+        public int node() {
+            return 1;
+        }
     }
 
     static {
@@ -96,7 +97,7 @@ public class UdpEndToEndTest extends EndToEndTest {
 
     @Override
     protected Logger getLogger() {
-        return Logger.getLogger(UdpEndToEndTest.class.getCanonicalName());
+        return LoggerFactory.getLogger(UdpEndToEndTest.class);
     }
 
     @Override

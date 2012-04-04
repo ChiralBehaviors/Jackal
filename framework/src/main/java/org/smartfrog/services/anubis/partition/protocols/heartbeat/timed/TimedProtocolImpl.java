@@ -20,9 +20,9 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.protocols.heartbeat.timed;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.BitView;
@@ -38,7 +38,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
     private boolean                      terminated       = false;
     private long                         time             = 0;
     private long                         viewNumber       = 0;
-    private static final Logger          log              = Logger.getLogger(TimedProtocolImpl.class.getCanonicalName());
+    private static final Logger          log              = LoggerFactory.getLogger(TimedProtocolImpl.class.getCanonicalName());
 
     /**
      * Constructor - create a heartbeat protocol implementation using the
@@ -55,6 +55,11 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
         listener = vl;
         sender = hb.getSender();
         address = hb.getSenderAddress();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
     }
 
     /**
@@ -82,6 +87,11 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
         return time;
     }
 
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
     /**
      * indicates if the heartbeat protocol is timely. This method is called
      * periodically by the connectionSet as part of a connection cleanup action.
@@ -99,6 +109,11 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
             return true;
         }
         return timenow - time > timebound || time - timenow > timebound;
+    }
+
+    @Override
+    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
+        return isNotTimely(timenow, timebound);
     }
 
     /**
@@ -189,14 +204,14 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
                 listener.newViewTime(sender, this);
             }
 
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Heart beat accepted from: %s", sender));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Heart beat accepted from: %s", sender));
             }
             return true;
 
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Heart beat rejected from: %s", sender));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Heart beat rejected from: %s", sender));
         }
         return false;
     }
@@ -209,20 +224,5 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
     @Override
     public void terminate() {
         terminated = true;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean isNotTimelyMsgConnection(long timenow, long timebound) {
-        return isNotTimely( timenow,  timebound);
     }
 }

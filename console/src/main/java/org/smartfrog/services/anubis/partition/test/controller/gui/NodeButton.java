@@ -32,7 +32,7 @@ public class NodeButton extends JButton {
      * 
      */
     private static final long serialVersionUID = 1L;
-    private GraphicNodeData nodeData;
+    private GraphicNodeData   nodeData;
 
     public NodeButton(Identity id, GraphicNodeData nodeData) {
         this.nodeData = nodeData;

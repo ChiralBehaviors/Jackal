@@ -41,9 +41,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsFactory;
 import org.smartfrog.services.anubis.partition.comms.multicast.HeartbeatCommsIntf;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.ConnectionManager;
@@ -75,7 +75,7 @@ import com.hellblazer.jackal.gossip.Digest.DigestComparator;
  * 
  */
 public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
-    private final static Logger                              log        = Logger.getLogger(Gossip.class.getCanonicalName());
+    private final static Logger                              log        = LoggerFactory.getLogger(Gossip.class);
 
     private final GossipCommunications                       communications;
     private final ConcurrentMap<InetSocketAddress, Endpoint> endpoints  = new ConcurrentHashMap<InetSocketAddress, Endpoint>();
@@ -134,7 +134,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exception", e);
+                        log.warn("Uncaught exception", e);
                     }
                 });
                 return daemon;
@@ -152,7 +152,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exception", e);
+                        log.warn("Uncaught exception", e);
                     }
                 });
                 return daemon;
@@ -162,8 +162,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     public void checkStatus() {
         long now = System.currentTimeMillis();
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Checking the status of the living...");
+        if (log.isTraceEnabled()) {
+            log.trace("Checking the status of the living...");
         }
         for (Iterator<Entry<InetSocketAddress, Endpoint>> iterator = endpoints.entrySet().iterator(); iterator.hasNext();) {
             Entry<InetSocketAddress, Endpoint> entry = iterator.next();
@@ -177,18 +177,26 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 iterator.remove();
                 state.markDead();
                 view.markDead(endpoint, now);
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(format("Endpoint %s is now DEAD on node: %s",
+                if (log.isDebugEnabled()) {
+                    log.debug(format("Endpoint %s is now DEAD on node: %s",
                                      state.getMemberString(),
                                      localState.get().getMemberString()));
                 }
             }
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest("Culling the quarantined and unreachable...");
+        if (log.isTraceEnabled()) {
+            log.trace("Culling the quarantined and unreachable...");
         }
         view.cullQuarantined(now);
         view.cullUnreachable(now);
+    }
+
+    public void connectTo(Identity peer) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Connect request on: %s from: %s", getId(),
+                                    peer));
+        }
+        receiver.connectTo(peer);
     }
 
     @Override
@@ -276,9 +284,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      */
     public void reply(List<Digest> digests, List<HeartbeatState> remoteStates,
                       GossipMessages gossipHandler) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Member: %s receiving reply digests: %s states: %s",
-                                     getId(), digests, remoteStates));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Member: %s receiving reply digests: %s states: %s",
+                                    getId(), digests, remoteStates));
         }
         apply(remoteStates);
 
@@ -288,26 +296,12 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             addUpdatedState(deltaState, addr, digest.getTime());
         }
         if (!deltaState.isEmpty()) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Member: %s sending update states: %s",
-                                         getId(), deltaState));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Member: %s sending update states: %s",
+                                        getId(), deltaState));
             }
             gossipHandler.update(deltaState);
         }
-    }
-
-    @Override
-    public void sendHeartbeat(Heartbeat heartbeat) {
-        assert heartbeat.getSender().id >= 0;
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("Member: %s sending heartbeat: %s",
-                                    getId(), heartbeat));
-        }
-        final HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
-                                                                              view.getLocalAddress());
-        localState.set(heartbeatState);
-        ring.update(heartbeatState.getMembers(), endpoints.values());
-        ring.send(heartbeatState);
     }
 
     @Override
@@ -320,19 +314,33 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         for (Endpoint endpoint : endpoints.values()) {
             if (node.equals(endpoint.getId())) {
                 endpoint.getHandler().requestConnection(id);
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(String.format("Requested connection from: %s on: %s",
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("Requested connection from: %s on: %s",
                                             node, id));
                 }
                 return;
             }
         }
 
-        if (log.isLoggable(Level.WARNING)) {
-            log.warning(String.format("Requested connection from: %s on: %s denied, as no endpoint found",
+        if (log.isWarnEnabled()) {
+            log.warn(String.format("Requested connection from: %s on: %s denied, as no endpoint found",
                                       node, id));
         }
         */
+    }
+
+    @Override
+    public void sendHeartbeat(Heartbeat heartbeat) {
+        assert heartbeat.getSender().id >= 0;
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Member: %s sending heartbeat: %s",
+                                    getId(), heartbeat));
+        }
+        final HeartbeatState heartbeatState = HeartbeatState.toHeartbeatState(heartbeat,
+                                                                              view.getLocalAddress());
+        localState.set(heartbeatState);
+        ring.update(heartbeatState.getMembers(), endpoints.values());
+        ring.send(heartbeatState);
     }
 
     @Override
@@ -392,9 +400,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
      *            partner
      */
     public void update(List<HeartbeatState> remoteStates) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Member: %s receiving update states: %s",
-                                     getId(), remoteStates));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Member: %s receiving update states: %s",
+                                    getId(), remoteStates));
         }
         apply(remoteStates);
     }
@@ -403,9 +411,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                                    InetSocketAddress endpoint, long time) {
         Endpoint state = endpoints.get(endpoint);
         if (state != null && state.getTime() > time) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("local heartbeat time stamp %s greater than %s for %s ",
-                                  state.getTime(), time, endpoint));
+            if (log.isTraceEnabled()) {
+                log.trace(format("local heartbeat time stamp %s greater than %s for %s ",
+                                 state.getTime(), time, endpoint));
             }
             deltaState.add(state.getState());
         } else {
@@ -420,16 +428,16 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         for (HeartbeatState remoteState : remoteStates) {
             InetSocketAddress endpoint = remoteState.getHeartbeatAddress();
             if (endpoint == null) {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine(String.format("endpoint heartbeat address is null: "
-                                           + remoteState));
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("endpoint heartbeat address is null: "
+                                            + remoteState));
                 }
                 continue;
             }
             if (view.isQuarantined(endpoint)) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(format("Ignoring gossip for %s because it is a quarantined endpoint",
-                                      remoteState));
+                if (log.isTraceEnabled()) {
+                    log.trace(format("Ignoring gossip for %s because it is a quarantined endpoint",
+                                     remoteState));
                 }
                 continue;
             }
@@ -439,9 +447,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                     long oldTime = local.getTime();
                     local.record(remoteState);
                     notifyUpdate(local.getState());
-                    if (log.isLoggable(Level.FINEST)) {
-                        log.finest(format("Updating heartbeat state time stamp to %s from %s for %s",
-                                          local.getTime(), oldTime, endpoint));
+                    if (log.isTraceEnabled()) {
+                        log.trace(format("Updating heartbeat state time stamp to %s from %s for %s",
+                                         local.getTime(), oldTime, endpoint));
                     }
                 }
             } else {
@@ -466,9 +474,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         try {
             communications.connect(address, endpoint, connectAction);
         } catch (IOException e) {
-            if (log.isLoggable(Level.FINE)) {
-                log.log(Level.FINE,
-                        format("Cannot connect to endpoint %s", address), e);
+            if (log.isDebugEnabled()) {
+                log.debug(format("Cannot connect to endpoint %s", address), e);
             }
         }
     }
@@ -494,16 +501,16 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 Endpoint previous = endpoints.putIfAbsent(address, newEndpoint);
                 if (previous != null) {
                     newEndpoint.getHandler().close();
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(format("Endpoint already established for %s",
-                                        newEndpoint.getMemberString()));
+                    if (log.isDebugEnabled()) {
+                        log.debug(format("Endpoint already established for %s",
+                                         newEndpoint.getMemberString()));
                     }
                     return;
                 }
                 view.markAlive(address);
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine(format("Member %s is now CONNECTED",
-                                    newEndpoint.getMemberString()));
+                if (log.isDebugEnabled()) {
+                    log.debug(format("Member %s is now CONNECTED",
+                                     newEndpoint.getMemberString()));
                 }
                 List<Digest> newDigests = new ArrayList<Digest>(digests);
                 newDigests.add(new Digest(address, -1));
@@ -532,16 +539,16 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 Endpoint previous = endpoints.putIfAbsent(address, endpoint);
                 if (previous != null) {
                     endpoint.getHandler().close();
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(format("Endpoint already established for %s",
-                                        endpoint.getMemberString()));
+                    if (log.isDebugEnabled()) {
+                        log.debug(format("Endpoint already established for %s",
+                                         endpoint.getMemberString()));
                     }
                     return;
                 }
                 view.markAlive(address);
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine(format("Member %s is now UP",
-                                    endpoint.getMemberString()));
+                if (log.isDebugEnabled()) {
+                    log.debug(format("Member %s is now UP",
+                                     endpoint.getMemberString()));
                 }
                 notifyUpdate(endpoint.getState());
             }
@@ -551,9 +558,9 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     }
 
     protected void examine(List<Digest> digests, GossipMessages gossipHandler) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Member: %s receiving gossip digests: %s",
-                                     getId(), digests));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Member: %s receiving gossip digests: %s",
+                                    getId(), digests));
         }
         List<Digest> deltaDigests = new ArrayList<Digest>();
         List<HeartbeatState> deltaState = new ArrayList<HeartbeatState>();
@@ -579,15 +586,14 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             }
         }
         if (!deltaDigests.isEmpty() || !deltaState.isEmpty()) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Member: %s replying with digests: %s state: %s",
-                                         getId(), deltaDigests, deltaState));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Member: %s replying with digests: %s state: %s",
+                                        getId(), deltaDigests, deltaState));
             }
             gossipHandler.reply(deltaDigests, deltaState);
-        } else { 
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("Member: %s no state to send",
-                                         getId()));
+        } else {
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Member: %s no state to send", getId()));
             }
         }
     }
@@ -603,8 +609,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
                 try {
                     gossip();
                 } catch (Throwable e) {
-                    log.log(Level.WARNING, "Exception while performing gossip",
-                            e);
+                    log.warn("Exception while performing gossip", e);
                 }
             }
         };
@@ -663,17 +668,17 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         }
         Endpoint endpoint = endpoints.get(address);
         if (endpoint != null) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(format("%s gossiping with: %s, #digests: %s",
-                                  getId(), endpoint.getState().getSender(),
-                                  digests.size()));
+            if (log.isTraceEnabled()) {
+                log.trace(format("%s gossiping with: %s, #digests: %s",
+                                 getId(), endpoint.getState().getSender(),
+                                 digests.size()));
             }
             endpoint.getHandler().gossip(digests);
             return address;
         }
-        if (log.isLoggable(Level.WARNING)) {
-            log.warning(format("Inconsistent state!  View thinks %s is alive, but service has no endpoint!",
-                               address));
+        if (log.isWarnEnabled()) {
+            log.warn(format("Inconsistent state!  View thinks %s is alive, but service has no endpoint!",
+                            address));
         }
         view.markDead(address, System.currentTimeMillis());
         return null;
@@ -682,14 +687,14 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
     protected void notifyUpdate(final HeartbeatState state) {
         assert state != null;
         if (state.isDiscoveryOnly() || isIgnoring(state.getSender())) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Member: %s discarding notification of: %s",
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Member: %s discarding notification of: %s",
                                         getId(), state));
             }
             return;
         }
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("Member: %s notifying update of: %s",
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Member: %s notifying update of: %s",
                                     getId(), state));
         }
         dispatcher.execute(new Runnable() {
@@ -708,8 +713,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         }
         digests.add(new Digest(localState.get()));
         Collections.shuffle(digests, entropy);
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Gossip digests are : %s", digests));
+        if (log.isTraceEnabled()) {
+            log.trace(format("Gossip digests are : %s", digests));
         }
         return digests;
     }
@@ -735,16 +740,8 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
         for (int j = diffDigests.length - 1; j >= 0; --j) {
             digests.set(i++, endpoint2digest.get(diffDigests[j].getAddress()));
         }
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(format("Sorted gossip digests are : %s", digests));
+        if (log.isTraceEnabled()) {
+            log.trace(format("Sorted gossip digests are : %s", digests));
         }
-    }
-
-    public void connectTo(Identity peer) {
-        if (log.isLoggable(Level.FINER)) {
-            log.finer(String.format("Connect request on: %s from: %s", getId(),
-                                    peer));
-        }
-        receiver.connectTo(peer);
     }
 }

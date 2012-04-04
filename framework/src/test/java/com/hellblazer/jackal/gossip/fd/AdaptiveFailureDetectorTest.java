@@ -2,22 +2,19 @@ package com.hellblazer.jackal.gossip.fd;
 
 import java.util.Random;
 
-import com.hellblazer.jackal.gossip.FailureDetector;
-import com.hellblazer.jackal.gossip.fd.AdaptiveFailureDetectorFactory;
-
 import junit.framework.TestCase;
+
+import com.hellblazer.jackal.gossip.FailureDetector;
 
 public class AdaptiveFailureDetectorTest extends TestCase {
 
     public void testDetector() throws Exception {
 
-        FailureDetector detector = new AdaptiveFailureDetectorFactory(
-                                                                             0.95,
-                                                                             1000,
-                                                                             0.95,
-                                                                             500,
-                                                                             0,
-                                                                             0.0).create();
+        FailureDetector detector = new AdaptiveFailureDetectorFactory(0.95,
+                                                                      1000,
+                                                                      0.95,
+                                                                      500, 0,
+                                                                      0.0).create();
         Random random = new Random(666);
 
         long average = 500;
@@ -26,7 +23,7 @@ public class AdaptiveFailureDetectorTest extends TestCase {
 
         for (int i = 0; i < 950; i++) {
             now += average;
-            now += (variance / 2) - random.nextInt(variance);
+            now += variance / 2 - random.nextInt(variance);
             detector.record(now, 0L);
         }
 

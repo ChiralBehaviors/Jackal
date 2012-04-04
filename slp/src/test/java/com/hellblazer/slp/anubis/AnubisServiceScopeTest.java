@@ -53,40 +53,6 @@ import com.hellblazer.slp.anubis.AnubisScope.MessageType;
  */
 public class AnubisServiceScopeTest extends TestCase {
 
-    public void testRegister() throws Exception {
-        Identity id = new Identity(666, 0, 0);
-        NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
-        Partition partition = mock(Partition.class);
-        MessageConnection connection = mock(MessageConnection.class);
-        BitView view = new BitView();
-        view.add(1);
-        view.stablize();
-        when(partition.connect(1)).thenReturn(connection);
-        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
-                                            mockGenerator, partition);
-        ServiceURL url = new ServiceURL("service:http://foo.bar/");
-        UUID registration = UUID.randomUUID();
-        when(mockGenerator.generate()).thenReturn(registration);
-
-        UUID returnedRegistration = scope.register(url, null);
-
-        assertEquals(registration, returnedRegistration);
-        verify(mockGenerator).generate();
-        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
-        verify(partition).register(notificationCapture.capture());
-        PartitionNotification notification = notificationCapture.getValue();
-        notification.partitionNotification(view, 0);
-        scope.processOneOutboundMessage();
-        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
-        verify(connection).sendObject(messageCapture.capture());
-        ServiceReferenceImpl ref = (ServiceReferenceImpl) messageCapture.getValue().body;
-        assertNotNull(ref);
-        assertEquals(url, ref.getUrl());
-        assertEquals(id.id, ref.getMember());
-        assertEquals(registration, ref.getRegistration());
-        assertEquals("service:http", ref.getProperties().get(SERVICE_TYPE));
-    }
-
     public void testGetServiceReference() throws Exception {
         Identity id = new Identity(666, 0, 0);
 
@@ -119,53 +85,6 @@ public class AnubisServiceScopeTest extends TestCase {
         ServiceReference returnedReference = scope.getServiceReference("service:http");
         assertNotNull(returnedReference);
         assertEquals(ref, returnedReference);
-    }
-
-    public void testSetProperties() throws Exception {
-        Identity id = new Identity(666, 0, 0);
-        Partition partition = mock(Partition.class);
-        NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
-        MessageConnection connection = mock(MessageConnection.class);
-        BitView view = new BitView();
-        view.add(1);
-        view.stablize();
-        when(partition.connect(1)).thenReturn(connection);
-
-        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
-                                            mockGenerator, partition);
-        scope.openUpdateGate();
-        ServiceURL url = new ServiceURL("service:http://foo.bar/");
-        UUID registration = UUID.randomUUID();
-        when(mockGenerator.generate()).thenReturn(registration);
-
-        UUID returnedRegistration = scope.register(url, null);
-        assertEquals(registration, returnedRegistration);
-
-        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
-        verify(partition).register(notificationCapture.capture());
-        PartitionNotification notification = notificationCapture.getValue();
-        notification.partitionNotification(view, 0);
-
-        scope.processOneOutboundMessage();
-
-        Map<String, Object> properties = new HashMap<String, Object>();
-        properties.put("foo", "bar");
-        properties.put("baz", "bozo");
-
-        scope.setProperties(registration, properties);
-        scope.processOneOutboundMessage();
-        scope.processOneOutboundMessage();
-
-        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
-        verify(connection, new Times(3)).sendObject(messageCapture.capture());
-        List<Message> messages = messageCapture.getAllValues();
-        ServiceReferenceImpl ref = (ServiceReferenceImpl) messages.get(0).body;
-        assertNotNull(ref);
-
-        Map<String, Object> newProperties = ((ServiceReference) messages.get(2).body).getProperties();
-        assertEquals(4, newProperties.size());
-        assertEquals("bar", newProperties.get("foo"));
-        assertEquals("bozo", newProperties.get("baz"));
     }
 
     public void testListener() throws Exception {
@@ -224,6 +143,87 @@ public class AnubisServiceScopeTest extends TestCase {
         assertEquals(EventType.UNREGISTERED, events.get(3).getType());
         assertEquals(reference1, events.get(3).getReference());
         verifyNoMoreInteractions(serviceListener);
+    }
+
+    public void testRegister() throws Exception {
+        Identity id = new Identity(666, 0, 0);
+        NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
+        Partition partition = mock(Partition.class);
+        MessageConnection connection = mock(MessageConnection.class);
+        BitView view = new BitView();
+        view.add(1);
+        view.stablize();
+        when(partition.connect(1)).thenReturn(connection);
+        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
+                                            mockGenerator, partition);
+        ServiceURL url = new ServiceURL("service:http://foo.bar/");
+        UUID registration = UUID.randomUUID();
+        when(mockGenerator.generate()).thenReturn(registration);
+
+        UUID returnedRegistration = scope.register(url, null);
+
+        assertEquals(registration, returnedRegistration);
+        verify(mockGenerator).generate();
+        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
+        verify(partition).register(notificationCapture.capture());
+        PartitionNotification notification = notificationCapture.getValue();
+        notification.partitionNotification(view, 0);
+        scope.processOneOutboundMessage();
+        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
+        verify(connection).sendObject(messageCapture.capture());
+        ServiceReferenceImpl ref = (ServiceReferenceImpl) messageCapture.getValue().body;
+        assertNotNull(ref);
+        assertEquals(url, ref.getUrl());
+        assertEquals(id.id, ref.getMember());
+        assertEquals(registration, ref.getRegistration());
+        assertEquals("service:http", ref.getProperties().get(SERVICE_TYPE));
+    }
+
+    public void testSetProperties() throws Exception {
+        Identity id = new Identity(666, 0, 0);
+        Partition partition = mock(Partition.class);
+        NoArgGenerator mockGenerator = mock(NoArgGenerator.class);
+        MessageConnection connection = mock(MessageConnection.class);
+        BitView view = new BitView();
+        view.add(1);
+        view.stablize();
+        when(partition.connect(1)).thenReturn(connection);
+
+        AnubisScope scope = new AnubisScope(id, new RunImmediate(),
+                                            mockGenerator, partition);
+        scope.openUpdateGate();
+        ServiceURL url = new ServiceURL("service:http://foo.bar/");
+        UUID registration = UUID.randomUUID();
+        when(mockGenerator.generate()).thenReturn(registration);
+
+        UUID returnedRegistration = scope.register(url, null);
+        assertEquals(registration, returnedRegistration);
+
+        ArgumentCaptor<PartitionNotification> notificationCapture = ArgumentCaptor.forClass(PartitionNotification.class);
+        verify(partition).register(notificationCapture.capture());
+        PartitionNotification notification = notificationCapture.getValue();
+        notification.partitionNotification(view, 0);
+
+        scope.processOneOutboundMessage();
+
+        Map<String, Object> properties = new HashMap<String, Object>();
+        properties.put("foo", "bar");
+        properties.put("baz", "bozo");
+
+        scope.setProperties(registration, properties);
+        scope.processOneOutboundMessage();
+        scope.processOneOutboundMessage();
+
+        ArgumentCaptor<Message> messageCapture = ArgumentCaptor.forClass(Message.class);
+        verify(connection, new Times(3)).sendObject(messageCapture.capture());
+        List<Message> messages = messageCapture.getAllValues();
+        ServiceReferenceImpl ref = (ServiceReferenceImpl) messages.get(0).body;
+        assertNotNull(ref);
+
+        Map<String, Object> newProperties = ((ServiceReference) messages.get(2).body).getProperties();
+        assertEquals(4, newProperties.size());
+        assertEquals("bar", newProperties.get("foo"));
+        assertEquals("bozo", newProperties.get("baz"));
     }
 
     public void testUnregister() throws Exception {

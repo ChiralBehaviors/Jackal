@@ -15,9 +15,9 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -33,68 +33,13 @@ import com.hellblazer.jackal.configuration.GossipSnoopConfig;
 @Import({ GraphicControllerConfig.class, GossipSnoopConfig.class,
          GossipHeartbeatAndDiscoveryConfig.class })
 public class PartitionManager {
-    private static final Logger                  log            = Logger.getLogger(PartitionManager.class.getCanonicalName());
+    private static final Logger                  log            = LoggerFactory.getLogger(PartitionManager.class.getCanonicalName());
     static final String                          ENDPOINT       = "endpoint";
     private static final String                  SEED           = "seed";
     static final String                          PROP_FILE_NAME = "load.properties";
 
     private static Collection<InetSocketAddress> seedHosts      = new ArrayList<InetSocketAddress>();
     private static InetAddress                   contactAddress;
-
-    @Bean(name = "seedHosts")
-    protected Collection<InetSocketAddress> seedHosts()
-                                                       throws UnknownHostException {
-        return seedHosts;
-    }
-
-    @Bean(name = "gossipEndpoint")
-    public InetSocketAddress gossipEndpoint() {
-        return new InetSocketAddress(0);
-    }
-
-    @Bean
-    public Identity partitionIdentity() {
-        return new Identity(getMagic(), node(), System.currentTimeMillis());
-    }
-
-    protected int getMagic() {
-        try {
-            return Identity.getMagicFromLocalIpAddress();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    protected int node() {
-        return 2047;
-    }
-
-    @Bean(name = "gossipDispatchers")
-    @Lazy
-    @Autowired
-    public ExecutorService gossipDispatchers(Identity partitionIdentity) {
-        final int id = partitionIdentity.id;
-        return Executors.newCachedThreadPool(new ThreadFactory() {
-            int count = 0;
-
-            @Override
-            public Thread newThread(Runnable target) {
-                Thread t = new Thread(
-                                      target,
-                                      String.format("Gossip Dispatcher[%s] for node[%s]",
-                                                    count++, id));
-                t.setDaemon(true);
-                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.SEVERE,
-                                String.format("Exception on %s", t), e);
-                    }
-                });
-                return t;
-            }
-        });
-    }
 
     public static void main(String[] argv) throws Exception {
         FileInputStream fis = new FileInputStream(PROP_FILE_NAME);
@@ -147,5 +92,59 @@ public class PartitionManager {
         }
         throw new IllegalArgumentException("Invalid host:port specification: "
                                            + endpoint);
+    }
+
+    @Bean(name = "gossipDispatchers")
+    @Lazy
+    @Autowired
+    public ExecutorService gossipDispatchers(Identity partitionIdentity) {
+        final int id = partitionIdentity.id;
+        return Executors.newCachedThreadPool(new ThreadFactory() {
+            int count = 0;
+
+            @Override
+            public Thread newThread(Runnable target) {
+                Thread t = new Thread(
+                                      target,
+                                      String.format("Gossip Dispatcher[%s] for node[%s]",
+                                                    count++, id));
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        log.error(String.format("Exception on %s", t), e);
+                    }
+                });
+                return t;
+            }
+        });
+    }
+
+    @Bean(name = "gossipEndpoint")
+    public InetSocketAddress gossipEndpoint() {
+        return new InetSocketAddress(0);
+    }
+
+    @Bean
+    public Identity partitionIdentity() {
+        return new Identity(getMagic(), node(), System.currentTimeMillis());
+    }
+
+    protected int getMagic() {
+        try {
+            return Identity.getMagicFromLocalIpAddress();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    protected int node() {
+        return 2047;
+    }
+
+    @Bean(name = "seedHosts")
+    protected Collection<InetSocketAddress> seedHosts()
+                                                       throws UnknownHostException {
+        return seedHosts;
     }
 }

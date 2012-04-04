@@ -6,6 +6,6 @@ import org.smartfrog.services.anubis.partition.protocols.partitionmanager.Connec
 
 public interface HeartbeatCommsFactory {
 
-    HeartbeatCommsIntf create(ConnectionManager cs) throws IOException; 
+    HeartbeatCommsIntf create(ConnectionManager cs) throws IOException;
 
 }

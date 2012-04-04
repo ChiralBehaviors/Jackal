@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.wire.WireSizes;
 
 /**
@@ -39,11 +39,11 @@ import org.smartfrog.services.anubis.partition.wire.WireSizes;
  */
 
 public abstract class ConnectionComms extends Thread implements WireSizes {
-    private static final Logger log = Logger.getLogger(ConnectionComms.class.getCanonicalName());
-    private SocketChannel connection;
-    private byte[] headerBytesIn = new byte[HEADER_SIZE];
-    private byte[] headerBytesOut = new byte[HEADER_SIZE];
-    volatile private boolean open;
+    private static final Logger log            = LoggerFactory.getLogger(ConnectionComms.class.getCanonicalName());
+    private SocketChannel       connection;
+    private byte[]              headerBytesIn  = new byte[HEADER_SIZE];
+    private byte[]              headerBytesOut = new byte[HEADER_SIZE];
+    volatile private boolean    open;
 
     /**
      * constructor - creates a tcp connection with the remote address provided
@@ -58,7 +58,7 @@ public abstract class ConnectionComms extends Thread implements WireSizes {
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING, "Uncaught exception", e);
+                log.warn("Uncaught exception", e);
             }
         });
 

@@ -21,8 +21,8 @@ package org.smartfrog.services.anubis.partition.test.stats;
 
 public class Heartbeats {
 
-    private AveCalculator oneHourCalculator = new TimedAveCalculator(
-                                                                     60 * 60 * 1000);
+    private AveCalculator oneHourCalculator   = new TimedAveCalculator(
+                                                                       60 * 60 * 1000);
     private AveCalculator oneMinuteCalculator = new TimedAveCalculator(
                                                                        60 * 1000);
     private AveCalculator tenMinuteCalculator = new TimedAveCalculator(

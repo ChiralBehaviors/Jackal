@@ -18,6 +18,7 @@
 package com.hellblazer.jackal.configuration.basic;
 
 import static java.util.Arrays.asList;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -74,16 +75,16 @@ public class LocalGossipConfiguration {
         return new Identity(0x1638, node(), System.currentTimeMillis());
     }
 
+    @Bean(name = "seedHosts")
+    public List<InetSocketAddress> seedHosts() throws UnknownHostException {
+        return asList(new InetSocketAddress("127.0.0.1", 1024));
+    }
+
     private int node() {
         try {
             return Identity.getProcessUniqueId();
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    @Bean(name = "seedHosts")
-    public List<InetSocketAddress> seedHosts() throws UnknownHostException {
-        return asList(new InetSocketAddress("127.0.0.1", 1024));
     }
 }

@@ -12,14 +12,14 @@ import java.util.concurrent.TimeoutException;
 public class RunImmediate implements ExecutorService {
 
     @Override
-    public void execute(Runnable arg0) {
-        arg0.run();
-    }
-
-    @Override
     public boolean awaitTermination(long timeout, TimeUnit unit)
                                                                 throws InterruptedException {
         return false;
+    }
+
+    @Override
+    public void execute(Runnable arg0) {
+        arg0.run();
     }
 
     @Override

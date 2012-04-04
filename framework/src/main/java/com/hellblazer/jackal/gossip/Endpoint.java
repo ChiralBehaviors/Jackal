@@ -17,9 +17,8 @@
  */
 package com.hellblazer.jackal.gossip;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 /**
@@ -31,7 +30,7 @@ import org.smartfrog.services.anubis.partition.util.Identity;
  */
 
 public class Endpoint {
-    protected static Logger         logger  = Logger.getLogger(Endpoint.class.getCanonicalName());
+    protected static Logger         logger  = LoggerFactory.getLogger(Endpoint.class);
 
     private final FailureDetector   fd;
     private volatile GossipMessages handler;
@@ -115,10 +114,10 @@ public class Endpoint {
 
     public void updateState(HeartbeatState newHbState) {
         heartbeat = newHbState;
-        if (logger.isLoggable(Level.FINEST)) {
-            logger.finest(String.format("%s new heartbeat time: %s",
-                                        heartbeat.getSender(),
-                                        heartbeat.getTime()));
+        if (logger.isTraceEnabled()) {
+            logger.trace(String.format("%s new heartbeat time: %s",
+                                       heartbeat.getSender(),
+                                       heartbeat.getTime()));
         }
     }
 }

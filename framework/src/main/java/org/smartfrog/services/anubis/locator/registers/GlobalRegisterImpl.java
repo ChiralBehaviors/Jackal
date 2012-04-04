@@ -27,9 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.Locator;
 import org.smartfrog.services.anubis.locator.msg.RegisterMsg;
 import org.smartfrog.services.anubis.locator.names.ListenerProxy;
@@ -46,7 +46,7 @@ public class GlobalRegisterImpl {
     private final SetMap<String, ListenerProxy>  listenersByName = new SetMap<String, ListenerProxy>();
     private final SetMap<Integer, ListenerProxy> listenersByNode = new SetMap<Integer, ListenerProxy>();
     private final Locator                        locator;
-    private static final Logger                  log             = Logger.getLogger(GlobalRegisterImpl.class.getCanonicalName());
+    private static final Logger                  log             = LoggerFactory.getLogger(GlobalRegisterImpl.class.getCanonicalName());
     private final int                            me;
     private final SetMap<String, ProviderProxy>  providersByName = new SetMap<String, ProviderProxy>();
     private final SetMap<Integer, ProviderProxy> providersByNode = new SetMap<Integer, ProviderProxy>();
@@ -91,7 +91,7 @@ public class GlobalRegisterImpl {
      */
     public void activate() {
         if (active) {
-            log.severe(me + " *** Global.activate called when active!!!");
+            log.error(me + " *** Global.activate called when active!!!");
         } else {
             active = true;
             updateDebugFrame();
@@ -165,9 +165,9 @@ public class GlobalRegisterImpl {
 
         switch (request.type) {
             case RegisterMsg.Undefined:
-                log.severe(me
-                           + " Global received request explicitly declared as type Undefined "
-                           + request + " ?!?!?");
+                log.error(me
+                          + " Global received request explicitly declared as type Undefined "
+                          + request + " ?!?!?");
                 break;
 
             case RegisterMsg.RegisterProvider:
@@ -195,8 +195,8 @@ public class GlobalRegisterImpl {
                 break;
 
             default:
-                log.severe(me + " Global received unexpected message "
-                           + request + " ?!?!?");
+                log.error(me + " Global received unexpected message " + request
+                          + " ?!?!?");
         }
     }
 
@@ -215,9 +215,9 @@ public class GlobalRegisterImpl {
                 }
             });
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.finest(String.format("rejecting request due to shutdown: %s",
-                                         request));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("rejecting request due to shutdown: %s",
+                                        request));
             }
         }
     }

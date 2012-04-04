@@ -23,12 +23,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 abstract public class AnubisStability {
 
-    private static final Logger      log           = Logger.getLogger(AnubisStability.class.getCanonicalName());
+    private static final Logger      log           = LoggerFactory.getLogger(AnubisStability.class.getCanonicalName());
     private long                     lastTimeRef   = -1;
     private boolean                  lastWasStable = true;
     private ScheduledExecutorService timers        = null;
@@ -79,25 +80,24 @@ abstract public class AnubisStability {
 
                 @Override
                 public void run() {
-                    log.warning("User API Upcall took >200ms in stability(s,t) where s="
-                                + isStable + ", t=" + timeRef);
+                    log.warn("User API Upcall took >200ms in stability(s,t) where s="
+                             + isStable + ", t=" + timeRef);
                 }
             }, 200, TimeUnit.MILLISECONDS);
         } catch (RejectedExecutionException e) {
-            log.finest("Rejecting stability notification due to shutdown");
+            log.trace("Rejecting stability notification due to shutdown");
             return;
         }
         try {
             stability(isStable, timeRef);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in stability(s,t) where s="
-                            + isStable + ", t=" + timeRef, ex);
+            log.error("User API Upcall threw Throwable in stability(s,t) where s="
+                              + isStable + ", t=" + timeRef, ex);
         }
         timeout = System.currentTimeMillis();
         task.cancel(true);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
+        if (log.isTraceEnabled()) {
+            log.trace("User API Upcall took " + (timeout - timein)
                       + "ms in stability(s,t) where s=" + isStable + ", t="
                       + timeRef);
         }

@@ -24,8 +24,8 @@ import java.io.Serializable;
 public class SetTimingMsg implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    public long interval;
-    public long timeout;
+    public long               interval;
+    public long               timeout;
 
     public SetTimingMsg(long interval, long timeout) {
         this.interval = interval;

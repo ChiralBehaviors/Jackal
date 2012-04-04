@@ -82,6 +82,14 @@ public interface GossipMessages {
     void reply(List<Digest> digests, List<HeartbeatState> states);
 
     /**
+     * Request that remote node connect to the local node
+     * 
+     * @param node
+     *            - the identity of the local node
+     */
+    void requestConnection(Identity node);
+
+    /**
      * The third message of the gossip protocol. Send a list of updated
      * heartbeat states to the node this handler represents, which is requesting
      * the updates.
@@ -90,13 +98,5 @@ public interface GossipMessages {
      *            - the list of heartbeat states requested.
      */
     void update(List<HeartbeatState> deltaState);
-
-    /**
-     * Request that remote node connect to the local node
-     * 
-     * @param node
-     *            - the identity of the local node
-     */
-    void requestConnection(Identity node);
 
 }

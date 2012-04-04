@@ -21,11 +21,12 @@ package org.smartfrog.services.anubis.locator;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ValueData implements Serializable {
-    static private final Logger log              = Logger.getLogger(ValueData.class.getClass().toString()); // TODO use asynch wrapper
+    static private final Logger log              = LoggerFactory.getLogger(ValueData.class.getClass().toString()); // TODO use asynch wrapper
     static private Object       noMarshall       = "state could not be marshalled";
     static private Object       noUnmarshall     = "state could not be unmarshalled";
     /**
@@ -38,10 +39,9 @@ public class ValueData implements Serializable {
             return new ValueData(true,
                                  new java.rmi.MarshalledObject<Object>(value));
         } catch (IOException ex) {
-            if (log.isLoggable(Level.WARNING)) {
-                log.log(Level.WARNING,
-                        "While creating a marshalled ValueData, failed to marshall the value: "
-                                + value, ex);
+            if (log.isWarnEnabled()) {
+                log.warn("While creating a marshalled ValueData, failed to marshall the value: "
+                                 + value, ex);
             }
             return new ValueData(false, noMarshall);
         }
@@ -69,16 +69,14 @@ public class ValueData implements Serializable {
             try {
                 return ((java.rmi.MarshalledObject<?>) value).get();
             } catch (ClassNotFoundException ex) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING,
-                            "Attempt to unmarshall a DataValue value in a JVM that does not have access to that class",
-                            ex);
+                if (log.isWarnEnabled()) {
+                    log.warn("Attempt to unmarshall a DataValue value in a JVM that does not have access to that class",
+                             ex);
                 }
                 return noUnmarshall;
             } catch (IOException ex) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING,
-                            "Failed to unmarshall a DataValue value", ex);
+                if (log.isWarnEnabled()) {
+                    log.warn("Failed to unmarshall a DataValue value", ex);
                 }
                 return noUnmarshall;
             }

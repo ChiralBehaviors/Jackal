@@ -17,9 +17,8 @@
  */
 package com.hellblazer.partition.comms;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.comms.IOConnection;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
@@ -33,7 +32,7 @@ import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
  */
 public class ConnectionInitiator {
 
-    private static final Logger     log = Logger.getLogger(ConnectionInitiator.class.getCanonicalName());
+    private static final Logger     log = LoggerFactory.getLogger(ConnectionInitiator.class);
 
     private final MessageConnection connection;
     private final HeartbeatMsg      heartbeat;
@@ -51,8 +50,7 @@ public class ConnectionInitiator {
             heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
             impl.sendObject(wireSecurity.toWireForm(heartbeat));
         } catch (WireFormException e) {
-            log.log(Level.SEVERE, "failed to marshall timed message: "
-                                  + heartbeat, e);
+            log.error("failed to marshall timed message: " + heartbeat, e);
             impl.terminate();
             return;
         }

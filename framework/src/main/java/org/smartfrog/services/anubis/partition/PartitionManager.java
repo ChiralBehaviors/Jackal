@@ -29,11 +29,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.PreDestroy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
 import org.smartfrog.services.anubis.partition.protocols.partitionmanager.PartitionProtocol;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -43,7 +43,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 public class PartitionManager implements Partition {
 
     static final int                         UNDEFINED_LEADER = -1;
-    private static final Logger              log              = Logger.getLogger(PartitionManager.class.getCanonicalName()); //TODO Need to wrap Async
+    private static final Logger              log              = LoggerFactory.getLogger(PartitionManager.class.getCanonicalName()); //TODO Need to wrap Async
 
     private final Identity                   identity;
     private final Set<PartitionNotification> notificationSet  = new CopyOnWriteArraySet<PartitionNotification>();
@@ -66,7 +66,7 @@ public class PartitionManager implements Partition {
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
-                        log.log(Level.WARNING, "Uncaught exceptiion", e);
+                        log.warn("Uncaught exceptiion", e);
                     }
                 });
                 daemon.setDaemon(true);
@@ -121,14 +121,13 @@ public class PartitionManager implements Partition {
 
         if (view.isStable() && leader == identity.id
             && notifiedLeader != leader && notifiedLeader != UNDEFINED_LEADER) {
-            log.severe("Leader changed to me on stabilization, old leader = "
-                       + notifiedLeader + ", new leader = " + leader
-                       + ", view = " + view);
+            log.error("Leader changed to me on stabilization, old leader = "
+                      + notifiedLeader + ", new leader = " + leader
+                      + ", view = " + view);
         }
 
-        if (log.isLoggable(Level.FINEST)) {
-            log.log(Level.FINEST,
-                    String.format("%s notified: %s", identity, view));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("%s notified: %s", identity, view));
         }
 
         notifiedView = new BitView(view);
@@ -158,8 +157,8 @@ public class PartitionManager implements Partition {
 
     @PreDestroy
     public synchronized void terminate() {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("Terminating partition manager at " + identity);
+        if (log.isTraceEnabled()) {
+            log.trace("Terminating partition manager at " + identity);
         }
         timer.shutdownNow();
         terminated = true;
@@ -180,9 +179,9 @@ public class PartitionManager implements Partition {
 
             @Override
             public void run() {
-                log.severe("User API Upcall took >200ms in "
-                           + "objectNotification(obj, sender, time) where obj="
-                           + obj + ", sender=" + sender + ", time=" + time);
+                log.error("User API Upcall took >200ms in "
+                          + "objectNotification(obj, sender, time) where obj="
+                          + obj + ", sender=" + sender + ", time=" + time);
             }
 
         }, 200, TimeUnit.MILLISECONDS);
@@ -190,15 +189,14 @@ public class PartitionManager implements Partition {
         try {
             pn.objectNotification(obj, sender, time);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in "
-                            + "objectNotification(obj, sender, time) where obj="
-                            + obj + ", sender=" + sender + ", time=" + time, ex);
+            log.error("User API Upcall threw Throwable in "
+                      + "objectNotification(obj, sender, time) where obj="
+                      + obj + ", sender=" + sender + ", time=" + time, ex);
         }
         timeout = System.currentTimeMillis();
         task.cancel(true);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took "
+        if (log.isTraceEnabled()) {
+            log.trace("User API Upcall took "
                       + (timeout - timein)
                       + "ms in objectNotification(obj, sender, time) where obj="
                       + obj + ", sender=" + sender + ", time=" + time);
@@ -221,17 +219,16 @@ public class PartitionManager implements Partition {
 
                 @Override
                 public void run() {
-                    log.severe("User API Upcall took >200ms in "
-                               + "partitionNotification(view, leader) where view="
-                               + view + ", leader=" + leader);
+                    log.error("User API Upcall took >200ms in "
+                              + "partitionNotification(view, leader) where view="
+                              + view + ", leader=" + leader);
                 }
 
             }, 200, TimeUnit.MILLISECONDS);
         } catch (RejectedExecutionException e) {
-            if (log.isLoggable(Level.FINEST)) {
-                log.log(Level.FINEST,
-                        "rejecting patition notification as we're shutting down",
-                        e);
+            if (log.isTraceEnabled()) {
+                log.trace("rejecting patition notification as we're shutting down",
+                          e);
             }
             return;
         }
@@ -239,15 +236,14 @@ public class PartitionManager implements Partition {
         try {
             pn.partitionNotification(view, leader);
         } catch (Throwable ex) {
-            log.log(Level.SEVERE,
-                    "User API Upcall threw Throwable in "
-                            + "partitionNotification(view, leader) where view="
-                            + view + ", leader=" + leader, ex);
+            log.error("User API Upcall threw Throwable in "
+                      + "partitionNotification(view, leader) where view="
+                      + view + ", leader=" + leader, ex);
         }
         timeout = System.currentTimeMillis();
         task.cancel(true);
-        if (log.isLoggable(Level.FINER)) {
-            log.finer("User API Upcall took " + (timeout - timein)
+        if (log.isTraceEnabled()) {
+            log.trace("User API Upcall took " + (timeout - timein)
                       + "ms in partitionNotification(view, leader) where view="
                       + view + ", leader=" + leader);
         }

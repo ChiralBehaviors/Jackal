@@ -28,6 +28,11 @@ public interface Partition {
 
     public void deregister(PartitionNotification pn);
 
+    /**
+     * Force the partition to destabilize
+     */
+    public void destabilize();
+
     public int getId();
 
     public InetAddress getNodeAddress(int node);
@@ -35,9 +40,4 @@ public interface Partition {
     public Status getStatus();
 
     public void register(PartitionNotification pn);
-
-    /**
-     * Force the partition to destabilize
-     */
-    public void destabilize();
 }

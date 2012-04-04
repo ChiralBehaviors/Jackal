@@ -26,21 +26,29 @@ import org.smartfrog.services.anubis.locator.ValueData;
 import org.smartfrog.services.anubis.partition.util.Identity;
 
 public interface SPLocatorAdapter extends Remote {
-    public void registerSPLocator(SPLocator spLocator) throws RemoteException,
-                                                      DuplicateSPLocatorException;
+    public void deregisterListener(SPLocator subProcessLocator,
+                                   SPListener listener) throws RemoteException,
+                                                       UnknownSPLocatorException;
+
+    public void deregisterProvider(SPLocator subProcessLocator, String instance)
+                                                                                throws RemoteException,
+                                                                                UnknownSPLocatorException;
 
     public void deregisterSPLocator(SPLocator spLocator)
                                                         throws RemoteException,
                                                         UnknownSPLocatorException;
 
-    public SPProviderRegRet registerProvider(SPLocator subProcessLocator,
-                                             String name, ValueData value)
-                                                                          throws RemoteException,
-                                                                          UnknownSPLocatorException;
+    public void deregisterStability(SPLocator subProcessLocator,
+                                    SPStability stability)
+                                                          throws RemoteException,
+                                                          UnknownSPLocatorException;
 
-    public void deregisterProvider(SPLocator subProcessLocator, String instance)
-                                                                                throws RemoteException,
-                                                                                UnknownSPLocatorException;
+    public Identity getIdentity() throws RemoteException;
+
+    public void livenessPing(SPLocator subProcessLocator)
+                                                         throws RemoteException,
+                                                         UnknownSPLocatorException,
+                                                         AdapterTerminatedException;
 
     public void newProviderValue(SPLocator subProcessLocator, String instance,
                                  ValueData value, long time)
@@ -51,24 +59,16 @@ public interface SPLocatorAdapter extends Remote {
                                  SPListener listener) throws RemoteException,
                                                      UnknownSPLocatorException;
 
-    public void deregisterListener(SPLocator subProcessLocator,
-                                   SPListener listener) throws RemoteException,
-                                                       UnknownSPLocatorException;
+    public SPProviderRegRet registerProvider(SPLocator subProcessLocator,
+                                             String name, ValueData value)
+                                                                          throws RemoteException,
+                                                                          UnknownSPLocatorException;
+
+    public void registerSPLocator(SPLocator spLocator) throws RemoteException,
+                                                      DuplicateSPLocatorException;
 
     public void registerStability(SPLocator subProcessLocator,
                                   SPStability stability)
                                                         throws RemoteException,
                                                         UnknownSPLocatorException;
-
-    public void deregisterStability(SPLocator subProcessLocator,
-                                    SPStability stability)
-                                                          throws RemoteException,
-                                                          UnknownSPLocatorException;
-
-    public void livenessPing(SPLocator subProcessLocator)
-                                                         throws RemoteException,
-                                                         UnknownSPLocatorException,
-                                                         AdapterTerminatedException;
-
-    public Identity getIdentity() throws RemoteException;
 }

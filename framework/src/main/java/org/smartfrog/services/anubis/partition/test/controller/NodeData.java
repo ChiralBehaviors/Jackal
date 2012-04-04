@@ -22,9 +22,9 @@ package org.smartfrog.services.anubis.partition.test.controller;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.test.msg.GetStatsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.GetThreadsMsg;
 import org.smartfrog.services.anubis.partition.test.msg.IgnoringMsg;
@@ -47,8 +47,79 @@ import com.hellblazer.partition.comms.AbstractMessageHandler;
 import com.hellblazer.pinkie.SocketChannelHandler;
 
 public class NodeData {
-    private static final Logger   log               = Logger.getLogger(NodeData.class.getCanonicalName());
+    private class Connection extends AbstractMessageHandler {
 
+        public Connection(WireSecurity wireSecurity) {
+            super(wireSecurity);
+        }
+
+        @Override
+        public void accept(SocketChannelHandler handler) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void closing() {
+            controller.disconnectNode(NodeData.this);
+        }
+
+        @Override
+        public void connect(SocketChannelHandler handler) {
+            this.handler = handler;
+            this.handler.selectForRead();
+            connection.sendObject(new SetTimingMsg(
+                                                   controller.getHeartbeatInterval(),
+                                                   controller.getHeartbeatTimeout()));
+        }
+
+        public void sendObject(Object obj) {
+            SerializedMsg msg = new SerializedMsg(obj);
+            try {
+                super.sendObject(msg.toWire());
+            } catch (Exception ex) {
+                if (log.isWarnEnabled()) {
+                    log.warn("", ex);
+                }
+            }
+        }
+
+        @Override
+        protected void deliverObject(ByteBuffer readBuffer) {
+            WireMsg wire;
+            try {
+                wire = Wire.fromWire(readBuffer.array());
+            } catch (Exception ex) {
+                if (log.isWarnEnabled()) {
+                    log.warn("unable to deserialize message", ex);
+                }
+                return;
+            }
+
+            if (wire instanceof Heartbeat) {
+                controller.receiveHeartbeat((Heartbeat) wire);
+                return;
+            }
+
+            SerializedMsg msg = null;
+            try {
+                msg = (SerializedMsg) wire;
+                Object obj = msg.getObject();
+
+                controller.deliverObject(obj, NodeData.this);
+            } catch (Exception ex) {
+                if (log.isWarnEnabled()) {
+                    log.warn("", ex);
+                }
+            }
+        }
+
+        @Override
+        protected Logger getLog() {
+            return log;
+        }
+    }
+
+    private static final Logger   log               = LoggerFactory.getLogger(NodeData.class.getCanonicalName());
     protected volatile Connection connection;
     protected final Controller    controller;
     protected volatile long       heartbeatInterval = 0;
@@ -62,6 +133,7 @@ public class NodeData {
     protected volatile ThreadsMsg threadsInfo       = null;
     protected volatile long       threadsInfoExpire = 0;
     protected volatile long       timeout           = 0;
+
     protected volatile View       view              = null;
 
     public NodeData(Heartbeat hb, Controller controller) {
@@ -88,8 +160,8 @@ public class NodeData {
         } else if (obj instanceof ThreadsMsg) {
             threads((ThreadsMsg) obj);
         } else {
-            log.severe("Unrecognised object received in test connection at console"
-                       + obj);
+            log.error("Unrecognised object received in test connection at console"
+                      + obj);
             connection.shutdown();
         }
     }
@@ -225,8 +297,7 @@ public class NodeData {
             controller.getHandler().connectTo(address, connection);
         } catch (IOException e) {
             connection = null;
-            log.log(Level.SEVERE,
-                    String.format("Cannot connect to node: %s", nodeId), e);
+            log.error(String.format("Cannot connect to node: %s", nodeId), e);
         }
 
     }
@@ -247,9 +318,9 @@ public class NodeData {
     }
 
     protected void partitionNotification(View partition, int leader) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Updating node view %s with partition view %s, leader %s",
-                                     nodeId, partition, leader));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Updating node view %s with partition view %s, leader %s",
+                                    nodeId, partition, leader));
         }
         this.partition = partition;
         this.leader = leader;
@@ -276,78 +347,6 @@ public class NodeData {
     protected void update() {
         if (threadsInfoExpire < System.currentTimeMillis()) {
             threadsInfo = null;
-        }
-    }
-
-    private class Connection extends AbstractMessageHandler {
-
-        public Connection(WireSecurity wireSecurity) {
-            super(wireSecurity);
-        }
-
-        @Override
-        public void closing() {
-            controller.disconnectNode(NodeData.this);
-        }
-
-        @Override
-        public void accept(SocketChannelHandler handler) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void connect(SocketChannelHandler handler) {
-            this.handler = handler;
-            this.handler.selectForRead();
-            connection.sendObject(new SetTimingMsg(
-                                                   controller.getHeartbeatInterval(),
-                                                   controller.getHeartbeatTimeout()));
-        }
-
-        @Override
-        protected void deliverObject(ByteBuffer readBuffer) {
-            WireMsg wire;
-            try {
-                wire = Wire.fromWire(readBuffer.array());
-            } catch (Exception ex) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING, "unable to deserialize message", ex);
-                }
-                return;
-            }
-
-            if (wire instanceof Heartbeat) {
-                controller.receiveHeartbeat((Heartbeat) wire);
-                return;
-            }
-
-            SerializedMsg msg = null;
-            try {
-                msg = (SerializedMsg) wire;
-                Object obj = msg.getObject();
-
-                controller.deliverObject(obj, NodeData.this);
-            } catch (Exception ex) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING, "", ex);
-                }
-            }
-        }
-
-        @Override
-        protected Logger getLog() {
-            return log;
-        }
-
-        public void sendObject(Object obj) {
-            SerializedMsg msg = new SerializedMsg(obj);
-            try {
-                super.sendObject(msg.toWire());
-            } catch (Exception ex) {
-                if (log.isLoggable(Level.WARNING)) {
-                    log.log(Level.WARNING, "", ex);
-                }
-            }
         }
     }
 

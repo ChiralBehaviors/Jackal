@@ -31,8 +31,8 @@ import java.util.Map;
  * 
  */
 public class ServiceReference implements Serializable {
-    private static final long serialVersionUID = 1L;
-    protected ServiceURL url;
+    private static final long     serialVersionUID = 1L;
+    protected ServiceURL          url;
     protected Map<String, Object> properties;
 
     /**

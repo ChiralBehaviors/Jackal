@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 
 import junit.framework.TestCase;
 
-import com.hellblazer.jackal.gossip.Digest;
-import com.hellblazer.jackal.gossip.GossipMessages;
 import com.hellblazer.jackal.gossip.Digest.DigestComparator;
 
 /**

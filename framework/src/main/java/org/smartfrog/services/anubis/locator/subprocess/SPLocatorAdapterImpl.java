@@ -74,6 +74,11 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         this.locator = locator;
     }
 
+    @PostConstruct
+    public synchronized void deploy() {
+        livenessChecker.start();
+    }
+
     @Override
     public synchronized void deregisterListener(SPLocator spLocator,
                                                 SPListener spListener)
@@ -149,6 +154,11 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         if (stability != null) {
             locator.deregisterStability(stability);
         }
+    }
+
+    @Override
+    public Identity getIdentity() throws RemoteException {
+        return locator.getIdentity();
     }
 
     @Override
@@ -251,11 +261,6 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
         stabilities.put(spStability, stability);
     }
 
-    @PostConstruct
-    public synchronized void deploy() {
-        livenessChecker.start();
-    }
-
     @PreDestroy
     public void terminate() {
         livenessChecker.terminate();
@@ -290,11 +295,6 @@ public class SPLocatorAdapterImpl implements SPLocatorAdapter {
             locator.deregisterListener(iter2.next());
         }
         spLocatorData.clear();
-    }
-
-    @Override
-    public Identity getIdentity() throws RemoteException {
-        return locator.getIdentity();
     }
 
     private SPLocatorData getSPLocatorData(SPLocator spLocator)

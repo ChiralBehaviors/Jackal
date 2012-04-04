@@ -41,6 +41,11 @@ import com.hellblazer.pinkie.SocketOptions;
  * 
  */
 public class GraphicController extends Controller {
+    private ColorAllocator      colorAllocator = new ColorAllocator();
+
+    private MainConsoleFrame    consoleFrame;
+    private AsymetryReportFrame asymetryReport = null;
+
     public GraphicController(Identity partitionIdentity, int heartbeatTimeout,
                              int heartbeatInterval,
                              SocketOptions socketOptions,
@@ -49,10 +54,6 @@ public class GraphicController extends Controller {
         super(partitionIdentity, heartbeatTimeout, heartbeatInterval,
               socketOptions, dispatchExecutor, wireSecurity);
     }
-
-    private ColorAllocator      colorAllocator = new ColorAllocator();
-    private MainConsoleFrame    consoleFrame;
-    private AsymetryReportFrame asymetryReport = null;
 
     public synchronized void asymPartition(String nodeStr) {
 
@@ -106,31 +107,28 @@ public class GraphicController extends Controller {
         return super.getHeartbeatTimeout();
     }
 
+    public synchronized void removeAsymetryReport() {
+        asymetryReport = null;
+    }
+
     @Override
     public void removeNode(NodeData nodeData) {
         consoleFrame.removeNode((GraphicNodeData) nodeData);
     }
 
-    @Override
-    protected void addNode(Heartbeat hb, NodeData nodeData) {
-        consoleFrame.addNode((GraphicNodeData) nodeData);
-        super.addNode(hb, nodeData);
+    public synchronized void showAsymetryReport() {
+        if (asymetryReport == null) {
+            asymetryReport = new AsymetryReportFrame(this, nodes, identity);
+        } else {
+            asymetryReport.recalculate(nodes);
+        }
     }
 
+    @Override
     @PostConstruct
     public synchronized void start() throws IOException {
         super.start();
         consoleFrame.setVisible(true);
-    }
-
-    @Override
-    @PreDestroy
-    public synchronized void terminate() {
-        super.terminate();
-        consoleFrame.setVisible(false);
-        consoleFrame.dispose();
-        consoleFrame = null;
-        System.exit(0);
     }
 
     public synchronized void symPartition(String nodeStr) {
@@ -156,21 +154,26 @@ public class GraphicController extends Controller {
         symPartition(partition);
     }
 
+    @Override
+    @PreDestroy
+    public synchronized void terminate() {
+        super.terminate();
+        consoleFrame.setVisible(false);
+        consoleFrame.dispose();
+        consoleFrame = null;
+        System.exit(0);
+    }
+
+    @Override
+    protected void addNode(Heartbeat hb, NodeData nodeData) {
+        consoleFrame.addNode((GraphicNodeData) nodeData);
+        super.addNode(hb, nodeData);
+    }
+
+    @Override
     protected NodeData createNode(Heartbeat hb) {
         NodeData nodeData;
         nodeData = new GraphicNodeData(hb, colorAllocator, this);
         return nodeData;
-    }
-
-    public synchronized void showAsymetryReport() {
-        if (asymetryReport == null) {
-            asymetryReport = new AsymetryReportFrame(this, nodes, identity);
-        } else {
-            asymetryReport.recalculate(nodes);
-        }
-    }
-
-    public synchronized void removeAsymetryReport() {
-        asymetryReport = null;
     }
 }

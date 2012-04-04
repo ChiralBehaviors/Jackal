@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms.multicast;
 
-import java.util.logging.Level;
-
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolAdapter;
@@ -63,6 +61,11 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
         connectionSet = cs;
     }
 
+    @Override
+    public boolean isSelf() {
+        return false;
+    }
+
     /**
      * HeartbeatProtocol interface 1) extend receiveHeartbeat call by
      * over-riding it, and calling the super.receiveHeartbeat(). Adds functions
@@ -76,8 +79,8 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
          * ignore if the epoch is wrong or if this connection has terminated
          */
         if (!getSender().equalEpoch(hb.getSender()) || terminated) {
-            if (!terminated && log.isLoggable(Level.FINEST)) {
-                log.finest("Ignoring heart beat from wrong epoch: " + hb);
+            if (!terminated && log.isTraceEnabled()) {
+                log.trace("Ignoring heart beat from wrong epoch: " + hb);
             }
             return false;
         }
@@ -92,10 +95,10 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
             /**
              * Extract piggy-backed messaging information to see if this
              * connection should be converted to a messaging connection
-             */ 
+             */
             if (hb.getMsgLinks().contains(me.id)) {
-                if (log.isLoggable(Level.FINER)) {
-                    log.finer(String.format("converting heart beat connection to message connection: %s",
+                if (log.isTraceEnabled()) {
+                    log.trace(String.format("converting heart beat connection to message connection: %s",
                                             this));
                 }
                 connectionSet.convertToMessageConnection(this);
@@ -118,11 +121,6 @@ public class HeartbeatConnection extends HeartbeatProtocolAdapter implements
     @Override
     public String toString() {
         return "HeartbeatConnection [from: " + me + " to:" + getId() + "]";
-    }
-
-    @Override
-    public boolean isSelf() {
-        return false;
     }
 
 }

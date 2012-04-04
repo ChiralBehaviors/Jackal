@@ -57,7 +57,7 @@ public class Controller implements ConnectionManager {
                       int heartbeatInterval, SocketOptions socketOptions,
                       ExecutorService dispatcher, WireSecurity wireSecurity)
                                                                             throws IOException {
-        this.timer = Executors.newScheduledThreadPool(1);
+        timer = Executors.newScheduledThreadPool(1);
         identity = partitionIdentity;
         this.heartbeatTimeout = heartbeatTimeout;
         this.heartbeatInterval = heartbeatInterval;
@@ -78,7 +78,7 @@ public class Controller implements ConnectionManager {
 
     public synchronized void checkNodes() {
         long timeNow = System.currentTimeMillis();
-        long expireTime = timeNow - (heartbeatInterval * heartbeatTimeout);
+        long expireTime = timeNow - heartbeatInterval * heartbeatTimeout;
         Iterator<NodeData> iter = nodes.values().iterator();
         while (iter.hasNext()) {
             NodeData nodeData = iter.next();
@@ -132,6 +132,13 @@ public class Controller implements ConnectionManager {
         node.disconnected();
     }
 
+    /**
+     * @return
+     */
+    public ChannelHandler getHandler() {
+        return handler;
+    }
+
     public long getHeartbeatInterval() {
         return heartbeatInterval;
     }
@@ -146,6 +153,13 @@ public class Controller implements ConnectionManager {
 
     public Collection<? extends NodeData> getNodes() {
         return nodes.values();
+    }
+
+    /**
+     * @return
+     */
+    public WireSecurity getWireSecurity() {
+        return wireSecurity;
     }
 
     public String nodesToString() {
@@ -232,19 +246,5 @@ public class Controller implements ConnectionManager {
         NodeData nodeData;
         nodeData = new NodeData(hb, this);
         return nodeData;
-    }
-
-    /**
-     * @return
-     */
-    public WireSecurity getWireSecurity() {
-        return wireSecurity;
-    }
-
-    /**
-     * @return
-     */
-    public ChannelHandler getHandler() {
-        return handler;
     }
 }

@@ -35,11 +35,6 @@ public class GossipTestCfg {
     private static int testPort1;
     private static int testPort2;
 
-    public static void setTestPorts(int port1, int port2) {
-        testPort1 = port1;
-        testPort2 = port2;
-    }
-
     public static int getTestPort1() {
         return testPort1;
     }
@@ -51,6 +46,11 @@ public class GossipTestCfg {
     public static void incrementPorts() {
         testPort1++;
         testPort2++;
+    }
+
+    public static void setTestPorts(int port1, int port2) {
+        testPort1 = port1;
+        testPort2 = port2;
     }
 
     @Bean(name = "seedHosts")

@@ -34,22 +34,22 @@ import com.hellblazer.jackal.util.Base64Coder;
  * 
  */
 public class ServiceURL implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long  serialVersionUID   = 1L;
     /** Indicates that no port information is available for this URL. */
-    public static final int NO_PORT = 0;
+    public static final int    NO_PORT            = 0;
     /** zero lifetime. */
-    public static final int LIFETIME_NONE = 0;
+    public static final int    LIFETIME_NONE      = 0;
     /** Default lifetime (3 hours). */
-    public static final int LIFETIME_DEFAULT = 10800;
+    public static final int    LIFETIME_DEFAULT   = 10800;
     /** Maximum lifetime. */
-    public static final int LIFETIME_MAXIMUM = 65535;
+    public static final int    LIFETIME_MAXIMUM   = 65535;
     /**
      * Unlimited lifetime. The URL are continuously re-registered until the
      * application exits.
      */
-    public static final int LIFETIME_PERMANENT = -1;
+    public static final int    LIFETIME_PERMANENT = -1;
     /** default transport */
-    public static final String DEFAULT_TRANSPORT = ""; // IP
+    public static final String DEFAULT_TRANSPORT  = "";   // IP
 
     public static Object objectFromString(String objString) throws Exception {
         byte[] byteArray = com.hellblazer.jackal.util.Base64Coder.decodeLines(objString);
@@ -79,14 +79,14 @@ public class ServiceURL implements Serializable {
     }
 
     // variables.
-    URI uri = null;
-    String serviceURL;
+    URI         uri       = null;
+    String      serviceURL;
     ServiceType serviceType;
-    int lifetime;
+    int         lifetime;
 
-    String urlPath;
+    String      urlPath;
 
-    String transport = DEFAULT_TRANSPORT;
+    String      transport = DEFAULT_TRANSPORT;
 
     public ServiceURL(String url) throws IllegalArgumentException {
         this(url, LIFETIME_DEFAULT);

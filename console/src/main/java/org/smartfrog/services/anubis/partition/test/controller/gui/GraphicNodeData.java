@@ -47,6 +47,14 @@ public class GraphicNodeData extends NodeData {
         button.setForeground(Color.black);
     }
 
+    public void closeWindow() {
+        if (window != null) {
+            window.setVisible(false);
+            window.dispose();
+            window = null;
+        }
+    }
+
     @Override
     public void disconnected() {
         colorAllocator.deallocate(partition, this);
@@ -56,44 +64,6 @@ public class GraphicNodeData extends NodeData {
 
     public NodeButton getButton() {
         return button;
-    }
-
-    @Override
-    protected void partitionNotification(View partition, int leader) {
-        /**
-         * if partition has changed membership deallocate current color and then
-         * reallocate new color
-         */
-        if (!this.partition.toBitSet().equals(partition.toBitSet())) {
-            colorAllocator.deallocate(this.partition, this);
-            partitionColor = colorAllocator.allocate(partition, this);
-        }
-        super.partitionNotification(partition, leader);
-    }
-
-    @Override
-    protected void update() {
-        super.update();
-        if (window != null) {
-            window.update(partition, view, leader, ignoring, heartbeatInterval,
-                          timeout, stats, threadsInfo);
-        }
-        if (button != null) {
-            button.setBackground(partitionColor);
-            if (partition.isStable()) {
-                button.setForeground(Color.black);
-            } else {
-                button.setForeground(Color.yellow);
-            }
-        }
-    }
-
-    public void closeWindow() {
-        if (window != null) {
-            window.setVisible(false);
-            window.dispose();
-            window = null;
-        }
     }
 
     public void openWindow() {
@@ -138,5 +108,35 @@ public class GraphicNodeData extends NodeData {
         }
 
         setIgnoring(ignoring);
+    }
+
+    @Override
+    protected void partitionNotification(View partition, int leader) {
+        /**
+         * if partition has changed membership deallocate current color and then
+         * reallocate new color
+         */
+        if (!this.partition.toBitSet().equals(partition.toBitSet())) {
+            colorAllocator.deallocate(this.partition, this);
+            partitionColor = colorAllocator.allocate(partition, this);
+        }
+        super.partitionNotification(partition, leader);
+    }
+
+    @Override
+    protected void update() {
+        super.update();
+        if (window != null) {
+            window.update(partition, view, leader, ignoring, heartbeatInterval,
+                          timeout, stats, threadsInfo);
+        }
+        if (button != null) {
+            button.setBackground(partitionColor);
+            if (partition.isStable()) {
+                button.setForeground(Color.black);
+            } else {
+                button.setForeground(Color.yellow);
+            }
+        }
     }
 }

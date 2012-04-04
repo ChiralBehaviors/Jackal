@@ -28,9 +28,9 @@ public interface IOConnection {
 
     boolean connected();
 
-    void send(TimedMsg msg);
-
     void send(Heartbeat heartbeat);
+
+    void send(TimedMsg msg);
 
     void setIgnoring(boolean ignoring);
 

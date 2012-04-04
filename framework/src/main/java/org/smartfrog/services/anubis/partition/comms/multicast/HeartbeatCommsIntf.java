@@ -25,9 +25,9 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import com.hellblazer.jackal.partition.test.node.CommsController;
 
 public interface HeartbeatCommsIntf extends CommsController {
-    void sendHeartbeat(Heartbeat msg);
-
     void requestConnect(Heartbeat heartbeat, Identity node);
+
+    void sendHeartbeat(Heartbeat msg);
 
     void start(Heartbeat initialHeartbeat);
 

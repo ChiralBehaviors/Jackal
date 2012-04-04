@@ -26,21 +26,17 @@ import java.io.PrintStream;
 
 public class HexDump {
 
-    private static final String NL = System.getProperty("line.separator");
-    private static final int NL_LENGTH = NL.length();
+    private static final String NL          = System.getProperty("line.separator");
+    private static final int    NL_LENGTH   = NL.length();
 
     private static final char[] SPACE_CHARS = { ' ', ' ', ' ', ' ', ' ', ' ',
-                                               ' ', ' ', ' ', ' ', ' ', ' ',
-                                               ' ', ' ', ' ', ' ', ' ', ' ',
-                                               ' ', ' ', ' ', ' ', ' ', ' ',
-                                               ' ', ' ', ' ', ' ', ' ', ' ',
-                                               ' ', ' ', ' ', ' ', ' ', ' ',
-                                               ' ', ' ', ' ', ' ', ' ', ' ',
-                                               ' ', ' ', ' ', ' ', ' ', ' ' };
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' '                  };
 
-    public static final char[] HEX_DIGITS = { '0', '1', '2', '3', '4', '5',
-                                             '6', '7', '8', '9', 'A', 'B', 'C',
-                                             'D', 'E', 'F' };
+    public static final char[]  HEX_DIGITS  = { '0', '1', '2', '3', '4', '5',
+            '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
     /**
      * Generate "hexdump" output of the buffer at src like the following:
@@ -65,7 +61,7 @@ public class HexDump {
         }
 
         int s = length % 16;
-        int r = (s == 0) ? length / 16 : length / 16 + 1;
+        int r = s == 0 ? length / 16 : length / 16 + 1;
         char[] c = new char[r * (74 + NL_LENGTH)];
         char[] d = new char[16];
         int i;
@@ -93,7 +89,7 @@ public class HexDump {
                 } else {
                     d[si % 16] = (char) i;
                 }
-            } while ((++si % 16) != 0);
+            } while (++si % 16 != 0);
             c[ci++] = ' ';
             c[ci++] = ' ';
             c[ci++] = '|';
@@ -105,36 +101,6 @@ public class HexDump {
         } while (si < length);
 
         ps.println(c);
-    }
-
-    /**
-     * This is an alternative to the <code>java.lang.Integer.toHexString</cod>
-     * method. It is an efficient relative that also will pad the left side so
-     * that the result is <code>size</code> digits.
-     */
-    public static String toHexString(int val, int size) {
-        char[] c = new char[size];
-        toHexChars(val, c, 0, size);
-        return new String(c);
-    }
-
-    public static String toHexString(long val, int size) {
-        char[] c = new char[size];
-        toHexChars(val, c, 0, size);
-        return new String(c);
-    }
-
-    public static String toHexString(byte[] src, int srcIndex, int size) {
-        char[] c = new char[size];
-        size = (size % 2 == 0) ? size / 2 : size / 2 + 1;
-        for (int i = 0, j = 0; i < size; i++) {
-            c[j++] = HEX_DIGITS[(src[i] >> 4) & 0x0F];
-            if (j == c.length) {
-                break;
-            }
-            c[j++] = HEX_DIGITS[src[i] & 0x0F];
-        }
-        return new String(c);
     }
 
     /**
@@ -164,5 +130,35 @@ public class HexDump {
             }
             size--;
         }
+    }
+
+    public static String toHexString(byte[] src, int srcIndex, int size) {
+        char[] c = new char[size];
+        size = size % 2 == 0 ? size / 2 : size / 2 + 1;
+        for (int i = 0, j = 0; i < size; i++) {
+            c[j++] = HEX_DIGITS[src[i] >> 4 & 0x0F];
+            if (j == c.length) {
+                break;
+            }
+            c[j++] = HEX_DIGITS[src[i] & 0x0F];
+        }
+        return new String(c);
+    }
+
+    /**
+     * This is an alternative to the <code>java.lang.Integer.toHexString</cod>
+     * method. It is an efficient relative that also will pad the left side so
+     * that the result is <code>size</code> digits.
+     */
+    public static String toHexString(int val, int size) {
+        char[] c = new char[size];
+        toHexChars(val, c, 0, size);
+        return new String(c);
+    }
+
+    public static String toHexString(long val, int size) {
+        char[] c = new char[size];
+        toHexChars(val, c, 0, size);
+        return new String(c);
     }
 }

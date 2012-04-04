@@ -29,12 +29,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.locator.AnubisValue;
 import org.smartfrog.services.anubis.partition.Partition;
 import org.smartfrog.services.anubis.partition.PartitionNotification;
@@ -116,7 +116,7 @@ public class AnubisScope implements ServiceScope {
 
     public static final String                                  MEMBER_IDENTITY = "anubis.member.identity";
 
-    private static final Logger                                 log             = Logger.getLogger(AnubisScope.class.getCanonicalName());
+    private static final Logger                                 log             = LoggerFactory.getLogger(AnubisScope.class);
     private final ExecutorService                               executor;
     private final int                                           identity;
     private final Map<ServiceListener, Filter>                  listeners       = new ConcurrentHashMap<ServiceListener, Filter>();
@@ -142,10 +142,10 @@ public class AnubisScope implements ServiceScope {
             @Override
             public void objectNotification(Object obj, int sender, long time) {
                 if (obj instanceof Message) {
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(String.format("scope %s receiving message %s from %s",
-                                               AnubisScope.this.identity, obj,
-                                               sender));
+                    if (log.isTraceEnabled()) {
+                        log.trace(String.format("scope %s receiving message %s from %s",
+                                                AnubisScope.this.identity, obj,
+                                                sender));
                     }
                     processInbound((Message) obj);
                 }
@@ -155,16 +155,16 @@ public class AnubisScope implements ServiceScope {
             public void partitionNotification(View view, int leader) {
                 AnubisScope.this.view = view;
                 if (view.isStable()) {
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(String.format("stabilizing partition on scope %s",
-                                               AnubisScope.this.identity));
+                    if (log.isTraceEnabled()) {
+                        log.trace(String.format("stabilizing partition on scope %s",
+                                                AnubisScope.this.identity));
                     }
                     sync();
                     openUpdateGate();
                 } else {
-                    if (log.isLoggable(Level.FINE)) {
-                        log.fine(String.format("destabilizing partition on scope %s",
-                                               AnubisScope.this.identity));
+                    if (log.isTraceEnabled()) {
+                        log.trace(String.format("destabilizing partition on scope %s",
+                                                AnubisScope.this.identity));
                     }
                     closeUpdateGate();
                 }
@@ -176,8 +176,8 @@ public class AnubisScope implements ServiceScope {
     @Override
     public void addServiceListener(final ServiceListener listener, String query)
                                                                                 throws InvalidSyntaxException {
-        if (log.isLoggable(Level.FINE)) {
-            log.fine("adding listener: " + listener + " on query: " + query);
+        if (log.isTraceEnabled()) {
+            log.trace("adding listener: " + listener + " on query: " + query);
         }
         List<ServiceReference> references;
         listeners.put(listener, new FilterImpl(query));
@@ -192,9 +192,8 @@ public class AnubisScope implements ServiceScope {
                                                                  EventType.REGISTERED,
                                                                  ref));
                     } catch (Throwable e) {
-                        log.log(Level.SEVERE,
-                                "Error when notifying listener on reference "
-                                        + EventType.REGISTERED, e);
+                        log.error("Error when notifying listener on reference "
+                                  + EventType.REGISTERED, e);
                     }
                 }
             });
@@ -272,9 +271,9 @@ public class AnubisScope implements ServiceScope {
                               Map<String, Object> properties) {
         ServiceReferenceImpl ref = myServices.get(serviceRegistration);
         if (ref == null) {
-            if (log.isLoggable(Level.FINE)) {
-                log.fine(String.format("No service registered for %s",
-                                       serviceRegistration));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("No service registered for %s",
+                                        serviceRegistration));
             }
             return;
         }
@@ -292,22 +291,37 @@ public class AnubisScope implements ServiceScope {
         update(new Message(MessageType.UNREGISTER, serviceRegistration));
     }
 
+    private void send(Message msg) {
+        for (int n : view.toBitSet()) {
+            if (identity == n) {
+                processInbound(msg);
+            } else {
+                MessageConnection connection = partition.connect(n);
+                if (connection == null) {
+                    System.out.println(String.format("Node %s cannot connect to: %s",
+                                                     identity, n));
+                }
+                connection.sendObject(msg);
+            }
+        }
+    }
+
     protected void closeUpdateGate() {
-        log.fine("closing update gate");
+        log.trace("closing update gate");
         updateGate.close();
     }
 
     protected void memberLeft(AnubisValue value) {
         String instance = value.getInstance();
         if (instance == null) {
-            log.severe(String.format("No instance value for removed value %s",
-                                     value));
+            log.error(String.format("No instance value for removed value %s",
+                                    value));
             return;
         }
         int index = instance.indexOf('/');
         if (index == -1) {
-            log.severe(String.format("No member id for instance value %s",
-                                     instance));
+            log.error(String.format("No member id for instance value %s",
+                                    instance));
             return;
         }
         int id = Integer.parseInt(instance.substring(0, index));
@@ -320,7 +334,7 @@ public class AnubisScope implements ServiceScope {
     }
 
     protected void openUpdateGate() {
-        log.fine("opening update gate");
+        log.trace("opening update gate");
         updateGate.open();
     }
 
@@ -405,9 +419,8 @@ public class AnubisScope implements ServiceScope {
                                                                              type,
                                                                              reference));
                                 } catch (Throwable e) {
-                                    log.log(Level.SEVERE,
-                                            "Error when notifying listener on reference "
-                                                    + type, e);
+                                    log.error("Error when notifying listener on reference "
+                                                      + type, e);
                                 }
                             }
                         });
@@ -428,9 +441,9 @@ public class AnubisScope implements ServiceScope {
         outboundProcessingThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine("State outbound message processing for member: "
-                             + identity + " running");
+                if (log.isTraceEnabled()) {
+                    log.trace("State outbound message processing for member: "
+                              + identity + " running");
                 }
                 while (run.get()) {
                     try {
@@ -445,9 +458,8 @@ public class AnubisScope implements ServiceScope {
         outboundProcessingThread.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
-                log.log(Level.WARNING,
-                        "Uncaught exception in outbound message processing thread",
-                        e);
+                log.warn("Uncaught exception in outbound message processing thread",
+                         e);
             }
         });
         outboundProcessingThread.start();
@@ -479,21 +491,6 @@ public class AnubisScope implements ServiceScope {
             outboundMsgs.put(state);
         } catch (InterruptedException e) {
             // intentionally no action
-        }
-    }
-
-    private void send(Message msg) {
-        for (int n : view.toBitSet()) {
-            if (identity == n) {
-                processInbound(msg);
-            } else {
-                MessageConnection connection = partition.connect(n);
-                if (connection == null) {
-                    System.out.println(String.format("Node %s cannot connect to: %s",
-                                                     identity, n));
-                }
-                connection.sendObject(msg);
-            }
         }
     }
 }

@@ -21,7 +21,7 @@ package com.hellblazer.jackal.gossip;
  * Produce instances of a configured failure detector.
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
- *
+ * 
  */
 public interface FailureDetectorFactory {
     FailureDetector create();

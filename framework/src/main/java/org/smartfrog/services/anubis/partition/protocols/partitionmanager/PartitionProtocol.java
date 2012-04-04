@@ -75,6 +75,22 @@ public class PartitionProtocol {
         return connectionSet.connect(id);
     }
 
+    /**
+     * Force the destabilization of the partition.
+     */
+    public void destabilize() {
+        connectionSet.destabilize();
+    }
+
+    /**
+     * Answer the identity of the leader
+     * 
+     * @return
+     */
+    public Identity getLeader() {
+        return leader;
+    }
+
     public InetAddress getNodeAddress(int id) {
         return connectionSet.getNodeAddress(id);
     }
@@ -111,10 +127,6 @@ public class PartitionProtocol {
         }
     }
 
-    void setConnectionSet(ConnectionSet connectionSet) {
-        this.connectionSet = connectionSet;
-    }
-
     /**
      * copy the stable view from the connection set - includes the time stamp in
      * the copy. Note that a partition can expand when it is stable (the
@@ -141,19 +153,7 @@ public class PartitionProtocol {
         terminated = true;
     }
 
-    /**
-     * Force the destabilization of the partition.
-     */
-    public void destabilize() {
-        connectionSet.destabilize();
-    }
-
-    /**
-     * Answer the identity of the leader
-     * 
-     * @return
-     */
-    public Identity getLeader() {
-        return leader;
+    void setConnectionSet(ConnectionSet connectionSet) {
+        this.connectionSet = connectionSet;
     }
 }

@@ -29,8 +29,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a view on the known endpoint state for the system. The primary
@@ -69,7 +70,7 @@ public class SystemView {
                                                                                   return hostCompare;
                                                                               }
                                                                           };
-    private static final Logger                        log                = Logger.getLogger(SystemView.class.getCanonicalName());
+    private static final Logger                        log                = LoggerFactory.getLogger(SystemView.class);
     private final Random                               entropy;
     private final Set<InetSocketAddress>               live               = new ConcurrentSkipListSet<InetSocketAddress>(
                                                                                                                          ADDRESS_COMPARATOR);
@@ -114,14 +115,6 @@ public class SystemView {
                         localAddress, seeds));
     }
 
-    public boolean validAddresses(Collection<InetSocketAddress> hosts) {
-        for (InetSocketAddress address : hosts) {
-            assert address.getPort() != 0 : String.format("Invalid host address: %s",
-                                                          address);
-        }
-        return true;
-    }
-
     /**
      * Reconsider endpoints that have been quarantined for a sufficient time.
      * 
@@ -133,9 +126,9 @@ public class SystemView {
         for (Iterator<Map.Entry<InetSocketAddress, Long>> iterator = quarantined.entrySet().iterator(); iterator.hasNext();) {
             Map.Entry<InetSocketAddress, Long> entry = iterator.next();
             if (now - entry.getValue() > quarantineInterval) {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine(format("%s elapsed, %s gossip quarantine over",
-                                    quarantineInterval, entry.getKey()));
+                if (log.isTraceEnabled()) {
+                    log.trace(format("%s elapsed, %s gossip quarantine over",
+                                     quarantineInterval, entry.getKey()));
                 }
                 iterator.remove();
                 unreachable.put(entry.getKey(), entry.getValue());
@@ -154,9 +147,9 @@ public class SystemView {
         for (Iterator<Map.Entry<InetSocketAddress, Long>> iterator = quarantined.entrySet().iterator(); iterator.hasNext();) {
             Map.Entry<InetSocketAddress, Long> entry = iterator.next();
             if (now - entry.getValue() > unreachableInterval) {
-                if (log.isLoggable(Level.FINE)) {
-                    log.fine(format("%s elapsed, %s is now considered truly dead",
-                                    unreachableInterval, entry.getKey()));
+                if (log.isTraceEnabled()) {
+                    log.trace(format("%s elapsed, %s is now considered truly dead",
+                                     unreachableInterval, entry.getKey()));
                 }
                 iterator.remove();
                 unreachable.put(entry.getKey(), entry.getValue());
@@ -224,8 +217,8 @@ public class SystemView {
         } else if (seeds.contains(member)) {
             return null;
         }
-        if (seeds.size() == 0
-            || (seeds.size() == 1 && seeds.contains(localAddress))) {
+        if (seeds.size() == 0 || seeds.size() == 1
+            && seeds.contains(localAddress)) {
             return null;
         }
 
@@ -234,7 +227,8 @@ public class SystemView {
             if (live.size() == 0) {
                 seed = getRandomMember(seeds);
             }
-            if (entropy.nextDouble() <= (seeds.size() / (double) (live.size() + unreachable.size()))) {
+            if (entropy.nextDouble() <= seeds.size()
+                                        / (double) (live.size() + unreachable.size())) {
                 seed = getRandomMember(seeds);
             }
         } while (localAddress == seed);
@@ -250,7 +244,8 @@ public class SystemView {
      *         available
      */
     public InetSocketAddress getRandomUnreachableMember() {
-        if (entropy.nextDouble() < (unreachable.size() / ((double) live.size() + 1))) {
+        if (entropy.nextDouble() < unreachable.size()
+                                   / ((double) live.size() + 1)) {
             return getRandomMember(unreachable.keySet());
         }
         return null;
@@ -296,6 +291,14 @@ public class SystemView {
     public void markDead(InetSocketAddress endpoint, long now) {
         live.remove(endpoint);
         quarantined.put(endpoint, now);
+    }
+
+    public boolean validAddresses(Collection<InetSocketAddress> hosts) {
+        for (InetSocketAddress address : hosts) {
+            assert address.getPort() != 0 : String.format("Invalid host address: %s",
+                                                          address);
+        }
+        return true;
     }
 
     /**

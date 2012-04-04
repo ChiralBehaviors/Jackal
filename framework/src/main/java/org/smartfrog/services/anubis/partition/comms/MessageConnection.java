@@ -20,9 +20,9 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.comms;
 
 import java.util.LinkedList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocol;
 import org.smartfrog.services.anubis.partition.protocols.heartbeat.HeartbeatProtocolAdapter;
 import org.smartfrog.services.anubis.partition.protocols.leader.Candidate;
@@ -75,10 +75,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
         @Override
         public boolean assignImpl(IOConnection impl) {
-            if (log.isLoggable(Level.INFO)) {
-                log.log(Level.INFO,
-                        String.format("Attempt to assign a new implementation when one exists for %s",
-                                      this));
+            if (log.isInfoEnabled()) {
+                log.info(String.format("Attempt to assign a new implementation when one exists for %s",
+                                       this));
             }
             return false;
         }
@@ -106,16 +105,16 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
              * remote node, has terminated.
              */
             if (!connectionImpl.connected()) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Message dropped due to closed connection: %s",
-                                             this));
+                if (log.isTraceEnabled()) {
+                    log.trace(String.format("Message dropped due to closed connection: %s",
+                                            this));
                 }
                 return;
             }
 
             if (!(msg instanceof Heartbeat)) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Sending msg on: %s", this));
+                if (log.isTraceEnabled()) {
+                    log.trace(String.format("Sending msg on: %s", this));
                 }
             }
             connectionImpl.send(msg);
@@ -139,8 +138,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
         @Override
         public boolean assignImpl(IOConnection impl) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Assigning impl: %s", this));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Assigning impl: %s", this));
             }
             connectionImpl = impl;
             connectionImpl.setIgnoring(ignoring); // indicate if it should ignore messages
@@ -171,8 +170,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         @Override
         public synchronized void send(TimedMsg msg) {
             if (established == null) {
-                if (log.isLoggable(Level.FINEST)) {
-                    log.finest(String.format("Queueing msg on: %s", this));
+                if (log.isTraceEnabled()) {
+                    log.trace(String.format("Queueing msg on: %s", this));
                 }
                 msgQ.addLast(msg);
             } else {
@@ -208,7 +207,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
     }
 
-    private static final Logger   log               = Logger.getLogger(MessageConnection.class.getCanonicalName());
+    private static final Logger   log               = LoggerFactory.getLogger(MessageConnection.class.getCanonicalName());
     private volatile IOConnection closingImpl       = null;
     private volatile IOConnection connectionImpl    = null;
     private final ConnectionSet   connectionSet;
@@ -261,8 +260,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
     public boolean assignImpl(IOConnection impl) {
 
         if (terminated) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Not assigning impl as connection is terminated: %s",
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Not assigning impl as connection is terminated: %s",
                                         this));
             }
             return false;
@@ -274,8 +273,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         send = send.connect();
 
         if (disconnectPending) {
-            if (log.isLoggable(Level.FINER)) {
-                log.finer(String.format("Disconnecting: %s", this));
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("Disconnecting: %s", this));
             }
             connectionSet.disconnect(getSender());
         }
@@ -346,12 +345,12 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                                         mmsg.getSender(), mmsg.getTime());
 
         } else if (msg == null) {
-            log.severe(me + "connection transport delivered null message from "
-                       + getSender());
+            log.error(me + "connection transport delivered null message from "
+                      + getSender());
         } else {
-            log.severe(me
-                       + "connection transport delivered unknown message type from "
-                       + getSender() + " message=" + msg);
+            log.error(me
+                      + "connection transport delivered unknown message type from "
+                      + getSender() + " message=" + msg);
         }
     }
 
@@ -367,9 +366,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      */
     public void disconnect() {
         disconnectPending = true;
-        if (log.isLoggable(Level.FINEST)) {
-            log.log(Level.FINEST,
-                    String.format("%s disconnecting from %s", me, getSender()));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("%s disconnecting from %s", me, getSender()));
         }
         send.disconnect();
     }
@@ -386,10 +384,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
 
     public void logClose(String reason, Throwable throwable) {
 
-        if (log.isLoggable(Level.FINE)) {
-            log.log(Level.FINE, me + " message connection transport for "
-                                + getSender() + " shutdown:" + reason,
-                    throwable);
+        if (log.isTraceEnabled()) {
+            log.trace(me + " message connection transport for " + getSender()
+                      + " shutdown:" + reason, throwable);
         }
 
     }
@@ -406,9 +403,9 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
      */
     @Override
     public boolean receiveHeartbeat(Heartbeat hb) {
-        if (log.isLoggable(Level.FINEST)) {
-            log.finest(String.format("Non message connection heartbeat rejected from: %s at: %s",
-                                     hb.getSender(), me));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("Non message connection heartbeat rejected from: %s at: %s",
+                                    hb.getSender(), me));
         }
         return false;
     }
@@ -422,9 +419,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         if (msg == null) {
             Exception e = new Exception();
             e.fillInStackTrace();
-            log.log(Level.SEVERE,
-                    String.format("SendBytes(WireMsg) called with null parameter on: %s",
-                                  this), e);
+            log.error(String.format("SendBytes(WireMsg) called with null parameter on: %s",
+                                    this), e);
             return;
         }
         send.send(msg);
@@ -534,9 +530,8 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
             try {
                 closingImpl.send(connectionSet.getHeartbeat().toClose());
             } catch (Exception ex) {
-                log.log(Level.SEVERE,
-                        String.format("%s failed to marshall close message - not sent to %s",
-                                      me, getSender()), ex);
+                log.error(String.format("%s failed to marshall close message - not sent to %s",
+                                        me, getSender()), ex);
             }
         }
     }

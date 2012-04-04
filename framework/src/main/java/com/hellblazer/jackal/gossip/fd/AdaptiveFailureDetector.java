@@ -32,12 +32,12 @@ import com.hellblazer.jackal.util.SkipList;
 public class AdaptiveFailureDetector extends MultiWindow implements
         FailureDetector {
 
-    private double              last        = -1.0;
-    private final double        minInterval;
-    private final double        scale;
-    private final SkipList      sorted      = new SkipList();
-    private final double        threshold;
-    private double              sumOfDelays = 0.0;
+    private double         last        = -1.0;
+    private final double   minInterval;
+    private final double   scale;
+    private final SkipList sorted      = new SkipList();
+    private final double   threshold;
+    private double         sumOfDelays = 0.0;
 
     public AdaptiveFailureDetector(double convictionThreshold, int windowSize,
                                    double scale, long expectedSampleInterval,
@@ -71,7 +71,7 @@ public class AdaptiveFailureDetector extends MultiWindow implements
             }
             addLast(sample, delay);
         }
-        last = timeStamp + (sumOfDelays / count);
+        last = timeStamp + sumOfDelays / count;
     }
 
     @Override
