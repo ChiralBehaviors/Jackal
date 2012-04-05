@@ -91,7 +91,6 @@
 					<forkMode>always</forkMode>
 					<systemPropertyVariables>
 						<java.rmi.server.hostname>127.0.0.1</java.rmi.server.hostname>
-						<java.util.logging.config.file>logging.properties</java.util.logging.config.file>
 						<java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
 					</systemPropertyVariables>
 					<argLine>-ea</argLine>
