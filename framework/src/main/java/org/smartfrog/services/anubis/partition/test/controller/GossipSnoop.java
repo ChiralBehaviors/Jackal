@@ -58,7 +58,7 @@ public class GossipSnoop {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
-                                           "Anubis: Controller Gossip discovery servicing thread");
+                                           "Controller Gossip discovery servicing thread");
                 daemon.setDaemon(true);
                 return daemon;
             }

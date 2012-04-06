@@ -77,7 +77,7 @@ public class GlobalRegisterImpl {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
-                                           "Anubis: Global Register Request Server (node "
+                                           "Global Register Request Server (node "
                                                    + me + ")");
                 daemon.setDaemon(true);
                 return daemon;

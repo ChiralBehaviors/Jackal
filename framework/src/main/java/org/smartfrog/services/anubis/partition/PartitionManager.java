@@ -61,7 +61,7 @@ public class PartitionManager implements Partition {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
-                                           "Anubis: Partition Manager timers (node "
+                                           "Partition Manager timers (node "
                                                    + identity.id + ")");
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override

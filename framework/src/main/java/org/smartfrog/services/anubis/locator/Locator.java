@@ -82,7 +82,7 @@ public class Locator implements PartitionNotification, AnubisLocator {
 
             @Override
             public Thread newThread(Runnable r) {
-                Thread daemon = new Thread(r, "Anubis: Locator timers (node "
+                Thread daemon = new Thread(r, "Locator timers (node "
                                               + me + ")");
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override

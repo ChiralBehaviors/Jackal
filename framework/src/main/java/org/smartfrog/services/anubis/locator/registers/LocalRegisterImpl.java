@@ -123,7 +123,7 @@ public class LocalRegisterImpl {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
-                                           "Anubis: Local Register Request Server (node "
+                                           "Local Register Request Server (node "
                                                    + me.id + ")");
                 daemon.setDaemon(true);
                 return daemon;

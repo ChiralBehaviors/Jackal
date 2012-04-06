@@ -41,7 +41,7 @@ public class MulticastHeartbeatCommsFactory implements HeartbeatCommsFactory {
         this.wireSecurity = wireSecurity;
         this.address = address;
         this.inf = inf;
-        threadName = "Anubis: Heartbeat Comms (node " + id.id + ")";
+        threadName = "Heartbeat Comms (node " + id.id + ")";
         this.id = id;
     }
 

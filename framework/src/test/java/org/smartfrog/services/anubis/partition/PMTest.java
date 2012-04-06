@@ -29,7 +29,7 @@ public class PMTest implements PartitionNotification {
         int       remote    = 0;
 
         Tester(Partition p, int r) {
-            super("Anubis: Test Driver");
+            super("Test Driver");
             partition = p;
             remote = r;
         }

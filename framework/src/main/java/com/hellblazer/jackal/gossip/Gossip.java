@@ -128,7 +128,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             public Thread newThread(Runnable r) {
                 int count = 0;
                 Thread daemon = new Thread(r,
-                                           "Anubis: Gossip heartbeat servicing thread "
+                                           "Gossip heartbeat servicing thread "
                                                    + count++);
                 daemon.setDaemon(true);
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
@@ -146,7 +146,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
-                                           "Anubis: Gossip dispatching thread "
+                                           "Gossip dispatching thread "
                                                    + count++);
                 daemon.setDaemon(true);
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
@@ -211,7 +211,7 @@ public class Gossip implements HeartbeatCommsIntf, HeartbeatCommsFactory {
 
     @Override
     public String getStatusString() {
-        return "Anubis: Gossip heartbeat/discovery, running: " + running.get();
+        return "Gossip heartbeat/discovery, running: " + running.get();
     }
 
     /**

@@ -39,7 +39,7 @@ public class IntervalExec extends Thread {
     private volatile ControllerAgent controller    = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
-        super("Anubis: Interval Executive (node " + id.id + ")");
+        super("Interval Executive (node " + id.id + ")");
         connectionSet = cs;
         interval = i;
         // setPriority(MAX_PRIORITY);

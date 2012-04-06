@@ -54,7 +54,7 @@ public class MulticastSnoopConfig {
                                                        throws UnknownHostException,
                                                        IOException {
         return new Snoop(
-                         "Anubis: Partition Manager Test Console heartbeat snoop",
+                         "Partition Manager Test Console heartbeat snoop",
                          heartbeatGroup, partitionIdentity, controller);
     }
 }

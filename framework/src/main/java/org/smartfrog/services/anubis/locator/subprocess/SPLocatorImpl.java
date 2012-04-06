@@ -89,7 +89,7 @@ public class SPLocatorImpl implements AnubisLocator, SPLocator {
             @Override
             public Thread newThread(Runnable r) {
                 Thread daemon = new Thread(r,
-                                           "Anubis: subprocess locator timers");
+                                           "subprocess locator timers");
                 daemon.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
