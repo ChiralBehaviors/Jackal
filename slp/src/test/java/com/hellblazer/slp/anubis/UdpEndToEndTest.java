@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import com.hellblazer.jackal.testUtil.TestNodeCfg;
 import com.hellblazer.jackal.testUtil.gossip.GossipControllerCfg;
 import com.hellblazer.jackal.testUtil.gossip.GossipDiscoveryNode1Cfg;
 import com.hellblazer.jackal.testUtil.gossip.GossipDiscoveryNode2Cfg;
@@ -102,6 +103,7 @@ public class UdpEndToEndTest extends EndToEndTest {
 
     @Override
     protected void setUp() throws Exception {
+        TestNodeCfg.nextMagic();
         GossipTestCfg.incrementPorts();
         member.reset();
         super.setUp();

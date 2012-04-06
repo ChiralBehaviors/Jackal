@@ -17,7 +17,8 @@
  */
 package com.hellblazer.jackal.testUtil;
 
-import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.Random;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Bean;
@@ -38,17 +39,25 @@ import com.hellblazer.jackal.configuration.ThreadConfig;
          ThreadConfig.class, PartitionAgentConfig.class, TestCfg.class })
 abstract public class TestNodeCfg {
 
+    private static final Random random = new SecureRandom();
+
+    private static volatile int magic  = random.nextInt();
+
+    public static int getMagicValue() {
+        return magic;
+    }
+
+    public static void nextMagic() {
+        magic = random.nextInt();
+    }
+
     @Bean
     public Identity partitionIdentity() {
         return new Identity(getMagic(), node(), System.currentTimeMillis());
     }
 
     protected int getMagic() {
-        try {
-            return Identity.getMagicFromLocalIpAddress();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        return magic;
     }
 
     abstract protected int node();

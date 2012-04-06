@@ -17,7 +17,6 @@
  */
 package com.hellblazer.jackal.testUtil.gossip;
 
-import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -37,6 +36,7 @@ import com.hellblazer.jackal.configuration.GossipHeartbeatAndDiscoveryConfig;
 import com.hellblazer.jackal.configuration.GossipSnoopConfig;
 import com.hellblazer.jackal.testUtil.TestCfg;
 import com.hellblazer.jackal.testUtil.TestControllerConfig;
+import com.hellblazer.jackal.testUtil.TestNodeCfg;
 
 /**
  * @author hhildebrand
@@ -85,11 +85,7 @@ public class GossipControllerCfg {
     }
 
     protected int getMagic() {
-        try {
-            return Identity.getMagicFromLocalIpAddress();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        return TestNodeCfg.getMagicValue();
     }
 
     protected int node() {

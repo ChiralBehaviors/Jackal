@@ -30,6 +30,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import com.hellblazer.jackal.testUtil.TestController;
 import com.hellblazer.jackal.testUtil.TestNode;
+import com.hellblazer.jackal.testUtil.TestNodeCfg;
 
 /**
  * 
@@ -175,6 +176,7 @@ abstract public class PartitionTest extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
+        TestNodeCfg.nextMagic();
         super.setUp();
         log.info("Setting up initial partition");
         initialLatch = new CountDownLatch(configs.length);

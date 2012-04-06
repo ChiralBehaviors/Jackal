@@ -25,6 +25,8 @@ import junit.framework.TestCase;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import com.hellblazer.jackal.testUtil.TestNodeCfg;
+
 /**
  * 
  * @author <a href="mailto:hal.hildebrand@gmail.com">Hal Hildebrand</a>
@@ -34,6 +36,7 @@ abstract public class SmokeTest extends TestCase {
     private final Class<?>[] configurations = getConfigurations();
 
     public void testInProcess() throws Exception {
+        TestNodeCfg.nextMagic();
         String stateName = "Whip It";
         int maxSleep = 500;
         int messageCount = 10;

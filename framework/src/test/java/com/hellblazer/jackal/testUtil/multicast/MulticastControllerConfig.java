@@ -17,8 +17,6 @@
  */
 package com.hellblazer.jackal.testUtil.multicast;
 
-import java.io.IOException;
-
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +26,7 @@ import com.hellblazer.jackal.configuration.MulticastHeartbeatAndDiscoveryConfig;
 import com.hellblazer.jackal.configuration.MulticastSnoopConfig;
 import com.hellblazer.jackal.testUtil.TestCfg;
 import com.hellblazer.jackal.testUtil.TestControllerConfig;
+import com.hellblazer.jackal.testUtil.TestNodeCfg;
 
 /**
  * @author hhildebrand
@@ -45,11 +44,7 @@ public class MulticastControllerConfig {
     }
 
     protected int getMagic() {
-        try {
-            return Identity.getMagicFromLocalIpAddress();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        return TestNodeCfg.getMagicValue();
     }
 
     protected int node() {

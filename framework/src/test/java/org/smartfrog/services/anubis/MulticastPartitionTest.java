@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.hellblazer.jackal.testUtil.TestNodeCfg;
 import com.hellblazer.jackal.testUtil.multicast.MulticastControllerConfig;
 import com.hellblazer.jackal.testUtil.multicast.MulticastNodeCfg;
 
@@ -49,6 +50,7 @@ public class MulticastPartitionTest extends PartitionTest {
 
     @Override
     protected void setUp() throws Exception {
+        TestNodeCfg.nextMagic();
         member.reset();
         super.setUp();
     }
