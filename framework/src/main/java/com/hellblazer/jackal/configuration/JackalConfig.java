@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import com.hellblazer.partition.comms.ConnectionServerFactory;
+import com.hellblazer.jackal.partition.comms.ConnectionServerFactory;
 import com.hellblazer.pinkie.SocketOptions;
 
 /**

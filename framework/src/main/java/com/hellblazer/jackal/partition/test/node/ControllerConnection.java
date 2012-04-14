@@ -33,7 +33,7 @@ import org.smartfrog.services.anubis.partition.wire.WireMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
-import com.hellblazer.partition.comms.AbstractMessageHandler;
+import com.hellblazer.jackal.partition.comms.AbstractMessageHandler;
 import com.hellblazer.pinkie.SocketChannelHandler;
 
 /**
