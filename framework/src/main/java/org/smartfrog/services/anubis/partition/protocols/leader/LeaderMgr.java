@@ -19,14 +19,16 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.leader;
 
-import java.util.Iterator;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.comms.Connection;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.views.View;
 
 public class LeaderMgr {
+    private static final Logger         log            = LoggerFactory.getLogger(LeaderMgr.class);
 
     protected Map<Identity, Connection> candidates     = null;
     protected Candidate                 localCandidate = null;
@@ -91,8 +93,6 @@ public class LeaderMgr {
      */
     private synchronized Candidate election(View v) {
 
-        Iterator<Connection> iter;
-
         /**
          * reset the candidates (clear the votes)
          */
@@ -109,10 +109,8 @@ public class LeaderMgr {
             localCandidate.setVote(localCandidate.getId());
         }
 
-        iter = candidates.values().iterator();
-        while (iter.hasNext()) {
-            Candidate voter = (Candidate) iter.next();
-
+        for (Connection connection : candidates.values()) {
+            Candidate voter = (Candidate) connection;
             /**
              * If the voter is in the view then the voter is valid.
              */
@@ -130,16 +128,20 @@ public class LeaderMgr {
                  * If the vote is valid count it.
                  */
                 if (v.contains(voter.getVote())) {
-
                     Candidate votedFor = (Candidate) candidates.get(voter.getVote());
-                    votedFor.receiveVote(voter);
+                    if (votedFor != null) {
+                        votedFor.receiveVote(voter);
 
-                    /**
-                     * Note if the voted for is the best candidate we have seen
-                     * so far.
-                     */
-                    if (votedFor.winsAgainst(bestSoFar)) {
-                        bestSoFar = votedFor;
+                        /**
+                         * Note if the voted for is the best candidate we have
+                         * seen so far.
+                         */
+                        if (votedFor.winsAgainst(bestSoFar)) {
+                            bestSoFar = votedFor;
+                        }
+                    } else {
+                        log.warn(String.format("No connection for vote % even though view contains it",
+                                               voter.getVote()));
                     }
                 }
             }
