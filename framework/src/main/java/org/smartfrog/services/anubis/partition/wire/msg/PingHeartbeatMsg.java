@@ -127,16 +127,20 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
                                                             WireFormException,
                                                             ClassNotFoundException {
         super.readWireForm(buf);
-        pings = NodeIdSet.readWireForm(wireForm, pingBitIdx, pingBitSz);
+        pings = NodeIdSet.readWireForm(buf, pingBitIdx, pingBitSz);
     }
 
     /**
      * Write the message attributes to the
+     * 
+     * @throws IOException
      */
     @Override
-    protected synchronized void writeWireForm() throws WireFormException {
-        super.writeWireForm();
+    protected synchronized ByteBuffer writeWireForm() throws WireFormException,
+                                                     IOException {
+        ByteBuffer wireForm = super.writeWireForm();
         pings.writeWireForm(wireForm, pingBitIdx, pingBitSz);
+        return wireForm;
     }
 
 }

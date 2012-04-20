@@ -29,7 +29,7 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
-public class TimedMsg extends WireMsg implements Timed, Sender {
+abstract public class TimedMsg extends WireMsg implements Timed, Sender {
 
     static final private int    timeIdx             = WIRE_SIZE;
     static final private int    timeSz              = longSz;
@@ -40,9 +40,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     static final private int    addressIdx          = identityIdx + identitySz;
     static final private int    addressSz           = AddressMarshalling.connectionAddressWireSz;
     public static final int     TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
-    public static final int     TIMED_MSG_WIRE_TYPE = 200;
 
-    private boolean             addressUnmarshalled = false;
     protected InetSocketAddress address             = null;
     protected long              order               = -1;
 
@@ -70,7 +68,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
      */
     public TimedMsg(Identity id) {
         sender = id;
-        addressUnmarshalled = true;
     }
 
     /**
@@ -82,7 +79,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     public TimedMsg(Identity id, InetSocketAddress addr) {
         sender = id;
         address = addr;
-        addressUnmarshalled = true;
     }
 
     protected TimedMsg() {
@@ -110,9 +106,6 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
 
     @Override
     public InetSocketAddress getSenderAddress() {
-        if (!addressUnmarshalled) {
-            addressFromWire();
-        }
         return address;
     }
 
@@ -147,24 +140,7 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
      */
     @Override
     public String toString() {
-        return "["
-               + time
-               + ", "
-               + order
-               + ", "
-               + (addressUnmarshalled ? sender.toString()
-                                     : "SENDER_ADDRESS_MARSHALLED") + ", "
-               + address + "]";
-    }
-
-    private void addressFromWire() {
-        addressUnmarshalled = true;
-        address = AddressMarshalling.readWireForm(wireForm, addressIdx);
-    }
-
-    @Override
-    protected int getType() {
-        return TIMED_MSG_WIRE_TYPE;
+        return "[" + time + ", " + order + ", " + address + "]";
     }
 
     /**
@@ -179,20 +155,14 @@ public class TimedMsg extends WireMsg implements Timed, Sender {
     protected void readWireForm(ByteBuffer buf) throws IOException,
                                                WireFormException,
                                                ClassNotFoundException {
-        super.readWireForm(buf);
-        time = wireForm.getLong(timeIdx);
-        order = wireForm.getLong(orderIdx);
-        sender = Identity.readWireForm(wireForm, identityIdx);
-        address = AddressMarshalling.readWireForm(wireForm, addressIdx);
+        time = buf.getLong(timeIdx);
+        order = buf.getLong(orderIdx);
+        sender = Identity.readWireForm(buf, identityIdx);
+        address = AddressMarshalling.readWireForm(buf, addressIdx);
     }
 
-    /**
-     * Writes the timed message attributes to wire form in the given byte array
-     * 
-     */
-    @Override
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
+    protected void writeWireForm(ByteBuffer wireForm) throws WireFormException,
+                                                     IOException {
         wireForm.putLong(timeIdx, time);
         wireForm.putLong(orderIdx, order);
         sender.writeWireForm(wireForm, identityIdx);

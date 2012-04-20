@@ -22,14 +22,11 @@ package org.smartfrog.services.anubis.partition.wire;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class WireMsg implements WireSizes {
+abstract public class WireMsg implements WireSizes {
 
-    public static final int    WIRE_TYPE   = 100;
     protected static final int WIRE_SIZE   = intSz;
-    protected byte[]           bytes       = null;
 
     protected int              trailerSize = 0;
-    protected ByteBuffer       wireForm    = null;
 
     /**
      * Construct from the wire form. Each substype should implement a similar
@@ -94,32 +91,14 @@ public class WireMsg implements WireSizes {
      * @throws WireFormException
      * @throws IOException
      */
-    public byte[] toWire() throws WireFormException, IOException {
-
-        fixDynamicSizedAttributes();
-
-        bytes = new byte[getSize() + trailerSize];
-        wireForm = ByteBuffer.wrap(bytes);
-
-        writeWireForm();
-        return bytes;
-    }
-
-    /**
-     * This method should be over-ridden if the subtype has dynamic sized
-     * attributes to determine their size and prepare them for writing.
-     */
-    protected void fixDynamicSizedAttributes() {
-    }
+    abstract public byte[] toWire() throws WireFormException, IOException;
 
     /**
      * Each subtype should over-ride getType() to return its own type.
      * 
      * @return int
      */
-    protected int getType() {
-        return WIRE_TYPE;
-    }
+    abstract protected int getType();
 
     /**
      * top level readWireForm method. All subtypes should implement this method
@@ -132,29 +111,8 @@ public class WireMsg implements WireSizes {
      * @throws WireFormException
      * @throws ClassNotFoundException
      */
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-
-        wireForm = buf;
-        bytes = buf.array();
-
-        if (wireForm.getInt(0) != getType()) {
-            throw new WireFormException(
-                                        "Incorrect type in wire form - can not read as "
-                                                + this.getClass());
-        }
-    }
-
-    /**
-     * Top level writeWireForm() method. subtypes should implement this method
-     * to call their super.writeWireForm and then write their own attributes.
-     * 
-     * @throws WireFormException
-     *             on trouble
-     */
-    protected void writeWireForm() throws WireFormException {
-        wireForm.putInt(0, getType());
-    }
+    abstract protected void readWireForm(ByteBuffer buf) throws IOException,
+                                                        WireFormException,
+                                                        ClassNotFoundException;
 
 }

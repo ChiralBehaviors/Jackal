@@ -20,7 +20,6 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -31,15 +30,11 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
 public final class MessageMsg extends TimedMsg {
 
-    public static final int  MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
-    public static final int  MESSAGE_MSG_WIRE_TYPE = 400;
-    private static final int payloadLengthIdx      = TIMED_MSG_WIRE_SIZE;
-    private static final int payloadIdx            = payloadLengthIdx + intSz;
+    public static final int     MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
+    public static final int     MESSAGE_MSG_WIRE_TYPE = 400;
+    private static final byte[] headerPadding         = new byte[TIMED_MSG_WIRE_SIZE];
 
-    private Object           message               = null;
-
-    private byte[]           payload               = null;
-    private int              payloadSz             = UNDEFINED_SIZE;
+    private Object              message               = null;
 
     public MessageMsg(ByteBuffer wireForm) throws ClassNotFoundException,
                                           WireFormException, IOException {
@@ -62,33 +57,14 @@ public final class MessageMsg extends TimedMsg {
 
     @Override
     public int getSize() throws WireFormException {
-        if (payloadSz == UNDEFINED_SIZE) {
-            throw new WireFormException(
-                                        "Attampt to get size of message when it has not been defined");
-        }
-        return payloadIdx + payloadSz;
+        throw new WireFormException(
+                                    "Cannot predefine the size of this message type");
     }
 
     @Override
     public String toString() {
         return "[message " + super.toString()
                + (message == null ? "null" : message.toString()) + "]";
-    }
-
-    @Override
-    protected void fixDynamicSizedAttributes() {
-        try {
-            ByteArrayOutputStream byteArrayOS = new ByteArrayOutputStream();
-            ObjectOutputStream objectOS = new ObjectOutputStream(byteArrayOS);
-            objectOS.writeObject(message);
-            objectOS.flush();
-            payload = byteArrayOS.toByteArray();
-            payloadSz = payload.length;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            payload = null;
-            payloadSz = UNDEFINED_SIZE;
-        }
     }
 
     @Override
@@ -110,33 +86,36 @@ public final class MessageMsg extends TimedMsg {
                                                WireFormException,
                                                ClassNotFoundException {
         super.readWireForm(buf);
-
-        payloadSz = wireForm.getInt(payloadLengthIdx);
-        payload = new byte[payloadSz];
-
-        for (int i = 0, j = payloadIdx; i < payloadSz; i++, j++) {
-            payload[i] = wireForm.get(j);
-        }
-
-        ByteArrayInputStream byteArrayIS = new ByteArrayInputStream(payload);
-        ObjectInputStream objectIS = new ObjectInputStream(byteArrayIS);
-        message = objectIS.readObject();
-
-        //        payload = null;
-        //        payloadSz = UNDEFINED_SIZE;
+        ByteArrayInputStream bais = new ByteArrayInputStream(buf.array());
+        bais.skip(TIMED_MSG_WIRE_SIZE);
+        ObjectInputStream ois = new ObjectInputStream(bais);
+        message = ois.readObject();
     }
 
     /**
      * Writes the timed message attributes to wire form in the given byte array
+     * 
+     * @throws IOException
+     */
+    protected ByteBuffer writeWireForm() throws WireFormException, IOException {
+        ByteBufferOutputStream bbos = new ByteBufferOutputStream();
+        bbos.write(headerPadding);
+        ObjectOutputStream objectOS = new ObjectOutputStream(bbos);
+        objectOS.writeObject(message);
+        objectOS.flush();
+        bbos.write(new byte[trailerSize]);
+        ByteBuffer wireForm = bbos.toByteBuffer();
+        writeWireForm(wireForm);
+        return wireForm;
+    }
+
+    /* (non-Javadoc)
+     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
      */
     @Override
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
-
-        wireForm.putInt(payloadLengthIdx, payloadSz);
-        for (int i = 0, j = payloadIdx; i < payloadSz; i++, j++) {
-            wireForm.put(j, payload[i]);
-        }
-
+    public byte[] toWire() throws WireFormException, IOException {
+        ByteBuffer wireForm = writeWireForm();
+        wireForm.putInt(0, getType());
+        return wireForm.array();
     }
 }

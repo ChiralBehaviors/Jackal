@@ -26,7 +26,6 @@ import org.smartfrog.services.anubis.partition.wire.msg.CloseMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.MessageMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
-import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 
 /**
@@ -89,12 +88,6 @@ public class Wire {
 
             case SerializedMsg.SERIALIZED_MSG_WIRE_TYPE:
                 return new SerializedMsg(wireForm);
-
-            case TimedMsg.TIMED_MSG_WIRE_TYPE:
-                return new TimedMsg(wireForm);
-
-            case WireMsg.WIRE_TYPE:
-                return new WireMsg(wireForm);
 
             default:
                 throw new WireFormException("Unknown message type (" + type

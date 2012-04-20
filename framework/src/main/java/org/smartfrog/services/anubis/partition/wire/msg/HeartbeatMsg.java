@@ -70,24 +70,14 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     private Identity          candidate           = null;
-    private boolean           candidateUnmarshalled;
-
     private NodeIdSet         msgLinks            = null;
     private long              msgLinksNumber      = 0;
-
-    private boolean           msgLinksUnmarshalled;
     private boolean           preferred           = false;
-
     private boolean           stable              = true;
     private InetSocketAddress controllerInterface = null;
-
-    private boolean           controllerInterfaceUnmarshalled;
     private NodeIdSet         view                = null;
-
     private long              viewNumber          = -1;
     private long              viewTimeStamp       = View.undefinedTimeStamp;
-
-    private boolean           viewUnmarshalled;
 
     /**
      * Constructor - Creates a heartbeat message from the wire formatted byte
@@ -123,10 +113,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     public HeartbeatMsg(Identity identity, InetSocketAddress address) {
         super(identity, address);
-        candidateUnmarshalled = true;
-        viewUnmarshalled = true;
-        msgLinksUnmarshalled = true;
-        controllerInterfaceUnmarshalled = true;
     }
 
     protected HeartbeatMsg() {
@@ -140,17 +126,11 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     @Override
     public Identity getCandidate() {
-        if (!candidateUnmarshalled) {
-            candidateFromWire();
-        }
         return candidate;
     }
 
     @Override
     public InetSocketAddress getControllerInterface() {
-        if (!controllerInterfaceUnmarshalled) {
-            controllerInterfaceFromWire();
-        }
         return controllerInterface;
     }
 
@@ -161,15 +141,12 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     @Override
     public NodeIdSet getMsgLinks() {
-        if (!msgLinksUnmarshalled) {
-            msgLinksFromWire();
-        }
         return msgLinks;
     }
 
     @Override
     public int getSize() {
-        return HEARTBEAT_MSG_WIRE_SIZE;
+        return HEARTBEAT_MSG_WIRE_SIZE + trailerSize;
     }
 
     /**
@@ -179,9 +156,6 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      */
     @Override
     public View getView() {
-        if (!viewUnmarshalled) {
-            viewFromWire();
-        }
         return new BitView(stable, view, viewTimeStamp);
     }
 
@@ -245,39 +219,13 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         String str = "[" + super.toString() + " | ";
         str += "view#=" + viewNumber + ", viewTS=" + viewTimeStamp + ", ";
         str += "isPreferred#=" + preferred + ", ";
-        str += (candidateUnmarshalled ? "cand=" + candidate
-                                     : "CANDIDATE_MARSHALLED") + ", ";
+        str += "cand=" + candidate + ", ";
         str += "links#=" + msgLinksNumber + ", ";
-        str += (msgLinksUnmarshalled ? "links=" + msgLinks : "LINKS_MARSHALLED")
-               + ", ";
-        str += (viewUnmarshalled ? "view=" + view : "VIEW_MARSHALLED") + ", ";
-        str += controllerInterfaceUnmarshalled ? "testIF="
-                                                 + controllerInterface
-                                              : "TEST_IF_MARSHALLED";
+        str += "links=" + msgLinks + ", ";
+        str += "view=" + view + ", ";
+        str += "testIF=" + controllerInterface;
         str += "]";
         return str;
-    }
-
-    private void candidateFromWire() {
-        candidateUnmarshalled = true;
-        candidate = Identity.readWireForm(wireForm, candidateIdx);
-    }
-
-    private void controllerInterfaceFromWire() {
-        controllerInterfaceUnmarshalled = true;
-        controllerInterface = AddressMarshalling.readWireForm(wireForm,
-                                                              controllerInterfaceIdx);
-    }
-
-    private void msgLinksFromWire() {
-        msgLinksUnmarshalled = true;
-        msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
-    }
-
-    private void viewFromWire() {
-        viewUnmarshalled = true;
-        stable = wireForm.getInt(stableIdx) == booleanTrueValue;
-        view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
     }
 
     @Override
@@ -291,14 +239,14 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      * are read on demand. These attributes are not likely to be needed often -
      * so we only unmarshall them when we have to.
      * 
-     * @param buf
+     * @param wireForm
      *            byte[]
      */
     @Override
-    protected void readWireForm(ByteBuffer buf) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-        super.readWireForm(buf);
+    protected void readWireForm(ByteBuffer wireForm) throws IOException,
+                                                    WireFormException,
+                                                    ClassNotFoundException {
+        super.readWireForm(wireForm);
 
         /**
          * view number, view time stamp and msgLinksNumber
@@ -307,23 +255,21 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
         viewTimeStamp = wireForm.getLong(viewTimeStampIdx);
         msgLinksNumber = wireForm.getLong(msgLinksNumberIdx);
         preferred = wireForm.getInt(isPreferredIdx) == 1;
-
-        /**
-         * Do not unmarshall candidate, msgLinks, view or test interface These
-         * are done on demand only
-         */
-        candidateUnmarshalled = false;
-        msgLinksUnmarshalled = false;
-        viewUnmarshalled = false;
-        controllerInterfaceUnmarshalled = false;
+        candidate = Identity.readWireForm(wireForm, candidateIdx);
+        controllerInterface = AddressMarshalling.readWireForm(wireForm,
+                                                              controllerInterfaceIdx);
+        msgLinks = NodeIdSet.readWireForm(wireForm, msgLinksIdx, viewSz);
+        stable = wireForm.getInt(stableIdx) == booleanTrueValue;
+        view = NodeIdSet.readWireForm(wireForm, viewIdx, viewSz);
     }
 
     /**
      * Write the message attributes to the
+     * 
+     * @throws IOException
      */
-    @Override
-    protected void writeWireForm() throws WireFormException {
-        super.writeWireForm();
+    protected ByteBuffer writeWireForm() throws WireFormException, IOException {
+        ByteBuffer wireForm = ByteBuffer.allocate(getSize());
 
         /**
          * view number, view time stamp, isPreferred, candidate, msgLinksNumber
@@ -360,6 +306,18 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
             AddressMarshalling.writeWireForm(controllerInterface, wireForm,
                                              controllerInterfaceIdx);
         }
+        writeWireForm(wireForm);
+        return wireForm;
+    }
+
+    /* (non-Javadoc)
+     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
+     */
+    @Override
+    public byte[] toWire() throws WireFormException, IOException {
+        ByteBuffer wireForm = writeWireForm();
+        wireForm.putInt(0, getType());
+        return wireForm.array();
     }
 
 }
