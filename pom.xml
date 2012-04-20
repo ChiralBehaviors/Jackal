@@ -74,9 +74,18 @@
 
 	<repositories>
 		<repository>
-			<id>Ouroboros-CI</id>
+			<id>Ouroboros-CI Release</id>
 			<name>Ouroboros Jenkins Maven Repo</name>
-			<url>http://107.20.139.173:8080/plugin/repository/everything/</url>
+			<url>
+				https://repository-ouroboros.forge.cloudbees.com/release/
+			</url>
+		</repository>
+		<repository>
+			<id>Ouroboros-CI Snapshot</id>
+			<name>Ouroboros Jenkins Maven Repo</name>
+			<url>
+				https://repository-ouroboros.forge.cloudbees.com/snapshot/
+			</url>
 		</repository>
 
 		<repository>

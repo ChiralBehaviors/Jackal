@@ -15,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package com.hellblazer.partition.comms;
+package com.hellblazer.jackal.partition.comms;
 
 import static java.lang.String.format;
 import static org.smartfrog.services.anubis.partition.wire.WireSizes.MAGIC_NUMBER;
@@ -33,8 +33,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
+import com.hellblazer.jackal.partition.comms.MessageHandler.State;
 import com.hellblazer.jackal.util.HexDump;
-import com.hellblazer.partition.comms.MessageHandler.State;
 import com.hellblazer.pinkie.CommunicationsHandler;
 import com.hellblazer.pinkie.SocketChannelHandler;
 
