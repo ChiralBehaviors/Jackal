@@ -54,7 +54,6 @@ abstract public class PartitionTest extends TestCase {
      */
     public void testAsymmetricPartition() throws Exception {
         int minorPartitionSize = configs.length / 2;
-        BitView fullPartition = new BitView();
         BitView A = new BitView();
         BitView B = new BitView();
         BitView All = new BitView();
@@ -78,7 +77,6 @@ abstract public class PartitionTest extends TestCase {
                 member.cardinality = minorPartitionSize;
                 B.add(member.getIdentity());
             }
-            fullPartition.add(member.getIdentity());
         }
         log.info("asymmetric partitioning: " + A);
         controller.asymPartition(A);
@@ -168,8 +166,8 @@ abstract public class PartitionTest extends TestCase {
         assertTrue("Partition did not reform",
                    latch.await(60, TimeUnit.SECONDS));
 
-        for (TestNode member : partitionA) {
-            assertEquals(A, member.getPartition());
+        for (TestNode member : partition) {
+            assertEquals(fullPartition, member.getPartition());
         }
     }
 
