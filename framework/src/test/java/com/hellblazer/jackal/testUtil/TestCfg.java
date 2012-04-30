@@ -44,7 +44,7 @@ public class TestCfg {
 
     @Bean
     public HeartbeatConfiguration heartbeatConfig() {
-        return new HeartbeatConfiguration(3000, 3);
+        return new HeartbeatConfiguration(1500, 3);
     }
 
     @Bean
