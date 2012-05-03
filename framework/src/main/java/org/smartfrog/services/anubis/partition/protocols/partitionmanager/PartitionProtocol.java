@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
 import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.PreDestroy;
 
@@ -31,7 +32,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 
 public class PartitionProtocol {
 
-    private volatile boolean       changed       = false;
+    private AtomicBoolean          changed       = new AtomicBoolean(false);
     private ConnectionSet          connectionSet = null;
     private final Identity         identity;
     private volatile Identity      leader        = null;
@@ -57,7 +58,7 @@ public class PartitionProtocol {
      */
     public void changedView() {
         if (view.removeComplement(connectionSet.getView()) || view.isStable()) {
-            changed = true;
+            changed.set(true);
         }
         view.setTimeStamp(View.undefinedTimeStamp);
         view.destablize();
@@ -99,9 +100,8 @@ public class PartitionProtocol {
      * Issue notifications from the partition manager.
      */
     public void notifyChanges() {
-        if (changed) {
+        if (changed.compareAndSet(true, false)) {
             partitionMgr.notify(view, leader.id);
-            changed = false;
         }
     }
 
@@ -120,7 +120,7 @@ public class PartitionProtocol {
      */
     public void remove(Identity id) {
         if (view.remove(id.id)) {
-            changed = true;
+            changed.set(true);
             view.setTimeStamp(View.undefinedTimeStamp);
             view.destablize();
             leader = connectionSet.electLeader(view);
@@ -136,7 +136,7 @@ public class PartitionProtocol {
      * was leader prior to stability.
      */
     public void stableView() {
-        changed = true;
+        changed.set(true);
         view.copyView(connectionSet.getView());
         leader = connectionSet.electLeader(view);
     }

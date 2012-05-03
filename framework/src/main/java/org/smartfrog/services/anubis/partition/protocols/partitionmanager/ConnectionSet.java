@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -77,7 +78,8 @@ import com.hellblazer.jackal.partition.test.node.ControllerAgent;
 public class ConnectionSet implements ViewListener, ConnectionManager {
     private static final Logger             log                 = LoggerFactory.getLogger(ConnectionSet.class.getCanonicalName());
 
-    private volatile boolean                changeInViews       = false;
+    private final AtomicBoolean             changeInViews       = new AtomicBoolean(
+                                                                                    false);
     private final Map<Identity, Connection> connections         = new HashMap<Identity, Connection>();
     private final IOConnectionServer        connectionServer;
     private final BitView                   connectionView      = new BitView();
@@ -96,9 +98,11 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private final NodeIdSet                 msgLinks            = new NodeIdSet();
     private final PartitionProtocol         partitionProtocol;
     private volatile long                   quiesce             = 0;
-    private volatile boolean                sendingHeartbeats   = false;
+    private final AtomicBoolean             sendingHeartbeats   = new AtomicBoolean(
+                                                                                    false);
     private volatile long                   stability           = 0;
-    private volatile boolean                stablizing          = false;
+    private final AtomicBoolean             stablizing          = new AtomicBoolean(
+                                                                                    false);
     private volatile boolean                terminated          = false;
     private volatile long                   timeout             = 0;
     private volatile long                   viewNumber          = 0;
@@ -159,7 +163,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
      * @param timenow
      */
     public void checkStability(long timenow) {
-        if (!stablizing) {
+        if (!stablizing.get()) {
             if (log.isTraceEnabled()) {
                 log.trace("Unstable @ " + timenow);
             }
@@ -175,7 +179,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                 log.trace("Stablizing view @ " + timenow);
             }
             connectionView.stablize();
-            stablizing = false;
+            stablizing.set(false);
             intervalExec.clearStability();
             partitionProtocol.stableView();
             dropBrokenConnections();
@@ -496,9 +500,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
             log.trace(String.format("New view: %s on: %s from: %s", v,
                                     identity, id));
         }
-        changeInViews = true;
+        changeInViews.set(true);
+        stablizing.set(false);
         connectionView.destablize();
-        stablizing = false;
         intervalExec.clearStability();
         /**
          * should we set the time stamp to default here?
@@ -529,10 +533,10 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
      */
     @Override
     public synchronized void newViewTime(Identity id, View v) {
-        if (changeInViews || !stablizing) {
+        if (changeInViews.get() || !stablizing.get()) {
             if (log.isTraceEnabled()) {
                 log.trace(String.format("New view time: %s on: %s from: %s, changeInViews: %s, stabilzing: %s",
-                                        v, identity, id, changeInViews,
+                                        v, identity, id, changeInViews.get(),
                                         stablizing));
             }
             return;
@@ -621,7 +625,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * ConcurrentModificationException in sendHeartbeats(). This alternative
          * has a lower overhead than cloning msgConnections every time.
          */
-        if (sendingHeartbeats) {
+        if (sendingHeartbeats.get()) {
             msgConDelayedDelete.add(con);
             return;
         }
@@ -641,7 +645,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         if (con instanceof MessageConnection) {
             msgConnections.remove(con);
         }
-        changeInViews = true;
+        changeInViews.set(true);
         intervalExec.clearStability();
         viewNumber++;
         partitionProtocol.remove(con.getSender());
@@ -658,7 +662,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         /**
          * This flag is used to delay connection removal in removeConnection().
          */
-        sendingHeartbeats = true;
+        sendingHeartbeats.set(true);
 
         /**
          * send the heartbeat using multicast for heartbeat connections
@@ -675,7 +679,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
         /**
          * Do delayed removeConnection() calls
          */
-        sendingHeartbeats = false;
+        sendingHeartbeats.set(false);
         for (Connection con : msgConDelayedDelete) {
             removeConnection(con);
         }
@@ -803,8 +807,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
          * If the view has changed then inform the partition manager. If the
          * view is consistent then initiate the stablization period.
          */
-        if (changeInViews) {
-            changeInViews = false;
+        if (changeInViews.compareAndSet(true, false)) {
             partitionProtocol.changedView();
 
             /**
@@ -813,7 +816,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
              * undefined when inconsistent (returns false).
              */
             if (consistent(timenow)) {
-                stablizing = true;
+                stablizing.set(true);
                 intervalExec.setStability(connectionView.getTimeStamp());
             }
         }
@@ -843,7 +846,7 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
     private void addConnection(Connection con) {
         connections.put(con.getSender(), con);
         connectionView.add(con.getSender());
-        changeInViews = true;
+        changeInViews.set(true);
         intervalExec.clearStability();
         viewNumber++;
     }
@@ -942,9 +945,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
      */
     protected synchronized void destabilize() {
         if (connectionView.isStable()) {
-            changeInViews = true;
+            changeInViews.set(true);
+            stablizing.set(false);
             connectionView.destablize();
-            stablizing = false;
             intervalExec.clearStability();
         }
     }

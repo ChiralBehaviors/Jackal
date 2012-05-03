@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.protocols.partitionmanager;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.smartfrog.services.anubis.partition.util.Identity;
@@ -35,7 +37,7 @@ public class IntervalExec extends Thread {
     private long                     lastCheckTime = 0;
     private volatile boolean         running       = false;
     private volatile long            stabilityTime = 0;
-    private boolean                  stabilizing   = false;
+    private final AtomicBoolean      stabilizing   = new AtomicBoolean(false);
     private volatile ControllerAgent controller    = null;
 
     public IntervalExec(Identity id, ConnectionSet cs, long i) {
@@ -55,7 +57,7 @@ public class IntervalExec extends Thread {
      * prevent the interval executive from checking for stability times
      */
     public void clearStability() {
-        stabilizing = false;
+        stabilizing.set(false);
         stabilityTime = 0;
     }
 
@@ -94,10 +96,11 @@ public class IntervalExec extends Thread {
                      * heartbeat interval then wake up at the stability interval
                      * end as defined by stabilityTime.
                      */
-                    timenow = stabilizing && heartbeatTime > stabilityTime ? sleepInterval(timenow,
-                                                                                           stabilityTime)
-                                                                          : sleepInterval(timenow,
-                                                                                          heartbeatTime);
+                    timenow = stabilizing.get()
+                              && heartbeatTime > stabilityTime ? sleepInterval(timenow,
+                                                                               stabilityTime)
+                                                              : sleepInterval(timenow,
+                                                                              heartbeatTime);
 
                     checkSleepDelays(timenow, stabilityTime, heartbeatTime);
 
@@ -144,7 +147,7 @@ public class IntervalExec extends Thread {
                     /**
                      * check for stability - only done on a stability boundary
                      */
-                    if (stabilizing && timenow >= stabilityTime) {
+                    if (stabilizing.get() && timenow >= stabilityTime) {
 
                         /**
                          * If controlled then produce delay info
@@ -177,7 +180,7 @@ public class IntervalExec extends Thread {
      *            - the time that stability is expected.
      */
     public void setStability(long s) {
-        stabilizing = true;
+        stabilizing.set(true);
         stabilityTime = s;
     }
 
@@ -201,7 +204,7 @@ public class IntervalExec extends Thread {
 
         lastCheckTime = timenow;
 
-        if (!stabilizing || stabilityTime > heartbeatTime) {
+        if (!stabilizing.get() || stabilityTime > heartbeatTime) {
             earliest = heartbeatTime;
         } else {
             earliest = stabilityTime;
