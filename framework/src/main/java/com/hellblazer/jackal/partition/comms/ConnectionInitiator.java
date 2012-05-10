@@ -19,11 +19,8 @@ package com.hellblazer.jackal.partition.comms;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.smartfrog.services.anubis.partition.comms.IOConnection;
 import org.smartfrog.services.anubis.partition.comms.MessageConnection;
-import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
-import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 /**
  * 
@@ -36,24 +33,14 @@ public class ConnectionInitiator {
 
     private final MessageConnection connection;
     private final HeartbeatMsg      heartbeat;
-    private final WireSecurity      wireSecurity;
 
-    public ConnectionInitiator(MessageConnection con, HeartbeatMsg hb,
-                               WireSecurity sec) {
+    public ConnectionInitiator(MessageConnection con, HeartbeatMsg hb) {
         connection = con;
         heartbeat = hb;
-        wireSecurity = sec;
     }
 
     public void handshake(final MessageHandler impl) {
-        try {
-            heartbeat.setOrder(IOConnection.INITIAL_MSG_ORDER);
-            impl.sendObject(wireSecurity.toWireForm(heartbeat));
-        } catch (WireFormException e) {
-            log.error("failed to marshall timed message: " + heartbeat, e);
-            impl.terminate();
-            return;
-        }
+        impl.sendInitial(heartbeat);
         /**
          * If the implementation is successfully assigned then start its thread
          * - otherwise call terminate() to shutdown the connection. The impl

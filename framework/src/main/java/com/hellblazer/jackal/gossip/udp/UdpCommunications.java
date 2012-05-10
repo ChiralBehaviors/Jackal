@@ -21,6 +21,7 @@ import static com.hellblazer.jackal.gossip.GossipMessages.DIGEST_BYTE_SIZE;
 import static com.hellblazer.jackal.gossip.GossipMessages.GOSSIP;
 import static com.hellblazer.jackal.gossip.GossipMessages.REPLY;
 import static com.hellblazer.jackal.gossip.GossipMessages.UPDATE;
+import static com.hellblazer.jackal.util.ByteBufferCache.BUFFER_CACHE;
 import static java.lang.Math.min;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -89,7 +90,7 @@ public class UdpCommunications implements GossipCommunications {
 
         @Override
         public void requestConnection(Identity node) {
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+            ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             buffer.position(4);
             buffer.put(CONNECT_TO);
@@ -100,7 +101,7 @@ public class UdpCommunications implements GossipCommunications {
 
         @Override
         public void update(List<HeartbeatState> deltaState) {
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+            ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             for (HeartbeatState state : deltaState) {
                 buffer.clear();
@@ -113,7 +114,7 @@ public class UdpCommunications implements GossipCommunications {
         }
 
         private void sendDigests(List<Digest> digests, byte messageType) {
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+            ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             for (int i = 0; i < digests.size();) {
                 int count = min(MAX_DIGESTS, digests.size() - i);
@@ -210,7 +211,7 @@ public class UdpCommunications implements GossipCommunications {
 
     @Override
     public void send(HeartbeatState state, InetSocketAddress left) {
-        ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+        ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.clear();
         buffer.position(4);
@@ -405,6 +406,8 @@ public class UdpCommunications implements GossipCommunications {
             if (log.isWarnEnabled()) {
                 log.warn("Error sending packet", e);
             }
+        } finally {
+            BUFFER_CACHE.get().recycle(buffer);
         }
     }
 

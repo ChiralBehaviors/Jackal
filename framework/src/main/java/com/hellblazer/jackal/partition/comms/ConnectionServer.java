@@ -102,8 +102,7 @@ public class ConnectionServer implements IOConnectionServer {
                                                  con,
                                                  new ConnectionInitiator(
                                                                          con,
-                                                                         HeartbeatMsg.toHeartbeatMsg(hb),
-                                                                         wireSecurity)));
+                                                                         HeartbeatMsg.toHeartbeatMsg(hb))));
         } catch (ClosedByInterruptException e) {
             if (log.isInfoEnabled()) {
                 log.info("Connection closed", e);

@@ -22,7 +22,9 @@ package org.smartfrog.services.anubis.partition.wire;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-abstract public class WireMsg implements WireSizes {
+import com.hellblazer.jackal.partition.comms.Formable;
+
+abstract public class WireMsg implements WireSizes, Formable {
 
     protected static final int WIRE_SIZE   = intSz;
 
@@ -79,19 +81,18 @@ abstract public class WireMsg implements WireSizes {
     }
 
     /**
-     * toWire() generates a byte array from this message. Messages that have an
+     * toWire() generates a ByteBuffer from this message. Messages that have an
      * attribute with dynamic size should implement the
      * fixDynamicSizeAttributes() method to prepare these attributes and so that
      * their getSize() method can return the actual desired size. Otherwise this
      * method should be over-ridden completely.
      * 
-     * their size in
      * 
-     * @return byte[]
+     * @return ByteBuffer
      * @throws WireFormException
      * @throws IOException
      */
-    abstract public byte[] toWire() throws WireFormException, IOException;
+    abstract public ByteBuffer toWire() throws WireFormException, IOException;
 
     /**
      * Each subtype should over-ride getType() to return its own type.

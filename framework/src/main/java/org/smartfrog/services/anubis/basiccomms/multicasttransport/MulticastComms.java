@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +51,6 @@ public class MulticastComms extends Thread {
     static public final int     MAX_SEG_SIZE = 1500;                                                            // Ethernet standard MTU
 
     private MulticastAddress    groupAddress;
-    private byte[]              inBytes;
-    private DatagramPacket      inPacket;
     private MulticastSocket     sock;
     private static final Logger log          = LoggerFactory.getLogger(MulticastComms.class.getCanonicalName());
     volatile private boolean    terminating;
@@ -114,19 +113,19 @@ public class MulticastComms extends Thread {
         if (log.isTraceEnabled()) {
             log.trace("Starting receive processing on: " + groupAddress);
         }
+        ByteBuffer packetBytes = ByteBuffer.allocate(MAX_SEG_SIZE);
         while (!terminating) {
-
             try {
-
-                inBytes = new byte[MAX_SEG_SIZE];
-                inPacket = new DatagramPacket(inBytes, inBytes.length);
+                byte[] inBytes = packetBytes.array();
+                DatagramPacket inPacket = new DatagramPacket(inBytes,
+                                                             inBytes.length);
                 sock.receive(inPacket);
                 if (log.isTraceEnabled()) {
                     log.trace("Received packet from: "
                               + inPacket.getSocketAddress());
                 }
-                deliverBytes(inPacket.getData());
-
+                deliverBytes(packetBytes);
+                packetBytes.clear();
             } catch (Throwable e) {
 
                 if (!terminating && log.isWarnEnabled()) {
@@ -138,18 +137,19 @@ public class MulticastComms extends Thread {
     }
 
     /**
-     * Send an array of bytes. The send function is synchronized to prevent
-     * multiple sends concurrent sends (is this necessary??) Can not deadlock -
-     * multiple threads will take turns to send, the receive loop (run) will
-     * block sends unless it is nested in the deliverObject method, which is ok.
+     * Send a ByteBuffer. The send function is synchronized to prevent multiple
+     * sends concurrent sends (is this necessary??) Can not deadlock - multiple
+     * threads will take turns to send, the receive loop (run) will block sends
+     * unless it is nested in the deliverObject method, which is ok.
      * 
      * @param bytes
-     *            bytes to send
+     *            ByteBuffer to send
      */
-    public synchronized void sendObject(byte[] bytes) {
+    public synchronized void sendObject(ByteBuffer bytes) {
         try {
             sock.send(bytesToPacket(bytes, groupAddress.ipaddress,
                                     groupAddress.port));
+            // BUFFER_CACHE.get().recycle(bytes);
         } catch (IOException ioe) {
             if (!terminating && log.isWarnEnabled()) {
                 log.warn("", ioe);
@@ -162,19 +162,10 @@ public class MulticastComms extends Thread {
         sock.close();
     }
 
-    private DatagramPacket bytesToPacket(byte[] bytes, InetAddress address,
+    private DatagramPacket bytesToPacket(ByteBuffer msg, InetAddress address,
                                          int port) {
-        return new DatagramPacket(bytes, bytes.length, address, port);
-    }
-
-    /**
-     * convert the input buffer to a string - for debug purposes.
-     * 
-     * @return a stringified inBytes
-     */
-    @SuppressWarnings("unused")
-    private String inputToString() {
-        return new String(inBytes);
+        byte[] bytes = msg.array();
+        return new DatagramPacket(bytes, msg.capacity(), address, port);
     }
 
     /**
@@ -182,7 +173,7 @@ public class MulticastComms extends Thread {
      * this method will cast the object and pass it to an appropriate handler.
      * This may include handing off the delivery to another thread.
      */
-    protected void deliverBytes(byte[] bytes) {
+    protected void deliverBytes(ByteBuffer bytes) {
         // does nothing by default
     }
 

@@ -19,6 +19,8 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
+import static com.hellblazer.jackal.util.ByteBufferCache.BUFFER_CACHE;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -269,7 +271,7 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      * @throws IOException
      */
     protected ByteBuffer writeWireForm() throws WireFormException, IOException {
-        ByteBuffer wireForm = ByteBuffer.allocate(getSize());
+        ByteBuffer wireForm = BUFFER_CACHE.get().get(getSize());
 
         /**
          * view number, view time stamp, isPreferred, candidate, msgLinksNumber
@@ -314,10 +316,11 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
      * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
      */
     @Override
-    public byte[] toWire() throws WireFormException, IOException {
+    public ByteBuffer toWire() throws WireFormException, IOException {
         ByteBuffer wireForm = writeWireForm();
         wireForm.putInt(0, getType());
-        return wireForm.array();
+        wireForm.rewind();
+        return wireForm;
     }
 
 }

@@ -65,6 +65,7 @@ public class MessageHandler extends AbstractMessageHandler implements
                                                                           INITIAL_MSG_ORDER);
     private final AtomicLong           sendCount         = new AtomicLong(
                                                                           INITIAL_MSG_ORDER - 1);
+    private final AtomicBoolean        connecting        = new AtomicBoolean();
 
     public MessageHandler(WireSecurity wireSecurity, Identity id,
                           ConnectionSet cs) {
@@ -121,27 +122,12 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     public void send(Heartbeat heartbeat) {
-        send((TimedMsg) HeartbeatMsg.toHeartbeatMsg(heartbeat));
+        sendTimed(HeartbeatMsg.toHeartbeatMsg(heartbeat));
     }
 
     @Override
-    public synchronized void send(TimedMsg tm) {
-        /*
-        if (!(tm instanceof Heartbeat)) {
-            System.out.println("Sending " + tm + " on " + messageConnection);
-        }
-        */
-        byte[] bytesToSend = null;
-        try {
-            tm.setOrder(sendCount.incrementAndGet());
-            bytesToSend = wireSecurity.toWireForm(tm);
-        } catch (Exception ex) {
-            log.error(format("%s failed to marshall timed message: %s - not sent",
-                             me, tm), ex);
-            return;
-        }
-
-        sendObject(bytesToSend);
+    public synchronized void sendTimed(TimedMsg tm) {
+        sendObject(wireSecurity.toWireForm(tm));
     }
 
     @Override
@@ -313,7 +299,7 @@ public class MessageHandler extends AbstractMessageHandler implements
     }
 
     @Override
-    protected void deliverObject(ByteBuffer fullRxBuffer) {
+    protected void deliverObject(long order, ByteBuffer fullRxBuffer) {
         if (log.isTraceEnabled()) {
             log.trace(String.format("deliverObject is being called [%s]",
                                     messageConnection));
@@ -325,13 +311,11 @@ public class MessageHandler extends AbstractMessageHandler implements
 
         WireMsg msg = null;
         try {
-
-            byte[] bytes = fullRxBuffer.array();
             if (log.isTraceEnabled()) {
                 log.trace(format("Delivering bytes [%s]: \n%s",
-                                 messageConnection, toHex(bytes)));
+                                 messageConnection, toHex(fullRxBuffer.array())));
             }
-            msg = wireSecurity.fromWireForm(bytes);
+            msg = wireSecurity.fromWireForm(fullRxBuffer);
 
         } catch (WireSecurityException ex) {
             log.error(format("%s non blocking connection transport encountered security violation unmarshalling message - ignoring the message ",
@@ -354,9 +338,9 @@ public class MessageHandler extends AbstractMessageHandler implements
 
         final TimedMsg tm = (TimedMsg) msg;
 
-        if (tm.getOrder() != receiveCount.get()) {
+        if (order != receiveCount.get()) {
             log.error(format("%s connection transport has delivered a message out of order - shutting down.  Expected: %s, received: %s",
-                             me, receiveCount, tm.getOrder()));
+                             me, receiveCount, order));
             shutdown();
             return;
         }
@@ -406,5 +390,18 @@ public class MessageHandler extends AbstractMessageHandler implements
     void handshakeComplete() {
         initiator = null;
         handler.selectForRead();
+    }
+
+    /**
+     * @param heartbeat
+     */
+    protected void sendInitial(HeartbeatMsg heartbeat) {
+        connecting.set(true);
+        sendObject(wireSecurity.toWireForm(heartbeat));
+    }
+
+    protected long nextOrder() {
+        return connecting.compareAndSet(true, false) ? INITIAL_MSG_ORDER
+                                                    : sendCount.incrementAndGet();
     }
 }

@@ -75,7 +75,7 @@ public class NodeData {
         public void sendObject(Object obj) {
             SerializedMsg msg = new SerializedMsg(obj);
             try {
-                super.sendObject(msg.toWire());
+                super.sendObject(wireSecurity.toWireForm(msg));
             } catch (Exception ex) {
                 if (log.isWarnEnabled()) {
                     log.warn("", ex);
@@ -84,10 +84,10 @@ public class NodeData {
         }
 
         @Override
-        protected void deliverObject(ByteBuffer readBuffer) {
+        protected void deliverObject(long order, ByteBuffer readBuffer) {
             WireMsg wire;
             try {
-                wire = Wire.fromWire(readBuffer.array());
+                wire = Wire.fromWire(readBuffer);
             } catch (Exception ex) {
                 if (log.isWarnEnabled()) {
                     log.warn("unable to deserialize message", ex);

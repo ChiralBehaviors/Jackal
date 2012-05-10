@@ -117,7 +117,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
                     log.trace(String.format("Sending msg on: %s", this));
                 }
             }
-            connectionImpl.send(msg);
+            connectionImpl.sendTimed(msg);
         }
 
         @Override
@@ -150,7 +150,7 @@ public class MessageConnection extends HeartbeatProtocolAdapter implements
         public synchronized SendBehavior connect() {
             established = new Established();
             for (TimedMsg msg : msgQ) {
-                connectionImpl.send(msg);
+                connectionImpl.sendTimed(msg);
             }
             return established;
         }

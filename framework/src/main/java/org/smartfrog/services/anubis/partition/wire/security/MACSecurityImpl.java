@@ -1,6 +1,7 @@
 package org.smartfrog.services.anubis.partition.wire.security;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import javax.crypto.ShortBufferException;
 
@@ -8,17 +9,21 @@ import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
+import com.hellblazer.jackal.partition.comms.Formable;
+
 public class MACSecurityImpl implements WireSecurity {
 
     private MACData macData;
 
     @Override
-    public WireMsg fromWireForm(byte[] wireForm) throws WireSecurityException,
-                                                WireFormException {
+    public WireMsg fromWireForm(ByteBuffer wireForm)
+                                                    throws WireSecurityException,
+                                                    WireFormException {
         try {
 
             WireMsg msg = Wire.fromWire(wireForm);
-            macData.checkMAC(wireForm, 0, msg.getSize() - 1);
+            macData.checkMAC(wireForm.array(), 0,
+                             wireForm.capacity() - macData.getMacSize() - 1);
 
             return msg;
         } catch (ClassNotFoundException e) {
@@ -41,26 +46,33 @@ public class MACSecurityImpl implements WireSecurity {
     }
 
     @Override
-    public byte[] toWireForm(WireMsg msg) throws WireFormException {
-        try {
+    public Formable toWireForm(final WireMsg msg) {
+        return new Formable() {
+            @Override
+            public ByteBuffer toWire() throws WireFormException,
+                                                IOException {
+                try {
+                    msg.setTrailerSize(macData.getMacSize());
+                    ByteBuffer wireForm = msg.toWire();
+                    macData.addMAC(wireForm.array(), 0, wireForm.capacity()
+                                                        - macData.getMacSize()
+                                                        - 1);
+                    return wireForm;
 
-            msg.setTrailerSize(macData.getMacSize());
-            //            msg.setTrailerSize(100);
-            byte[] wireForm = msg.toWire();
-            macData.addMAC(wireForm, 0, msg.getSize() - 1);
-            return wireForm;
+                } catch (IOException e) {
+                    throw new WireFormException("Unable to marshall message", e);
+                } catch (ShortBufferException e) {
+                    throw new WireFormException(
+                                                "Unable to marshall message - buffer not large enough for MAC security data",
+                                                e);
+                } catch (SecurityException e) {
+                    throw new WireFormException(
+                                                "Unable to marshall message - security issue",
+                                                e);
+                }
+            }
 
-        } catch (IOException e) {
-            throw new WireFormException("Unable to marshall message", e);
-        } catch (ShortBufferException e) {
-            throw new WireFormException(
-                                        "Unable to marshall message - buffer not large enough for MAC security data",
-                                        e);
-        } catch (SecurityException e) {
-            throw new WireFormException(
-                                        "Unable to marshall message - security issue",
-                                        e);
-        }
+        };
     }
 
 }

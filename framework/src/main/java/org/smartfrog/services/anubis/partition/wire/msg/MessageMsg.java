@@ -113,9 +113,10 @@ public final class MessageMsg extends TimedMsg {
      * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
      */
     @Override
-    public byte[] toWire() throws WireFormException, IOException {
+    public ByteBuffer toWire() throws WireFormException, IOException {
         ByteBuffer wireForm = writeWireForm();
         wireForm.putInt(0, getType());
-        return wireForm.array();
+        wireForm.rewind();
+        return wireForm;
     }
 }

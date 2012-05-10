@@ -32,19 +32,17 @@ import org.smartfrog.services.anubis.partition.wire.WireMsg;
 abstract public class TimedMsg extends WireMsg implements Timed, Sender {
 
     static final private int    timeIdx             = WIRE_SIZE;
+
     static final private int    timeSz              = longSz;
-    static final private int    orderIdx            = timeIdx + timeSz;
-    static final private int    orderSz             = longSz;
     static final private int    identitySz          = Identity.identityWireSz;
-    static final private int    identityIdx         = orderIdx + orderSz;
+    static final private int    identityIdx         = timeIdx + timeSz;
     static final private int    addressIdx          = identityIdx + identitySz;
     static final private int    addressSz           = AddressMarshalling.connectionAddressWireSz;
     public static final int     TIMED_MSG_WIRE_SIZE = addressIdx + addressSz;
-
     protected InetSocketAddress address             = null;
-    protected long              order               = -1;
 
     protected Identity          sender;
+
     protected long              time;
 
     /**
@@ -86,15 +84,6 @@ abstract public class TimedMsg extends WireMsg implements Timed, Sender {
     }
 
     /**
-     * Msg order (only used in ordered connections)
-     * 
-     * @return the order (-1 if not set)
-     */
-    public long getOrder() {
-        return order;
-    }
-
-    /**
      * Sender interface implemenation
      * 
      * @return identity
@@ -124,10 +113,6 @@ abstract public class TimedMsg extends WireMsg implements Timed, Sender {
         return time;
     }
 
-    public void setOrder(long o) {
-        order = o;
-    }
-
     @Override
     public void setTime(long t) {
         time = t;
@@ -140,7 +125,7 @@ abstract public class TimedMsg extends WireMsg implements Timed, Sender {
      */
     @Override
     public String toString() {
-        return "[" + time + ", " + order + ", " + address + "]";
+        return "[" + time + ", " + address + "]";
     }
 
     /**
@@ -156,7 +141,6 @@ abstract public class TimedMsg extends WireMsg implements Timed, Sender {
                                                WireFormException,
                                                ClassNotFoundException {
         time = buf.getLong(timeIdx);
-        order = buf.getLong(orderIdx);
         sender = Identity.readWireForm(buf, identityIdx);
         address = AddressMarshalling.readWireForm(buf, addressIdx);
     }
@@ -164,7 +148,6 @@ abstract public class TimedMsg extends WireMsg implements Timed, Sender {
     protected void writeWireForm(ByteBuffer wireForm) throws WireFormException,
                                                      IOException {
         wireForm.putLong(timeIdx, time);
-        wireForm.putLong(orderIdx, order);
         sender.writeWireForm(wireForm, identityIdx);
         if (address != null) {
             AddressMarshalling.writeWireForm(address, wireForm, addressIdx);

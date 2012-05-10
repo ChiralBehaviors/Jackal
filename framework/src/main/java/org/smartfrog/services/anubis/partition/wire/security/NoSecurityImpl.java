@@ -1,16 +1,19 @@
 package org.smartfrog.services.anubis.partition.wire.security;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
+import com.hellblazer.jackal.partition.comms.Formable;
+
 public class NoSecurityImpl implements WireSecurity {
 
     @Override
-    public WireMsg fromWireForm(byte[] wireFrom) throws WireSecurityException,
-                                                WireFormException {
+    public WireMsg fromWireForm(ByteBuffer wireFrom)
+                                                    throws WireSecurityException,
+                                                    WireFormException {
         try {
             return Wire.fromWire(wireFrom);
         } catch (Exception e) {
@@ -19,12 +22,8 @@ public class NoSecurityImpl implements WireSecurity {
     }
 
     @Override
-    public byte[] toWireForm(WireMsg msg) throws WireFormException {
-        try {
-            return msg.toWire();
-        } catch (IOException e) {
-            throw new WireFormException("Unable to marshall message", e);
-        }
+    public Formable toWireForm(final WireMsg msg) {
+        return msg;
     }
 
 }

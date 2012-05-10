@@ -71,7 +71,7 @@ public class Test extends TestCase {
 
             System.out.println("STARTING HeabeatTestMsg marshalling test run");
             long start = System.currentTimeMillis();
-            byte[] wireForm = null;
+            ByteBuffer wireForm = null;
             for (int i = 0; i < loops; i++) {
                 wireForm = outMsg.toWire();
             }
@@ -83,7 +83,7 @@ public class Test extends TestCase {
             HeartbeatMsg inMsg;
             start = System.currentTimeMillis();
             for (int i = 0; i < loops; i++) {
-                inMsg = new HeartbeatMsg(ByteBuffer.wrap(wireForm));
+                inMsg = new HeartbeatMsg(wireForm);
                 inMsg.getCandidate();
                 inMsg.getMsgLinks();
                 inMsg.getView();
@@ -107,9 +107,9 @@ public class Test extends TestCase {
             outMsg.setTime(98765);
             System.out.println("Message message for output is: " + outMsg);
 
-            byte[] wire = outMsg.toWire();
+            ByteBuffer wire = outMsg.toWire();
 
-            System.out.println("Wire length " + wire.length);
+            System.out.println("Wire length " + wire.capacity());
 
             MessageMsg inMsg = (MessageMsg) Wire.fromWire(wire);
             System.out.println("Message message input is: " + inMsg);
@@ -144,7 +144,7 @@ public class Test extends TestCase {
             System.out.println("Heartbeat Test message for output is: "
                                + outMsg);
 
-            byte[] wireForm = outMsg.toWire();
+            ByteBuffer wireForm = outMsg.toWire();
 
             PingHeartbeatMsg inMsg = (PingHeartbeatMsg) Wire.fromWire(wireForm);
             System.out.println("Heartbeat Test message for input is: " + inMsg);
@@ -172,7 +172,7 @@ public class Test extends TestCase {
             SerializedMsg outMsg = new SerializedMsg("[This is my message]");
             System.out.println("Message for output is: " + outMsg);
 
-            byte[] wire = outMsg.toWire();
+            ByteBuffer wire = outMsg.toWire();
 
             SerializedMsg inMsg = (SerializedMsg) Wire.fromWire(wire);
             System.out.println("Message input is: " + inMsg);

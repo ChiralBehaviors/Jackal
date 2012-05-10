@@ -20,6 +20,7 @@ For more information: www.smartfrog.org
 package org.smartfrog.services.anubis.partition.test.controller;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastAddress;
 import org.smartfrog.services.anubis.basiccomms.multicasttransport.MulticastComms;
@@ -41,7 +42,7 @@ public class Snoop extends MulticastComms {
     }
 
     @Override
-    protected void deliverBytes(byte[] bytes) {
+    protected void deliverBytes(ByteBuffer bytes) {
 
         Object obj = null;
         try {

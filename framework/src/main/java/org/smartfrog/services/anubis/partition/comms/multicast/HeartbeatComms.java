@@ -21,6 +21,7 @@ package org.smartfrog.services.anubis.partition.comms.multicast;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -120,7 +121,7 @@ public class HeartbeatComms extends MulticastComms implements
     public void sendHeartbeat(Heartbeat heartbeat) {
         HeartbeatMsg msg = HeartbeatMsg.toHeartbeatMsg(heartbeat);
         try {
-            super.sendObject(wireSecurity.toWireForm(msg));
+            super.sendObject(wireSecurity.toWireForm(msg).toWire());
         } catch (Exception ex) {
             log.error("Error sending heartbeat message", ex);
         }
@@ -196,7 +197,7 @@ public class HeartbeatComms extends MulticastComms implements
     }
 
     @Override
-    protected void deliverBytes(byte[] bytes) {
+    protected void deliverBytes(ByteBuffer bytes) {
         Object obj = null;
         try {
 

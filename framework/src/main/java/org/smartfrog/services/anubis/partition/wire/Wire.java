@@ -37,27 +37,6 @@ import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
 public class Wire {
 
     /**
-     * fromWire(byte[]) constructs a message from its wire form
-     * 
-     * @param wire
-     *            byte[]
-     * @return Object
-     * @throws IOException
-     * @throws WireFormException
-     * @throws ClassNotFoundException
-     */
-    static public WireMsg fromWire(byte[] wire) throws IOException,
-                                               WireFormException,
-                                               ClassNotFoundException {
-
-        if (wire == null) {
-            throw new WireFormException("wire is a null pointer");
-        }
-
-        return fromWire(ByteBuffer.wrap(wire));
-    }
-
-    /**
      * fromWire(ByteBuffer) constructs a message from its wire form
      * 
      * @param wireForm
@@ -93,17 +72,6 @@ public class Wire {
                 throw new WireFormException("Unknown message type (" + type
                                             + ")");
         }
-    }
-
-    /**
-     * Gets the type of a message from its wire form
-     * 
-     * @param wire
-     *            byte[]
-     * @return int
-     */
-    public static int getWireType(byte[] wire) {
-        return ByteBuffer.wrap(wire).getInt(0);
     }
 
     /**

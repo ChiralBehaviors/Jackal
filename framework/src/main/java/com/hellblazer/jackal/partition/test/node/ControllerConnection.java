@@ -98,16 +98,7 @@ public class ControllerConnection extends AbstractMessageHandler implements
         if (handler == null) {
             return;
         }
-        byte[] bytesToSend = null;
-        try {
-            bytesToSend = wireSecurity.toWireForm(tm);
-        } catch (Exception ex) {
-            log.error(String.format("failed to marshall timed message: %s - not sent",
-                                    tm), ex);
-            return;
-        }
-
-        sendObject(bytesToSend);
+        sendObject(wireSecurity.toWireForm(tm));
     }
 
     public void sendObject(Object obj) {
@@ -124,10 +115,10 @@ public class ControllerConnection extends AbstractMessageHandler implements
      * @see com.hellblazer.partition.comms.AbstractMessageHandler#deliverObject(java.nio.ByteBuffer)
      */
     @Override
-    protected void deliverObject(ByteBuffer readBuffer) {
+    protected void deliverObject(long order, ByteBuffer readBuffer) {
         SerializedMsg msg = null;
         try {
-            msg = (SerializedMsg) Wire.fromWire(readBuffer.array());
+            msg = (SerializedMsg) Wire.fromWire(readBuffer);
         } catch (Exception ex) {
             if (log.isWarnEnabled()) {
                 log.warn("Cannot deserialize message bytes", ex);

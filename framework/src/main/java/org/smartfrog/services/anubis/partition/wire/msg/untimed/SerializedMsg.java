@@ -29,7 +29,9 @@ import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.ByteBufferOutputStream;
 
-public final class SerializedMsg extends WireMsg {
+import com.hellblazer.jackal.partition.comms.Formable;
+
+public final class SerializedMsg extends WireMsg implements Formable {
     public static final int SERIALIZED_MSG_WIRE_TYPE = 999;
 
     protected Object        msg;
@@ -99,7 +101,7 @@ public final class SerializedMsg extends WireMsg {
      * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
      */
     @Override
-    public byte[] toWire() throws WireFormException, IOException {
+    public ByteBuffer toWire() throws WireFormException, IOException {
 
         ByteBufferOutputStream bbos = new ByteBufferOutputStream();
         bbos.write(new byte[intSz]);
@@ -109,6 +111,7 @@ public final class SerializedMsg extends WireMsg {
         bbos.write(new byte[trailerSize]);
         ByteBuffer wireForm = bbos.toByteBuffer();
         wireForm.putInt(0, getType());
-        return wireForm.array();
+        wireForm.rewind();
+        return wireForm;
     }
 }

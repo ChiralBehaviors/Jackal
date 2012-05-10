@@ -19,6 +19,7 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.comms;
 
+import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 import org.smartfrog.services.anubis.partition.wire.msg.TimedMsg;
 
@@ -28,9 +29,9 @@ public interface IOConnection {
 
     boolean connected();
 
-    void send(Heartbeat heartbeat);
+    void send(Heartbeat heartbeat) throws WireFormException;
 
-    void send(TimedMsg msg);
+    void sendTimed(TimedMsg msg);
 
     void setIgnoring(boolean ignoring);
 
