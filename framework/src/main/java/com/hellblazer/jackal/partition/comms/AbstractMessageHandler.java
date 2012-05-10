@@ -17,7 +17,6 @@
  */
 package com.hellblazer.jackal.partition.comms;
 
-import static com.hellblazer.jackal.util.ByteBufferCache.BUFFER_CACHE;
 import static java.lang.String.format;
 import static org.smartfrog.services.anubis.partition.wire.WireSizes.MAGIC_NUMBER;
 
@@ -35,6 +34,7 @@ import org.slf4j.Logger;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 import com.hellblazer.jackal.partition.comms.MessageHandler.State;
+import com.hellblazer.jackal.util.ByteBufferPool;
 import com.hellblazer.jackal.util.HexDump;
 import com.hellblazer.pinkie.CommunicationsHandler;
 import com.hellblazer.pinkie.SocketChannelHandler;
@@ -53,16 +53,19 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         return baos.toString();
     }
 
-    private volatile ByteBuffer             currentWrite;
-    private ByteBuffer                      readBuffer;
-    private final ByteBuffer                rxHeader   = ByteBuffer.allocate(16);
-    private final ReentrantLock             writeLock  = new ReentrantLock();
-    private final ByteBuffer                wxHeader   = ByteBuffer.allocate(16);
-    protected volatile SocketChannelHandler handler;
-    protected volatile State                readState  = State.HEADER;
-    protected final WireSecurity            wireSecurity;
-    protected final BlockingDeque<Formable> writes     = new LinkedBlockingDeque<Formable>();
-    protected volatile State                writeState = State.INITIAL;
+    private volatile ByteBuffer               currentWrite;
+    private ByteBuffer                        readBuffer;
+    private final ByteBuffer                  rxHeader   = ByteBuffer.allocate(16);
+    private final ReentrantLock               writeLock  = new ReentrantLock();
+    private final ByteBuffer                  wxHeader   = ByteBuffer.allocate(16);
+    protected final ByteBufferPool            bufferPool = new ByteBufferPool(
+                                                                              "Abstract Message Handler",
+                                                                              100);
+    protected volatile SocketChannelHandler   handler;
+    protected volatile State                  readState  = State.HEADER;
+    protected final WireSecurity              wireSecurity;
+    protected final BlockingDeque<ByteBuffer> writes     = new LinkedBlockingDeque<ByteBuffer>();
+    protected volatile State                  writeState = State.INITIAL;
 
     public AbstractMessageHandler(WireSecurity wireSecurity) {
         this.wireSecurity = wireSecurity;
@@ -99,7 +102,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                     if (getLog().isTraceEnabled()) {
                         getLog().trace("read objectSize: " + objectSize);
                     }
-                    readBuffer = BUFFER_CACHE.get().get(objectSize);
+                    readBuffer = bufferPool.allocate(objectSize);
                     readState = State.BODY;
                 } else {
                     getLog().error("%  CANNOT FIND MAGIC_NUMBER:  " + readMagic
@@ -119,7 +122,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                     rxHeader.clear();
                     readBuffer.flip();
                     deliverObject(order, readBuffer);
-                    BUFFER_CACHE.get().recycle(readBuffer);
+                    bufferPool.free(readBuffer);
                     readBuffer = null;
                     readState = State.HEADER;
                 }
@@ -137,6 +140,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     public void shutdown() {
         writeState = readState = State.CLOSED;
         handler.close();
+        getLog().info(bufferPool.toString());
     }
 
     @Override
@@ -156,21 +160,14 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                 case CLOSED:
                     return;
                 case INITIAL: {
-                    Formable msg = writes.pollFirst();
-                    if (msg == null) {
+                    currentWrite = writes.pollFirst();
+                    if (currentWrite == null) {
                         return;
-                    }
-                    try {
-                        currentWrite = msg.toWire();
-                    } catch (Exception e) {
-                        writeState = State.ERROR;
-                        getLog().error(String.format("Unable to serialize %s",
-                                                     msg), e);
                     }
                     wxHeader.clear();
                     wxHeader.putInt(0, MAGIC_NUMBER);
                     wxHeader.putInt(4, currentWrite.remaining());
-                    wxHeader.putLong(8, nextOrder());
+                    wxHeader.putLong(8, nextSequence());
                     writeState = State.HEADER;
                 }
                 case HEADER: {
@@ -193,7 +190,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                             return;
                         }
                     } else {
-                        BUFFER_CACHE.get().recycle(currentWrite);
+                        bufferPool.free(currentWrite);
                     }
                     break;
                 }
@@ -206,13 +203,6 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         } finally {
             myLock.unlock();
         }
-    }
-
-    /**
-     * @return
-     */
-    protected long nextOrder() {
-        return 0L; // default
     }
 
     private boolean isClose(IOException ioe) {
@@ -283,11 +273,18 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
 
     abstract protected Logger getLog();
 
-    protected void sendObject(Formable msg) {
+    /**
+     * @return
+     */
+    protected long nextSequence() {
+        return 0L; // default
+    }
+
+    protected void sendObject(ByteBuffer buffer) {
         if (getLog().isTraceEnabled()) {
             getLog().trace(format("sendObject being called [%s]", this));
         }
-        writes.add(msg);
+        writes.add(buffer);
         handler.selectForWrite();
     }
 

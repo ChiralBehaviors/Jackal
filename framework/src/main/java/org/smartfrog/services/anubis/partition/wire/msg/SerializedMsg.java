@@ -17,7 +17,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 For more information: www.smartfrog.org
 
  */
-package org.smartfrog.services.anubis.partition.wire.msg.untimed;
+package org.smartfrog.services.anubis.partition.wire.msg;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,11 +27,10 @@ import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
-import org.smartfrog.services.anubis.partition.wire.msg.ByteBufferOutputStream;
 
-import com.hellblazer.jackal.partition.comms.Formable;
+import com.hellblazer.jackal.util.ByteBufferPool;
 
-public final class SerializedMsg extends WireMsg implements Formable {
+public final class SerializedMsg extends WireMsg {
     public static final int SERIALIZED_MSG_WIRE_TYPE = 999;
 
     protected Object        msg;
@@ -98,12 +97,14 @@ public final class SerializedMsg extends WireMsg implements Formable {
     }
 
     /* (non-Javadoc)
-     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
+     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire(com.hellblazer.jackal.util.ByteBufferPool)
      */
     @Override
-    public ByteBuffer toWire() throws WireFormException, IOException {
+    public ByteBuffer toWire(ByteBufferPool bufferPool)
+                                                       throws WireFormException,
+                                                       IOException {
 
-        ByteBufferOutputStream bbos = new ByteBufferOutputStream();
+        ByteBufferOutputStream bbos = new ByteBufferOutputStream(bufferPool);
         bbos.write(new byte[intSz]);
         ObjectOutputStream objectOS = new ObjectOutputStream(bbos);
         objectOS.writeObject(msg);

@@ -26,7 +26,7 @@ import org.smartfrog.services.anubis.partition.wire.msg.CloseMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.MessageMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
-import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.SerializedMsg;
 
 /**
  * Static class with wire form message utilities

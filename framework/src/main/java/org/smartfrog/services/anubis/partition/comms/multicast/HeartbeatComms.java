@@ -121,7 +121,7 @@ public class HeartbeatComms extends MulticastComms implements
     public void sendHeartbeat(Heartbeat heartbeat) {
         HeartbeatMsg msg = HeartbeatMsg.toHeartbeatMsg(heartbeat);
         try {
-            super.sendObject(wireSecurity.toWireForm(msg).toWire());
+            super.sendObject(wireSecurity.toWireForm(msg, bufferPool));
         } catch (Exception ex) {
             log.error("Error sending heartbeat message", ex);
         }

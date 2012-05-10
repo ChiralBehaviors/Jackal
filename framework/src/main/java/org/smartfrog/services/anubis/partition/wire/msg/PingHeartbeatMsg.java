@@ -27,6 +27,8 @@ import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
+import com.hellblazer.jackal.util.ByteBufferPool;
+
 public class PingHeartbeatMsg extends HeartbeatMsg {
 
     static final private int pingBitSz                    = MAX_BIT_SIZE
@@ -130,15 +132,14 @@ public class PingHeartbeatMsg extends HeartbeatMsg {
         pings = NodeIdSet.readWireForm(buf, pingBitIdx, pingBitSz);
     }
 
-    /**
-     * Write the message attributes to the
-     * 
-     * @throws IOException
+    /* (non-Javadoc)
+     * @see org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg#writeWireForm(com.hellblazer.jackal.util.ByteBufferPool)
      */
     @Override
-    protected synchronized ByteBuffer writeWireForm() throws WireFormException,
-                                                     IOException {
-        ByteBuffer wireForm = super.writeWireForm();
+    protected ByteBuffer writeWireForm(ByteBufferPool bufferPool)
+                                                                 throws WireFormException,
+                                                                 IOException {
+        ByteBuffer wireForm = super.writeWireForm(bufferPool);
         pings.writeWireForm(wireForm, pingBitIdx, pingBitSz);
         return wireForm;
     }

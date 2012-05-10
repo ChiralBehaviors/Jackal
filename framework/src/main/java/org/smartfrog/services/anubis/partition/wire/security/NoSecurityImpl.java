@@ -1,12 +1,13 @@
 package org.smartfrog.services.anubis.partition.wire.security;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
-import com.hellblazer.jackal.partition.comms.Formable;
+import com.hellblazer.jackal.util.ByteBufferPool;
 
 public class NoSecurityImpl implements WireSecurity {
 
@@ -21,9 +22,13 @@ public class NoSecurityImpl implements WireSecurity {
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.smartfrog.services.anubis.partition.wire.security.WireSecurity#toWireForm(org.smartfrog.services.anubis.partition.wire.WireMsg, com.hellblazer.jackal.util.ByteBufferPool)
+     */
     @Override
-    public Formable toWireForm(final WireMsg msg) {
-        return msg;
+    public ByteBuffer toWireForm(WireMsg msg, ByteBufferPool bufferPool)
+                                                                        throws WireFormException, IOException {
+        return msg.toWire(bufferPool);
     }
 
 }

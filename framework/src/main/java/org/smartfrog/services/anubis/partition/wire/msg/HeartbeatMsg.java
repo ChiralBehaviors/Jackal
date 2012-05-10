@@ -19,8 +19,6 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
-import static com.hellblazer.jackal.util.ByteBufferCache.BUFFER_CACHE;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -30,6 +28,8 @@ import org.smartfrog.services.anubis.partition.util.NodeIdSet;
 import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
+
+import com.hellblazer.jackal.util.ByteBufferPool;
 
 public class HeartbeatMsg extends TimedMsg implements Heartbeat {
 
@@ -268,10 +268,14 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     /**
      * Write the message attributes to the
      * 
+     * @param bufferPool
+     * 
      * @throws IOException
      */
-    protected ByteBuffer writeWireForm() throws WireFormException, IOException {
-        ByteBuffer wireForm = BUFFER_CACHE.get().get(getSize());
+    protected ByteBuffer writeWireForm(ByteBufferPool bufferPool)
+                                                                 throws WireFormException,
+                                                                 IOException {
+        ByteBuffer wireForm = bufferPool.allocate(getSize());
 
         /**
          * view number, view time stamp, isPreferred, candidate, msgLinksNumber
@@ -313,11 +317,13 @@ public class HeartbeatMsg extends TimedMsg implements Heartbeat {
     }
 
     /* (non-Javadoc)
-     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
+     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire(com.hellblazer.jackal.util.ByteBufferPool)
      */
     @Override
-    public ByteBuffer toWire() throws WireFormException, IOException {
-        ByteBuffer wireForm = writeWireForm();
+    public ByteBuffer toWire(ByteBufferPool bufferPool)
+                                                       throws WireFormException,
+                                                       IOException {
+        ByteBuffer wireForm = writeWireForm(bufferPool);
         wireForm.putInt(0, getType());
         wireForm.rewind();
         return wireForm;

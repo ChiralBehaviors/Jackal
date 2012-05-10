@@ -127,7 +127,13 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     public synchronized void sendTimed(TimedMsg tm) {
-        sendObject(wireSecurity.toWireForm(tm));
+        try {
+            sendObject(wireSecurity.toWireForm(tm, bufferPool));
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                                            String.format("Unable to serialize timed message %s",
+                                                          tm));
+        }
     }
 
     @Override
@@ -397,10 +403,16 @@ public class MessageHandler extends AbstractMessageHandler implements
      */
     protected void sendInitial(HeartbeatMsg heartbeat) {
         connecting.set(true);
-        sendObject(wireSecurity.toWireForm(heartbeat));
+        try {
+            sendObject(wireSecurity.toWireForm(heartbeat, bufferPool));
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                                            String.format("Unable to serialize initial heartbeat %s",
+                                                          heartbeat), e);
+        }
     }
 
-    protected long nextOrder() {
+    protected long nextSequence() {
         return connecting.compareAndSet(true, false) ? INITIAL_MSG_ORDER
                                                     : sendCount.incrementAndGet();
     }

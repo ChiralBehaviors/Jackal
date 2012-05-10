@@ -30,7 +30,7 @@ import org.smartfrog.services.anubis.partition.test.msg.SetTimingMsg;
 import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
-import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.SerializedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 import com.hellblazer.jackal.partition.comms.AbstractMessageHandler;
@@ -94,11 +94,17 @@ public class ControllerConnection extends AbstractMessageHandler implements
         }
     }
 
-    public synchronized void send(WireMsg tm) {
+    public synchronized void send(WireMsg wm) {
         if (handler == null) {
             return;
         }
-        sendObject(wireSecurity.toWireForm(tm));
+        try {
+            sendObject(wireSecurity.toWireForm(wm, bufferPool));
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                                            String.format("Unable to serialize wire msg %s",
+                                                          wm), e);
+        }
     }
 
     public void sendObject(Object obj) {

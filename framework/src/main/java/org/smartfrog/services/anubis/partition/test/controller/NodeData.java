@@ -40,7 +40,7 @@ import org.smartfrog.services.anubis.partition.views.View;
 import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
-import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.SerializedMsg;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
 import com.hellblazer.jackal.partition.comms.AbstractMessageHandler;
@@ -75,7 +75,7 @@ public class NodeData {
         public void sendObject(Object obj) {
             SerializedMsg msg = new SerializedMsg(obj);
             try {
-                super.sendObject(wireSecurity.toWireForm(msg));
+                super.sendObject(wireSecurity.toWireForm(msg, bufferPool));
             } catch (Exception ex) {
                 if (log.isWarnEnabled()) {
                     log.warn("", ex);

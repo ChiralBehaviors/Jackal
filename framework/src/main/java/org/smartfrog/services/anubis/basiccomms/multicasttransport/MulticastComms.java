@@ -24,9 +24,12 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.hellblazer.jackal.util.ByteBufferPool;
 
 /**
  * MulticastComms is an abstract class representing an end point for multicast
@@ -48,13 +51,15 @@ public class MulticastComms extends Thread {
      * network will be capable of handling this size so its transfer semantics
      * are atomic (no fragmentation in the network).
      */
-    static public final int     MAX_SEG_SIZE = 1500;                                                            // Ethernet standard MTU
+    static public final int        MAX_SEG_SIZE = 1500;
+    private static final Logger    log          = LoggerFactory.getLogger(MulticastComms.class.getCanonicalName());
 
-    private MulticastAddress    groupAddress;
-    private MulticastSocket     sock;
-    private static final Logger log          = LoggerFactory.getLogger(MulticastComms.class.getCanonicalName());
-    volatile private boolean    terminating;
-    Object                      outObject;
+    private MulticastAddress       groupAddress;
+    private MulticastSocket        sock;
+    private final AtomicBoolean    terminating  = new AtomicBoolean();
+    protected final ByteBufferPool bufferPool   = new ByteBufferPool(
+                                                                     "Multicast Comms",
+                                                                     100);
 
     /**
      * Constructor - uses MulticastAddress to define the multicast group etc.
@@ -66,7 +71,6 @@ public class MulticastComms extends Thread {
         sock = new MulticastSocket(address.port);
         sock.joinGroup(address.ipaddress);
         sock.setTimeToLive(address.timeToLive);
-        terminating = false;
         setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
@@ -88,7 +92,6 @@ public class MulticastComms extends Thread {
         sock.setInterface(inf);
         sock.joinGroup(address.ipaddress);
         sock.setTimeToLive(address.timeToLive);
-        terminating = false;
     }
 
     /**
@@ -100,7 +103,8 @@ public class MulticastComms extends Thread {
         StringBuffer buffer = new StringBuffer();
         buffer.append(super.getName()).append(" ............................ ").setLength(30);
         buffer.append(super.isAlive() ? ".. is Alive " : ".. is Dead ");
-        buffer.append(!terminating ? ".. running ....." : ".. terminated ..");
+        buffer.append(!terminating.get() ? ".. running ....."
+                                        : ".. terminated ..");
         buffer.append(" address = ").append(groupAddress.ipaddress.toString()).append(":").append(groupAddress.port);
         return buffer.toString();
     }
@@ -114,7 +118,7 @@ public class MulticastComms extends Thread {
             log.trace("Starting receive processing on: " + groupAddress);
         }
         ByteBuffer packetBytes = ByteBuffer.allocate(MAX_SEG_SIZE);
-        while (!terminating) {
+        while (!terminating.get()) {
             try {
                 byte[] inBytes = packetBytes.array();
                 DatagramPacket inPacket = new DatagramPacket(inBytes,
@@ -128,7 +132,7 @@ public class MulticastComms extends Thread {
                 packetBytes.clear();
             } catch (Throwable e) {
 
-                if (!terminating && log.isWarnEnabled()) {
+                if (!terminating.get() && log.isWarnEnabled()) {
                     log.warn("Exception processing inbound message", e);
                 }
 
@@ -151,15 +155,18 @@ public class MulticastComms extends Thread {
                                     groupAddress.port));
             // BUFFER_CACHE.get().recycle(bytes);
         } catch (IOException ioe) {
-            if (!terminating && log.isWarnEnabled()) {
+            if (!terminating.get() && log.isWarnEnabled()) {
                 log.warn("", ioe);
             }
+        } finally {
+            bufferPool.free(bytes);
         }
     }
 
     public void shutdown() {
-        terminating = true;
+        terminating.set(true);
         sock.close();
+        log.info(bufferPool.toString());
     }
 
     private DatagramPacket bytesToPacket(ByteBuffer msg, InetAddress address,

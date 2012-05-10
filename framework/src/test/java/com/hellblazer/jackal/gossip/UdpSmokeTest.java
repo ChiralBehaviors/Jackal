@@ -66,7 +66,7 @@ public class UdpSmokeTest extends SmokeTest {
     }
 
     static {
-        GossipTestCfg.setTestPorts(24010, 24020);
+        GossipTestCfg.setTestPorts(24910, 24820);
     }
 
     @Override

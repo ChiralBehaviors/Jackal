@@ -9,7 +9,7 @@ import org.smartfrog.services.anubis.partition.wire.Wire;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
-import com.hellblazer.jackal.partition.comms.Formable;
+import com.hellblazer.jackal.util.ByteBufferPool;
 
 public class MACSecurityImpl implements WireSecurity {
 
@@ -45,34 +45,29 @@ public class MACSecurityImpl implements WireSecurity {
         this.macData = macData;
     }
 
+    /* (non-Javadoc)
+     * @see org.smartfrog.services.anubis.partition.wire.security.WireSecurity#toWireForm(org.smartfrog.services.anubis.partition.wire.WireMsg, com.hellblazer.jackal.util.ByteBufferPool)
+     */
     @Override
-    public Formable toWireForm(final WireMsg msg) {
-        return new Formable() {
-            @Override
-            public ByteBuffer toWire() throws WireFormException,
-                                                IOException {
-                try {
-                    msg.setTrailerSize(macData.getMacSize());
-                    ByteBuffer wireForm = msg.toWire();
-                    macData.addMAC(wireForm.array(), 0, wireForm.capacity()
-                                                        - macData.getMacSize()
-                                                        - 1);
-                    return wireForm;
+    public ByteBuffer toWireForm(WireMsg msg, ByteBufferPool bufferPool)
+                                                                        throws WireFormException {
+        try {
+            msg.setTrailerSize(macData.getMacSize());
+            ByteBuffer wireForm = msg.toWire(bufferPool);
+            macData.addMAC(wireForm.array(), 0,
+                           wireForm.capacity() - macData.getMacSize() - 1);
+            return wireForm;
 
-                } catch (IOException e) {
-                    throw new WireFormException("Unable to marshall message", e);
-                } catch (ShortBufferException e) {
-                    throw new WireFormException(
-                                                "Unable to marshall message - buffer not large enough for MAC security data",
-                                                e);
-                } catch (SecurityException e) {
-                    throw new WireFormException(
-                                                "Unable to marshall message - security issue",
-                                                e);
-                }
-            }
-
-        };
+        } catch (IOException e) {
+            throw new WireFormException("Unable to marshall message", e);
+        } catch (ShortBufferException e) {
+            throw new WireFormException(
+                                        "Unable to marshall message - buffer not large enough for MAC security data",
+                                        e);
+        } catch (SecurityException e) {
+            throw new WireFormException(
+                                        "Unable to marshall message - security issue",
+                                        e);
+        }
     }
-
 }

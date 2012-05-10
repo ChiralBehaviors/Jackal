@@ -65,7 +65,7 @@ public class UdpPartitionTest extends PartitionTest {
     private static final AtomicInteger id = new AtomicInteger(-1);
 
     static {
-        GossipTestCfg.setTestPorts(24030, 24050);
+        GossipTestCfg.setTestPorts(24730, 24750);
     }
 
     public static void reset() {

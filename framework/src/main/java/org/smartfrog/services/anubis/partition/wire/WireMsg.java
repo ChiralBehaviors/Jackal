@@ -22,9 +22,9 @@ package org.smartfrog.services.anubis.partition.wire;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import com.hellblazer.jackal.partition.comms.Formable;
+import com.hellblazer.jackal.util.ByteBufferPool;
 
-abstract public class WireMsg implements WireSizes, Formable {
+abstract public class WireMsg implements WireSizes {
 
     protected static final int WIRE_SIZE   = intSz;
 
@@ -87,12 +87,14 @@ abstract public class WireMsg implements WireSizes, Formable {
      * their getSize() method can return the actual desired size. Otherwise this
      * method should be over-ridden completely.
      * 
-     * 
+     * @param bufferPool
      * @return ByteBuffer
      * @throws WireFormException
      * @throws IOException
      */
-    abstract public ByteBuffer toWire() throws WireFormException, IOException;
+    abstract public ByteBuffer toWire(ByteBufferPool bufferPool)
+                                                                throws WireFormException,
+                                                                IOException;
 
     /**
      * Each subtype should over-ride getType() to return its own type.

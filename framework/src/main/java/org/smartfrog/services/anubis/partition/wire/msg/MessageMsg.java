@@ -28,6 +28,8 @@ import java.nio.ByteBuffer;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
+import com.hellblazer.jackal.util.ByteBufferPool;
+
 public final class MessageMsg extends TimedMsg {
 
     public static final int     MESSAGE_MSG_WIRE_SIZE = UNDEFINED_SIZE;
@@ -95,10 +97,14 @@ public final class MessageMsg extends TimedMsg {
     /**
      * Writes the timed message attributes to wire form in the given byte array
      * 
+     * @param bufferPool
+     * 
      * @throws IOException
      */
-    protected ByteBuffer writeWireForm() throws WireFormException, IOException {
-        ByteBufferOutputStream bbos = new ByteBufferOutputStream();
+    protected ByteBuffer writeWireForm(ByteBufferPool bufferPool)
+                                                                 throws WireFormException,
+                                                                 IOException {
+        ByteBufferOutputStream bbos = new ByteBufferOutputStream(bufferPool);
         bbos.write(headerPadding);
         ObjectOutputStream objectOS = new ObjectOutputStream(bbos);
         objectOS.writeObject(message);
@@ -110,11 +116,13 @@ public final class MessageMsg extends TimedMsg {
     }
 
     /* (non-Javadoc)
-     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire()
+     * @see org.smartfrog.services.anubis.partition.wire.WireMsg#toWire(com.hellblazer.jackal.util.ByteBufferPool)
      */
     @Override
-    public ByteBuffer toWire() throws WireFormException, IOException {
-        ByteBuffer wireForm = writeWireForm();
+    public ByteBuffer toWire(ByteBufferPool bufferPool)
+                                                       throws WireFormException,
+                                                       IOException {
+        ByteBuffer wireForm = writeWireForm(bufferPool);
         wireForm.putInt(0, getType());
         wireForm.rewind();
         return wireForm;

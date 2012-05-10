@@ -21,7 +21,6 @@ import static com.hellblazer.jackal.gossip.GossipMessages.DIGEST_BYTE_SIZE;
 import static com.hellblazer.jackal.gossip.GossipMessages.GOSSIP;
 import static com.hellblazer.jackal.gossip.GossipMessages.REPLY;
 import static com.hellblazer.jackal.gossip.GossipMessages.UPDATE;
-import static com.hellblazer.jackal.util.ByteBufferCache.BUFFER_CACHE;
 import static java.lang.Math.min;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -55,6 +54,7 @@ import com.hellblazer.jackal.gossip.Gossip;
 import com.hellblazer.jackal.gossip.GossipCommunications;
 import com.hellblazer.jackal.gossip.GossipMessages;
 import com.hellblazer.jackal.gossip.HeartbeatState;
+import com.hellblazer.jackal.util.ByteBufferPool;
 import com.hellblazer.jackal.util.HexDump;
 
 /**
@@ -90,7 +90,7 @@ public class UdpCommunications implements GossipCommunications {
 
         @Override
         public void requestConnection(Identity node) {
-            ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             buffer.position(4);
             buffer.put(CONNECT_TO);
@@ -101,7 +101,7 @@ public class UdpCommunications implements GossipCommunications {
 
         @Override
         public void update(List<HeartbeatState> deltaState) {
-            ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             for (HeartbeatState state : deltaState) {
                 buffer.clear();
@@ -114,7 +114,7 @@ public class UdpCommunications implements GossipCommunications {
         }
 
         private void sendDigests(List<Digest> digests, byte messageType) {
-            ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             for (int i = 0; i < digests.size();) {
                 int count = min(MAX_DIGESTS, digests.size() - i);
@@ -161,8 +161,10 @@ public class UdpCommunications implements GossipCommunications {
 
     private final ExecutorService dispatcher;
     private Gossip                gossip;
-    private final AtomicBoolean   running = new AtomicBoolean();
+    private final AtomicBoolean   running    = new AtomicBoolean();
     private final DatagramSocket  socket;
+    private final ByteBufferPool  bufferPool = new ByteBufferPool("UDP Comms",
+                                                                  100);
 
     public UdpCommunications(InetSocketAddress endpoint,
                              ExecutorService executor) {
@@ -211,7 +213,7 @@ public class UdpCommunications implements GossipCommunications {
 
     @Override
     public void send(HeartbeatState state, InetSocketAddress left) {
-        ByteBuffer buffer = BUFFER_CACHE.get().get(MAX_SEG_SIZE);
+        ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.clear();
         buffer.position(4);
@@ -249,6 +251,7 @@ public class UdpCommunications implements GossipCommunications {
                                        socket.getLocalSocketAddress()));
             }
             socket.close();
+            log.info(bufferPool.toString());
         }
     }
 
@@ -406,8 +409,6 @@ public class UdpCommunications implements GossipCommunications {
             if (log.isWarnEnabled()) {
                 log.warn("Error sending packet", e);
             }
-        } finally {
-            BUFFER_CACHE.get().recycle(buffer);
         }
     }
 
@@ -418,13 +419,15 @@ public class UdpCommunications implements GossipCommunications {
      *            - the buffer to use to receive the datagram
      * @throws IOException
      */
-    private void service(final DatagramPacket packet) throws IOException {
+    private void service() throws IOException {
+        final ByteBuffer buffer = bufferPool.allocate(MAX_SEG_SIZE);
+        final DatagramPacket packet = new DatagramPacket(buffer.array(),
+                                                         buffer.array().length);
         socket.receive(packet);
 
         dispatcher.execute(new Runnable() {
             @Override
             public void run() {
-                ByteBuffer buffer = ByteBuffer.wrap(packet.getData());
                 buffer.order(ByteOrder.BIG_ENDIAN);
                 if (log.isTraceEnabled()) {
                     log.trace(prettyPrint(packet.getSocketAddress(),
@@ -451,6 +454,7 @@ public class UdpCommunications implements GossipCommunications {
                                          magic));
                     }
                 }
+                bufferPool.free(buffer);
             }
         });
     }
@@ -470,8 +474,7 @@ public class UdpCommunications implements GossipCommunications {
                 }
                 while (running.get()) {
                     try {
-                        service(new DatagramPacket(new byte[MAX_SEG_SIZE],
-                                                   MAX_SEG_SIZE));
+                        service();
                     } catch (SocketException e) {
                         if ("Socket closed".equals(e.getMessage())) {
                             if (log.isTraceEnabled()) {

@@ -30,7 +30,9 @@ import org.smartfrog.services.anubis.partition.views.BitView;
 import org.smartfrog.services.anubis.partition.wire.msg.HeartbeatMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.MessageMsg;
 import org.smartfrog.services.anubis.partition.wire.msg.PingHeartbeatMsg;
-import org.smartfrog.services.anubis.partition.wire.msg.untimed.SerializedMsg;
+import org.smartfrog.services.anubis.partition.wire.msg.SerializedMsg;
+
+import com.hellblazer.jackal.util.ByteBufferPool;
 
 public class Test extends TestCase {
     public static void main(String[] args) {
@@ -38,8 +40,7 @@ public class Test extends TestCase {
         untitled1.testIt3();
     }
 
-    public Test() {
-    }
+    private final ByteBufferPool bufferPool = new ByteBufferPool("test", 1);
 
     public void testIt() {
         try {
@@ -73,7 +74,7 @@ public class Test extends TestCase {
             long start = System.currentTimeMillis();
             ByteBuffer wireForm = null;
             for (int i = 0; i < loops; i++) {
-                wireForm = outMsg.toWire();
+                wireForm = outMsg.toWire(bufferPool);
             }
             long end = System.currentTimeMillis();
             System.out.println("END HeartbeatTestMsg marshalling test run took "
@@ -107,7 +108,7 @@ public class Test extends TestCase {
             outMsg.setTime(98765);
             System.out.println("Message message for output is: " + outMsg);
 
-            ByteBuffer wire = outMsg.toWire();
+            ByteBuffer wire = outMsg.toWire(bufferPool);
 
             System.out.println("Wire length " + wire.capacity());
 
@@ -144,7 +145,7 @@ public class Test extends TestCase {
             System.out.println("Heartbeat Test message for output is: "
                                + outMsg);
 
-            ByteBuffer wireForm = outMsg.toWire();
+            ByteBuffer wireForm = outMsg.toWire(bufferPool);
 
             PingHeartbeatMsg inMsg = (PingHeartbeatMsg) Wire.fromWire(wireForm);
             System.out.println("Heartbeat Test message for input is: " + inMsg);
@@ -172,7 +173,7 @@ public class Test extends TestCase {
             SerializedMsg outMsg = new SerializedMsg("[This is my message]");
             System.out.println("Message for output is: " + outMsg);
 
-            ByteBuffer wire = outMsg.toWire();
+            ByteBuffer wire = outMsg.toWire(bufferPool);
 
             SerializedMsg inMsg = (SerializedMsg) Wire.fromWire(wire);
             System.out.println("Message input is: " + inMsg);
