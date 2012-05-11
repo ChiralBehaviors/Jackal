@@ -77,6 +77,7 @@ public class GossipSnoop {
     public void terminate() {
         if (updateTask != null) {
             updateTask.cancel(true);
+            underlying.terminate();
             updateTask = null;
         }
     }
