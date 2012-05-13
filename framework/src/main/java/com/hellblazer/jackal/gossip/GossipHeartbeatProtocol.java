@@ -137,8 +137,8 @@ public class GossipHeartbeatProtocol extends BitView implements
              * Check for a new view time stamp (as opposed to the heartbeat
              * time!)
              */
-            if (timeStamp != hb.getView().getTimeStamp()) {
-                timeStamp = hb.getView().getTimeStamp();
+            if (timeStamp.get() != hb.getView().getTimeStamp()) {
+                timeStamp.set(hb.getView().getTimeStamp());
                 timeStampChanged = true;
             }
 
@@ -150,8 +150,8 @@ public class GossipHeartbeatProtocol extends BitView implements
              */
             if (hb.getViewNumber() != viewNumber) {
                 viewNumber = hb.getViewNumber();
-                view = hb.getView().toBitSet();
-                stable = hb.getView().isStable();
+                view.copyFrom(hb.getView().toBitSet());
+                stable.set(hb.getView().isStable());
                 viewChanged = true;
             }
 

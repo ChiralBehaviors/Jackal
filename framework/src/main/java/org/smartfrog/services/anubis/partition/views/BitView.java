@@ -22,6 +22,8 @@ package org.smartfrog.services.anubis.partition.views;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.util.NodeIdSet;
@@ -47,34 +49,28 @@ public class BitView implements View, Cloneable, Serializable,
         return bv;
     }
 
-    protected boolean   stable    = true;
+    protected final AtomicBoolean stable    = new AtomicBoolean();
+    protected final AtomicLong    timeStamp = new AtomicLong(
+                                                             View.undefinedTimeStamp);
+    protected final NodeIdSet     view;
 
-    protected long      timeStamp = View.undefinedTimeStamp;
-
-    protected NodeIdSet view      = null;
+    public BitView(NodeIdSet v) {
+        view = v;
+        assert view != null : "View must be non null";
+    }
 
     public BitView() {
-        view = new NodeIdSet();
+        this(new NodeIdSet());
     }
 
     public BitView(boolean s, NodeIdSet v, long t) {
-        if (v == null) {
-            throw new NullPointerException(
-                                           "Attempt to construct BitView from null pointer");
-        }
-        stable = s;
-        view = v;
-        timeStamp = t;
+        this(v);
+        stable.set(s);
+        timeStamp.set(t);
     }
 
     public BitView(View v) {
-        if (v == null) {
-            throw new NullPointerException(
-                                           "Attempt to construct BitView from null pointer");
-        }
-        stable = v.isStable();
-        view = v.toBitSet();
-        timeStamp = v.getTimeStamp();
+        this(v.isStable(), v.toBitSet(), v.getTimeStamp());
     }
 
     public boolean add(Identity i) {
@@ -124,14 +120,14 @@ public class BitView implements View, Cloneable, Serializable,
     }
 
     public BitView copyView(View v) {
-        stable = v.isStable();
-        view = v.toBitSet().clone();
-        timeStamp = v.getTimeStamp();
+        stable.set(v.isStable());
+        view.copyFrom(v.toBitSet());
+        timeStamp.set(v.getTimeStamp());
         return this;
     }
 
     public void destablize() {
-        stable = false;
+        stable.set(false);
     }
 
     @Override
@@ -149,7 +145,7 @@ public class BitView implements View, Cloneable, Serializable,
 
     @Override
     public long getTimeStamp() {
-        return timeStamp;
+        return timeStamp.get();
     }
 
     @Override
@@ -164,7 +160,7 @@ public class BitView implements View, Cloneable, Serializable,
 
     @Override
     public boolean isStable() {
-        return stable;
+        return stable.get();
     }
 
     @Override
@@ -242,7 +238,7 @@ public class BitView implements View, Cloneable, Serializable,
     }
 
     public void setTimeStamp(long t) {
-        timeStamp = t;
+        timeStamp.set(t);
     }
 
     @Override
@@ -251,7 +247,7 @@ public class BitView implements View, Cloneable, Serializable,
     }
 
     public void stablize() {
-        stable = true;
+        stable.set(true);
     }
 
     public BitView subtract(View v) {

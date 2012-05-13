@@ -130,6 +130,10 @@ public class NodeIdSet implements Serializable, Cloneable, WireSizes,
         cloneBS.storage = Arrays.copyOf(storage, storage.length);
         return cloneBS;
     }
+    
+    public void copyFrom(NodeIdSet original) {
+        storage = Arrays.copyOf(original.storage, original.storage.length);
+    }
 
     /**
      * are all the bits in this contained in s?

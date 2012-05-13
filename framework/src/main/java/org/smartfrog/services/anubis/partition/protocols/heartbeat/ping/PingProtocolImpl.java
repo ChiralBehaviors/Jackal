@@ -237,8 +237,8 @@ public class PingProtocolImpl extends BitView implements HeartbeatProtocol {
              */
             if (hb.getViewNumber() != viewNumber) {
                 viewNumber = hb.getViewNumber();
-                view = hb.getView().toBitSet();
-                stable = hb.getView().isStable();
+                view.copyFrom(hb.getView().toBitSet());
+                stable.set(hb.getView().isStable());
                 listener.newView(sender, this);
             }
 

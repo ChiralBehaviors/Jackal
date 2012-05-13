@@ -41,8 +41,8 @@ public class SelfConnection extends BitView implements Connection,
                           boolean preferred) {
         me = id;
         address = addr;
-        view = v.toBitSet();
-        stable = v.isStable();
+        view.copyFrom(v.toBitSet());
+        stable.set(v.isStable());
         candidate = new CandidateImpl(me, me, preferred);
     }
 

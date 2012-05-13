@@ -31,14 +31,15 @@ import org.smartfrog.services.anubis.partition.wire.msg.Heartbeat;
 
 public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
 
+    private static final Logger          log              = LoggerFactory.getLogger(TimedProtocolImpl.class.getCanonicalName());
     private static final long            serialVersionUID = 1L;
+    
     private final InetSocketAddress      address;
     private transient final ViewListener listener;
     private Identity                     sender           = null;
     private boolean                      terminated       = false;
     private long                         time             = 0;
     private long                         viewNumber       = 0;
-    private static final Logger          log              = LoggerFactory.getLogger(TimedProtocolImpl.class.getCanonicalName());
 
     /**
      * Constructor - create a heartbeat protocol implementation using the
@@ -47,8 +48,7 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
      * @param hb
      * @param vl
      */
-    public TimedProtocolImpl(Heartbeat hb, ViewListener vl,
-                             Heartbeat sharedHeartbeat) {
+    public TimedProtocolImpl(Heartbeat hb, ViewListener vl) {
         super(hb.getView());
         time = hb.getTime();
         viewNumber = hb.getViewNumber();
@@ -176,8 +176,8 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
              * Check for a new view time stamp (as opposed to the heartbeat
              * time!)
              */
-            if (timeStamp != hb.getView().getTimeStamp()) {
-                timeStamp = hb.getView().getTimeStamp();
+            if (timeStamp.get() != hb.getView().getTimeStamp()) {
+                timeStamp.set(hb.getView().getTimeStamp());
                 timeStampChanged = true;
             }
 
@@ -189,8 +189,8 @@ public class TimedProtocolImpl extends BitView implements HeartbeatProtocol {
              */
             if (hb.getViewNumber() != viewNumber) {
                 viewNumber = hb.getViewNumber();
-                view = hb.getView().toBitSet();
-                stable = hb.getView().isStable();
+                view.copyFrom(hb.getView().toBitSet());
+                stable.set(hb.getView().isStable());
                 viewChanged = true;
             }
 
