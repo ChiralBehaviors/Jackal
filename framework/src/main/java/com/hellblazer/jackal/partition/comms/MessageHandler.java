@@ -48,9 +48,6 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  */
 public class MessageHandler extends AbstractMessageHandler implements
         IOConnection {
-    static enum State {
-        BODY, CLOSED, ERROR, HEADER, INITIAL;
-    };
 
     static final Logger                log               = LoggerFactory.getLogger(MessageHandler.class);
 
