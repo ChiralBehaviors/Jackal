@@ -139,6 +139,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     public void shutdown() {
+        writes.clear();
         writeState = readState = State.CLOSED;
         handler.close();
         getLog().info(bufferPool.toString());
@@ -282,6 +283,13 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     protected void sendObject(ByteBuffer buffer) {
+        if (writeState == State.CLOSED) {
+            if (getLog().isInfoEnabled()) {
+                getLog().trace(format("handler is closed, ignoring send on [%s]",
+                                      this));
+            }
+            return;
+        }
         if (getLog().isTraceEnabled()) {
             getLog().trace(format("sendObject being called [%s]", this));
         }
