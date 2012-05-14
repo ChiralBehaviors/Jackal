@@ -105,8 +105,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                     readBuffer = bufferPool.allocate(objectSize);
                     readState = State.BODY;
                 } else {
-                    getLog().error("%  CANNOT FIND MAGIC_NUMBER:  " + readMagic
-                                           + " instead");
+                    getLog().error(String.format("invalid magic number %s, required %s"),
+                                   readMagic);
                     readState = State.ERROR;
                     shutdown();
                     return;

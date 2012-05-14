@@ -33,7 +33,6 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.text.SimpleDateFormat;
@@ -90,31 +89,31 @@ public class UdpCommunications implements GossipCommunications {
 
         @Override
         public void requestConnection(Identity node) {
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+            ByteBuffer buffer = bufferPool.allocate(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             buffer.position(4);
             buffer.put(CONNECT_TO);
             node.writeTo(buffer);
-            buffer.flip();
             send(buffer, target);
+            bufferPool.free(buffer);
         }
 
         @Override
         public void update(List<HeartbeatState> deltaState) {
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+            ByteBuffer buffer = bufferPool.allocate(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             for (HeartbeatState state : deltaState) {
-                buffer.clear();
                 buffer.position(4);
                 buffer.put(UPDATE);
                 state.writeTo(buffer);
-                buffer.flip();
                 send(buffer, target);
+                buffer.clear();
             }
+            bufferPool.free(buffer);
         }
 
         private void sendDigests(List<Digest> digests, byte messageType) {
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
+            ByteBuffer buffer = bufferPool.allocate(MAX_SEG_SIZE);
             buffer.order(ByteOrder.BIG_ENDIAN);
             for (int i = 0; i < digests.size();) {
                 int count = min(MAX_DIGESTS, digests.size() - i);
@@ -124,10 +123,11 @@ public class UdpCommunications implements GossipCommunications {
                 for (int j = i; j < count; j++) {
                     digests.get(j).writeTo(buffer);
                 }
-                buffer.flip();
                 send(buffer, target);
                 i += count;
+                buffer.clear();
             }
+            bufferPool.free(buffer);
         }
 
     }
@@ -213,15 +213,15 @@ public class UdpCommunications implements GossipCommunications {
 
     @Override
     public void send(HeartbeatState state, InetSocketAddress left) {
-        ByteBuffer buffer = ByteBuffer.allocate(MAX_SEG_SIZE);
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        buffer.clear();
-        buffer.position(4);
-        buffer.put(UPDATE);
-        state.writeTo(buffer);
-        buffer.flip();
         if (!gossip.isIgnoring(left)) {
+            ByteBuffer buffer = bufferPool.allocate(MAX_SEG_SIZE);
+            buffer.order(ByteOrder.BIG_ENDIAN);
+            buffer.position(4);
+            buffer.put(UPDATE);
+            state.writeTo(buffer);
+            buffer.flip();
             send(buffer, left);
+            bufferPool.free(buffer);
         }
     }
 
@@ -395,7 +395,7 @@ public class UdpCommunications implements GossipCommunications {
         buffer.putInt(0, MAGIC_NUMBER);
         try {
             byte[] bytes = buffer.array();
-            DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+            DatagramPacket packet = new DatagramPacket(bytes, buffer.position());
             packet.setSocketAddress(target);
             socket.send(packet);
         } catch (SocketException e) {
@@ -421,14 +421,14 @@ public class UdpCommunications implements GossipCommunications {
      */
     private void service() throws IOException {
         final ByteBuffer buffer = bufferPool.allocate(MAX_SEG_SIZE);
+        buffer.order(ByteOrder.BIG_ENDIAN);
         final DatagramPacket packet = new DatagramPacket(buffer.array(),
                                                          buffer.array().length);
         socket.receive(packet);
-
+        // buffer.limit(packet.getLength());
         dispatcher.execute(new Runnable() {
             @Override
             public void run() {
-                buffer.order(ByteOrder.BIG_ENDIAN);
                 if (log.isTraceEnabled()) {
                     log.trace(prettyPrint(packet.getSocketAddress(),
                                           buffer.array()));
@@ -441,7 +441,7 @@ public class UdpCommunications implements GossipCommunications {
                     try {
                         processInbound((InetSocketAddress) packet.getSocketAddress(),
                                        buffer);
-                    } catch (BufferOverflowException e) {
+                    } catch (Throwable e) {
                         if (log.isWarnEnabled()) {
                             log.warn(format("Invalid message: %s",
                                             prettyPrint(packet.getSocketAddress(),

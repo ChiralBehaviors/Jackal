@@ -200,7 +200,7 @@ abstract public class PartitionTest extends TestCase {
         log.info("Awaiting initial partition stability");
         boolean success = false;
         try {
-            success = initialLatch.await(120, TimeUnit.SECONDS);
+            success = initialLatch.await(60, TimeUnit.SECONDS);
             assertTrue("Initial partition did not acheive stability", success);
             log.info("Initial partition stable");
             partition = new ArrayList<TestNode>();
