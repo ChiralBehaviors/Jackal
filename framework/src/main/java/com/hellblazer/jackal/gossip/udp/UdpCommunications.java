@@ -456,7 +456,7 @@ public class UdpCommunications implements GossipCommunications {
                             log.warn(format("Invalid message: %s",
                                             prettyPrint(packet.getSocketAddress(),
                                                         getLocalAddress(),
-                                                        buffer.array())));
+                                                        buffer.array())), e);
                         }
                     }
                 } else {
