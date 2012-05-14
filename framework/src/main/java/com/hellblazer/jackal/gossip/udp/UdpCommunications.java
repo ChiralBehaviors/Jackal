@@ -398,8 +398,8 @@ public class UdpCommunications implements GossipCommunications {
         buffer.putInt(0, MAGIC_NUMBER);
         try {
             byte[] bytes = buffer.array();
-            DatagramPacket packet = new DatagramPacket(bytes, buffer.position());
-            packet.setSocketAddress(target);
+            DatagramPacket packet = new DatagramPacket(bytes, bytes.length,
+                                                       target);
             if (log.isTraceEnabled()) {
                 log.trace(String.format("sending packet %s",
                                         prettyPrint(getLocalAddress(), target,
