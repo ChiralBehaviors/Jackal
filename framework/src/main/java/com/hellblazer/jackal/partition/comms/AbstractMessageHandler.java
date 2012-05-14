@@ -106,7 +106,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                     readState = State.BODY;
                 } else {
                     getLog().error(String.format("invalid magic number %s, required %s"),
-                                   readMagic);
+                                   readMagic, MAGIC_NUMBER);
                     readState = State.ERROR;
                     shutdown();
                     return;
