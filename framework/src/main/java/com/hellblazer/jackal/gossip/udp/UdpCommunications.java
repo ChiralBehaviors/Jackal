@@ -333,12 +333,15 @@ public class UdpCommunications implements GossipCommunications {
         gossip.update(asList(state));
     }
 
-    private String prettyPrint(SocketAddress sender, byte[] bytes) {
+    private static String prettyPrint(SocketAddress sender,
+                                      SocketAddress target, byte[] bytes) {
         final StringBuilder sb = new StringBuilder(bytes.length * 2);
+        sb.append('\n');
         sb.append(new SimpleDateFormat().format(new Date()));
-        sb.append(" - ");
+        sb.append(" sender: ");
         sb.append(sender);
-        sb.append(" - ");
+        sb.append(" target: ");
+        sb.append(target);
         sb.append('\n');
         sb.append(toHex(bytes, 0, bytes.length));
         return sb.toString();
@@ -397,6 +400,11 @@ public class UdpCommunications implements GossipCommunications {
             byte[] bytes = buffer.array();
             DatagramPacket packet = new DatagramPacket(bytes, buffer.position());
             packet.setSocketAddress(target);
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("sending packet %s",
+                                        prettyPrint(getLocalAddress(), target,
+                                                    buffer.array())));
+            }
             socket.send(packet);
         } catch (SocketException e) {
             if (!"Socket is closed".equals(e.getMessage())
@@ -430,8 +438,10 @@ public class UdpCommunications implements GossipCommunications {
             @Override
             public void run() {
                 if (log.isTraceEnabled()) {
-                    log.trace(prettyPrint(packet.getSocketAddress(),
-                                          buffer.array()));
+                    log.trace(String.format("Received packet %s",
+                                            prettyPrint(packet.getSocketAddress(),
+                                                        getLocalAddress(),
+                                                        buffer.array())));
                 } else if (log.isTraceEnabled()) {
                     log.trace("Received packet from: "
                               + packet.getSocketAddress());
@@ -445,13 +455,17 @@ public class UdpCommunications implements GossipCommunications {
                         if (log.isWarnEnabled()) {
                             log.warn(format("Invalid message: %s",
                                             prettyPrint(packet.getSocketAddress(),
+                                                        getLocalAddress(),
                                                         buffer.array())));
                         }
                     }
                 } else {
-                    if (log.isTraceEnabled()) {
-                        log.trace(format("Msg with invalid MAGIC header [%s] discarded",
-                                         magic));
+                    if (log.isWarnEnabled()) {
+                        log.warn(format("Msg with invalid MAGIC header [%s] discarded %s",
+                                        magic,
+                                        prettyPrint(packet.getSocketAddress(),
+                                                    getLocalAddress(),
+                                                    buffer.array())));
                     }
                 }
                 bufferPool.free(buffer);

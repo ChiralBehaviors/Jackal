@@ -62,13 +62,15 @@ public class HexDump {
 
         int s = length % 16;
         int r = s == 0 ? length / 16 : length / 16 + 1;
-        char[] c = new char[r * (74 + NL_LENGTH)];
+        char[] c = new char[r * (74 + 2 * NL_LENGTH)];
         char[] d = new char[16];
         int i;
         int si = 0;
         int ci = 0;
 
         do {
+            "\t".getChars(0, 1, c, ci);
+            ci += 1;
             toHexChars(si, c, ci, 5);
             ci += 5;
             c[ci++] = ':';
@@ -99,7 +101,6 @@ public class HexDump {
             NL.getChars(0, NL_LENGTH, c, ci);
             ci += NL_LENGTH;
         } while (si < length);
-
         ps.println(c);
     }
 

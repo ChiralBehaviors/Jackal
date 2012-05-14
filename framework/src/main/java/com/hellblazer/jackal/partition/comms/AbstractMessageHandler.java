@@ -26,8 +26,8 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
@@ -64,7 +64,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     protected volatile SocketChannelHandler   handler;
     protected volatile State                  readState  = State.HEADER;
     protected final WireSecurity              wireSecurity;
-    protected final BlockingDeque<ByteBuffer> writes     = new LinkedBlockingDeque<ByteBuffer>();
+    protected final BlockingQueue<ByteBuffer> writes     = new ArrayBlockingQueue<ByteBuffer>(
+                                                                                              2);
     protected volatile State                  writeState = State.INITIAL;
 
     public AbstractMessageHandler(WireSecurity wireSecurity) {
@@ -160,7 +161,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                 case CLOSED:
                     return;
                 case INITIAL: {
-                    currentWrite = writes.pollFirst();
+                    currentWrite = writes.poll();
                     if (currentWrite == null) {
                         return;
                     }
@@ -284,7 +285,11 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         if (getLog().isTraceEnabled()) {
             getLog().trace(format("sendObject being called [%s]", this));
         }
-        writes.add(buffer);
+        try {
+            writes.put(buffer);
+        } catch (InterruptedException e) {
+            return;
+        }
         handler.selectForWrite();
     }
 
