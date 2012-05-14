@@ -65,7 +65,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     protected volatile State                  readState  = State.HEADER;
     protected final WireSecurity              wireSecurity;
     protected final BlockingQueue<ByteBuffer> writes     = new ArrayBlockingQueue<ByteBuffer>(
-                                                                                              2);
+                                                                                              4);
     protected volatile State                  writeState = State.INITIAL;
 
     public AbstractMessageHandler(WireSecurity wireSecurity) {
