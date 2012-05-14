@@ -46,16 +46,19 @@ public class Digest {
 
     public Digest(ByteBuffer msg) throws UnknownHostException {
         address = HeartbeatState.readInetAddress(msg);
+        assert address != null : "Null digest address";
         time = msg.getLong();
     }
 
     public Digest(HeartbeatState state) {
         address = state.getHeartbeatAddress();
+        assert address != null : "Null heartbeat state address";
         time = state.getTime();
     }
 
     public Digest(InetSocketAddress socketAddress, Endpoint ep) {
         address = socketAddress;
+        assert address != null : "Null digest address address";
         time = ep.getTime();
     }
 
