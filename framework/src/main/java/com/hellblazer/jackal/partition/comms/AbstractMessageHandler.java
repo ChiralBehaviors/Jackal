@@ -34,7 +34,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.smartfrog.services.anubis.partition.wire.security.WireSecurity;
 
-import com.hellblazer.jackal.partition.comms.MessageHandler.State;
 import com.hellblazer.jackal.util.ByteBufferPool;
 import com.hellblazer.jackal.util.HexDump;
 import com.hellblazer.pinkie.CommunicationsHandler;
@@ -46,6 +45,10 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  * 
  */
 public abstract class AbstractMessageHandler implements CommunicationsHandler {
+    static enum State {
+        BODY, CLOSED, ERROR, HEADER, INITIAL;
+    };
+
     protected static String toHex(byte[] data) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 4);
         PrintStream stream = new PrintStream(baos);
@@ -181,7 +184,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
                         writeState = State.HEADER;
                     }
                     case HEADER: {
-                        if (!write(wxHeader)) {
+                        if (!write(wxHeader, currentWrite)) {
                             return;
                         }
                         if (wxHeader.hasRemaining()) {
@@ -249,9 +252,9 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         return true;
     }
 
-    private boolean write(ByteBuffer buffer) {
+    private boolean write(ByteBuffer... buffers) {
         try {
-            if (handler.getChannel().write(buffer) < 0) {
+            if (handler.getChannel().write(buffers) < 0) {
                 close();
                 return false;
             }
