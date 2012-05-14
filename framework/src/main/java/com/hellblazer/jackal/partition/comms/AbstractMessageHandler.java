@@ -28,6 +28,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         return baos.toString();
     }
 
+    private final AtomicBoolean               closed     = new AtomicBoolean();
     private volatile ByteBuffer               currentWrite;
     private ByteBuffer                        readBuffer;
     private final ByteBuffer                  rxHeader   = ByteBuffer.allocate(16);
@@ -139,6 +141,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     public void shutdown() {
+        closed.set(true);
         writes.clear();
         writeState = readState = State.CLOSED;
         handler.close();
@@ -156,52 +159,56 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
             if (getLog().isTraceEnabled()) {
                 getLog().trace(format("Socket write ready [%s]", this));
             }
-            switch (writeState) {
-                case ERROR:
-                    return;
-                case CLOSED:
-                    return;
-                case INITIAL: {
-                    currentWrite = writes.poll();
-                    if (currentWrite == null) {
+            while (true) {
+                switch (writeState) {
+                    case ERROR:
                         return;
-                    }
-                    wxHeader.clear();
-                    wxHeader.putInt(0, MAGIC_NUMBER);
-                    wxHeader.putInt(4, currentWrite.remaining());
-                    wxHeader.putLong(8, nextSequence());
-                    writeState = State.HEADER;
-                }
-                case HEADER: {
-                    if (!write(wxHeader)) {
+                    case CLOSED:
                         return;
-                    }
-                    if (wxHeader.hasRemaining()) {
-                        break;
-                    }
-                    writeState = State.BODY;
-                    // fallthrough to body intentional
-                }
-                case BODY: {
-                    if (!write(currentWrite)) {
-                        return;
-                    }
-                    if (!currentWrite.hasRemaining()) {
-                        writeState = State.INITIAL;
-                        if (writes.isEmpty()) {
+                    case INITIAL: {
+                        currentWrite = writes.poll();
+                        if (currentWrite == null) {
                             return;
                         }
-                    } else {
-                        bufferPool.free(currentWrite);
+                        wxHeader.clear();
+                        wxHeader.putInt(0, MAGIC_NUMBER);
+                        wxHeader.putInt(4, currentWrite.remaining());
+                        wxHeader.putLong(8, nextSequence());
+                        writeState = State.HEADER;
                     }
-                    break;
-                }
-                default: {
-                    throw new IllegalStateException("Illegal write state: "
-                                                    + writeState);
+                    case HEADER: {
+                        if (!write(wxHeader)) {
+                            return;
+                        }
+                        if (wxHeader.hasRemaining()) {
+                            handler.selectForWrite();
+                            return;
+                        }
+                        writeState = State.BODY;
+                        // fallthrough to body intentional
+                    }
+                    case BODY: {
+                        if (!write(currentWrite)) {
+                            return;
+                        }
+                        if (!currentWrite.hasRemaining()) {
+                            writeState = State.INITIAL;
+                            if (writes.isEmpty()) {
+                                return;
+                            }
+                        } else {
+                            bufferPool.free(currentWrite);
+                            handler.selectForWrite();
+                            return;
+                        }
+                        break;
+                    }
+                    default: {
+                        throw new IllegalStateException("Illegal write state: "
+                                                        + writeState);
+                    }
                 }
             }
-            handler.selectForWrite();
         } finally {
             myLock.unlock();
         }
@@ -262,6 +269,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     protected void close() {
+        closed.set(true);
         writes.clear();
         writeState = readState = State.CLOSED;
         handler.close();
@@ -284,7 +292,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     protected void sendObject(ByteBuffer buffer) {
-        if (writeState == State.CLOSED) {
+        if (closed.get()) {
             if (getLog().isInfoEnabled()) {
                 getLog().trace(format("handler is closed, ignoring send on [%s]",
                                       this));
