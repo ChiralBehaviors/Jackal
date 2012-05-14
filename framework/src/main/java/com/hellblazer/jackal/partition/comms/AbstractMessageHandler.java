@@ -79,65 +79,69 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         if (getLog().isTraceEnabled()) {
             getLog().trace(format("Socket read ready [%s]", this));
         }
-        switch (readState) {
-            case ERROR:
-                return;
-            case CLOSED:
-                return;
-            case HEADER: {
-                if (!read(rxHeader)) {
+        while (true) {
+            switch (readState) {
+                case ERROR:
                     return;
+                case CLOSED:
+                    return;
+                case HEADER: {
+                    if (!read(rxHeader)) {
+                        return;
+                    }
+                    if (rxHeader.hasRemaining()) {
+                        handler.selectForRead();
+                        return;
+                    }
+                    rxHeader.flip();
+                    int readMagic = rxHeader.getInt();
+                    if (getLog().isTraceEnabled()) {
+                        getLog().trace("Read magic number: " + readMagic);
+                    }
+                    if (readMagic == MAGIC_NUMBER) {
+                        if (getLog().isTraceEnabled()) {
+                            getLog().trace("RxHeader magic-number fits");
+                        }
+                        // get the object size and create a new buffer for it
+                        int objectSize = rxHeader.getInt();
+                        if (getLog().isTraceEnabled()) {
+                            getLog().trace("read objectSize: " + objectSize);
+                        }
+                        readBuffer = bufferPool.allocate(objectSize);
+                        readState = State.BODY;
+                    } else {
+                        getLog().error(String.format("invalid magic number %s, required %s"),
+                                       readMagic, MAGIC_NUMBER);
+                        readState = State.ERROR;
+                        shutdown();
+                        return;
+                    }
+                    // Fall through to BODY state intended.
                 }
-                if (rxHeader.hasRemaining()) {
+                case BODY: {
+                    if (!read(readBuffer)) {
+                        return;
+                    }
+                    if (!readBuffer.hasRemaining()) {
+                        long order = rxHeader.getLong();
+                        rxHeader.clear();
+                        readBuffer.flip();
+                        deliverObject(order, readBuffer);
+                        bufferPool.free(readBuffer);
+                        readBuffer = null;
+                        readState = State.HEADER;
+                    } else {
+                        handler.selectForRead();
+                        return;
+                    }
                     break;
                 }
-                rxHeader.flip();
-                int readMagic = rxHeader.getInt();
-                if (getLog().isTraceEnabled()) {
-                    getLog().trace("Read magic number: " + readMagic);
+                default: {
+                    throw new IllegalStateException("Illegal read state "
+                                                    + readState);
                 }
-                if (readMagic == MAGIC_NUMBER) {
-                    if (getLog().isTraceEnabled()) {
-                        getLog().trace("RxHeader magic-number fits");
-                    }
-                    // get the object size and create a new buffer for it
-                    int objectSize = rxHeader.getInt();
-                    if (getLog().isTraceEnabled()) {
-                        getLog().trace("read objectSize: " + objectSize);
-                    }
-                    readBuffer = bufferPool.allocate(objectSize);
-                    readState = State.BODY;
-                } else {
-                    getLog().error(String.format("invalid magic number %s, required %s"),
-                                   readMagic, MAGIC_NUMBER);
-                    readState = State.ERROR;
-                    shutdown();
-                    return;
-                }
-                // Fall through to BODY state intended.
-            }
-            case BODY: {
-                if (!read(readBuffer)) {
-                    return;
-                }
-                if (!readBuffer.hasRemaining()) {
-                    long order = rxHeader.getLong();
-                    rxHeader.clear();
-                    readBuffer.flip();
-                    deliverObject(order, readBuffer);
-                    bufferPool.free(readBuffer);
-                    readBuffer = null;
-                    readState = State.HEADER;
-                }
-                break;
-            }
-            default: {
-                throw new IllegalStateException("Illegal read state "
-                                                + readState);
             }
         }
-
-        handler.selectForRead();
     }
 
     public void shutdown() {
