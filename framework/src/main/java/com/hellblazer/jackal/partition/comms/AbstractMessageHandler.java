@@ -262,6 +262,7 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     protected void close() {
+        writes.clear();
         writeState = readState = State.CLOSED;
         handler.close();
     }
