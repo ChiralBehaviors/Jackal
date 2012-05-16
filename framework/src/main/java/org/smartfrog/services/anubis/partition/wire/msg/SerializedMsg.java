@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
+import com.hellblazer.jackal.util.ByteBufferOutputStream;
 import com.hellblazer.jackal.util.ByteBufferPool;
 
 public final class SerializedMsg extends WireMsg {

@@ -129,7 +129,7 @@ public class MessageHandler extends AbstractMessageHandler implements
         } catch (Exception e) {
             throw new IllegalStateException(
                                             String.format("Unable to serialize timed message %s",
-                                                          tm));
+                                                          tm), e);
         }
     }
 

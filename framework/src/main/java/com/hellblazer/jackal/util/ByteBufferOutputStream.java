@@ -15,13 +15,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-package org.smartfrog.services.anubis.partition.wire.msg;
+package com.hellblazer.jackal.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
-import com.hellblazer.jackal.util.ByteBufferPool;
 
 /**
  * @author hhildebrand
@@ -66,11 +64,11 @@ public class ByteBufferOutputStream extends OutputStream {
      */
     private void ensureCapacity(int minCapacity) {
         // overflow-conscious code
-        if (minCapacity - buffer.remaining() > 0) {
+        if (minCapacity - buffer.limit() > 0) {
             try {
                 grow(minCapacity);
             } catch (OutOfMemoryError e) {
-                System.out.println(String.format("Attempted to grow stream to % bytes",
+                System.out.println(String.format("Attempted to grow stream to %s bytes",
                                                  minCapacity));
                 throw e;
             }
@@ -89,6 +87,10 @@ public class ByteBufferOutputStream extends OutputStream {
      *            the desired minimum capacity
      */
     private void grow(int minCapacity) {
+        if (buffer.capacity() >= minCapacity) {
+            buffer.limit(minCapacity);
+            return;
+        }
         // overflow-conscious code
         int oldCapacity = buffer.capacity();
         int newCapacity = oldCapacity << 1;
@@ -96,7 +98,7 @@ public class ByteBufferOutputStream extends OutputStream {
             newCapacity = minCapacity;
         if (newCapacity < 0) {
             if (minCapacity < 0) // overflow
-                throw new OutOfMemoryError();
+                throw new OutOfMemoryError("Math overflow!");
             newCapacity = Integer.MAX_VALUE;
         }
         assert newCapacity >= minCapacity : "Math is hard";

@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import org.smartfrog.services.anubis.partition.util.Identity;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 
+import com.hellblazer.jackal.util.ByteBufferOutputStream;
 import com.hellblazer.jackal.util.ByteBufferPool;
 
 public final class MessageMsg extends TimedMsg {
