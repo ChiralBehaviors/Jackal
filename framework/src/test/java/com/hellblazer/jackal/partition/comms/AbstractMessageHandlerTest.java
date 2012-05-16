@@ -496,15 +496,35 @@ public class AbstractMessageHandlerTest {
         hugeAssBuffer.put(wireForm);
         hugeAssBuffer.flip();
 
+        SerializedMsg msg = new SerializedMsg("Give me Slack");
+        final ArrayList<ByteBuffer> smallSend = new ArrayList<ByteBuffer>();
+        ByteBuffer temp = wireSecurity.toWireForm(msg, msgHandler.bufferPool);
+        ByteBuffer header = ByteBuffer.allocate(AbstractMessageHandler.HEADER_BYTE_SIZE);
+        smallSend.add(header);
+        smallSend.add(temp);
+        header.putInt(WireSizes.MAGIC_NUMBER);
+        header.putInt(temp.remaining());
+        header.putLong(1);
+        header.flip();
+        final int smallSendByteSize = temp.remaining() + header.remaining();
+
         Answer<Long> bulkRead = new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 ByteBuffer buffer = (ByteBuffer) invocation.getArguments()[0];
                 assertNotNull(buffer);
-                int written = Math.min(buffer.remaining(),
+                int written = 0;
+                if (hugeAssBuffer.remaining() > 0) {
+                    written = Math.min(buffer.remaining(),
                                        hugeAssBuffer.remaining());
-                buffer.put(hugeAssBuffer.array(), hugeAssBuffer.position(),
-                           written);
+                    buffer.put(hugeAssBuffer.array(), hugeAssBuffer.position(),
+                               written);
+                    hugeAssBuffer.position(hugeAssBuffer.position() + written);
+                } else {
+                    transfer(smallSendByteSize,
+                             smallSend.toArray(new ByteBuffer[2]), buffer);
+                    written = smallSendByteSize;
+                }
                 return (long) written;
             }
         };
@@ -523,6 +543,17 @@ public class AbstractMessageHandlerTest {
         assertTrue("Wrong message",
                    Arrays.equals(hugeAssByteArray, msgByteArray));
         assertEquals("Wrong order", 0, msgHandler.msgs.get(0).order);
+
+        // now see if we can correctly read another message
+
+        msgHandler.readReady();
+
+        assertEquals("Subsequent message was not read", 2,
+                     msgHandler.msgs.size());
+
+        assertEquals("Wrong message", msg.getObject(),
+                     ((SerializedMsg) msgHandler.msgs.get(1).msg).getObject());
+        assertEquals("Wrong order", 1, msgHandler.msgs.get(1).order);
     }
 
     private static long transfer(int count, ByteBuffer[] input,
