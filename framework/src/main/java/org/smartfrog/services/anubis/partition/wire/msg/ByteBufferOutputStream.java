@@ -66,8 +66,15 @@ public class ByteBufferOutputStream extends OutputStream {
      */
     private void ensureCapacity(int minCapacity) {
         // overflow-conscious code
-        if (minCapacity - buffer.remaining() > 0)
-            grow(minCapacity);
+        if (minCapacity - buffer.remaining() > 0) {
+            try {
+                grow(minCapacity);
+            } catch (OutOfMemoryError e) {
+                System.out.println(String.format("Attempted to grow stream to % bytes",
+                                                 minCapacity));
+                throw e;
+            }
+        }
         assert buffer.capacity() >= minCapacity : String.format("Need: %s, required %s more bytes ",
                                                                 minCapacity,
                                                                 minCapacity
