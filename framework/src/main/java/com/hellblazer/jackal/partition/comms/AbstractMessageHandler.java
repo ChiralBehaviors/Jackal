@@ -26,8 +26,10 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -45,32 +47,34 @@ import com.hellblazer.pinkie.SocketChannelHandler;
  * 
  */
 public abstract class AbstractMessageHandler implements CommunicationsHandler {
+
     static enum State {
         BODY, CLOSED, ERROR, HEADER, INITIAL;
-    };
+    }
 
-    protected static String toHex(byte[] data) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 4);
+    protected static final int READ_BUFFER_SIZE = 64 * 1024;
+    protected static final int HEADER_BYTE_SIZE = 16;
+
+    protected static String toHex(byte[] data, int length) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(length * 4);
         PrintStream stream = new PrintStream(baos);
-        HexDump.hexdump(stream, data, 0, data.length);
+        HexDump.hexdump(stream, data, 0, length);
         stream.close();
         return baos.toString();
     }
 
     private final AtomicBoolean               closed     = new AtomicBoolean();
-    private volatile ByteBuffer               currentWrite;
-    private ByteBuffer                        readBuffer;
-    private final ByteBuffer                  rxHeader   = ByteBuffer.allocate(16);
+    private volatile ByteBuffer[]             currentWrite;
+    private final List<ByteBuffer>            drain      = new ArrayList<ByteBuffer>();
+    private volatile ByteBuffer               readBuffer = ByteBuffer.allocate(READ_BUFFER_SIZE);
     private final ReentrantLock               writeLock  = new ReentrantLock();
-    private final ByteBuffer                  wxHeader   = ByteBuffer.allocate(16);
     protected final ByteBufferPool            bufferPool = new ByteBufferPool(
                                                                               "Abstract Message Handler",
                                                                               100);
     protected volatile SocketChannelHandler   handler;
-    protected volatile State                  readState  = State.HEADER;
+    protected volatile State                  readState  = State.INITIAL;
     protected final WireSecurity              wireSecurity;
-    protected final BlockingQueue<ByteBuffer> writes     = new ArrayBlockingQueue<ByteBuffer>(
-                                                                                              4);
+    protected final BlockingDeque<ByteBuffer> writes     = new LinkedBlockingDeque<ByteBuffer>();
     protected volatile State                  writeState = State.INITIAL;
 
     public AbstractMessageHandler(WireSecurity wireSecurity) {
@@ -85,59 +89,94 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         while (true) {
             switch (readState) {
                 case ERROR:
-                    return;
                 case CLOSED:
                     return;
-                case HEADER: {
-                    if (!read(rxHeader)) {
+                case INITIAL: {
+                    if (!read(readBuffer)) {
                         return;
                     }
-                    if (rxHeader.hasRemaining()) {
+                    if (readBuffer.position() < HEADER_BYTE_SIZE) {
+                        if (getLog().isTraceEnabled()) {
+                            getLog().trace(format("Not enough bytes for a header"));
+                        }
                         handler.selectForRead();
                         return;
                     }
-                    rxHeader.flip();
-                    int readMagic = rxHeader.getInt();
                     if (getLog().isTraceEnabled()) {
-                        getLog().trace("Read magic number: " + readMagic);
+                        getLog().trace(format("enough bytes for a header"));
                     }
-                    if (readMagic == MAGIC_NUMBER) {
-                        if (getLog().isTraceEnabled()) {
-                            getLog().trace("RxHeader magic-number fits");
+                    readBuffer.flip();
+                    readState = State.HEADER;
+                    // Fall through to HEADER state intended.
+                }
+                case HEADER: {
+                    int magic = readBuffer.getInt(0);
+                    if (magic == MAGIC_NUMBER) {
+                        int objectSize = readBuffer.getInt(4);
+                        if (readBuffer.remaining() >= objectSize
+                                                      + HEADER_BYTE_SIZE) {
+                            if (getLog().isTraceEnabled()) {
+                                getLog().trace(format("enough bytes for the object"));
+                            }
+                            long order = readBuffer.getLong(8);
+                            readBuffer.position(HEADER_BYTE_SIZE);
+                            ByteBuffer msgBuffer = readBuffer.slice();
+                            msgBuffer.limit(objectSize);
+                            readBuffer.position(objectSize + HEADER_BYTE_SIZE);
+                            deliverObject(order, msgBuffer);
+                            readBuffer.compact();
+                            readBuffer.flip();
+                            if (readBuffer.remaining() >= HEADER_BYTE_SIZE) {
+                                if (getLog().isTraceEnabled()) {
+                                    getLog().trace(format("enough bytes for another header"));
+                                }
+                                break;
+                            }
+                            readBuffer.compact();
+                        } else {
+                            if (objectSize > readBuffer.capacity()) {
+                                if (getLog().isTraceEnabled()) {
+                                    getLog().trace(format("Growing read buffer to %s",
+                                                          objectSize
+                                                                  + HEADER_BYTE_SIZE));
+                                }
+                                ByteBuffer grow = ByteBuffer.allocate(objectSize
+                                                                      + HEADER_BYTE_SIZE);
+                                grow.put(readBuffer);
+                                readBuffer = grow;
+                            } else {
+                                readBuffer.compact();
+                            }
+                            if (getLog().isTraceEnabled()) {
+                                getLog().trace(format("not enough bytes for the object"));
+                            }
                         }
-                        // get the object size and create a new buffer for it
-                        int objectSize = rxHeader.getInt();
-                        if (getLog().isTraceEnabled()) {
-                            getLog().trace("read objectSize: " + objectSize);
-                        }
-                        readBuffer = bufferPool.allocate(objectSize);
                         readState = State.BODY;
+                        handler.selectForRead();
+                        return;
                     } else {
-                        getLog().error(String.format("invalid magic number %s, required %s"),
-                                       readMagic, MAGIC_NUMBER);
+                        getLog().error(String.format("invalid magic number %s, required %s",
+                                                     magic, MAGIC_NUMBER));
                         readState = State.ERROR;
                         shutdown();
                         return;
                     }
-                    // Fall through to BODY state intended.
                 }
                 case BODY: {
                     if (!read(readBuffer)) {
                         return;
                     }
-                    if (!readBuffer.hasRemaining()) {
-                        long order = rxHeader.getLong();
-                        rxHeader.clear();
-                        readBuffer.flip();
-                        deliverObject(order, readBuffer);
-                        bufferPool.free(readBuffer);
-                        readBuffer = null;
+                    if (readBuffer.position() >= readBuffer.getInt(4)
+                                                 + HEADER_BYTE_SIZE) {
+                        if (getLog().isTraceEnabled()) {
+                            getLog().trace(format("now enough bytes for the object"));
+                        }
                         readState = State.HEADER;
-                    } else {
-                        handler.selectForRead();
-                        return;
+                        readBuffer.flip();
+                        break;
                     }
-                    break;
+                    handler.selectForRead();
+                    return;
                 }
                 default: {
                     throw new IllegalStateException("Illegal read state "
@@ -157,6 +196,9 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
 
     @Override
     public void writeReady() {
+        if (getLog().isTraceEnabled()) {
+            getLog().trace(format("Socket write ready [%s]", this));
+        }
         ReentrantLock myLock = writeLock;
         assert !myLock.isHeldByCurrentThread();
         if (!myLock.tryLock()) {
@@ -166,54 +208,60 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
             if (getLog().isTraceEnabled()) {
                 getLog().trace(format("Socket write ready [%s]", this));
             }
-            while (true) {
-                switch (writeState) {
-                    case ERROR:
+            switch (writeState) {
+                case ERROR:
+                case CLOSED:
+                    return;
+                case INITIAL: {
+                    writes.drainTo(drain);
+                    if (drain.isEmpty()) {
                         return;
-                    case CLOSED:
+                    }
+                    ArrayList<ByteBuffer> buffers = new ArrayList<ByteBuffer>(
+                                                                              drain.size() * 2);
+                    int totalBytes = 0;
+                    for (ByteBuffer msg : drain) {
+                        ByteBuffer header = bufferPool.allocate(HEADER_BYTE_SIZE);
+                        header.putInt(MAGIC_NUMBER);
+                        header.putInt(msg.remaining());
+                        header.putLong(nextSequence());
+                        header.flip();
+                        buffers.add(header);
+                        buffers.add(msg);
+                        totalBytes += header.remaining() + msg.remaining();
+                    }
+                    if (getLog().isTraceEnabled()) {
+                        getLog().trace(format("Writing %s objects, total bytes: %s",
+                                              drain.size(), totalBytes));
+                    }
+                    drain.clear();
+                    currentWrite = buffers.toArray(new ByteBuffer[buffers.size()]);
+                    writeState = State.BODY;
+                    // fallthrough to body intentional
+                }
+                case BODY: {
+                    if (!write(currentWrite)) {
                         return;
-                    case INITIAL: {
-                        currentWrite = writes.poll();
-                        if (currentWrite == null) {
-                            return;
-                        }
-                        wxHeader.clear();
-                        wxHeader.putInt(0, MAGIC_NUMBER);
-                        wxHeader.putInt(4, currentWrite.remaining());
-                        wxHeader.putLong(8, nextSequence());
-                        writeState = State.HEADER;
                     }
-                    case HEADER: {
-                        if (!write(wxHeader, currentWrite)) {
-                            return;
+                    if (!currentWrite[currentWrite.length - 1].hasRemaining()) {
+                        if (getLog().isTraceEnabled()) {
+                            getLog().trace(format("All objects written"));
                         }
-                        if (wxHeader.hasRemaining()) {
-                            handler.selectForWrite();
-                            return;
+                        writeState = State.INITIAL;
+                        for (ByteBuffer b : currentWrite) {
+                            bufferPool.free(b);
                         }
-                        writeState = State.BODY;
-                        // fallthrough to body intentional
+                    } else {
+                        if (getLog().isTraceEnabled()) {
+                            getLog().trace(format("still more bytes to write"));
+                        }
+                        handler.selectForWrite();
                     }
-                    case BODY: {
-                        if (!write(currentWrite)) {
-                            return;
-                        }
-                        if (!currentWrite.hasRemaining()) {
-                            writeState = State.INITIAL;
-                            if (writes.isEmpty()) {
-                                return;
-                            }
-                        } else {
-                            bufferPool.free(currentWrite);
-                            handler.selectForWrite();
-                            return;
-                        }
-                        break;
-                    }
-                    default: {
-                        throw new IllegalStateException("Illegal write state: "
-                                                        + writeState);
-                    }
+                    return;
+                }
+                default: {
+                    throw new IllegalStateException("Illegal write state: "
+                                                    + writeState);
                 }
             }
         } finally {
@@ -229,6 +277,9 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     private boolean read(ByteBuffer buffer) {
         try {
             int read = handler.getChannel().read(buffer);
+            if (getLog().isTraceEnabled()) {
+                getLog().trace(format("read %s bytes", read));
+            }
             if (read < 0) {
                 writeState = readState = State.CLOSED;
                 shutdown();
@@ -252,9 +303,13 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         return true;
     }
 
-    private boolean write(ByteBuffer... buffers) {
+    private boolean write(ByteBuffer[] buffers) {
         try {
-            if (handler.getChannel().write(buffers) < 0) {
+            long written = handler.getChannel().write(buffers);
+            if (getLog().isTraceEnabled()) {
+                getLog().trace(format("%s bytes written", written));
+            }
+            if (written < 0) {
                 close();
                 return false;
             }
@@ -299,6 +354,9 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     }
 
     protected void sendObject(ByteBuffer buffer) {
+        if (getLog().isTraceEnabled()) {
+            getLog().trace(format("sending buffer"));
+        }
         if (closed.get()) {
             if (getLog().isInfoEnabled()) {
                 getLog().trace(format("handler is closed, ignoring send on [%s]",

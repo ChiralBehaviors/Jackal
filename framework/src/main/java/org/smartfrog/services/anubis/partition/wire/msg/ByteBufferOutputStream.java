@@ -48,6 +48,7 @@ public class ByteBufferOutputStream extends OutputStream {
     }
 
     public ByteBuffer toByteBuffer() {
+        buffer.limit(buffer.position());
         return buffer;
     }
 

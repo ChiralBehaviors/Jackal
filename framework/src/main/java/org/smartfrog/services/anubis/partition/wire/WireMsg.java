@@ -50,7 +50,6 @@ abstract public class WireMsg implements WireSizes {
      * Default constructor - used when constructing from wire form
      */
     protected WireMsg() {
-        super();
     }
 
     /**

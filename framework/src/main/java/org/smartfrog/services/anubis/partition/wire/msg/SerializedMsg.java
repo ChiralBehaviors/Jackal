@@ -90,7 +90,9 @@ public final class SerializedMsg extends WireMsg {
     protected void readWireForm(ByteBuffer buf) throws IOException,
                                                WireFormException,
                                                ClassNotFoundException {
-        ByteArrayInputStream bais = new ByteArrayInputStream(buf.array());
+        ByteArrayInputStream bais = new ByteArrayInputStream(buf.array(),
+                                                             buf.arrayOffset(),
+                                                             buf.limit());
         bais.skip(intSz);
         ObjectInputStream ois = new ObjectInputStream(bais);
         msg = ois.readObject();

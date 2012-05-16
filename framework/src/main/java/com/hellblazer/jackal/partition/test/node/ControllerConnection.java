@@ -108,6 +108,9 @@ public class ControllerConnection extends AbstractMessageHandler implements
     }
 
     public void sendObject(Object obj) {
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("sending object %s from [%s]", obj, this));
+        }
         try {
             send(new SerializedMsg(obj));
         } catch (Exception ex) {
@@ -159,5 +162,10 @@ public class ControllerConnection extends AbstractMessageHandler implements
     @Override
     protected Logger getLog() {
         return log;
+    }
+
+    public String toString() {
+        return String.format("Controller Connection for: %s",
+                             controller.getId());
     }
 }

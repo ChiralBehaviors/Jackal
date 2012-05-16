@@ -303,11 +303,6 @@ public class MessageHandler extends AbstractMessageHandler implements
 
     @Override
     protected void deliverObject(long order, ByteBuffer fullRxBuffer) {
-        if (log.isTraceEnabled()) {
-            log.trace(String.format("deliverObject is being called [%s]",
-                                    messageConnection));
-        }
-
         if (ignoring) {
             return;
         }
@@ -316,7 +311,9 @@ public class MessageHandler extends AbstractMessageHandler implements
         try {
             if (log.isTraceEnabled()) {
                 log.trace(format("Delivering bytes [%s]: \n%s",
-                                 messageConnection, toHex(fullRxBuffer.array())));
+                                 messageConnection,
+                                 toHex(fullRxBuffer.array(),
+                                       fullRxBuffer.limit())));
             }
             msg = wireSecurity.fromWireForm(fullRxBuffer);
 

@@ -494,9 +494,9 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
      */
     @Override
     public synchronized void newView(Identity id, View v) {
-        if (log.isInfoEnabled()) {
-            log.info(String.format("New view: %s on: %s from: %s", v, identity,
-                                   id));
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("New view: %s on: %s from: %s", v,
+                                    identity, id));
         }
         changeInViews.set(true);
         stablizing.set(false);
@@ -991,5 +991,12 @@ public class ConnectionSet implements ViewListener, ConnectionManager {
                 }
             }
         }
+    }
+
+    /**
+     * @return
+     */
+    public Identity getId() {
+        return identity;
     }
 }

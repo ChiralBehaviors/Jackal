@@ -188,4 +188,12 @@ public class ControllerAgent {
                                             connectionSet.getTimeout()));
     }
 
+    /**
+     * @return
+     */
+    public Object getId() {
+        // TODO Auto-generated method stub
+        return connectionSet.getId();
+    }
+
 }

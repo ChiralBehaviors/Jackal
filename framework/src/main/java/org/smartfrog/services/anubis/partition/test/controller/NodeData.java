@@ -117,6 +117,10 @@ public class NodeData {
         protected Logger getLog() {
             return log;
         }
+
+        public String toString() {
+            return String.format("NodeData Connection for %s", nodeId);
+        }
     }
 
     private static final Logger   log               = LoggerFactory.getLogger(NodeData.class.getCanonicalName());

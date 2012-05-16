@@ -88,7 +88,9 @@ public final class MessageMsg extends TimedMsg {
                                                WireFormException,
                                                ClassNotFoundException {
         super.readWireForm(buf);
-        ByteArrayInputStream bais = new ByteArrayInputStream(buf.array());
+        ByteArrayInputStream bais = new ByteArrayInputStream(buf.array(),
+                                                             buf.arrayOffset(),
+                                                             buf.limit());
         bais.skip(TIMED_MSG_WIRE_SIZE);
         ObjectInputStream ois = new ObjectInputStream(bais);
         message = ois.readObject();
