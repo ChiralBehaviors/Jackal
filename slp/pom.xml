@@ -2,14 +2,14 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<parent>
-		<artifactId>anubis.app</artifactId>
-		<groupId>com.hellblazer.anubis</groupId>
+		<artifactId>jackal.app</artifactId>
+		<groupId>com.hellblazer.jackal</groupId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>slp</artifactId>
 	<name>Service Location Protocol</name>
-	<description>Anubis based SLP</description>
+	<description>Jackal based SLP</description>
 	<url>https://github.com/Hellblazer/Jackal</url>
 
 	<licenses>
@@ -26,14 +26,14 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.hellblazer.anubis</groupId>
-			<artifactId>anubis</artifactId>
+			<groupId>com.hellblazer.jackal</groupId>
+			<artifactId>jackal</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.hellblazer.anubis</groupId>
-			<artifactId>anubis</artifactId>
+			<groupId>com.hellblazer.jackal</groupId>
+			<artifactId>jackal</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 			<type>test-jar</type>
 			<scope>compile</scope>
