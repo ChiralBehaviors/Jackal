@@ -2,34 +2,36 @@ Jackal is licensed under LGPL V2.2.
 
 Jackal is a heavy modification of the original Anubis distributed tuplespace, found in HP's Smartfrog project.  The original project Wiki is here: http://www.smartfrog.org/wiki/display/sf/Anubis.
 
-This project is built with Maven, and will build with Maven version 2.2.  Jackal now depends on the Pinke project: https://github.com/Hellblazer/Pinkie.
+This project is built with Maven, and will build with Maven version 3.x.  You can build Jackal by checking out this project, cd'ing to the top level directory and doing:
 
-Jackal is composed of 5 modules:
+    mvn clean install
+    
+Jackal depends on the Pinke project: https://github.com/Hellblazer/Pinkie.  The pinkie dependency pulled from the continuous integration maven repository.
+
+Jackal is composed of 4 modules:
 
 	- framework
-		base Anubis framework
+		base Jacka framework
 	- console
 		Graphic GUI for the partition manager
-	- satellite
-		Running Anubis in a separate satellite JVM
 	- slp
-		A Service Location Protocol implemented on Anubis
+		A Service Location Protocol implemented on Jackal
 	- loadtest
-		A simple load testing application for Anubis
+		A simple load testing application for Jack I use for various nefarious purposes.
 
-Jackal is a significant branch from Anubis and provides the following value add:
+As mentioned previously Jackal is a significant branch from Anubis and provides the following value add:
 
 - Divorced from Smartfrog
 
-Anubis is tightly woven with the Smartfrog system and is quite hard to separate out and get working as a stand alone system.  Jackal is a standalone system.
+Anubis qua Anubis is tightly woven with the Smartfrog system and is quite hard to separate out and get working as a stand alone system.  Jackal is a completely standalone system.
 
 - Configured with javax.annotations
 
-Smartfrog has its own mechanism for configuring the services that run within the framework.  It's a surprisingly sophisticated and powerful model, but it's not really lightweight.  Jackal converted the original mechanism into a POJO model which is easily configured with any IOC framework that understands the javax.annotations.  The current code base uses Spring for this, and has several example Java @Configurations that can be reused or used as examples.
+Smartfrog has its own mechanism for configuring the services that run within the Smartfrog framework.  It's a surprisingly sophisticated and powerful model, but it's not really lightweight.  Jackal has converted the original mechanism into a POJO model which is easily configured with any IOC framework that understands the javax.annotations.  The current code base uses Spring for this, and has several example Java @Configurations that can be reused or used as examples.
 
 - Updated to Java 5
 
-A massive amount of work went into updating Anubis to use generics, and most importantly the java.util.concurrent package.  There's still some cruft in there, but things have been updated to the modern world and the system is a lot more stable and clean because of it.
+A massive amount of work in Jackal went into updating Anubis to use generics, and most importantly, to use the java.util.concurrent package.  There's still some cruft in there, but things have been updated to the modern world and the system is a lot more stable and clean because of it.
 
 - UDP based Gossip Heartbeat and Discovery
 
@@ -39,13 +41,19 @@ The original Anubis provided only multicast based discovery and heartbeat.  Mult
 
 The original Anubis non blocking communications had a number of serialization points and did not scale very well.  I have replaced this implementation with Pinkie, my minimalistic NIO communications handler.  In the process of refactoring this, I also removed a number of race conditions and deadlocks in the MessageConnection establishment logic.
 
-In addition to using non blocking i/o in the point to point communications, I also completely redesigned the partition manager framework to use non blocking i/o with Pinkie.  This allows the partition manager to scale to accomidate a large number of nodes under test, and eliminates some serious blocking in Anubis' interval executive.  Under heavy load testing with even moderate numbers of nodes, this would cause Anubis' interval exec to oversleep - sometimes by double digits of seconds!  Changing this to use non blocking i/o is a huge win. 
+In addition to using non blocking i/o in the point to point communications, I also completely redesigned the partition manager framework to use non blocking i/o with Pinkie.  This allows the partition manager to scale to accomidate a large number of nodes under test, and eliminates some serious blocking in Anubis' interval executive.  Under heavy load testing with even moderate numbers of nodes, this would cause Anubis' interval exec to oversleep - sometimes by double digits of seconds!  Changing this to use non blocking i/o is a huge win.
+
+- ByteBuffer pooling and much more effient memory usage
+
+Jackal makes use of a simple pooling mechansim to drastically limit the amount of ByteBuffer instances used internally.  The result is that the memory profile of Jackal is nearly flat and is far more efficient.
 
 - Testing, Testing, Testing
 
 Anubis doesn't have very much in the way of testing and Jackal does a lot to remedy that.  Unit testing purists will surely sniff at the fact that Jackal isn't properly unit tested, but so what.  There's a decent sweet of tests for the code, and the UDP gossip is reasonably complete from a unit test perspective.  There's several end to end functional tests which have greatly aided the debugging of the existing Anubis functionality and the new functionality added in Jackal.
 
-I have also refactored and redesigned the partition manager in Anubis.  The partition manager was originally a GUI based system for monitoring and controlling the partitons.  My refactoring and redesign uses this functionality to provide sophisticated monitoring and control for distributed testing scenarios.  As you can well imagine, it's not easy to test distributed systems, and with this tool, it's now straight forward to create very sophisticated distributed tests in Anubis.
+- More useful Partition Manager and unit testing framework
+
+I have also refactored and redesigned the partition manager in Anubis.  The partition manager was originally a GUI based system for monitoring and controlling the partitons.  My refactoring and redesign uses this functionality to provide sophisticated monitoring and control for distributed testing scenarios.  As you can well imagine, it's not easy to test distributed systems, and with this tool, it's now straight forward to create very sophisticated distributed tests in Jackal.
 
 - Bug Fixes
 
