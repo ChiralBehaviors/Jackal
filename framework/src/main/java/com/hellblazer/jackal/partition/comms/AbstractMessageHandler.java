@@ -278,12 +278,25 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
         try {
             int read = handler.getChannel().read(buffer);
             if (getLog().isTraceEnabled()) {
-                getLog().trace(format("read %s bytes", read));
+                getLog().trace(format("1st read %s bytes", read));
             }
             if (read < 0) {
                 writeState = readState = State.CLOSED;
                 shutdown();
                 return false;
+            } else {
+                // Try one more read ;)
+                if (buffer.hasRemaining()) {
+                    int plusRead = handler.getChannel().read(buffer);
+                    if (plusRead < 0) {
+                        writeState = readState = State.CLOSED;
+                        shutdown();
+                        return false;
+                    }
+                    if (getLog().isTraceEnabled()) {
+                        getLog().trace(format("+ read %s bytes", plusRead));
+                    }
+                }
             }
         } catch (IOException ioe) {
             if (getLog().isTraceEnabled()) {
@@ -312,6 +325,15 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
             if (written < 0) {
                 close();
                 return false;
+            } else if (buffers[buffers.length - 1].hasRemaining()) {
+                long plusWritten = handler.getChannel().write(buffers);
+                if (plusWritten < 0) {
+                    close();
+                    return false;
+                }
+                if (getLog().isTraceEnabled()) {
+                    getLog().trace(format("%s bytes +written", plusWritten));
+                }
             }
         } catch (ClosedChannelException e) {
             if (getLog().isTraceEnabled()) {
