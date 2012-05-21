@@ -197,7 +197,7 @@ public class AbstractMessageHandlerTest {
         };
         ByteBuffer[] template = new ByteBuffer[0];
         when(handler.getChannel()).thenReturn(channel);
-        when(channel.write(any(template.getClass()), anyInt(), anyInt())).thenAnswer(bulkWrite);
+        when(channel.write(any(template.getClass()), anyInt(), anyInt())).thenAnswer(bulkWrite).thenReturn(0L);
 
         msgHandler.connect(handler);
 
@@ -299,8 +299,7 @@ public class AbstractMessageHandlerTest {
         msgHandler.send(msg4);
 
         msgHandler.writeReady();
-        assertEquals("Messages were written", 0, msgs.size());
-        msgHandler.writeReady();
+        assertEquals("Messages were written", 4, msgs.size());
 
         assertEquals("Wrong message", msg1.getObject(), msgs.get(0).getObject());
         assertEquals("Wrong message", msg2.getObject(), msgs.get(1).getObject());
