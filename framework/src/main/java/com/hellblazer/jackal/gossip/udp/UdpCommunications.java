@@ -145,7 +145,6 @@ public class UdpCommunications implements GossipCommunications {
      * semantics are atomic (no fragmentation in the network).
      */
     private static final int                  MAX_SEG_SIZE                      = 1500;
-    private static final int                  RECEIVE_TIME_OUT                  = 2000;
 
     static {
         MAX_DIGESTS = (MAX_SEG_SIZE - 4 - 4) / DIGEST_BYTE_SIZE;
@@ -187,9 +186,7 @@ public class UdpCommunications implements GossipCommunications {
         }
         try {
             socket.setReceiveBufferSize(MAX_SEG_SIZE * receiveBufferMultiplier);
-            socket.setReuseAddress(true);
             socket.setSendBufferSize(MAX_SEG_SIZE * sendBufferMultiplier);
-            socket.setSendBufferSize(RECEIVE_TIME_OUT);
         } catch (SocketException e) {
             log.error(format("Unable to configure endpoint: %s", socket));
             throw new IllegalStateException(
@@ -395,6 +392,7 @@ public class UdpCommunications implements GossipCommunications {
      * @throws IOException
      */
     private void send(ByteBuffer buffer, SocketAddress target) {
+        assert ! socket.isClosed() : "Sending on a closed socket";
         buffer.putInt(0, MAGIC_NUMBER);
         try {
             byte[] bytes = buffer.array();
