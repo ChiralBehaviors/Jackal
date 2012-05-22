@@ -11,7 +11,7 @@ Jackal depends on the Pinke project: https://github.com/Hellblazer/Pinkie.  The 
 Jackal is composed of 4 modules:
 
 	- framework
-		base Jacka framework
+		base Jackal framework
 	- console
 		Graphic GUI for the partition manager
 	- slp
@@ -49,7 +49,7 @@ Jackal makes use of a simple pooling mechansim to drastically limit the amount o
 
 - Testing, Testing, Testing
 
-Anubis doesn't have very much in the way of testing and Jackal does a lot to remedy that.  Unit testing purists will surely sniff at the fact that Jackal isn't properly unit tested, but so what.  There's a decent sweet of tests for the code, and the UDP gossip is reasonably complete from a unit test perspective.  There's several end to end functional tests which have greatly aided the debugging of the existing Anubis functionality and the new functionality added in Jackal.
+Anubis doesn't have very much in the way of testing and Jackal does a lot to remedy that.  Unit testing purists will surely sniff at the fact that Jackal isn't properly unit tested, but so what.  There's a decent suite of tests for the code, and the UDP gossip is reasonably complete from a unit test perspective.  There's several end to end functional tests which have greatly aided the debugging of the existing Anubis functionality and the new functionality added in Jackal.
 
 - More useful Partition Manager and unit testing framework
 
