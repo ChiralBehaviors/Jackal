@@ -22,8 +22,7 @@ public class MACSecurityImpl implements WireSecurity {
         try {
 
             WireMsg msg = Wire.fromWire(wireForm);
-            macData.checkMAC(wireForm.array(), 0,
-                             wireForm.capacity() - macData.getMacSize() - 1);
+            macData.checkMAC(wireForm);
 
             return msg;
         } catch (ClassNotFoundException e) {
@@ -54,8 +53,7 @@ public class MACSecurityImpl implements WireSecurity {
         try {
             msg.setTrailerSize(macData.getMacSize());
             ByteBuffer wireForm = msg.toWire(bufferPool);
-            macData.addMAC(wireForm.array(), 0,
-                           wireForm.capacity() - macData.getMacSize() - 1);
+            macData.addMAC(wireForm);
             return wireForm;
 
         } catch (IOException e) {

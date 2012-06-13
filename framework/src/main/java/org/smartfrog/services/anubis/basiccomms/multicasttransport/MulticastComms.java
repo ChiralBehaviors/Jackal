@@ -59,7 +59,7 @@ public class MulticastComms extends Thread {
     private final AtomicBoolean    terminating  = new AtomicBoolean();
     protected final ByteBufferPool bufferPool   = new ByteBufferPool(
                                                                      "Multicast Comms",
-                                                                     100);
+                                                                     100, false);
 
     /**
      * Constructor - uses MulticastAddress to define the multicast group etc.

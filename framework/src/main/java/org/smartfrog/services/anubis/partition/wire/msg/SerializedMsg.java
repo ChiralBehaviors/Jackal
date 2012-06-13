@@ -19,7 +19,6 @@ For more information: www.smartfrog.org
  */
 package org.smartfrog.services.anubis.partition.wire.msg;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -28,6 +27,7 @@ import java.nio.ByteBuffer;
 import org.smartfrog.services.anubis.partition.wire.WireFormException;
 import org.smartfrog.services.anubis.partition.wire.WireMsg;
 
+import com.hellblazer.jackal.util.ByteBufferInputStream;
 import com.hellblazer.jackal.util.ByteBufferOutputStream;
 import com.hellblazer.jackal.util.ByteBufferPool;
 
@@ -91,11 +91,9 @@ public final class SerializedMsg extends WireMsg {
     protected void readWireForm(ByteBuffer buf) throws IOException,
                                                WireFormException,
                                                ClassNotFoundException {
-        ByteArrayInputStream bais = new ByteArrayInputStream(buf.array(),
-                                                             buf.arrayOffset(),
-                                                             buf.limit());
-        bais.skip(intSz);
-        ObjectInputStream ois = new ObjectInputStream(bais);
+        ByteBufferInputStream bbis = new ByteBufferInputStream(buf);
+        bbis.skip(intSz);
+        ObjectInputStream ois = new ObjectInputStream(bbis);
         msg = ois.readObject();
     }
 

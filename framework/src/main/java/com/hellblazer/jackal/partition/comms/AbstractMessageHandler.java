@@ -70,7 +70,8 @@ public abstract class AbstractMessageHandler implements CommunicationsHandler {
     private final ReentrantLock               writeLock  = new ReentrantLock();
     protected final ByteBufferPool            bufferPool = new ByteBufferPool(
                                                                               "Abstract Message Handler",
-                                                                              100);
+                                                                              100,
+                                                                              true);
     protected volatile SocketChannelHandler   handler;
     protected volatile State                  readState  = State.INITIAL;
     protected final WireSecurity              wireSecurity;

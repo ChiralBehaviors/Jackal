@@ -31,7 +31,7 @@ public class ByteBufferPoolTest {
 
     @Test
     public void testFree() {
-        ByteBufferPool test = new ByteBufferPool("test", 100);
+        ByteBufferPool test = new ByteBufferPool("test", 100, false);
         for (int i = 0; i < 100; i++) {
             test.free(ByteBuffer.allocate(i));
         }
@@ -59,7 +59,7 @@ public class ByteBufferPoolTest {
 
     @Test
     public void testFreeMatch() {
-        ByteBufferPool test = new ByteBufferPool("test", 100);
+        ByteBufferPool test = new ByteBufferPool("test", 100, false);
         for (int i = 0; i < 100; i++) {
             test.free(ByteBuffer.allocate(i));
         }

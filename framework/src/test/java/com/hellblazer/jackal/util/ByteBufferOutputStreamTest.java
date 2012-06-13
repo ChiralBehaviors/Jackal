@@ -29,7 +29,7 @@ import static junit.framework.Assert.*;
 public class ByteBufferOutputStreamTest {
     @Test
     public void testGrow() {
-        ByteBufferPool pool = new ByteBufferPool("test", 100);
+        ByteBufferPool pool = new ByteBufferPool("test", 100, false);
         ByteBufferOutputStream test = new ByteBufferOutputStream(pool);
         for (int i = 0; i < 1024 * 1024; i++) {
             test.write(5);

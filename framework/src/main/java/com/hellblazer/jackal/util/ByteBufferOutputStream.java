@@ -102,10 +102,11 @@ public class ByteBufferOutputStream extends OutputStream {
             newCapacity = Integer.MAX_VALUE;
         }
         assert newCapacity >= minCapacity : "Math is hard";
-        int position = buffer.position();
         ByteBuffer oldBuffer = buffer;
+        oldBuffer.limit(buffer.position());
+        oldBuffer.position(0);
         buffer = bufferPool.allocate(newCapacity);
-        buffer.put(oldBuffer.array(), 0, position);
+        buffer.put(oldBuffer);
         bufferPool.free(oldBuffer);
         assert buffer.capacity() >= minCapacity : "Math is hard";
     }

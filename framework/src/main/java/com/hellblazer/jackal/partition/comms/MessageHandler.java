@@ -310,10 +310,13 @@ public class MessageHandler extends AbstractMessageHandler implements
         WireMsg msg = null;
         try {
             if (log.isTraceEnabled()) {
+                byte[] contents = new byte[fullRxBuffer.limit()];
+                fullRxBuffer.mark();
+                fullRxBuffer.get(contents);
+                fullRxBuffer.reset();
                 log.trace(format("Delivering bytes [%s]: \n%s",
                                  messageConnection,
-                                 toHex(fullRxBuffer.array(),
-                                       fullRxBuffer.limit())));
+                                 toHex(contents, contents.length)));
             }
             msg = wireSecurity.fromWireForm(fullRxBuffer);
 

@@ -163,7 +163,7 @@ public class UdpCommunications implements GossipCommunications {
     private final AtomicBoolean   running    = new AtomicBoolean();
     private final DatagramSocket  socket;
     private final ByteBufferPool  bufferPool = new ByteBufferPool("UDP Comms",
-                                                                  100);
+                                                                  100, false);
 
     public UdpCommunications(InetSocketAddress endpoint,
                              ExecutorService executor) {
@@ -392,7 +392,7 @@ public class UdpCommunications implements GossipCommunications {
      * @throws IOException
      */
     private void send(ByteBuffer buffer, SocketAddress target) {
-        assert ! socket.isClosed() : "Sending on a closed socket";
+        assert !socket.isClosed() : "Sending on a closed socket";
         buffer.putInt(0, MAGIC_NUMBER);
         try {
             byte[] bytes = buffer.array();

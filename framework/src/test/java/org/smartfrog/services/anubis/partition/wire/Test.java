@@ -40,7 +40,8 @@ public class Test extends TestCase {
         untitled1.testIt3();
     }
 
-    private final ByteBufferPool bufferPool = new ByteBufferPool("test", 1);
+    private final ByteBufferPool bufferPool = new ByteBufferPool("test", 1,
+                                                                 false);
 
     public void testIt() {
         try {

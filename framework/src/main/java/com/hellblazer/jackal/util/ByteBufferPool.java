@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ByteBufferPool {
 
+    private final boolean                allocateDirect;
     private int                          bytesAllocated = 0;
     private int                          created        = 0;
     private int                          discarded      = 0;
@@ -37,9 +38,10 @@ public class ByteBufferPool {
     private int                          pooled         = 0;
     private int                          reused         = 0;
 
-    public ByteBufferPool(String name, int limit) {
+    public ByteBufferPool(String name, int limit, boolean allocateDirect) {
         this.name = name;
         pool = new RingBuffer<ByteBuffer>(limit);
+        this.allocateDirect = allocateDirect;
     }
 
     public ByteBuffer allocate(int capacity) {
@@ -49,7 +51,7 @@ public class ByteBufferPool {
             if (pool.isEmpty()) {
                 created++;
                 bytesAllocated += capacity;
-                return ByteBuffer.allocate(capacity);
+                return allocateBuffer(capacity);
             }
             int remaining = pool.size();
             while (remaining != 0) {
@@ -65,10 +67,15 @@ public class ByteBufferPool {
             }
             created++;
             bytesAllocated += capacity;
-            return ByteBuffer.allocate(capacity);
+            return allocateBuffer(capacity);
         } finally {
             myLock.unlock();
         }
+    }
+
+    private ByteBuffer allocateBuffer(int capacity) {
+        return allocateDirect ? ByteBuffer.allocateDirect(capacity)
+                             : ByteBuffer.allocate(capacity);
     }
 
     public void free(ByteBuffer free) {
